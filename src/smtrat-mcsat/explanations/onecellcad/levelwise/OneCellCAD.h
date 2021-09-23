@@ -149,6 +149,10 @@ class LevelwiseCAD : public OneCellCAD {
                             }
                         }
 
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                            getStatistic().resultantBarrierCreated();
+                        #endif
+
                     } else if (sectionHeuristic == 2) {
                         for (auto &poly : polys[i]) {
                             //Heuristic 2: calculate resultant in chain-form over lower and upper
@@ -212,6 +216,9 @@ class LevelwiseCAD : public OneCellCAD {
                             for (auto it = lower.begin(); it != lower.end() - 1; it++) {
                                 resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
                                                                        std::get<1>(*(it + 1)).poly));
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    getStatistic().resultantBarrierCreated();
+                                #endif
                             }
                         }
 
@@ -224,6 +231,9 @@ class LevelwiseCAD : public OneCellCAD {
                             for (auto it = upper.begin(); it != upper.end() - 1; it++) {
                                 resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
                                                                        std::get<1>(*(it + 1)).poly));
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    getStatistic().resultantBarrierCreated();
+                                #endif
                             }
                         }
 
@@ -907,6 +917,9 @@ class LevelwiseCAD : public OneCellCAD {
                                     resultants.emplace_back(std::make_pair(l.poly, curLow.poly));
                                 }
                             }
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                getStatistic().resultantBarrierCreated();
+                            #endif
                         }
 
                         if (sector.highBound.has_value()) {
@@ -915,6 +928,9 @@ class LevelwiseCAD : public OneCellCAD {
                                     resultants.emplace_back(std::make_pair(u.poly, curUp.poly));
                                 }
                             }
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                getStatistic().resultantBarrierCreated();
+                            #endif
                         }
 
                         // Need no ldcf if it also appears on other side
@@ -940,6 +956,9 @@ class LevelwiseCAD : public OneCellCAD {
                             for (auto it = lower2.begin(); it != lower2.end() - 1; it++) {
                                 resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
                                                                        std::get<1>(*(it + 1)).poly));
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    getStatistic().resultantBarrierCreated();
+                                #endif
                             }
                         }
 
@@ -947,6 +966,9 @@ class LevelwiseCAD : public OneCellCAD {
                             for (auto it = upper2.begin(); it != upper2.end() - 1; it++) {
                                 resultants.emplace_back(std::make_pair(std::get<1>(*it).poly,
                                                                        std::get<1>(*(it + 1)).poly));
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    getStatistic().resultantBarrierCreated();
+                                #endif
                             }
                         }
 
