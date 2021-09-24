@@ -1007,7 +1007,7 @@ namespace smtrat
                     } else {
                         // add propagations
                         bool added = false;
-                        for (const auto link : chain) {
+                        for (const auto& link : chain) {
                             added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
                         assert(added);
