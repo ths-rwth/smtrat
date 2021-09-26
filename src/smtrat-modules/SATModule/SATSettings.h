@@ -149,17 +149,25 @@ namespace smtrat
         using VarScheduler = VarSchedulerMinisat;
         // using VarScheduler = VarSchedulerFixedRandom;
     };
-  struct SATSettingsMCSATOC : SATSettingsMCSAT {
+struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;
-  };
-  struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
+};
+struct SATSettingsMCSATOCNN : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATOCNN>";
+    using MCSATSettings = mcsat::MCSATSettingsOCNN;
+};
+struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsOCNew;
-  };
-struct SATSettingsMCSATOCNN : SATSettingsMCSAT {
-	static constexpr auto muduleName = "SATModule<MCSATOCNN>";
-	using MCSATSettings = mcsat::MCSATSettingsOCNN;
+};
+struct SATSettingsMCSATOCNNASC : SATSettingsMCSAT {
+	static constexpr auto muduleName = "SATModule<MCSATOCNNASC>";
+	using MCSATSettings = mcsat::MCSATSettingsOCNNASC;
+};
+struct SATSettingsMCSATOCNNDSC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATOCNNDSC>";
+    using MCSATSettings = mcsat::MCSATSettingsOCNNDSC;
 };
 struct SATSettingsMCSATOCLWH11 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATOCLWH11>";
@@ -197,9 +205,25 @@ struct SATSettingsMCSATOCLWH33 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATOCLWH33>";
 	using MCSATSettings = mcsat::MCSATSettingsOCLWH33;
 };
+struct SATSettingsMCSATFMICPVSOCLWH11 : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH11>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH11;
+};
+struct SATSettingsMCSATFMICPVSOCLWH12 : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH12>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH12;
+};
 struct SATSettingsMCSATFMICPVSOCLWH13 : SATSettingsMCSAT {
 	static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH13>";
 	using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH13;
+};
+struct SATSettingsMCSATFMICPVSOCNNASC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCNNASC>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNNASC;
+};
+struct SATSettingsMCSATFMICPVSOCNNDSC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCNNDSC>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNNDSC;
 };
 struct SATSettingsMCSATFMICPVSOCPARALLEL : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCPARALLEL>";

@@ -17,7 +17,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 	assert(trail.model().size() == trail.assignedVariables().size());
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationCalled();
+	getStatistic().explanationCalled();
 #endif
 
 #if not(defined USE_COCOA || defined USE_GINAC)
@@ -103,6 +103,8 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
 	}
 
+    assert(1 <= Setting1::sectionHeuristic && Setting1::sectionHeuristic <= 3);
+    assert(1 <= Setting2::sectorHeuristic && Setting2::sectorHeuristic <= 3);
 	std::optional<CADCell> cellOpt =
 	        cad.constructCADCellEnclosingPoint(projectionLevels, Setting1::sectionHeuristic, Setting2::sectorHeuristic);
 	if (!cellOpt) {
@@ -153,7 +155,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationSuccess();
+	getStatistic().explanationSuccess();
 #endif
 	return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 }
