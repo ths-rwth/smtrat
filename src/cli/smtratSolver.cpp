@@ -75,7 +75,6 @@ void setup_logging() {
 		("smtrat.module", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.cad", carl::logging::LogLevel::LVL_TRACE)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
