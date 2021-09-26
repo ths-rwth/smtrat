@@ -53,6 +53,9 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
         rules::cell_well_def(deriv, repr.description);
     }
 
+    if (!repr.equational.empty()) {
+        deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(repr.description.section_defining().poly) });
+    }
     for (const auto& poly : repr.equational) {
         rules::poly_irrecubile_sgn_inv_ec(deriv, repr.description, poly);
     }

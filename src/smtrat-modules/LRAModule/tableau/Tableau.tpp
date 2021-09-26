@@ -10,9 +10,10 @@
 #include "Tableau.h"
 #include "TableauSettings.h"
 
-//#define DEBUG_METHODS_TABLEAU
-//#define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
-//#define LRA_PEDANTIC_CORRECTNESS_CHECKS
+// #define DEBUG_METHODS_TABLEAU
+// #define DEBUG_NEXT_PIVOT_FOR_OPTIMIZATION
+// #define LRA_PEDANTIC_CORRECTNESS_CHECKS
+// #define DEBUG_SOI_SIMPLEX
 
 namespace smtrat
 {
@@ -876,6 +877,935 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::usedBlandsRule(){
+            return !(mPivotingSteps < mMaxPivotsWithoutBlandsRule);
+        }
+
+        template<class Settings, typename T1, typename T2>
+        std::vector<T2> Tableau<Settings,T1,T2>::getInfeasibilityRow(){
+            std::vector<T1> result;
+
+            for( Variable<T1, T2>* nonbasicVar : mColumns ){
+                T2 runningSum = 0;
+                Iterator columnIter = Iterator( nonbasicVar->startEntry(), mpEntries ); // startEntry points to last row -> has to iterate upwards
+
+                if(nonbasicVar->size() == 0){
+                    result.push_back(T1 (0.0));
+                    continue;
+                }
+                while(true){
+                    const Variable<T1, T2>& basicVar = *(*columnIter).rowVar();
+                    assert( (*columnIter).rowVar() != NULL );
+                    T2 factor = 1;
+                    if(Settings::omit_division){
+                        factor = basicVar.factor();
+                    }
+                    // check direction: 
+                    if(basicVar.supremum() < basicVar.assignment()){
+                        runningSum +=  (*columnIter).rContent()/factor;
+                    }
+                    if(basicVar.infimum() > basicVar.assignment()){
+                       runningSum -=  (*columnIter).rContent()/factor;
+                    }
+                    if( columnIter.vEnd( false ) )
+                        break;
+                    else
+                        columnIter.vMove( false );
+                }
+                result.push_back(runningSum);
+            }
+            return result;
+        }
+
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::setInfeasibilityRow(){
+            mInfeasibilityRow = getInfeasibilityRow();
+        }
+
+        /**
+         * Compute the sum of violations over all variables.
+         */
+        template<class Settings, typename T1, typename T2>
+        Value<T1> Tableau<Settings,T1,T2>::violationSum(){
+            Value<T1> sum (0.0);
+            // sufficient to iterate over basic variables, nonbasic variables fulfill their bounds.
+            for( Variable<T1, T2>* basicVar : mRows ){
+                if(basicVar->supremum() < basicVar->assignment()){ //supremum (s1,s2) , assignment (a1,a2) -> s1 < a1 || ( s1 == a1 && s2 < a2 )
+                    auto diff = basicVar->assignment() - basicVar->supremum().limit();
+                    sum += diff; 
+                }
+                if(basicVar->infimum() > basicVar->assignment()){
+                    auto diff = basicVar->infimum().limit() - basicVar->assignment();
+                    sum += diff;
+                }
+            }
+
+            // Repeat for columns -> needed as VioSum is also called from dVioSum, where a nonbasic viarable might be set out of bounds
+            for( Variable<T1, T2>* nonbasicVar : mColumns ){
+                if(nonbasicVar->supremum() < nonbasicVar->assignment()){ //supremum (s1,s2) , assignment (a1,a2) -> s1 < a1 || ( s1 == a1 && s2 < a2 )
+                    auto diff = nonbasicVar->assignment() - nonbasicVar->supremum().limit();
+                    sum += diff;
+                }
+                if(nonbasicVar->infimum() > nonbasicVar->assignment()){
+                    auto diff = nonbasicVar->infimum().limit() - nonbasicVar->assignment();
+                    sum += diff;
+                }
+            }
+
+            return sum;
+        }
+
+        /**
+         * Naive implementation of computing all differences in sum when updating nVar with update. Todo: more efficient implementation. 
+        */
+        template<class Settings, typename T1, typename T2>
+        Value<T1> Tableau<Settings,T1,T2>::dViolationSum(const Variable<T1, T2>* nVar, const Value<T1>& update){
+            // iterate over rows
+            assert(!nVar->isBasic()); // cant update basic variable
+
+
+            #ifdef DEBUG_SOI_SIMPLEX
+                SMTRAT_LOG_DEBUG("smtrat","Update: " << nVar->position() << " by " << update);
+                std::cout << "lower bound: " << nVar->infimum() << " assignment: " << nVar->assignment() << " upper bound: " << nVar->supremum() << '\n';
+            #endif
+            
+            #ifdef DEBUG_SOI_SIMPLEX
+            Value<T1> previousAssignment = nVar->assignment();
+            #endif 
+            Value<T1> savedSum = violationSum();
+            EntryID column_index = nVar->startEntry();
+            updateNonbasicVariable(column_index, update);
+            Value<T1> updated_dVio = violationSum() - savedSum;
+            updateNonbasicVariable(column_index, update*T1(-1));
+
+            #ifdef DEBUG_SOI_SIMPLEX
+            assert(previousAssignment == nVar->assignment()); // assert that update was reverted
+            #endif
+
+            return updated_dVio;
+        }
+
+        /**
+         * Checks if a conflicting pair exists. In a conflict is found, the cell and false is returned. If not, LAST_ENTRY_ID and true is returned.
+         */
+        template<class Settings, typename T1, typename T2> 
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::hasConflict(){
+            for( const Variable<T1, T2>* basicVar : mRows ){
+                assert( basicVar != NULL );
+                const Variable<T1,T2>& bVar = *basicVar;
+                Value<T1> thetaB = Value<T1>( 0 );
+                bool upperBoundViolated = false;
+                bool lowerBoundViolated = false;
+                if( bVar.supremum() < bVar.assignment() )
+                {
+                    thetaB = bVar.supremum().limit() - bVar.assignment();
+                    upperBoundViolated = true;
+                }
+                else if( bVar.infimum() > bVar.assignment() )
+                {
+                    thetaB = bVar.infimum().limit() - bVar.assignment();
+                    lowerBoundViolated = true;
+                }
+                if( upperBoundViolated || lowerBoundViolated )
+                {
+                    EntryID result = isSuitableConflictDetection( bVar, lowerBoundViolated );
+                    if( result == LAST_ENTRY_ID )
+                    {
+                        // Found a conflicting row.
+                        return std::pair<EntryID,bool>( bVar.startEntry(), false );
+                    }
+                }
+            }
+            // no conflict found
+            return std::pair<EntryID,bool>( LAST_ENTRY_ID, true );
+        }
+
+        /**
+         * Function to update a nonbasic variable, _pivotingElement needs to be in the column of the nonbasic variable.  
+         */
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::updateNonbasicVariable(EntryID _pivotingElement){
+            
+            Variable<T1, T2>* columnVar = (*mpEntries)[_pivotingElement].columnVar();
+            assert(!columnVar->isBasic()); // dummy check
+
+            SMTRAT_LOG_DEBUG("smtrat", "Updated from" << columnVar -> rAssignment());
+            columnVar -> rAssignment() = columnVar -> assignment() + (*mpTheta);
+            SMTRAT_LOG_DEBUG("smtrat", "To " << columnVar -> rAssignment());
+
+            assert(columnVar-> assignment() >= columnVar -> rAssignment() && columnVar-> infimum() <= columnVar -> rAssignment());
+
+            Iterator rowIter = Iterator( columnVar->startEntry(), mpEntries );
+            Variable<T1, T2>* rowVar;
+
+            while(true){
+                rowVar = (*mpEntries)[rowIter.entryID()].rowVar();
+
+                if(Settings::omit_division){
+                    rowVar -> rAssignment() += (*mpTheta) * (*rowIter).rContent()/rowVar->factor(); // update nonBasic variable
+                }
+                else{
+                    rowVar -> rAssignment() += (*mpTheta) * (*rowIter).rContent();
+                }
+                
+                if( rowIter.vEnd( false ) ) 
+                {
+                    break;
+                }
+                else{
+                    rowIter.vMove( false );
+                }
+            }
+
+            onlyUpdate = false;
+        }
+
+        /**
+         * Function to update a nonbasic variable, _pivotingElement needs to be in the column of the nonbasic variable. 
+         * Used in the dViolationSum function to update die nonbasic variable. 
+         * For this reason, the assertion checks on the variable assignments are omitted (the nonbasic variable might be pivoted into the basic).
+         */
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::updateNonbasicVariable(EntryID _pivotingElement, Value<T1>update){
+            
+            Variable<T1, T2>* columnVar = (*mpEntries)[_pivotingElement].columnVar();
+            assert(!columnVar->isBasic()); // dummy check
+
+            SMTRAT_LOG_DEBUG("smtrat", "Updated from" << columnVar -> rAssignment());
+            columnVar -> rAssignment() = columnVar -> assignment() + update;
+            SMTRAT_LOG_DEBUG("smtrat", "To " << columnVar -> rAssignment());
+
+            Iterator rowIter = Iterator( columnVar->startEntry(), mpEntries );
+            Variable<T1, T2>* rowVar;
+
+            while(true){
+                rowVar = (*mpEntries)[rowIter.entryID()].rowVar();
+
+                if(Settings::omit_division){
+                    rowVar -> rAssignment() += update * (*rowIter).rContent()/rowVar->factor(); // update nonBasic variable
+                }
+                else{
+                    rowVar -> rAssignment() += update * (*rowIter).rContent();
+                }
+                
+                if( rowIter.vEnd( false ) ) 
+                {
+                    break;
+                }
+                else{
+                    rowIter.vMove( false );
+                }
+            }
+        }
+
+        template<class Settings, typename T1, typename T2>
+        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
+            const Variable<T1,T2>& nVar = *mColumns[i];
+
+            // consider possible leaving variables
+            
+            // consider all basic vars with coeff != 0
+            Iterator rowIter = Iterator( nVar.startEntry(), mpEntries );
+            EntryID row_id;
+            Value<T1> cell_content;
+            // first element is head of row 
+            while(true){
+                row_id = rowIter.entryID();
+                cell_content = (*mpEntries)[row_id].content();
+                if(cell_content != T1(0.0)){
+                    Variable<T1,T2>& bVar = *(*mpEntries)[rowIter.entryID()].rowVar(); 
+                    Value<T1> assignment = bVar.assignment();
+                    
+                    // computed delta values 
+                    if(! bVar.supremum().isInfinite()){
+                        T1 content = 1/(*mpEntries)[row_id].content();
+                        if(Settings::omit_division){
+                            content = 1/( (*mpEntries)[row_id].content() / bVar.factor() );
+                        }
+                        
+                        Value<T1> needed_update(bVar.supremum().limit());
+                        needed_update = (needed_update - assignment) * content;
+
+                        leaving_candidates.emplace_back(needed_update, &bVar);// lower bound
+                    }
+
+                    if(! bVar.infimum().isInfinite()){
+                        T1 content = 1/(*mpEntries)[row_id].content();
+                        
+                        if(Settings::omit_division){
+                            content = 1/( (*mpEntries)[row_id].content() / bVar.factor() );
+                        }
+                        
+                        Value<T1> needed_update(bVar.infimum().limit());
+                        needed_update = (needed_update - assignment) * content;
+
+                        leaving_candidates.emplace_back(needed_update, &bVar);// upper bound
+                    }                
+
+                }
+                // moves upwards
+                if( rowIter.vEnd( false ) )
+                {
+                    break;
+                }
+                else{
+                    rowIter.vMove( false );
+                }
+            }
+
+            // nonbasic variable is flexible 
+            // to test whether nonbasic variable should only be updated
+            // Transfer from paper: variable shall just be updated to its bounds, the coefficient is one (no pivot step)
+
+            // computed delta values 
+            Value<T1> assignment = nVar.assignment();
+            if(! nVar.supremum().isInfinite()){
+                Value<T1> needed_update(nVar.supremum().limit());
+                needed_update = needed_update - assignment; // content of cell is 1 -> only update operation
+                // one could skip those 0 updates, BUT for the faster computation of dVio they are important: Influence the slope of the error function
+                leaving_candidates.emplace_back(needed_update, mColumns[i]);// lower bound
+            }
+            
+            if(! nVar.infimum().isInfinite()){
+                Value<T1> needed_update(nVar.infimum().limit());
+                needed_update = needed_update - assignment; // content of cell is 1 -> only update operation
+                leaving_candidates.emplace_back(needed_update, mColumns[i]);// upper bound
+            }
+        }
+
+        template<class Settings, typename T1, typename T2>
+        std::map<Value<T1>, Value<T1>> Tableau<Settings,T1,T2>::compute_dVio(const std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& candidates, const Variable<T1,T2>& nVar, bool positive){
+            std::map<Value<T1>, Value<T1>> dVio_map; // add 0 dVIo by default for 0 update
+            dVio_map.insert(std::pair<Value<T1>, Value<T1>> (Value<T1>(0), Value<T1>(0)));
+            Value<T1> delta_old = Value<T1>(0.0);
+            Value<T1> delta_new;
+            Value<T1> new_dVio;
+            T1 beta = mInfeasibilityRow[nVar.position()];
+            int candidate_index = 0;
+            if(candidates.empty())
+                return dVio_map;
+            // beta_0 has to be adjusted for the delta_0 values
+            while(candidates[candidate_index].first == Value<T1>(0.0) && candidate_index < candidates.size()){
+                int state;
+                Variable<T1,T2>& updated_var = *(candidates[candidate_index].second);
+                Iterator rowIter = Iterator( nVar.startEntry(), mpEntries );
+                bool was_set = false;
+                T1 coeff;
+                // if updated var is not basic, then the current factor is 1
+                if(updated_var.isBasic()){
+                    while(true){
+                        Variable<T1,T2>& bVar = *((*rowIter).rowVar());
+                        if(bVar.expression() == updated_var.expression()){                                    
+                            coeff = (*mpEntries)[rowIter.entryID()].content();
+                            if(Settings::omit_division){
+                                coeff /= bVar.factor();
+                            }
+                            was_set = true;
+                            break;
+                        }
+
+                        // moves upwards
+                        if( rowIter.vEnd( false ) )
+                        {
+                            break;
+                        }
+                        else{
+                            rowIter.vMove( false );
+                        }
+                    }
+                    assert(was_set);
+                }
+                else{
+                    coeff = 1;
+                }
+
+                if( (!positive && coeff > 0) || (positive && coeff < 0) ){
+                    // decreasing part
+                    if(!updated_var.infimum().isInfinite() && !updated_var.supremum().isInfinite() &&  updated_var.infimum().limit() == updated_var.supremum().limit()){
+                        state = -1; // if one bound is set to directly the upper or lower bound -> the both bounds concide
+                        candidate_index++;
+                    }
+                    else{
+                        if(!updated_var.supremum().isInfinite() && updated_var.supremum() == updated_var.assignment()){
+                            // enters bounds
+                            state = 0;
+                        }
+                        else if(!updated_var.infimum().isInfinite() && updated_var.infimum() == updated_var.assignment()){
+                            // leaves bounds
+                            state = -1;
+                        }
+                        else{
+                            assert(false);
+                        }
+                    }
+                }
+                else{
+                    // increasing part
+                    if(!updated_var.infimum().isInfinite() && !updated_var.supremum().isInfinite() && updated_var.infimum().limit() == updated_var.supremum().limit()){
+                        state = 1;
+                        candidate_index++;
+                    }
+                    else{
+                        if(!updated_var.supremum().isInfinite() && updated_var.supremum() == updated_var.assignment()){
+                            // leaves bounds
+                            state = 1;
+                        }
+                        else if(!updated_var.infimum().isInfinite() && updated_var.infimum() == updated_var.assignment()){
+                            // enters bounds
+                            state = 0;
+                        }
+                        else{
+                            assert(false);
+                        }
+                    }
+                }
+                beta += state * coeff;
+                candidate_index++;
+            }
+            while(candidate_index < candidates.size()){
+                delta_new = candidates[candidate_index].first;
+                // though the paper assumes strict greater, the equal values are handles in the do-while part
+                SMTRAT_LOG_DEBUG("smtrat", "beta" << beta << " delta_new " << delta_new << " delta_old " << delta_old);
+                new_dVio += (delta_new - delta_old) * beta;
+                T1 summed_slopes;
+
+                do{ // handle the k_i elements (elements with same coefficient)
+                    Variable<T1,T2>& updated_var = *(candidates[candidate_index].second);
+                    T1 coeff;
+                    // if updated var is not basic, then the current factor is 1
+                    if(updated_var.isBasic()){ 
+                        // find the coefficient between the nonbasic var and the var to be updated
+                        Iterator rowIter = Iterator( nVar.startEntry(), mpEntries );
+                        bool was_set = false;
+                        while(true){
+                            Variable<T1,T2>& bVar = *((*rowIter).rowVar());
+                            if(bVar.expression() == updated_var.expression()){                                    
+                                coeff = (*mpEntries)[rowIter.entryID()].content();
+                                if(Settings::omit_division){
+                                    coeff /= bVar.factor();
+                                }
+                                was_set = true;
+                                break;
+                            }
+
+                            // moves upwards
+                            if( rowIter.vEnd( false ) )
+                            {
+                                break;
+                            }
+                            else{
+                                rowIter.vMove( false );
+                            }
+                        }
+                        assert(was_set);
+                    }
+                    else{
+                        coeff = 1; // var is non-basic
+                    }
+                    int state;
+                    if(delta_new * coeff < 0){ // next to state the difference between the new direction and the previous direction is denoted for better understanding
+                        // decreasing direction
+                        if(!updated_var.infimum().isInfinite() && !updated_var.supremum().isInfinite() &&  updated_var.infimum().limit() == updated_var.supremum().limit()){
+                            state = -1; // if one bound is set to directly the upper or lower bound -> the both bounds concide
+                            candidate_index++;
+                        }
+                        if(!updated_var.supremum().isInfinite() && delta_new * coeff + updated_var.assignment() == updated_var.supremum().limit()){
+                            state = -1; // to supremum -> 0 - 1
+                        }
+                        else if(!updated_var.infimum().isInfinite() && delta_new * coeff + updated_var.assignment() == updated_var.infimum().limit()){
+                            state = -1; // to infimum -> -1 - 0
+                        }
+                        else{
+                            assert(false);
+                        }
+                    }
+                    else if(delta_new * coeff > 0){ 
+                        // increasing direction
+                        if(!updated_var.infimum().isInfinite() && !updated_var.supremum().isInfinite() && updated_var.infimum().limit() == updated_var.supremum().limit()){
+                            state = 1;
+                            candidate_index++;
+                        }
+                        if(!updated_var.supremum().isInfinite() && delta_new * coeff + updated_var.assignment() == updated_var.supremum().limit()){
+                            state = 1; // to supremum -> 1 - 0
+                        }
+                        else if(!updated_var.infimum().isInfinite() && delta_new * coeff + updated_var.assignment() == updated_var.infimum().limit()){
+                            state = 1; // to infimum -> 0 - (-1)
+                        }
+                        else{
+                            assert(false); // not allowed to occur
+                        }
+                    }
+                    else{
+                        assert(false); // not allowed to occur
+                    }
+                    SMTRAT_LOG_DEBUG("smtrat", "added " << state * coeff << " to " << summed_slopes);
+
+                    summed_slopes += state * coeff;
+                    SMTRAT_LOG_DEBUG("smtrat", "summed_slopes" << summed_slopes);
+
+                    candidate_index++;
+                    if(candidate_index >= candidates.size()){
+                        break;
+                    }
+                    
+                }
+                while(candidates[candidate_index].first == delta_new);
+                delta_old = delta_new;
+                beta += summed_slopes;
+                assert(dVio_map.find(delta_new) == dVio_map.end());
+                dVio_map.insert(std::pair<Value<T1>, Value<T1>> (delta_new, new_dVio));
+            }
+            return dVio_map;
+        }
+
+        template<class Settings, typename T1, typename T2>
+        std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElementInfeasibilities(){ // entry: position in tableau to be pivoted, bool: true if NO conflict found
+            if( Settings::use_pivoting_strategy && mPivotingSteps < mMaxPivotsWithoutBlandsRule )
+            {
+                #ifdef DEBUG_SOI_SIMPLEX
+                assert(mInfeasibilityRow == getInfeasibilityRow());
+                #endif
+                // leaving rule: minimizes d_Violation
+                std::vector< std::tuple <int, Value<T1>, Variable<T1,T2>* > > update_candidates;
+
+                // check conflicts
+                std::pair<EntryID,bool> conflictPair = hasConflict();
+                if(!conflictPair.second){
+                    SMTRAT_LOG_DEBUG("smtrat", "conflict found");
+                    // reset values for assertions
+                    mOldVioSum = Value<T1>(-1);
+                    mOld_dVioSum = Value<T1>(1);
+                    // conflict found: return conflict pair
+                    return conflictPair;
+                }
+
+                SMTRAT_LOG_DEBUG("smtrat", "Vio sum" << violationSum() << ", oldVioSum " << mOldVioSum << ", old_dVio" << mOld_dVioSum);
+
+                #ifdef DEBUG_SOI_SIMPLEX
+                mOldVioSum = violationSum();
+                #endif 
+
+                #ifdef DEBUG_SOI_SIMPLEX
+                std::stringstream s;
+                    for(auto e : mInfeasibilityRow){
+                        s << e << " ";
+                    }
+                SMTRAT_LOG_DEBUG("smtrat",  "mInfeasibilityRow row: "<< s.str());
+                s.clear();
+                s.str(""); //clear content
+                #endif
+
+                // for all flexible variables 
+                SMTRAT_LOG_DEBUG("smtrat", "Iteration over "<<mColumns.size()<<" columns");
+
+                bool found_improvement;
+                for(int column = 0; column < mColumns.size(); column++){
+                    assert( mColumns[column] != NULL ); // non_basic variable must exist 
+
+                    const Variable<T1,T2>& nVar = *mColumns[column];
+                    assert(!nVar.isBasic());
+                    // check if nonbasis variable is flexible
+                    bool isFlexible = false;
+                    if(mInfeasibilityRow[column] > 0 && nVar.infimum() < nVar.assignment()){
+                        isFlexible = true;
+                    }
+                    else if (mInfeasibilityRow[column] < 0 && nVar.supremum() > nVar.assignment()){
+                        isFlexible = true;
+                    }
+                    if(! isFlexible){
+                        // nonbasic variable is not flexible
+                        SMTRAT_LOG_DEBUG("smtrat", "column " << nVar.position() << " is not flexible");
+                        continue;
+                    }
+
+                    SMTRAT_LOG_DEBUG("smtrat", "column "<< nVar.position() <<" is flexible");
+
+                    std::vector< std::pair< Value<T1>, Variable<T1,T2>* > > leaving_candidates; 
+                    computeLeavingCandidates(column, leaving_candidates); // function to generate leaving candidates for the given column
+                    std::stable_sort( leaving_candidates.begin(), leaving_candidates.end() );// sorts by default by first element; IMPORTANT to use stable_sort -> neighbouring elements need to remain neighboured
+                    std::vector< std::pair< Value<T1>, Variable<T1,T2>* > > positive_candidates;
+                    std::vector< std::pair< Value<T1>, Variable<T1,T2>* > > negative_candidates;
+                    
+                    for(auto element : leaving_candidates){
+                        if(element.first > Value<T1>(0.0)){
+                            positive_candidates.push_back(element);
+                        }
+                        else if(element.first < Value<T1>(0.0)){
+                            negative_candidates.push_back(element);
+                        }
+                        else{
+                            positive_candidates.push_back(element);
+                            negative_candidates.push_back(element);
+                        }
+                    }
+                    std::reverse(negative_candidates.begin(),negative_candidates.end());
+
+                    #ifdef DEBUG_SOI_SIMPLEX
+                    SMTRAT_LOG_DEBUG("smtrat", "Positive Candidates:");
+                    for(auto h : positive_candidates){
+                        SMTRAT_LOG_DEBUG("smtrat", h.first << " " << h.second->expression());
+                    }
+                    SMTRAT_LOG_DEBUG("smtrat", "Negative Candidates:");
+                    for(auto h : negative_candidates){
+                        SMTRAT_LOG_DEBUG("smtrat", h.first << " " << h.second->expression());
+                    }
+                    #endif
+
+                    std::map<Value<T1>, Value<T1>> leaving_dVio;
+                    // according to the paper is suffices to consider only one direction
+                    if(mInfeasibilityRow[column] < 0){
+                        leaving_dVio = compute_dVio(positive_candidates, nVar, true);           
+                    }
+                    else{
+                        leaving_dVio = compute_dVio(negative_candidates, nVar, false);
+                    }
+
+                    #ifdef DEBUG_SOI_SIMPLEX
+                    std::stringstream s;
+                    for(auto e : leaving_candidates){
+                        s << "(" << e.first << "," << e.second->position() << ")";
+                    }
+                    SMTRAT_LOG_DEBUG("smtrat",  "Candidates for "<< nVar.position() << "(" << nVar.expression() << ")" << ": "<<s.str());
+                    s.clear();
+                    s.str("");
+                    #endif
+
+                    if(leaving_candidates.empty())
+                        continue;
+
+                    // select (delta, k) pair to minimize dVio (line 22)
+                    assert(!leaving_candidates.empty()); 
+
+                    std::pair<Value<T1>,Variable<T1,T2>*>* min_pair;
+                    Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
+                    SMTRAT_LOG_DEBUG("smtrat",  "Size leaving candidates is "<< leaving_candidates.size());
+                    for(int candidate_index = 0; candidate_index < leaving_candidates.size(); candidate_index++){ // can be optimized to only consider positive/negative values
+                        std::pair< Value<T1>, Variable<T1,T2>* >* candidate = &leaving_candidates[candidate_index]; // rename for easier access
+                        if(leaving_dVio.find(candidate->first) == leaving_dVio.end()){
+                            // doesnt need to be considered
+                            continue;
+                        }
+                        assert(leaving_dVio.find(candidate->first) != leaving_dVio.end());
+                        Value<T1> helper_diff = leaving_dVio[candidate->first];;
+                        SMTRAT_LOG_DEBUG("smtrat", "candidate is" << "(" << candidate->first << "," << candidate->second->position() << ")" << " id " << candidate->second->getId());
+
+                        // tie-breaking in the size of variable numbers
+                        if( helper_diff < min_val){
+                            min_val = helper_diff;
+                            min_pair = candidate;
+                            SMTRAT_LOG_DEBUG("smtrat","Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
+                        }
+                        else if(helper_diff == min_val && candidate->first.abs() > min_pair->first.abs() ){
+                            min_val = helper_diff;
+                            min_pair = candidate;
+                            SMTRAT_LOG_DEBUG("smtrat", "Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
+                        }
+                        else if((helper_diff == min_val && candidate->first.abs() == min_pair->first.abs() && min_pair->second->getId() > candidate->second->getId() )){
+                            SMTRAT_LOG_DEBUG("smtrat", "ID: " << min_pair->second->getId() << " " << candidate->second->getId() );
+                            min_val = helper_diff;
+                            min_pair = candidate;
+                            SMTRAT_LOG_DEBUG("smtrat", "Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
+                        }
+
+                        SMTRAT_LOG_DEBUG("smtrat",  "dVio updated" << min_val);
+                    }
+
+                    SMTRAT_LOG_DEBUG("smtrat",  "min dVio " << min_val);
+                    assert(min_pair != NULL);
+                    update_candidates.emplace_back(column, min_pair->first, min_pair->second);
+                    SMTRAT_LOG_DEBUG("smtrat",  "Added touple ("<< column <<"," << min_pair->first <<"," << min_pair->second->position() << ") to update_candidates");
+
+                    if(min_val < Value<T1>(0.0)){
+                        SMTRAT_LOG_DEBUG("smtrat","Found Element with dVio < 0, continue now");
+                        found_improvement = true;
+                    }
+
+                    // Abort computation of candidates after finding one with progress (atleast mFullCandidateSearch times all canidates are evaluated, then the amount increases depending on state of computation)
+                    if(mPivotingSteps > mFullCandidateSearch && column > mPivotingSteps/5.0){
+                        if(found_improvement){
+                            break;
+                        }
+                    }
+                }
+
+                if(update_candidates.empty()){// represents case that there is no flexible variable
+                    mOldVioSum = Value<T1>(-1);
+                    mOld_dVioSum = Value<T1>(1);
+                    std::vector<Variable<T1, T2>*> errorVars;
+                    for(int row = 0; row < mRows.size(); row++){
+                        assert( mRows[row] != NULL ); // non_basic variable must exist
+
+                        const Variable<T1,T2>& bVar = *mRows[row];
+                        assert(bVar.isBasic());
+
+                        if(bVar.infimum() > bVar.assignment() || bVar.supremum() < bVar.assignment()){
+                            errorVars.push_back(mRows[row]);
+                        }
+                    }
+                    
+                    if(errorVars.empty()){
+                        // sat case
+                        SMTRAT_LOG_DEBUG("smtrat", "In SAT case.");
+                        return std::pair<EntryID,bool>( lra::LAST_ENTRY_ID, true );
+                    }
+                    else{
+                        // Multiline conflict detection case (conflict!= 0 and E != 0 )
+                        SMTRAT_LOG_DEBUG("smtrat", "Multiline conflict case, size: " << errorVars.size());
+                        //assert(false);
+                        return std::pair<EntryID,bool>( lra::LAST_ENTRY_ID, false );
+                    }
+                }
+
+                assert(!update_candidates.empty());
+
+                //entering rule: select minimizing update rule
+                // line 24 in algorithm
+                #ifdef DEBUG_SOI_SIMPLEX
+                SMTRAT_LOG_DEBUG("smtrat", "Size update_candidates: " << update_candidates.size());
+                for(auto e : update_candidates){
+                    s << "(" << std::get<0>(e) << "," << std::get<1>(e) << "," << std::get<2>(e)->position() << ")";
+                    s << ":" << mInfeasibilityRow[std::get<0>(e)] << ",";
+                }
+                SMTRAT_LOG_DEBUG("smtrat",  "Update candidates: " <<s.str());
+                s.clear();
+                s.str("");
+                #endif
+
+                std::tuple <int, Value<T1>, Variable<T1,T2>* >* min_pair;
+                Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
+                for(int candidate_index = 0; candidate_index < update_candidates.size(); candidate_index++){ 
+                    std::tuple<int, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
+                    // compute sign(dVio)* abs(mInfeasibilityRow[v_j])
+                    const Variable<T1,T2>& nVar = *mColumns[std::get<0>(*candidate)];
+                    Value<T1> vio_sum = dViolationSum(&nVar, std::get<1>(*candidate));
+                    Value<T1> weighted_dVio;
+                    if(vio_sum == Value<T1>(0)){
+                        weighted_dVio = Value<T1>(0);
+                    }
+                    else{
+                        assert(vio_sum != Value<T1>(0));
+                        weighted_dVio = vio_sum < Value<T1>(0) ? Value<T1>(-1) : Value<T1>(1); // non-zero part of sign function
+                    }
+                    weighted_dVio *= abs(mInfeasibilityRow[std::get<0>(*candidate)]);
+                    if(min_val > weighted_dVio) {
+                        min_val = weighted_dVio;
+                        min_pair = candidate;
+                    }
+                    else if(min_val == weighted_dVio && std::get<1>(*candidate) < std::get<1>(*min_pair)){ // tie-break in second argument
+                        min_val = weighted_dVio;
+                        min_pair = candidate;
+                    }
+                }
+                assert(min_pair != NULL);
+                assert(min_val <= Value<T1>(0));
+
+                // set update value
+                *mpTheta = std::get<1>(*min_pair);
+
+                // min_pair: pivot 1 with 3 (1 is nB and 3 is basic)
+                // if 3 is nB, must be same as 1
+                // 1 == 3 -> only update operation (no pivot)
+                EntryID returnPosition = LAST_ENTRY_ID;
+
+                SMTRAT_LOG_DEBUG("smtrat", "Weighted min dVio" << min_val);
+                mOld_dVioSum = dViolationSum(mColumns[std::get<0>(*min_pair)], std::get<1>(*min_pair));
+
+                if(!std::get<2>(*min_pair)->isBasic()){
+                    // Only update case
+                    assert(std::get<2>(*min_pair)->position() == std::get<0>(*min_pair));
+                    SMTRAT_LOG_DEBUG("smtrat", "Apply update without pivot on var " << std::get<0>(*min_pair) << " by "<< std::get<1>(*min_pair));
+                    
+                    Iterator columnIter = Iterator( mColumns[std::get<0>(*min_pair)]->startEntry(), mpEntries );
+                    returnPosition = columnIter.entryID();
+                    onlyUpdate = true;
+                }
+                else{
+                    SMTRAT_LOG_DEBUG("smtrat", "Pivoting pairs of " << *mpTheta << " found, at candidate ("<< std::get<0>(*min_pair) << "," << std::get<1>(*min_pair)<< "," << std::get<2>(*min_pair)->position() << ")");
+                
+                    assert(std::get<2>(*min_pair)->isBasic());
+                    // apply update with min_pair
+                    // compute pivot entry (via nonbasic variable)
+                    Iterator columnIter = Iterator( mColumns[std::get<0>(*min_pair)]->startEntry(), mpEntries );
+                    while(true){
+                        const Variable<T1, T2>* basicVar = (*columnIter).rowVar();
+                        SMTRAT_LOG_DEBUG("smtrat", "Basic var" << basicVar->position() <<  "min pair" << std::get<2>(*min_pair)->position());
+                        if(basicVar == std::get<2>(*min_pair)){
+                            returnPosition = columnIter.entryID();
+                            break;
+                        }
+                        if( columnIter.vEnd( false ) ) {
+                            assert(false); // make sure that pivot element is always found
+                        }
+                        else{
+                            columnIter.vMove( false );
+                        }
+                    }
+                    assert(returnPosition != LAST_ENTRY_ID);
+                }
+
+                // entry: position in tableau to be pivoted, bool: true if NO conflict found
+                return std::pair<EntryID,bool>( returnPosition, true );
+            }
+            else // Bland's rule
+            {
+                const Variable<T1, T2>* bestBasicVar = nullptr;
+                std::pair<EntryID,bool> bestResult( LAST_ENTRY_ID, true );
+                for( const Variable<T1, T2>* basicVar : mRows )
+                {
+                    assert( basicVar != NULL );
+                    const Variable<T1,T2>& bVar = *basicVar;
+                    Value<T1> thetaB = Value<T1>( 0 );
+                    bool upperBoundViolated = false;
+                    bool lowerBoundViolated = false;
+                    if( bVar.supremum() < bVar.assignment() )
+                    {
+                        thetaB = bVar.supremum().limit() - bVar.assignment();
+                        upperBoundViolated = true;
+                    }
+                    else if( bVar.infimum() > bVar.assignment() )
+                    {
+                        thetaB = bVar.infimum().limit() - bVar.assignment();
+                        lowerBoundViolated = true;
+                    }
+                    if( upperBoundViolated || lowerBoundViolated )
+                    {
+                        EntryID result = isSuitable( bVar, lowerBoundViolated );
+                        if( result == LAST_ENTRY_ID )
+                        {
+                            // Found a conflicting row.
+                            return std::pair<EntryID,bool>( bVar.startEntry(), false );
+                        }
+                        else
+                        {
+                            if( bestBasicVar == nullptr || *basicVar < *bestBasicVar )
+                            {
+                                bestBasicVar = basicVar;
+                                // Found a pivoting element
+                                *mpTheta = thetaB;
+                                if( Settings::omit_division )
+                                    (*mpTheta) *= bVar.factor();
+                                (*mpTheta) /= (*mpEntries)[result].content();
+                                bestResult = std::pair<EntryID,bool>( result, true );
+                            }
+                        }
+                    }
+                }
+                return bestResult;
+            }
+            SMTRAT_LOG_FATAL("smtrat", "No return statement called!");
+            assert(false);
+        }
+
+        template<class Settings, typename T1, typename T2>
+        bool Tableau<Settings,T1,T2>::hasMultilineConflict(){
+            for(int column = 0; column < mColumns.size(); column++){
+                assert( mColumns[column] != NULL ); // non_basic variable must exist 
+
+                const Variable<T1,T2>& nVar = *mColumns[column];
+                assert(!nVar.isBasic());
+                // check if nonbasis variable is flexible
+                bool isFlexible = false;
+                if(mInfeasibilityRow[column] > 0 && nVar.infimum() < nVar.assignment()){
+                    isFlexible = true;
+                }
+                else if (mInfeasibilityRow[column] < 0 && nVar.supremum() > nVar.assignment()){
+                    isFlexible = true;
+                }
+
+                if(isFlexible){
+                    return false;
+                }
+            }
+
+            // rebuild set of error variables
+            std::vector<Variable<T1, T2>*> errorVars;
+            for(int row = 0; row < mRows.size(); row++){
+                assert( mRows[row] != NULL ); // non_basic variable must exist 
+
+                const Variable<T1,T2>& bVar = *mRows[row];
+                assert(bVar.isBasic());
+
+                if(bVar.infimum() > bVar.assignment() || bVar.supremum() < bVar.assignment()){
+                    errorVars.push_back(mRows[row]);
+                }
+            }
+
+            if(errorVars.empty()){
+                return false;
+            }
+
+            return true;
+        }
+        
+        /**
+         * 
+         * @return In SUM-Simplex a conflict is possibly created with multiple rows. 
+         * This function returns the single conflict of possible and otherwise construct the multiline conflict.
+         */
+        template<class Settings, typename T1, typename T2>
+        std::vector< const Bound<T1, T2>* > Tableau<Settings,T1,T2>::getMultilineConflict(){
+            SMTRAT_LOG_DEBUG("smtrat",  "Searching one line conflict");
+            std::pair<EntryID,bool> conflictPair = hasConflict();
+            if(!conflictPair.second){
+                SMTRAT_LOG_DEBUG("smtrat", "Simple conflict found in multiline conflict search.");
+                return getConflict(conflictPair.first);
+            }
+            SMTRAT_LOG_DEBUG("smtrat", "Constructing multiline conflict.");
+            std::vector< const Bound<T1, T2>* > conflict;
+
+            std::vector<T2> infeas_row = getInfeasibilityRow();
+            //add lower or upper bounds depending on infeasibility row
+            for(int nonbasic_index = 0; nonbasic_index<infeas_row.size(); nonbasic_index++){
+                if(infeas_row[nonbasic_index] > 0 && !mColumns[nonbasic_index]->pInfimum()->isInfinite()){
+                    conflict.push_back(mColumns[nonbasic_index]->pInfimum());
+                }
+                if(infeas_row[nonbasic_index] < 0 && !mColumns[nonbasic_index]->pSupremum()->isInfinite()){
+                    conflict.push_back(mColumns[nonbasic_index]->pSupremum());
+                }
+            }
+
+            // rebuild set of error variables
+            std::vector<Variable<T1, T2>*> errorVars;
+            for(int row = 0; row < mRows.size(); row++){
+                assert( mRows[row] != NULL ); // non_basic variable must exist 
+
+                const Variable<T1,T2>& bVar = *mRows[row];
+                assert(bVar.isBasic());
+
+                if(bVar.infimum() > bVar.assignment() || bVar.supremum() < bVar.assignment()){
+                    errorVars.push_back(mRows[row]);
+                }
+            }
+
+            for(Variable<T1, T2>* v: errorVars){
+                int direction;
+                if(v->supremum() < v->assignment()){
+                    direction = 1;
+                }
+                else if(v->infimum() > v->assignment()){
+                        direction = -1;
+                    }
+                    else{
+                        direction = 0;
+                    }
+                assert(direction != 0);
+
+                if( v->infimum() > v->assignment()){
+                    // lower bound is broken
+                    conflict.push_back(v->pInfimum());
+                }
+                else{
+                    conflict.push_back(v->pSupremum());
+                }
+            }
+            SMTRAT_LOG_DEBUG("smtrat", "Found multiline-conflict:");
+            for(auto c: conflict){
+                SMTRAT_LOG_DEBUG("smtrat", *c->origins().begin());
+            }
+            return conflict;
+        }
+
+        template<class Settings, typename T1, typename T2>
         std::pair<EntryID,bool> Tableau<Settings,T1,T2>::nextPivotingElement()
         {
             //  Dynamic strategy for a fixed number of steps
@@ -1431,6 +2361,10 @@ namespace smtrat
             return std::make_pair( smallestPivotingElement, smallestPivotingElement != LAST_ENTRY_ID );
         }
 
+        /**
+         * Checks if the basic variable is pivotable.
+         * Returns LAST_ENTRY_ID as EntryID if a conflict was found. In case of no conflict, the according to the strategy best pivot nonbasic variable is returned. 
+         */
         template<class Settings, typename T1, typename T2>
         EntryID Tableau<Settings,T1,T2>::isSuitable( const Variable<T1, T2>& _basicVar, bool _forIncreasingAssignment ) const
         {
@@ -1449,6 +2383,42 @@ namespace smtrat
                 {
                     if( nonBasicVar.infimum() < nonBasicVar.assignment() && betterEntry( rowIter.entryID(), bestEntry ) )
                         bestEntry = rowIter.entryID(); // Nonbasic variable suitable
+                }
+                if( rowIter.hEnd( false ) )
+                    break;
+                else
+                    rowIter.hMove( false );
+            }
+            return bestEntry;
+        }
+
+        /**
+         * Checks if the basic variable is pivotable.
+         * Returns LAST_ENTRY_ID as EntryID if a conflict was found. In difference to isSuitable returns this function an EntryID as soon as the EntryID bestEntry
+         * is unequal to LAST_ENTRY_ID. The assertions are still checked.  
+         */
+        template<class Settings, typename T1, typename T2>
+        EntryID Tableau<Settings,T1,T2>::isSuitableConflictDetection( const Variable<T1, T2>& _basicVar, bool _forIncreasingAssignment ) const
+        {
+            EntryID bestEntry = LAST_ENTRY_ID;
+            // Check all entries in the row / nonbasic variables
+            Iterator rowIter = Iterator( _basicVar.startEntry(), mpEntries );
+            while( true )
+            {
+                const Variable<T1, T2>& nonBasicVar = *(*rowIter).columnVar();
+                if( (_forIncreasingAssignment || entryIsNegative( *rowIter )) && (!_forIncreasingAssignment || entryIsPositive( *rowIter )) )
+                {
+                    if( nonBasicVar.supremum() > nonBasicVar.assignment() && betterEntry( rowIter.entryID(), bestEntry ) ){
+                        assert( rowIter.entryID() != LAST_ENTRY_ID );
+                        return rowIter.entryID(); // Nonbasic variable suitable
+                    }
+                }
+                else
+                {
+                    if( nonBasicVar.infimum() < nonBasicVar.assignment() && betterEntry( rowIter.entryID(), bestEntry ) ){
+                        assert( rowIter.entryID() != LAST_ENTRY_ID );
+                        return rowIter.entryID(); // Nonbasic variable suitable
+                    }
                 }
                 if( rowIter.hEnd( false ) )
                     break;
@@ -1543,6 +2513,8 @@ namespace smtrat
                     if( (!Settings::omit_division || ((*rowIter).content() < 0 && basicVar.factor() > 0) || ((*rowIter).content() > 0 && basicVar.factor() < 0))
                      && (Settings::omit_division || (*rowIter).content() < 0) )
                     {
+                        // In case of omit_division = true: check on same bound type
+                        // if division not omitted: factor set to 1, just check on negative content
                         assert( !((*rowIter).columnVar()->supremum() > (*rowIter).columnVar()->assignment()) );
                         conflict.push_back( (*rowIter).columnVar()->pSupremum() );
                     }
@@ -1743,6 +2715,13 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         Variable<T1, T2>* Tableau<Settings,T1,T2>::pivot( EntryID _pivotingElement, bool _optimizing )
         {
+            if(onlyUpdate){
+                ++mPivotingSteps; // alsoc count here to accredit only update operations as pivoting steps
+                SMTRAT_LOG_DEBUG("smtrat", "Apply only update on "<<_pivotingElement << " by " << *mpTheta);
+                updateNonbasicVariable(_pivotingElement);
+                return (*mpEntries)[_pivotingElement].columnVar(); // Not sure what return value is used for (in current implementation it is never used)
+            }
+            SMTRAT_LOG_DEBUG("smtrat", "Pivot and update on "<< _pivotingElement << " by " << *mpTheta);
             // Find all columns having "a nonzero entry in the pivoting row"**, update this entry and store it.
             // First the column with ** left to the pivoting column until the leftmost column with **.
             std::vector<Iterator> pivotingRowLeftSide;
@@ -1788,7 +2767,9 @@ namespace smtrat
             mColumns[columnVar->position()] = rowVar;
             // Update the assignments of the pivoting variables
             if( Settings::omit_division )
+            {
                 rowVar->rAssignment() += ((*mpTheta) * pivotContent) / rowVar->factor();
+            }
             else
                 rowVar->rAssignment() += (*mpTheta) * pivotContent;
             assert( rowVar->supremum() > rowVar->assignment() || rowVar->supremum() == rowVar->assignment() );

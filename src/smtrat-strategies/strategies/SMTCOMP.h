@@ -13,6 +13,7 @@
 #include <smtrat-modules/NewCADModule/NewCADModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/STropModule/STropModule.h>
 
 namespace smtrat
 {
@@ -86,11 +87,14 @@ namespace smtrat
                 {
                     addBackend<SATModule<SATSettings1>>(
                     {
-                        addBackend<ICPModule<ICPSettings1>>(
+                        addBackend<STropModule<STropSettings1>>(
                         {
-                            addBackend<VSModule<VSSettings234>>(
+                            addBackend<ICPModule<ICPSettings1>>(
                             {
-                                addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                addBackend<VSModule<VSSettings234>>(
+                                {
+                                    addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                })
                             })
                         })
                     })

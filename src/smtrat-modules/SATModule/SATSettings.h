@@ -112,7 +112,7 @@ namespace smtrat
 
 		static constexpr MCSAT_BOOLEAN_DOMAIN_PROPAGATION mcsat_boolean_domain_propagation = MCSAT_BOOLEAN_DOMAIN_PROPAGATION::FULL;
 
-    static constexpr bool mcsat_backjump_decide = true;
+        static constexpr bool mcsat_backjump_decide = true;
 
 		static constexpr bool use_new_var_scheduler = true;
 		using VarScheduler = VarSchedulerSMTTheoryGuided<TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST>;
@@ -135,16 +135,17 @@ namespace smtrat
         // static const bool check_active_literal_occurrences = true;
         // needed for variable scheduling to work:
         static constexpr TheoryGuidedDecisionHeuristicLevel theory_conflict_guided_decision_heuristic = TheoryGuidedDecisionHeuristicLevel::DISABLED;
-		    static constexpr bool use_new_var_scheduler = true;
+        static constexpr bool use_new_var_scheduler = true;
+        // using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedBrown>>;
         // using VarScheduler = VarSchedulerMcsatBooleanFirst<mcsat::VariableOrdering::FeatureBased>;
-        //using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedBrown>>;
-        //using VarScheduler = VarSchedulerMcsatUnivariateClausesOnly<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>,false>;
+        // using VarScheduler = VarSchedulerMcsatUnivariateClausesOnly<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBased>,false>;
         // using VarScheduler = VarSchedulerMcsatTheoryFirst<VarSchedulerMinisat>;
         // using VarScheduler = VarSchedulerMcsatUnivariateConstraintsOnly<1, mcsat::VariableOrdering::FeatureBased>;
         // using VarScheduler = VarSchedulerMcsatActivityPreferTheory<mcsat::VariableOrdering::FeatureBased>;
 
         // uniform (resp Boolean and theory vars) decision heuristic
         // Note: mcsat_backjump_decide needs to be activated, otherwise we run into termination problems!
+        static constexpr bool mcsat_backjump_decide = true;
         using VarScheduler = VarSchedulerMinisat;
         // using VarScheduler = VarSchedulerFixedRandom;
     };

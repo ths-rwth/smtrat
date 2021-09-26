@@ -97,6 +97,12 @@ namespace smtrat
                  * @return 
                  */
                 Value<T> operator *( const T& _a ) const;
+
+                /**
+                 * 
+                 * @param _value
+                 */
+                Value<T> operator *( const Value<T>& _value ) const;
                 
                 /**
                  * 
@@ -226,16 +232,33 @@ namespace smtrat
                 
                 Value<T> abs() const
                 {
-                    if( *this < T(0) )
-                        return (*this) * T( -1 );
-                    else
-                        return *this;
+                    if(this->mainPart() < 0){
+                        if(this->deltaPart() < 0 ){
+                            return Value<T>(-this->mainPart(), -this->deltaPart());
+                        }
+                        else{
+                            return Value<T>(-this->mainPart(), this->deltaPart());
+                        }
+                    }
+                    else{
+                        if(this->deltaPart() < 0 ){
+                            return Value<T>(this->mainPart(), -this->deltaPart());
+                        }
+                        else{
+                            return Value<T>(this->mainPart(), this->deltaPart());
+                        }
+                    }
                 }
                 
                 bool isZero() const
                 {
                     return mMainPart == T(0) && mDeltaPart == T(0);
                 }
+
+                /** 
+                 * Computes the sign: 0 if main & delta part are unequal 0. Else +/- 1 determined by the sign of main part (if set) else delta part. 
+                 */
+                T sign() const;
 
                 /**
                  * 

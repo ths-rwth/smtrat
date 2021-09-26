@@ -87,6 +87,14 @@ namespace smtrat
         }
 
         template<class T>
+        Value<T> Value<T>::operator *( const Value<T>& _value ) const
+        {
+            T num1 = _value.mainPart() * mMainPart;
+            T num2 = _value.deltaPart() * mDeltaPart;
+            return Value( num1, num2 );
+        }
+
+        template<class T>
         void Value<T>::operator *=( const Value<T>& _value )
         {
             mMainPart *= _value.mainPart();
@@ -199,6 +207,22 @@ namespace smtrat
         {
             _out << "( " << mMainPart;
             _out << " + d * " << mDeltaPart << " )";
+        }
+
+        /** 
+         * Computes the sign: 0 if main & delta part are unequal 0. Else +/- 1 determined by the sign of main part (if set) else delta part. 
+         */
+        template<class T>
+        T Value<T>::sign() const{
+            if(this < 0){
+                return T(-1);
+            }
+            else if(this > 0){
+                    return T(1);
+                }
+                else{
+                    return T(0);
+                }
         }
     }    // end namspace lra
 }    // end namspace smtrat
