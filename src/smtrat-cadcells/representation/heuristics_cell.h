@@ -198,6 +198,42 @@ void compute_sector_barriers(datastructures::SampledDerivationRef<T>& der, datas
 
 template<typename T>
 void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response, bool section) {
+    // TODO if lower is done via ordering and upper detects equational constraints, then output is inconsistent!
+    // how is it done in the paper?
+
+    while(section) {
+        auto old_size = response.equational.size();
+
+        auto it = der->cell().lower();
+        while(true) {
+            for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
+                if (ir->poly == response.description.section_defining().poly) continue;
+                if (response.equational.contains(ir->poly)) continue;
+                if (der->proj().degree(ir->poly) >= der->proj().degree(response.description.section_defining().poly)) {
+                    response.equational.insert(ir->poly);
+                }
+            }
+            if (it != der->delin().roots().begin()) it--;
+            else break;
+        }
+
+        it = der->cell().upper();
+        while(it != der->delin().roots().end()) {
+            for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
+                if (ir->poly == response.description.section_defining().poly) continue;
+                if (response.equational.contains(ir->poly)) continue;
+                if (der->proj().degree(ir->poly) >= der->proj().degree(response.description.section_defining().poly)) {
+                    response.equational.insert(ir->poly);
+                }
+            }
+            it++;
+        }
+
+        if (old_size == response.equational.size()) {
+            break;
+        }
+    }
+
     if (!der->cell().lower_unbounded())  {
         boost::container::flat_set<datastructures::PolyRef> ignoring;
         auto it = der->cell().lower();
@@ -219,11 +255,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
                 if (ignoring.contains(ir.poly)) continue;
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
-                    if (section && barrier == *response.description.lower_defining()) {
-                        response.equational.insert(ir.poly);
-                    } else {
-                        response.ordering.add_below(barrier, ir);
-                    }
+                    response.ordering.add_below(barrier, ir);
                 } 
                 ignoring.insert(ir.poly);
             }
@@ -252,11 +284,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
                 if (ignoring.contains(ir.poly)) continue;
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
-                    if (section && barrier == *response.description.upper_defining()) {
-                        response.equational.insert(ir.poly);
-                    } else {
-                        response.ordering.add_above(barrier, ir);
-                    }
+                    response.ordering.add_above(barrier, ir);
                 } 
                 ignoring.insert(ir.poly);
             }
