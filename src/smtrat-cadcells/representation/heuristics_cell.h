@@ -198,9 +198,6 @@ void compute_sector_barriers(datastructures::SampledDerivationRef<T>& der, datas
 
 template<typename T>
 void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response, bool section) {
-    // TODO if lower is done via ordering and upper detects equational constraints, then output is inconsistent!
-    // how is it done in the paper?
-
     while(section) {
         auto old_size = response.equational.size();
 
