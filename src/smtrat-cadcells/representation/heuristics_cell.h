@@ -104,11 +104,12 @@ struct cell<CellHeuristic::CHAIN_EQ> {
             if (!der->cell().lower_unbounded()) {
                 boost::container::flat_set<datastructures::PolyRef> ignoring;
                 auto it = der->cell().lower();
+                auto barrier = *response.description.lower();
                 while(true) {
                     auto simplest = simplest_bound(der->proj(), it->second, ignoring);
-                    if (!simplest) {
+                    if (simplest) {
                         if (*simplest != *response.description.lower()) {
-                            response.ordering.add_below(*response.description.lower(), *simplest);
+                            response.ordering.add_below(barrier, *simplest);
                         }
                         for (const auto& ir : it->second) {
                             if (ignoring.contains(ir.poly)) continue;
@@ -117,6 +118,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                             } 
                             ignoring.insert(ir.poly);
                         }
+                        barrier = *simplest;
                     }
                     if (it != der->delin().roots().begin()) it--;
                     else break;
@@ -125,11 +127,12 @@ struct cell<CellHeuristic::CHAIN_EQ> {
             if (!der->cell().upper_unbounded()) {
                 boost::container::flat_set<datastructures::PolyRef> ignoring;
                 auto it = der->cell().upper();
+                auto barrier = *response.description.upper();
                 while(it != der->delin().roots().end()) {
                     auto simplest = simplest_bound(der->proj(), it->second, ignoring);
-                    if (!simplest) {
+                    if (simplest) {
                         if (*simplest != *response.description.upper()) {
-                            response.ordering.add_above(*response.description.upper(), *simplest);
+                            response.ordering.add_above(barrier, *simplest);
                         }
                         for (const auto& ir : it->second) {
                             if (ignoring.contains(ir.poly)) continue;
@@ -138,6 +141,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                             } 
                             ignoring.insert(ir.poly);
                         }
+                        barrier = *simplest;
                     }
                     it++;
                 }
