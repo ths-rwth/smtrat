@@ -45,7 +45,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
         }
     }
 
-    rules::cell_connected(deriv, repr.description);
+    rules::cell_connected(deriv, repr.description); // TODO not needed on the highest level!
     rules::cell_analytic_submanifold(deriv, repr.description);
     if (cell_represents) {
         rules::cell_represents(deriv, repr.description);
