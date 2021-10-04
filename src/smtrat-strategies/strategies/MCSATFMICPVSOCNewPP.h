@@ -10,9 +10,11 @@ namespace smtrat
 	class MCSATFMICPVSOCNew: public Manager
 	{
 		public:
-			MCSATFMICPVSOCNew(): Manager() { // TODO change to PP version later
+			MCSATFMICPVSOCNew(): Manager() {
 				setStrategy(
+					addBackend<FPPModule<FPPSettings1>>(
 						addBackend<SATModule<SATSettingsMCSATFMICPVSOCNew>>()
+					)
 				);
 			}
 	};
