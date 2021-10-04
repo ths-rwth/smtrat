@@ -7,10 +7,10 @@
 
 namespace smtrat
 {
-	class MCSATFMICPVSOCNew: public Manager
+	class MCSATFMICPVSOCNewPP: public Manager
 	{
 		public:
-			MCSATFMICPVSOCNew(): Manager() {
+			MCSATFMICPVSOCNewPP(): Manager() {
 				setStrategy(
 					addBackend<FPPModule<FPPSettings1>>(
 						addBackend<SATModule<SATSettingsMCSATFMICPVSOCNew>>()
