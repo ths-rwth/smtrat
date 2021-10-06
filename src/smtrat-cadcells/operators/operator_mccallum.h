@@ -12,13 +12,16 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::poly_del,properties::poly_irreducible_del>;
 };
 
 template <>
 void project_basic_properties<op::mccallum>(datastructures::BaseDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
+    }
+    for(const auto& prop : deriv.properties<properties::poly_del>()) {
+        rules::poly_del(deriv, prop.poly);
     }
 }
 
@@ -27,7 +30,36 @@ void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<Pro
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         delineation::delineate(deriv, prop);
     }
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
+        delineation::delineate(deriv, prop);
+    }
 }
+
+template <>
+void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+    auto& deriv = repr.derivation;
+
+    // TODO was bedeutet sgn inv?? doch nicht lieber: poly_delineable?
+
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
+        deriv.insert(properties::poly_pdel{ prop.poly });
+    }
+
+    for (const auto& poly : deriv.delin().nonzero()) {
+        rules::poly_irrecubile_nonzero_del(deriv, poly);
+    }
+
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
+
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
+        if (deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
+            rules::poly_irreducible_del(deriv, repr.ordering, prop.poly);
+        }
+    }
+}
+// TODO poly_irreducible_del, poly_del, poly_irrecubile_nonzero_del, root_ordering_holds
+// TODO general root ordering
+// TODO DelineationRepresentation
 
 template <>
 void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
