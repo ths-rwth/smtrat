@@ -25,4 +25,7 @@ bool project_cell_properties(datastructures::SampledDerivation<typename Properti
 template <op Op>
 void project_covering_properties(datastructures::CoveringRepresentation<typename PropertiesSet<Op>::type>& repr);
 
+template <op Op>
+void project_delineation_properties(datastructures::DelineationRepresentation<typename PropertiesSet<Op>::type>& repr);
+
 } 

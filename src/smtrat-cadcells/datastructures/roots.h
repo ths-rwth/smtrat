@@ -202,4 +202,29 @@ std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
     return os;
 }
 
+/**
+ * Describes an ordering of IndexedRoots.
+ */
+class GeneralIndexedRootOrdering {
+    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data;
+
+public:
+    /**
+     * Relations need to be added in ascending order of the first elements.
+     */
+    void add(IndexedRoot first, IndexedRoot second) {
+        assert(first.poly.level == second.poly.level);
+        assert(first != second);
+        m_data.push_back(std::make_pair(first, second));
+    }
+
+    const auto& data() const {
+        return m_data;
+    }
+};
+std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
+    os << data.data();
+    return os;
+}
+
 }

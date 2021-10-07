@@ -11,6 +11,10 @@ namespace smtrat::cadcells::representation {
         DEFAULT_COVERING
     };
 
+    enum DelineationHeuristic {
+        CHAIN
+    };
+
     template<CellHeuristic H>
     struct cell {
         template<typename T>
@@ -22,37 +26,15 @@ namespace smtrat::cadcells::representation {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders);
     };
+
+    template<DelineationHeuristic H>
+    struct delineation {
+        template<typename T>
+        static std::optional<datastructures::DelineationRepresentation<T>> compute(datastructures::DelineatedDerivationRef<T>& der);
+    };
 }
 
 #include "heuristics_cell.h"
-    
-namespace smtrat::cadcells::representation {
-    template <>
-    struct covering<CoveringHeuristic::DEFAULT_COVERING> {
-        template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
-            datastructures::CoveringRepresentation<T> result;
-            
-            std::vector<datastructures::SampledDerivationRef<T>> sorted_ders;
-            for (auto& der : ders) sorted_ders.emplace_back(der);
+#include "heuristics_covering.h"
+#include "heuristics_delineation.h"
 
-            std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::SampledDerivationRef<T>& p_cell1, const datastructures::SampledDerivationRef<T>& p_cell2) { // cell1 < cell2
-                const auto& cell1 = p_cell1->cell();
-                const auto& cell2 = p_cell2->cell();
-                return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell2, cell1));
-            });
-
-            auto iter = sorted_ders.begin();
-            while (iter != sorted_ders.end()) {
-                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(*iter);
-                if (!cell_result) return std::nullopt;
-                result.cells.emplace_back(*cell_result);
-                auto& last_cell = (*iter)->cell();
-                iter++; 
-                while (iter != sorted_ders.end() && !upper_less(last_cell, (*iter)->cell())) iter++;
-            }
-
-            return result;
-        }
-    };
-}

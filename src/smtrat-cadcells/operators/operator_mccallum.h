@@ -36,32 +36,6 @@ void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<Pro
 }
 
 template <>
-void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
-    auto& deriv = repr.derivation;
-
-    // TODO was bedeutet sgn inv?? doch nicht lieber: poly_delineable?
-
-    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
-        deriv.insert(properties::poly_pdel{ prop.poly });
-    }
-
-    for (const auto& poly : deriv.delin().nonzero()) {
-        rules::poly_irrecubile_nonzero_del(deriv, poly);
-    }
-
-    rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
-
-    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
-        if (deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
-            rules::poly_irreducible_del(deriv, repr.ordering, prop.poly);
-        }
-    }
-}
-// TODO poly_irreducible_del, poly_del, poly_irrecubile_nonzero_del, root_ordering_holds
-// TODO general root ordering
-// TODO DelineationRepresentation
-
-template <>
 void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
     auto& deriv = repr.derivation;
 
@@ -122,6 +96,27 @@ void project_covering_properties<op::mccallum>(datastructures::CoveringRepresent
     }
     auto cov = repr.get_covering();
     rules::covering_holds(repr.cells.front().derivation.underlying().delineated(), cov);
+}
+
+template <>
+void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+    auto& deriv = repr.derivation;
+
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
+        deriv.insert(properties::poly_pdel{ prop.poly });
+    }
+
+    for (const auto& poly : deriv.delin().nonzero()) {
+        rules::poly_irrecubile_nonzero_del(deriv, poly);
+    }
+
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
+
+    for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
+        if (deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
+            rules::poly_irreducible_del(deriv, repr.ordering, prop.poly);
+        }
+    }
 }
 
 }

@@ -87,4 +87,22 @@ namespace smtrat::cadcells::datastructures {
         os << data.cells;
         return os;
     }
+
+    /**
+     * Represents a delineation.
+     */
+    template<typename P>
+    struct DelineationRepresentation {
+        /// An ordering of the roots that represents the delineation.
+        GeneralIndexedRootOrdering ordering;
+        /// Derivation.
+        DelineatedDerivation<P>& derivation;
+
+        DelineationRepresentation(DelineatedDerivation<P>& deriv) : derivation(deriv) {}
+    };
+    template<typename P>
+    std::ostream& operator<<(std::ostream& os, const DelineationRepresentation<P>& data) {
+        os << "(ordering: " << data.ordering << "; derivation: " << &data.derivation << ")";
+        return os;
+    }
 }
