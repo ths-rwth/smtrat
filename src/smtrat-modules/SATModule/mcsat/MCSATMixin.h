@@ -77,8 +77,8 @@ private:
 	MCSATBackend<Settings> mBackend;
 
 	struct VarMapping {
-		std::unordered_map<Minisat::Var, carl::Variable> minisatToCarl;
-    	std::unordered_map<carl::Variable, Minisat::Var> carlToMinisat;
+		std::map<Minisat::Var, carl::Variable> minisatToCarl;
+    	std::map<carl::Variable, Minisat::Var> carlToMinisat;
 
 		void insert(const carl::Variable& carlVar, Minisat::Var minisatVar) {
 			minisatToCarl.emplace(minisatVar, carlVar);
