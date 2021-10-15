@@ -4,7 +4,7 @@
 namespace smtrat::mcsat::onecell {
 
 boost::optional<mcsat::Explanation>
-Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason) const {
+Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
     cadcells::Assignment ass;
     for (const auto& [key, value] : trail.model()) {
         if (value.isRAN()) {

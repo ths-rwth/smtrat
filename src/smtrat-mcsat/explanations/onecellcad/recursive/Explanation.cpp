@@ -18,7 +18,7 @@ inline void setNullification(bool n){
 template<class Setting1, class Setting2>
 boost::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
-						const FormulasT& trailLiterals) const {
+						const FormulasT& trailLiterals, bool) const {
 	
 	bool covering_at_first_level=false;
 	bool strict_unassigned_handling=false;

@@ -12,7 +12,7 @@ template<class Setting1, class Setting2>
 boost::optional<mcsat::Explanation>
 Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
-						const FormulasT& trailLiterals) const {
+						const FormulasT& trailLiterals, bool) const {
 
 	assert(trail.model().size() == trail.assignedVariables().size());
 

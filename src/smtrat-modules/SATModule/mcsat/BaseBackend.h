@@ -84,13 +84,13 @@ public:
 		return res;
 	}
 
-	Explanation explain(carl::Variable var, const FormulasT& reason) const {
+	Explanation explain(carl::Variable var, const FormulasT& reason, bool force_use_core = false) const {
 		if (getModel().empty()) {
 			FormulasT expl;
 			for (const auto& r: reason) expl.emplace_back(r.negated());
 			return FormulaT(carl::FormulaType::OR, std::move(expl));
 		}
-		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason);
+		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
 			return *res;
@@ -102,7 +102,7 @@ public:
 
 	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) {
 		pushConstraint(f);
-		auto res = explain(var, reason);
+		auto res = explain(var, reason, true);
 		popConstraint(f);
 		return res;
 	}

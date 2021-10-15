@@ -31,7 +31,7 @@ struct Explanation {
 	 * x7..x10 if they are irrelevant and "vanish" under the assignment in @p data,
 	 * e.g. x1*x7+x6=0 (for x1 := 0) or x6*(x7^2+1)>0 (equiv to x6>0, since x7^2+1 > 0)
 	 */
-	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const;
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const;
 };
 
 } // namespace nlsat
