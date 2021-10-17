@@ -6,7 +6,7 @@ namespace mcsat {
 namespace fm {
 
 template<class Settings>
-boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
+boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const {
     #ifdef SMTRAT_DEVOPTION_Statistics
     mStatistics.explanationCalled();
     #endif
@@ -16,7 +16,7 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
 
     std::vector<ConstraintT> bounds;
 
-    if (!Settings::use_all_constraints) {
+    if (!Settings::use_all_constraints || force_use_core) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  reason);
     
         for (const auto& b : reason) {

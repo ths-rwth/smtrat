@@ -6,7 +6,7 @@ namespace smtrat {
 namespace mcsat {
 namespace vs {
 
-boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
+boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Explain conflict " << reason);
 	#ifdef SMTRAT_DEVOPTION_Statistics
 	mStatistics.explanationCalled();

@@ -193,7 +193,7 @@ void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastruct
 
 template<typename P>
 void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription&, const datastructures::IndexedRootOrdering& ordering) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_rep(" << ordering << ", " << deriv.sample() << ")");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     for (const auto& rel : ordering.below()) {
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));

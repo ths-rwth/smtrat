@@ -14,7 +14,7 @@ struct Explanation {
 	VSStatistics& mStatistics = statistics_get<VSStatistics>("mcsat-explanation-vs");
 #endif
 
-	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const;
+	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const;
 };
 
 }
