@@ -2822,6 +2822,9 @@ namespace smtrat
                             sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
                         }
                         handleTheoryConflict(*conflict);
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mMCSATStatistics.theoryConflict();
+                        #endif
                         continue;
                     }
                 }
