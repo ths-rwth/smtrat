@@ -8,6 +8,7 @@
 #cmakedefine SMTRAT_DEVOPTION_Validation
 #cmakedefine SMTRAT_DEVOPTION_Statistics
 #cmakedefine SMTRAT_DEVOPTION_Statistics_Expensive
+#cmakedefine SMTRAT_DEVOPTION_Validation
 
 #cmakedefine SMTRAT_STRAT_Factorization
 #cmakedefine SMTRAT_STRAT_PARALLEL_MODE
