@@ -1,54 +1,61 @@
 #pragma once
 
-#include "ValidationCollector.h"
-
 #include <map>
 #include <sstream>
 #include <algorithm>
 #include <assert.h>
+
+#include "../types.h"
 
 namespace smtrat {
 namespace validation {
 
 class ValidationPoint {
 private:
-	std::string mName;
-	std::vector<std::pair<FormulaT, bool>> mFormulas;
-protected:
+	std::string m_channel;
+	std::string m_name;
+	std::vector<std::pair<FormulaT, bool>> m_formulas;
+public:
+	void set_identifier(const std::string& channel, const std::string& name) {
+		m_channel = channel;
+		m_name = name;
+	}
+	const auto& channel() const {
+		return m_channel;
+	}
+	const auto& name() const {
+		return m_name;
+	}
+	const auto identifier() const {
+		return m_channel + "." + m_name;
+	}
+	const auto& formulas() const {
+		return m_formulas;
+	}
 	std::size_t add(const FormulaT& f, bool consistent) {
-		mFormulas.emplace_back(f, consistent);
-		return mFormulas.size() - 1;
+		m_formulas.emplace_back(f, consistent);
+		return m_formulas.size() - 1;
 	}
 	std::size_t add(const FormulasT& fs, bool consistent) {
-		mFormulas.emplace_back(FormulaT(carl::FormulaType::AND, fs), consistent);
-		return mFormulas.size() - 1;
+		m_formulas.emplace_back(FormulaT(carl::FormulaType::AND, fs), consistent);
+		return m_formulas.size() - 1;
 	}
 	std::size_t add(const FormulaSetT& fss, bool consistent) {
 		FormulasT fs(fss.begin(), fss.end());
-		mFormulas.emplace_back(FormulaT(carl::FormulaType::AND, std::move(fs)), consistent);
-		return mFormulas.size() - 1;
+		m_formulas.emplace_back(FormulaT(carl::FormulaType::AND, std::move(fs)), consistent);
+		return m_formulas.size() - 1;
 	}
 	std::size_t add(const ConstraintT& c, bool consistent) {
-		mFormulas.emplace_back(FormulaT(c), consistent);
-		return mFormulas.size() - 1;
+		m_formulas.emplace_back(FormulaT(c), consistent);
+		return m_formulas.size() - 1;
 	}
 	std::size_t add(const ConstraintsT& cs, bool consistent) {
 		FormulasT fs;
 		for (const auto& c: cs) {
-			fs.emplace_back(cs);
+			fs.emplace_back(c);
 		}
-		mFormulas.emplace_back(FormulaT(carl::FormulaType::AND, std::move(fs)), consistent);
-		return mFormulas.size() - 1;
-	}
-public:
-	void set_name(const std::string& name) {
-		mName = name;
-	}
-	const auto& name() const {
-		return mName;
-	}
-	const auto& formulas() const {
-		return mFormulas;
+		m_formulas.emplace_back(FormulaT(carl::FormulaType::AND, std::move(fs)), consistent);
+		return m_formulas.size() - 1;
 	}
 };
 

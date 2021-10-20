@@ -1,6 +1,8 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
+#include <boost/optional/optional.hpp>
 
 namespace smtrat {
 namespace mcsat {
@@ -123,62 +125,19 @@ class ClauseChain {
          * Performs resolution on the chain. Uses the last clause for resolution.
          * @return A single clause conflicting under the current assignment.
          */
-        FormulaT resolve() const {
-            FormulasT result;
-            std::unordered_set<FormulaT> toProcess;
+        FormulaT resolve() const;
 
-            // initialize with conflicting clause
-            assert(mClauseChain.back().isConflicting());
-            if (mClauseChain.back().clause().isNary()) {
-                for (const auto& lit : mClauseChain.back().clause()) {
-                    if (isTseitinVar(lit)) {
-                        toProcess.insert(lit);
-                    } else {
-                        result.push_back(lit);
-                    }
-                }
-            } else {
-                if (isTseitinVar(mClauseChain.back().clause())) {
-                    toProcess.insert(mClauseChain.back().clause());
-                } else {
-                    result.push_back(mClauseChain.back().clause());
-                }
-            }
-            
+        /**
+         * Transforms the clause chain into a formula (containing Tseitin variables).
+         */
+        FormulaT to_formula() const;
 
-            // resolve using propagations
-            for (auto iter = mClauseChain.rbegin()+1; iter != mClauseChain.rend(); iter++) {
-                if (iter->isPropagating()) {
-                    // check if any tseitin variable can be resolved using this clause
-                    if (toProcess.find(iter->impliedTseitinLiteral().negated()) == toProcess.end()) {
-                        continue;
-                    }
-
-                    // remove the processed tseitin variable
-                    toProcess.erase(iter->impliedTseitinLiteral().negated());
-
-                    // add literals of clauses to respective sets
-                    if (iter->clause().isNary()) {
-                        for (const auto& lit : iter->clause().subformulas()) {
-                            if (lit != iter->impliedTseitinLiteral()) {
-                                if (isTseitinVar(lit)) {
-                                    toProcess.insert(lit);
-                                } else {
-                                    result.push_back(lit);
-                                }
-                            }
-                        }
-                    }
-                    
-                    if (toProcess.empty()) {
-                        break;
-                    }
-                }
-            }
-            assert(toProcess.empty());
-
-            return FormulaT(carl::FormulaType::OR, std::move(result));
-        }
+        /**
+         * Transforms a given Boolean conjunction over AND and OR to CNF via Tseitin-Transformation
+         * so that, if the input formula is conflicting under the current assignment, after all clauses
+         * in "implications" have been propagated in the given order, the returned formula evaluates to false.
+         */
+        static ClauseChain from_formula(const FormulaT& f, const Model& model, bool with_equivalence);
 };
 
 inline std::ostream& operator<< (std::ostream& stream, const ClauseChain::Link& link) {

@@ -3104,9 +3104,6 @@ namespace smtrat
 
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Conflict clause " << _confl);
-        #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-        if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
-        #endif
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
@@ -4045,11 +4042,7 @@ NextClause:
                     if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
-                        #ifdef SMTRAT_DEVOPTION_Validation
-                        if (Settings().validation.log_lemmata) {
-                            addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
-                        }
-                        #endif
+                        SMTRAT_VALIDATION_ADD("smtrat.modules.sat.lemma",(*backend)->moduleName() + "_lemma",FormulaT( carl::FormulaType::NOT, lem.mLemma ), false);
                         int numOfLearnts = mLemmas.size();
                         /*{
                             std::lock_guard<std::mutex> lock( Module::mOldSplittingVarMutex );
@@ -4084,11 +4077,7 @@ NextClause:
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
                 assert( !infsubset->empty() );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                if (Settings().validation.log_infeasible_subsets) {
-                    addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
-                }
-                #endif
+                SMTRAT_VALIDATION_ADD("smtrat.modules.sat.infeasible_subset",(*backend)->moduleName() + "_infeasible_subset",*infsubset, false);
                 // Add the according literals to the conflict clause.
                 vec<Lit> explanation;
                 bool containsUpperBoundOnMinimal = false;

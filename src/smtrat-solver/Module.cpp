@@ -10,7 +10,6 @@
  */
 #include "Module.h"
 
-#include <carl-io/SMTLIBStream.h>
 #include <smtrat-solver/Manager.h>
 
 #include <boost/range/adaptor/reversed.hpp>
@@ -29,8 +28,6 @@ using namespace carl;
 namespace smtrat
 {
     
-    std::vector<std::string> Module::mAssumptionToCheck;
-    std::set<std::string> Module::mVariablesInAssumptionToCheck;
     std::size_t Module::mNumOfBranchVarsToStore = 5;
 #ifdef __VS
     std::vector<Branching> Module::mLastBranches = std::vector<Branching>( mNumOfBranchVarsToStore, Branching(Poly::PolyType(), 0) );
@@ -116,14 +113,11 @@ namespace smtrat
 //        assert(result == UNKNOWN || result == UNSAT || result == SAT);
 		SMTRAT_LOG_DEBUG("smtrat.module", "Status: " << result);
         assert( result != UNSAT || hasValidInfeasibleSubset() );
-        #ifdef SMTRAT_DEVOPTION_Validation
-        if (Settings().validation.log_theory_calls) {
-            if( result != UNKNOWN && !mpReceivedFormula->empty() )
-            {
-                addAssumptionToCheck( *mpReceivedFormula, result, moduleName() );
-            }
+        if( result != UNKNOWN && !mpReceivedFormula->empty() )
+        {
+            SMTRAT_VALIDATION_ADD("smtrat.module.theory_call",moduleName(),(FormulaT)*mpReceivedFormula,result);
         }
-        #endif
+        
 		receivedFormulaChecked();
         mStatistics.stop_check();
         return foundAnswer( result );
@@ -237,10 +231,6 @@ namespace smtrat
         {
             addReceivedSubformulaToPassedFormula( subformula++ );
         }
-        #ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-        addAssumptionToCheck( *mpReceivedFormula, true, moduleName( type() ) );
-        return SAT;
-        #else
         // Run the backends on the passed formula and return its answer.
         Answer a = runBackends();
         if( a == UNSAT )
@@ -248,7 +238,6 @@ namespace smtrat
             getInfeasibleSubsets();
         }
         return a;
-        #endif
     }
     
     void Module::init()
@@ -735,9 +724,7 @@ namespace smtrat
         {
             assert( !infSubSet->empty() );
             #ifdef SMTRAT_DEVOPTION_Validation
-            if (Settings().validation.log_infeasible_subsets) {
-                addAssumptionToCheck( *infSubSet, false, _backend.moduleName() + "_infeasible_subset" );
-            }
+            SMTRAT_VALIDATION_ADD("smtrat.module.infeasible_subsets",moduleName()+ "_infeasible_subset",*infSubSet,false);
             #endif
             result.emplace_back();
             for( const auto& cons : *infSubSet )
@@ -950,13 +937,11 @@ namespace smtrat
         {
             (*module)->collectTheoryPropagations();
             #ifdef SMTRAT_DEVOPTION_Validation
-            if (Settings().validation.log_lemmata) {
                 for( const auto& tp : (*module)->mTheoryPropagations )
                 {
                     FormulaT theoryPropagation( FormulaType::IMPLIES, FormulaT( FormulaType::AND, tp.mPremise ), tp.mConclusion );
-                    addAssumptionToCheck( FormulaT( FormulaType::NOT, theoryPropagation ), false, (*module)->moduleName() + "_theory_propagation" );
+                    SMTRAT_VALIDATION_ADD("smtrat.module.theory_propagation",(*module)->moduleName() + "_theory_propagation",FormulaT( FormulaType::NOT, theoryPropagation ),false);
                 }
-            }
             #endif
             std::move( (*module)->mTheoryPropagations.begin(), (*module)->mTheoryPropagations.end(), std::back_inserter( mTheoryPropagations ) );
             (*module)->mTheoryPropagations.clear();
@@ -986,10 +971,10 @@ namespace smtrat
         }
         else
         {
-            if(! _formula.getType() == carl::FormulaType::AND ){
+            if(_formula.getType() != carl::FormulaType::AND ){
                 SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
             }
-            assert( _formula.getType() == carl::FormulaType::AND );
+            assert( _formula.getType() != carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
@@ -1006,126 +991,16 @@ namespace smtrat
         }
         else
         {
-            if(! _formula.getType() == carl::FormulaType::AND ){
+            if(_formula.getType() != carl::FormulaType::AND ){
                 SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
             }
-            assert( _formula.getType() == carl::FormulaType::AND );
+            assert( _formula.getType() != carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
                 _origins.insert( subformula );
             }
         }
-    }
-    
-    void Module::addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const std::string& _label )
-    {
-        std::stringstream assumption;
-        assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption << "(declare-fun " << _label << " () Bool)\n";
-        assumption << _formula;
-        assumption << "(assert " << _label << ")\n";
-        assumption << "(get-assertions)\n";
-        assumption << "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption.str() );
-        mVariablesInAssumptionToCheck.insert( _label );
-    }
-    
-    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, bool _consistent, const std::string& _label )
-    {
-        std::stringstream assumption;
-        assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption << "(declare-fun " << _label << " () Bool)\n";
-        assumption << ((FormulaT) _subformulas);
-        assumption << "(assert " << _label << ")\n";
-        assumption << "(get-assertions)\n";
-        assumption << "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption.str() );
-        mVariablesInAssumptionToCheck.insert( _label );
-    }
-	
-    void Module::addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label )
-    {
-        std::stringstream assumption;
-        assumption << "(set-info :status " << _status << ")\n";
-        assumption << "(declare-fun " << _label << " () Bool)\n";
-        assumption << ((FormulaT) _subformulas);
-        assumption << "(assert " << _label << ")\n";
-        assumption << "(get-assertions)\n";
-        assumption << "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption.str() );
-        mVariablesInAssumptionToCheck.insert( _label );
-    }
-
-    void Module::addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const std::string& _label )
-    {
-        std::stringstream assumption;
-        assumption << ( _consistent ? "(set-info :status sat)\n" : "(set-info :status unsat)\n");
-        assumption << "(declare-fun " << _label << " () Bool)\n";
-        assumption << FormulaT(carl::FormulaType::AND, _formulas);
-        assumption << "(assert " << _label << ")\n";
-        assumption << "(get-assertions)\n";
-        assumption << "(check-sat)\n";
-        mAssumptionToCheck.push_back( assumption.str() );
-        mVariablesInAssumptionToCheck.insert( _label );
-    }
-
-    void Module::addAssumptionToCheck( const FormulaSetT& _formulas, bool _consistent, const std::string& _label )
-    {
-        FormulasT assumption;
-        for( auto& f : _formulas )
-            assumption.emplace_back( f );
-        addAssumptionToCheck( assumption, _consistent, _label );
-    }
-
-	void Module::addAssumptionToCheck(const ConstraintsT& _constraints, bool _consistent, const std::string& _label) {
-		carl::SMTLIBStream sls;
-		sls.setInfo("status", (_consistent ? "sat" : "unsat"));
-		carl::carlVariables vars;
-		for(const auto& c : _constraints) {
-			c.gatherVariables(vars);
-		}
-		sls << "(declare-fun " << _label << " () " << "Bool" << ")\n";
-		sls.declare(vars);
-		sls << "(assert (and" << std::endl;
-		for (const auto& c: _constraints) {
-			sls << '\t' << c << std::endl;
-		}
-		sls << "))" << std::endl;
-		sls.getAssertions();
-		sls.checkSat();
-		mAssumptionToCheck.push_back(sls.str());
-		mVariablesInAssumptionToCheck.insert( _label );
-	}
-
-    void Module::storeAssumptionsToCheck( const Manager& 
-                                          #ifdef SMTRAT_DEVOPTION_Validation
-                                          _manager
-                                          #endif
-                                        )
-    {
-        #ifdef SMTRAT_DEVOPTION_Validation
-        if( !Module::mAssumptionToCheck.empty() )
-        {
-            ofstream smtlibFile;
-            smtlibFile.open(Settings().validation.log_filename);
-            for( const auto& assum : Module::mAssumptionToCheck )
-            { 
-                // For each assumption add a new solver-call by resetting the search state.
-                #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-                smtlibFile << "\n(reset)\n";
-                #endif
-                smtlibFile << "(set-logic " << _manager.logic() << ")\n";
-                #ifndef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-                smtlibFile << "(set-option :interactive-mode true)\n";
-                #endif
-                smtlibFile << "(set-info :smt-lib-version 2.0)\n";
-                smtlibFile << assum;
-            }
-            smtlibFile << "(exit)";
-            smtlibFile.close();
-        }
-        #endif
     }
     
     bool Module::hasValidInfeasibleSubset() const

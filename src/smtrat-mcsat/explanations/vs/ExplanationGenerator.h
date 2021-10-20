@@ -145,90 +145,13 @@ private:
 		return FormulaT(carl::FormulaType::OR, expl);
     }
 
-	/**
-	 * Transforms a given Boolean conjunction over AND and OR to CNF via Tseitin-Transformation
-	 * so that, if the input formula is conflicting under the current assignment, after all clauses
-	 * in "implications" have been propagated in the given order, the returned formula evaluates to false.
-	 */
-	FormulaT _transformToImplicationChain(const FormulaT& formula, ClauseChain& chain, bool withEquivalences) const /*__attribute__((noinline))*/ {
-		switch(formula.getType()) {
-			case carl::FormulaType::TRUE:
-			case carl::FormulaType::FALSE:
-			case carl::FormulaType::CONSTRAINT:
-			case carl::FormulaType::VARCOMPARE:
-			case carl::FormulaType::VARASSIGN:
-			{
-				return formula;
-			}
-			break;
-
-			case carl::FormulaType::OR:
-			{
-				FormulasT newFormula;
-				for (const auto& sub : formula.subformulas()) {
-					FormulaT tseitinSub = _transformToImplicationChain(sub, chain, withEquivalences);
-					newFormula.push_back(std::move(tseitinSub));
-				}
-				return FormulaT(carl::FormulaType::OR, std::move(newFormula));
-			}
-			break;
-
-			case carl::FormulaType::AND:
-			{
-				FormulaT tseitinVar = chain.createTseitinVar(formula);
-				FormulasT newFormula;
-				for (const auto& sub : formula.subformulas()) {
-					FormulaT tseitinSub = _transformToImplicationChain(sub, chain, withEquivalences);
-					newFormula.push_back(std::move(tseitinSub));
-					const auto& lit = newFormula.back();
-
-					// tseitinVar -> newFormula_1 && ... && newFormula_n
-
-					carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(sub, mModel);
-					assert(eval.isBool());
-					if (!eval.asBool()) {
-						chain.appendPropagating(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})), tseitinVar.negated());
-					} else {
-						chain.appendOptional(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})));
-					}
-				}
-
-				if (withEquivalences) {
-					// newFormula_1 && ... && newFormula_n -> tseitinVar
-					FormulasT tmp;
-					std::transform (newFormula.begin(), newFormula.end(), std::back_inserter(tmp), [](const FormulaT& f) -> FormulaT { return f.negated(); } );
-					tmp.push_back(tseitinVar);
-					chain.appendOptional(FormulaT(carl::FormulaType::OR, tmp));
-				}
-				
-				return tseitinVar;
-			}
-
-			default:
-				SMTRAT_LOG_WARN("smtrat.mcsat.vs", "Invalid formula type " << formula);
-				assert(false);
-				return FormulaT();
-		}
-	}
-
-	void transformToImplicationChain(const FormulaT& formula, ClauseChain& chain, bool withEquivalences) const {
-		FormulaT conflictingClause = _transformToImplicationChain(formula, chain, withEquivalences);
-		chain.appendConflicting(std::move(conflictingClause));
-	}
-
 public:
 	boost::optional<mcsat::Explanation> getExplanation() const {
 		auto expl = eliminateVariables();
 
 		if (expl) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Obtained explanation " << (*expl));
-
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Transforming to implication chain");
-			ClauseChain chain;
-			transformToImplicationChain(*expl, chain, Settings::clauseChainWithEquivalences);
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Got clauses " << chain);
-
-			return mcsat::Explanation(std::move(chain));
+			return mcsat::Explanation(ClauseChain::from_formula(*expl, mModel, Settings::clauseChainWithEquivalences));
 		} else {
 			return boost::none;
 		}

@@ -144,19 +144,6 @@ to check them belatedly by any SMT solver which is capable to parse `.smt2` file
 the stored formula. To be able to use the following methods, the compiler flag `SMTRAT_DEVOPTION_Validation`
 must be activated, which can be easily achieved when using, e.g., `ccmake`.
 
-- `static void addAssumptionToCheck(const X&, bool, const string&)`
-	Adds the given formulas to those, which are going to be stored as an `.smt2` file, with the assumption that they are satisfiable, if the given Boolean argument is `true`, or unsatisfiable, if the given Boolean argument is `false`. The formulas can be passed as one of the following types (`X` can be one of the following data structures)
-	
-	- `Formula`: a single formula of any type
-	- `ModuleInput`: the entire received or passed formula of a module
-	- `FormulasT`: a set of formulas, which is considered to be a conjunction
-	- `ConstraintsT`: a set of constraints, which is considered to be a conjunction
-	
-	The third argument of this function is any string which helps to identify the assumption, e.g., involving the name of the module and for which purpose this assumption has been made.
-
-- `static void storeAssumptionsToCheck( const Manager& )`
-	This method stores all collected assumptions to the file `assumptions.smt2`, which can be checked later by any SMT solver which is capable to parse `.smt2` files and solve the stored formula. As this method is static, we need to pass the module's manager (`*mpManager`). Note that this method will be automatically called when destructing the given manager. Invoking this	method is only reasonable, if the solving aborts directly afterwards and, hence, omits the manager's destructor.
-
 - `void checkInfSubsetForMinimality(vector<FormulasT>::const_iterator, const string&, unsigned) const`
 	This method checks the infeasible subset at the given position for minimality, that is it checks whether there is a subset of it having maximally $n$ elements less while still being infeasible. As for some approaches it is computationally too hard to provide always a minimal infeasible subset, they rather provide infeasible subsets not necessarily being minimal. This method helps to analyze how close the size of the encountered infeasible subsets is to a minimal one.
 
