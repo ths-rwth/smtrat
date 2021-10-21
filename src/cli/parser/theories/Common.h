@@ -51,6 +51,9 @@ namespace parser {
 			if (i.indices != nullptr) indices = new std::vector<std::size_t>(*i.indices);
 			return *this;
 		}
+		Identifier(const Identifier& i) {
+			*this = i;
+		}
 		~Identifier() {
 			delete indices;
 		}
