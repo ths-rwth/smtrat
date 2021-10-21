@@ -14,7 +14,7 @@ struct Explanation {
 	ICPStatistics& mStatistics = statistics_get<ICPStatistics>("mcsat-explanation-icp");
 #endif
 
-	boost::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const;
+	std::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const;
 };
 
 }

@@ -9,7 +9,7 @@ namespace onecellcad {
 namespace levelwise {
 
 template<class Setting1, class Setting2>
-boost::optional<mcsat::Explanation>
+std::optional<mcsat::Explanation>
 Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
 						const FormulasT& trailLiterals, bool) const {
@@ -41,7 +41,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 		FormulasT explainLiterals;
 		for (const auto& trailLiteral : trailLiterals)
 			explainLiterals.emplace_back(trailLiteral.negated());
-		return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
+		return std::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 	}
 	assert(trail.assignedVariables().size() > 0);
 
@@ -93,7 +93,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
             bool failcheck = optimized_singleLevelFullProjection(currentVar, currentLvl,projectionLevels, cad);
             if(!failcheck){
                 SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
-                return boost::none;
+                return std::nullopt;
             }
         } else{
             singleLevelFullProjection(fullProjectionVarOrder, currentVar, currentLvl, projectionLevels);
@@ -109,7 +109,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 	        cad.constructCADCellEnclosingPoint(projectionLevels, Setting1::sectionHeuristic, Setting2::sectorHeuristic);
 	if (!cellOpt) {
 		SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
-		return boost::none;
+		return std::nullopt;
 	}
 
 	auto cell = *cellOpt;
@@ -157,7 +157,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 #ifdef SMTRAT_DEVOPTION_Statistics
 	getStatistic().explanationSuccess();
 #endif
-	return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
+	return std::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 }
 
 // Instantiations

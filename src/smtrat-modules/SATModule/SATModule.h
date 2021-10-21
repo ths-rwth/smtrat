@@ -992,13 +992,13 @@ namespace smtrat
                 #endif
                 SMTRAT_LOG_DEBUG("smtrat.sat", "Handling theory conflict explanation " << explanation);
 
-				if (carl::variant_is_type<FormulaT>(explanation)) {
+				if (std::holds_alternative<FormulaT>(explanation)) {
                     // add conflict clause
-                    const auto& clause = boost::get<FormulaT>(explanation);
+                    const auto& clause = std::get<FormulaT>(explanation);
                     bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
                 } else {
-                    const auto& chain = boost::get<mcsat::ClauseChain>(explanation);
+                    const auto& chain = std::get<mcsat::ClauseChain>(explanation);
                     if (Settings::mcsat_resolve_clause_chains) {
                         FormulaT clause = chain.resolve();
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);

@@ -6,7 +6,7 @@ namespace smtrat {
 namespace mcsat {
 namespace icp {
 
-boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable /*var*/, const FormulasT& reason, bool force_use_core) const {
+std::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable /*var*/, const FormulasT& reason, bool force_use_core) const {
 	#ifdef SMTRAT_DEVOPTION_Statistics
     mStatistics.explanationCalled();
     #endif
@@ -26,7 +26,7 @@ boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkee
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Got conflict " << *res);
 		return mcsat::Explanation(*res);
 	} else {
-		return boost::none;
+		return std::nullopt;
 	}
 
 }

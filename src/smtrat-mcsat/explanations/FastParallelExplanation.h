@@ -13,8 +13,8 @@ namespace smtrat {
 namespace mcsat {
 
 using namespace boost::interprocess;
-typedef allocator<boost::optional<Explanation> , managed_shared_memory::segment_manager>  ShmemAllocator;
-typedef vector<boost::optional<Explanation> , ShmemAllocator> SharedVector;
+typedef allocator<std::optional<Explanation> , managed_shared_memory::segment_manager>  ShmemAllocator;
+typedef vector<std::optional<Explanation> , ShmemAllocator> SharedVector;
 
 /**
  * This explanation executes all given explanation in parallel processes and waits for the fastest explanation,
@@ -37,7 +37,7 @@ private:
 
         if( (pids[N] = fork()) == 0){
             SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Concurrent strategy " << N+1 << " started");
-            boost::optional<Explanation> explanation = std::get<N>(mBackends)(data, var, reason);
+            std::optional<Explanation> explanation = std::get<N>(mBackends)(data, var, reason);
             SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Concurrent strategy " << N+1 << " done");
 
             managed_shared_memory segment(open_only, "SharedVector");
@@ -57,11 +57,11 @@ private:
     }
 
 public:
-    boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
+    std::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
         const std::size_t NUM_PROCESSES = std::tuple_size<B>::value;
         if(NUM_PROCESSES <= 0){
             SMTRAT_LOG_ERROR("smtrat.mcsat.explanation", "No explanation given.");
-            return boost::none;
+            return std::nullopt;
         }
 
         struct shm_remove {
@@ -76,7 +76,7 @@ public:
         SharedVector *explanations = segment.construct<SharedVector>("ExplanationsVector")(alloc_inst);
 
         for(size_t i = 0; i < NUM_PROCESSES; i++) {
-            explanations->push_back(boost::none);
+            explanations->push_back(std::nullopt);
         }
 
         // same workarround as in sequential explanation
@@ -84,7 +84,7 @@ public:
         SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Start looking for explanation");
         while (true){
             for (auto it = explanations->begin(); it != explanations->end(); it++) {
-                if((*it) != boost::none){
+                if((*it) != std::nullopt){
                     for (size_t i = 0; i < NUM_PROCESSES; i++) {
                         if(!kill(pids[i], SIGKILL)){
                             SMTRAT_LOG_ERROR("smtrat.mcsat.explanation", "Error in Kill.");

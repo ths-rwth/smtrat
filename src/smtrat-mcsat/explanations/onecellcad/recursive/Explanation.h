@@ -29,7 +29,7 @@ struct DegreeDescending {
 
 template<class Setting1, class Setting2>
 struct Explanation {
-	boost::optional<mcsat::Explanation>
+	std::optional<mcsat::Explanation>
 	operator()(const mcsat::Bookkeeping& trail, // current assignment state
 			   carl::Variable var,
 			   const FormulasT& trailLiterals, bool) const;

@@ -2818,8 +2818,8 @@ namespace smtrat
                         print(std::cout, "###");
                         #endif
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                        if (carl::variant_is_type<FormulaT>(*conflict)) {
-                            sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+                        if (std::holds_alternative<FormulaT>(*conflict)) {
+                            sat::detail::validateClause(std::get<FormulaT>(*conflict), Settings::validate_clauses);
                         }
                         handleTheoryConflict(*conflict);
                         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -2847,12 +2847,12 @@ namespace smtrat
                         assert(!mMCSAT.isAssignedTheoryVariable(tvar));
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for a theory decision, assigning...");
                         auto res = mMCSAT.makeTheoryDecision(tvar);
-                        if (carl::variant_is_type<FormulasT>(res)) {
+                        if (std::holds_alternative<FormulasT>(res)) {
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mMCSATStatistics.theoryDecision();
                             #endif
                             mCurrentAssignmentConsistent = SAT;
-                            const auto& assignments = boost::get<FormulasT>(res);
+                            const auto& assignments = std::get<FormulasT>(res);
                             assert(assignments.size() > 0);
                             static_assert(Settings::mcsat_num_insert_assignments > 0);
                             // create assignments
@@ -2878,11 +2878,11 @@ namespace smtrat
                             mCurrentAssignmentConsistent = UNSAT;
                             SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1));
                             insertVarOrder(var(next));
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << std::get<mcsat::Explanation>(res));
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mMCSATStatistics.theoryConflict();
                             #endif
-                            handleTheoryConflict(boost::get<mcsat::Explanation>(res));
+                            handleTheoryConflict(std::get<mcsat::Explanation>(res));
                             continue;
                         }
                     } else if (Settings::mc_sat && next != lit_Undef) { // Boolean decision

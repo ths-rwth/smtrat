@@ -8,7 +8,7 @@ namespace smtrat {
 namespace mcsat {
 namespace nlsat {
 
-boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const {
+std::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const {
 #ifdef SMTRAT_DEVOPTION_Statistics
 	mStatistics.explanationCalled();
 #endif

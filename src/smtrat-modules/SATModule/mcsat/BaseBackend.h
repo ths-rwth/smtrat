@@ -76,10 +76,10 @@ public:
 		pushConstraint(f);
 		auto res = findAssignment(var);
 		popConstraint(f);
-		if (carl::variant_is_type<ModelValues>(res)) {
+		if (std::holds_alternative<ModelValues>(res)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is feasible");
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
+			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << std::get<FormulasT>(res));
 		}
 		return res;
 	}
@@ -90,14 +90,14 @@ public:
 			for (const auto& r: reason) expl.emplace_back(r.negated());
 			return FormulaT(carl::FormulaType::OR, std::move(expl));
 		}
-		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
+		std::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
 			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", "explanation", validation_point);
-			if (carl::variant_is_type<FormulaT>(*res)) {
-				SMTRAT_VALIDATION_ADD_TO(validation_point, boost::get<FormulaT>(*res).negated(), false);
+			if (std::holds_alternative<FormulaT>(*res)) {
+				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<FormulaT>(*res).negated(), false);
 			} else {
-				SMTRAT_VALIDATION_ADD_TO(validation_point, boost::get<ClauseChain>(*res).to_formula().negated(), false);
+				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).to_formula().negated(), false);
 			}
 			return *res;
 		} else {

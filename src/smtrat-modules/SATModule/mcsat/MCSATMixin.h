@@ -156,8 +156,8 @@ private:
 	*/
 
 	struct VarProperties {
-		boost::optional<std::size_t> maxDegree = boost::none;
-		boost::optional<std::vector<Minisat::Var>> theoryVars = boost::none;
+		std::optional<std::size_t> maxDegree = std::nullopt;
+		std::optional<std::vector<Minisat::Var>> theoryVars = std::nullopt;
 	};
 	/// Cache for static information about variables
 	std::vector<VarProperties> mVarPropertyCache;
@@ -316,11 +316,11 @@ public:
 	/// Evaluate a literal in the theory, set lastReason to last theory decision involved.
 	Minisat::lbool evaluateLiteral(Minisat::Lit lit) const;
 	
-	std::pair<bool, boost::optional<Explanation>> isBooleanDecisionFeasible(Minisat::Lit lit, bool always_explain = false);
+	std::pair<bool, std::optional<Explanation>> isBooleanDecisionFeasible(Minisat::Lit lit, bool always_explain = false);
 
-	std::pair<boost::tribool, boost::optional<Explanation>> propagateBooleanDomain(Minisat::Lit lit);
+	std::pair<boost::tribool, std::optional<Explanation>> propagateBooleanDomain(Minisat::Lit lit);
 	
-	boost::optional<Explanation> isFeasible(const carl::Variable& var) {
+	std::optional<Explanation> isFeasible(const carl::Variable& var) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking whether trail is feasible (w.r.t. " << var << ")");
 		/*
 		AssignmentOrConflict res;
@@ -329,21 +329,21 @@ public:
 			mStatistics.modelAssignmentCacheHit();
 			#endif
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found cached assignment.");
-			return boost::none;
+			return std::nullopt;
 		} else { */
 			auto res = mBackend.findAssignment(var);
-			if (carl::variant_is_type<ModelValues>(res)) {
-				// mModelAssignmentCache.cache(boost::get<ModelValues>(res));
-				return boost::none;
+			if (std::holds_alternative<ModelValues>(res)) {
+				// mModelAssignmentCache.cache(std::get<ModelValues>(res));
+				return std::nullopt;
 			} else {
-				const auto& confl = boost::get<FormulasT>(res);
+				const auto& confl = std::get<FormulasT>(res);
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << confl);
 				return mBackend.explain(var, confl);
 			}
 		// }
 	}
 	
-	boost::variant<Explanation,FormulasT> makeTheoryDecision(const carl::Variable& var) {
+	std::variant<Explanation,FormulasT> makeTheoryDecision(const carl::Variable& var) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Obtaining assignment");
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", mBackend);
 		AssignmentOrConflict res;
@@ -357,8 +357,8 @@ public:
 			res = mModelAssignmentCache.content();
 			mModelAssignmentCache.clear();
 		}*/
-		if (carl::variant_is_type<ModelValues>(res)) {
-			const auto& values = boost::get<ModelValues>(res);
+		if (std::holds_alternative<ModelValues>(res)) {
+			const auto& values = std::get<ModelValues>(res);
 			SMTRAT_LOG_INFO("smtrat.sat.mcsat", "-> " << values);
 			FormulasT reprs;
 			for (const auto& value : values) {
@@ -367,7 +367,7 @@ public:
 			}
 			return reprs;
 		} else {
-			const auto& confl = boost::get<FormulasT>(res);
+			const auto& confl = std::get<FormulasT>(res);
 			auto explanation = mBackend.explain(var, confl);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got a conflict: " << explanation);
 			return explanation;
@@ -389,12 +389,12 @@ public:
 	 * Checks if the trail is consistent after the assignment on the current level.
 	 * The trail must be consistent on the previous level.
 	 * 
-	 * Returns boost::none if consistent and an explanation.
+	 * Returns std::nullopt if consistent and an explanation.
 	 */
-	boost::optional<Explanation> explainInconsistency() {
+	std::optional<Explanation> explainInconsistency() {
 		if (isConsistent()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is still consistent");
-			return boost::none;
+			return std::nullopt;
 		} else {
 			const auto& conflvar = mInconsistentVariables.front();
 			auto val = mGetter.getBoolVarValue(conflvar);
@@ -427,22 +427,22 @@ public:
 		carl::Variable tvar = *(vars.begin());
 
 		auto conflict = mBackend.isInfeasible(tvar, !f);
-		assert(carl::variant_is_type<FormulasT>(conflict));
-		auto& confl = boost::get<FormulasT>(conflict);
+		assert(std::holds_alternative<FormulasT>(conflict));
+		auto& confl = std::get<FormulasT>(conflict);
 		assert( std::find(confl.begin(), confl.end(), !f) != confl.end() );
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " from " << confl);
 		auto res = mBackend.explain(tvar, !f, confl);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		// f is part of the conflict, because the trail is feasible without f:
-		if (carl::variant_is_type<FormulaT>(res)) {
-			if (boost::get<FormulaT>(res).isFalse()) {
+		if (std::holds_alternative<FormulaT>(res)) {
+			if (std::get<FormulaT>(res).isFalse()) {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explanation failed.");
 			} else {
-				assert(boost::get<FormulaT>(res).contains(f));
+				assert(std::get<FormulaT>(res).contains(f));
 			}
 		}
 		else {
-			assert(boost::get<ClauseChain>(res).chain().back().clause().contains(f));
+			assert(std::get<ClauseChain>(res).chain().back().clause().contains(f));
 		}
 		return res;
 	}
@@ -577,7 +577,7 @@ public:
 		std::size_t v = varid(var);
 		assert(v < mVarPropertyCache.size());
 
-		if (mVarPropertyCache[v].maxDegree == boost::none) {
+		if (mVarPropertyCache[v].maxDegree == std::nullopt) {
 			if (!mGetter.isTheoryAbstraction(var)) {
 				mVarPropertyCache[v].maxDegree = 0;
 			} else {
@@ -600,7 +600,7 @@ public:
 			}
 		}
 
-		assert(mVarPropertyCache[v].maxDegree != boost::none);
+		assert(mVarPropertyCache[v].maxDegree != std::nullopt);
 		return *mVarPropertyCache[v].maxDegree;
 	}
 
@@ -608,7 +608,7 @@ public:
 		std::size_t v = varid(var);
 		assert(v < mVarPropertyCache.size());
 
-		if (mVarPropertyCache[v].theoryVars == boost::none) {
+		if (mVarPropertyCache[v].theoryVars == std::nullopt) {
 			if (!mGetter.isTheoryAbstraction(static_cast<int>(v))) {
 				mVarPropertyCache[v].theoryVars = std::vector<Minisat::Var>();
 			} else {
@@ -622,7 +622,7 @@ public:
 			}
 		}
 
-		assert(mVarPropertyCache[v].theoryVars != boost::none);
+		assert(mVarPropertyCache[v].theoryVars != std::nullopt);
 		return *mVarPropertyCache[v].theoryVars;
 	}
 

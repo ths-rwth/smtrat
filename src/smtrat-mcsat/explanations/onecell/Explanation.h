@@ -6,7 +6,7 @@
 namespace smtrat::mcsat::onecell {
 
 struct Explanation {
-	boost::optional<mcsat::Explanation>
+	std::optional<mcsat::Explanation>
 	operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const;
 };
 

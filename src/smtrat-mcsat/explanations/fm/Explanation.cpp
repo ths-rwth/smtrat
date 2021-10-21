@@ -6,7 +6,7 @@ namespace mcsat {
 namespace fm {
 
 template<class Settings>
-boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const {
+std::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const {
     #ifdef SMTRAT_DEVOPTION_Statistics
     mStatistics.explanationCalled();
     #endif
@@ -45,7 +45,7 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
         }
     }
 
-    boost::optional<FormulasT> res = boost::none;
+    std::optional<FormulasT> res = std::nullopt;
     // TODO add choice of Comparator to settings ...
     ConflictGenerator<DefaultComparator>(bounds, data.model(), var).generateExplanation([&](FormulasT expl) -> bool {
         res = expl;
@@ -61,7 +61,7 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
     }
     else {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Did not find a conflict");
-        return boost::none;
+        return std::nullopt;
     }
 }
 

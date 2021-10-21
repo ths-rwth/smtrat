@@ -15,7 +15,7 @@ private:
 	B mBackends;
 
 public:
-	boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const {
+	std::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool force_use_core) const {
 		auto F = [&](const auto& expl) {
 			auto r = expl(data, var, reason, force_use_core);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Got explanation " << r);

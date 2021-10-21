@@ -51,7 +51,7 @@ private:
 		return std::make_pair(firstVar, lastVar); 
 	}
 
-	boost::optional<FormulaT> eliminateVariable(const FormulaT& inputFormula, const carl::Variable& var) const {
+	std::optional<FormulaT> eliminateVariable(const FormulaT& inputFormula, const carl::Variable& var) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Eliminating variable " << var << " in " << inputFormula);
 
 		// get formula atoms
@@ -76,7 +76,7 @@ private:
 						FormulaT substitutionResult; // TODO reduceConflictConstraints?
 						if (!helper::substitute(constr, var, tc.term, substitutionResult)) {
 							SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
-							return boost::none;
+							return std::nullopt;
 						}
 
 						// check if current constraint is part of the conflict
@@ -114,18 +114,18 @@ private:
 		}
 		else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate test candidates");
-			return boost::none;
+			return std::nullopt;
 		}
 	}
 
-	boost::optional<FormulaT> eliminateVariables() const {
+	std::optional<FormulaT> eliminateVariables() const {
 		// eliminate unassigned variables
-		boost::optional<FormulaT> res = FormulaT(carl::FormulaType::AND, mConstraints);
+		std::optional<FormulaT> res = FormulaT(carl::FormulaType::AND, mConstraints);
 		auto unassignedVariables = getUnassignedVariables();
 		for (auto iter = unassignedVariables.first; iter != unassignedVariables.second; iter++) {
 			res = eliminateVariable(*res, *iter);
 			if (!res) {
-				return boost::none;
+				return std::nullopt;
 			}
 			assert(res->variables().find(*iter) == res->variables().end());
 		}
@@ -146,14 +146,14 @@ private:
     }
 
 public:
-	boost::optional<mcsat::Explanation> getExplanation() const {
+	std::optional<mcsat::Explanation> getExplanation() const {
 		auto expl = eliminateVariables();
 
 		if (expl) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Obtained explanation " << (*expl));
 			return mcsat::Explanation(ClauseChain::from_formula(*expl, mModel, Settings::clauseChainWithEquivalences));
 		} else {
-			return boost::none;
+			return std::nullopt;
 		}
 	}
 };

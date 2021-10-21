@@ -2,7 +2,6 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
-#include <boost/optional/optional.hpp>
 
 namespace smtrat {
 namespace mcsat {
@@ -19,14 +18,14 @@ class ClauseChain {
         struct Link {
             private:
                 FormulaT mClause;
-                boost::optional<FormulaT> mImpliedTseitinLiteral;
+                std::optional<FormulaT> mImpliedTseitinLiteral;
 
             public:
                 Link(const FormulaT&& clause, const FormulaT&& impliedTseitinLiteral) :
                     mClause(clause), mImpliedTseitinLiteral(impliedTseitinLiteral) {}
 
                 Link(const FormulaT&& clause) :
-                    mClause(clause), mImpliedTseitinLiteral(boost::none) {};
+                    mClause(clause), mImpliedTseitinLiteral(std::nullopt) {};
 
                 bool isPropagating() const {
                     return mImpliedTseitinLiteral && (*mImpliedTseitinLiteral).getType() != carl::FormulaType::FALSE;
