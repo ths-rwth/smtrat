@@ -16,7 +16,7 @@ To initialize a validation point with channel and name and sotre its reference t
 
 Hint: to put it in a static member, use
 
-    static SMTRAT_VALIDATION_INIT(channel, name, member);
+    SMTRAT_VALIDATION_INIT_STATIC(channel, name, member);
 
 To an initialized validation point stored in a member, we can add a formula to be assumed to be satisfiable (consistent = true) or unsatisfiable (consistent = false). Each formula added to a validation point gets a unique index (given incrementally), which is also logged in the given channel with debug level.
 

@@ -93,7 +93,7 @@ public:
 		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
-			static SMTRAT_VALIDATION_INIT("smtrat.mcsat.base", "explanation", validation_point);
+			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", "explanation", validation_point);
 			if (carl::variant_is_type<FormulaT>(*res)) {
 				SMTRAT_VALIDATION_ADD_TO(validation_point, boost::get<FormulaT>(*res).negated(), false);
 			} else {
