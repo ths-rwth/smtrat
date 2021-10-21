@@ -22,7 +22,7 @@ namespace smtrat {
     #else
         #define SMTRAT_VALIDATION_INIT(channel, name, member)
         #define SMTRAT_VALIDATION_INIT_STATIC(channel, name, member)
-        #define SMTRAT_VALIDATION_ADD(member, formula, consistent)
+        #define SMTRAT_VALIDATION_ADD_TO(member, formula, consistent)
         #define SMTRAT_VALIDATION_ADD(channel, name, formula, consistent)
     #endif
 }

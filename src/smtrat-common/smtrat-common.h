@@ -4,11 +4,7 @@
 #include "logging.h"
 #include "settings/Settings.h"
 #include "types.h"
-#ifdef SMTRAT_DEVOPTION_Validation
 #include "validation/Validation.h"
-#endif
-
-
 
 #ifdef EXTERNALIZE_CLASSES
 namespace carl {
