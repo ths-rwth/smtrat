@@ -99,7 +99,7 @@ public:
 				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<FormulaT>(*res).negated(), false);
 			} else {
 				// Tseitin: phi(x) = exists t. phi'(x,t)
-				// Checking validaity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
+				// Checking validity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
 				// this is kind of ugly, so we just resolve the clause chain
 				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).resolve().negated(), false);
 			}
