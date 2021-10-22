@@ -67,7 +67,7 @@ private:
 		return res;
 	}
 
-	double update_model(carl::Variable v, const std::vector<carl::Interval<double>>& intervals) {
+	std::pair<bool,double> update_model(carl::Variable v, const std::vector<carl::Interval<double>>& intervals) {
 		auto it = mBox.find(v);
 		assert(it != mBox.end());
 		auto& cur = it->second;
@@ -82,28 +82,28 @@ private:
 		if (old.isInfinite()) {
 			if (cur.isInfinite()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still infinite");
-				return 0.0;
+				return std::make_pair(false, 0.0);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "no longer infinite");
-				return 1.0;
+				return std::make_pair(true, 1.0);
 			}
 		} else if (old.isUnbounded()) {
 			assert(!cur.isInfinite());
 			if (cur.isUnbounded()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still unbounded");
 				if (old.lower() < cur.lower() || cur.upper() < old.upper()) {
-					return threshold_priority / 2;
+					return std::make_pair(true, threshold_priority / 2);
 				} else {
-					return 0.0;
+					return std::make_pair(false, 0.0);
 				}
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "no longer unbounded");
-				return 1.0;
+				return std::make_pair(true, 1.0);
 			}
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "reduced size");
 			auto size = old.diameter();
-			return (size - cur.diameter()) / size;
+			return std::make_pair(true, (size - cur.diameter()) / size);
 		}
 	}
 
@@ -156,7 +156,7 @@ private:
 
 	auto construct_direct_conflict(carl::Variable v) const {
 		auto constraints = mDependencies.get(v, true);
-		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing not " << constraints);
+		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing " << constraints);
 		return FormulaT(carl::FormulaType::OR, std::move(constraints));
 	}
 	auto construct_interval_conflict(carl::Variable v, const FormulaT& excluded) const {
@@ -164,6 +164,35 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Constructing " << constraints << " => " << excluded);
 		constraints.emplace_back(excluded);
 		return FormulaT(carl::FormulaType::OR, std::move(constraints));
+	}
+
+	void validate_box() const {
+		#ifdef SMTRAT_DEVOPTION_Validation
+			FormulasT s;
+			FormulasT box;
+			for (const auto& kv: mBox) {
+				if (kv.second.lowerBoundType() != carl::BoundType::INFTY || kv.second.upperBoundType() != carl::BoundType::INFTY) {
+					for (const auto& c : mDependencies.get(kv.first, false)) {
+						s.push_back(c);
+					}
+				}
+
+				if (kv.second.lowerBoundType() == carl::BoundType::WEAK) {
+					// not l <= x
+					box.emplace_back(ConstraintT(Poly(carl::rationalize<Rational>(kv.second.lower())) - kv.first, carl::Relation::GREATER));
+				} else if (kv.second.lowerBoundType() == carl::BoundType::STRICT) {
+					box.emplace_back(ConstraintT(Poly(carl::rationalize<Rational>(kv.second.lower())) - kv.first, carl::Relation::GEQ));
+				}
+				if (kv.second.upperBoundType() == carl::BoundType::WEAK) {
+					// not x <= u
+					box.emplace_back(ConstraintT(Poly(kv.first) - carl::rationalize<Rational>(kv.second.upper()), carl::Relation::GREATER));
+				} else if (kv.second.upperBoundType() == carl::BoundType::STRICT) {
+					box.emplace_back(ConstraintT(Poly(kv.first) - carl::rationalize<Rational>(kv.second.upper()), carl::Relation::GEQ));
+				}
+			}
+			s.emplace_back(carl::FormulaType::OR, std::move(box));
+			SMTRAT_VALIDATION_ADD("smtrat.mcsat.icp.boxes", "box", FormulaT(carl::FormulaType::AND, s), false);
+		#endif
 	}
 
 public:
@@ -193,28 +222,31 @@ public:
 			bool contracted = false;
 			for (auto& c: mContractors) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "***************");
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracting with " << c.contractor.var());
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracting " << mBox <<" with " << c.contractor.var() << " by " << c.contractor.origin());
 				auto res = c.contractor.contract(mBox);
 				if (res.empty()) {
 					mDependencies.add(c.contractor);
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracted to empty interval, conflict for " << c.contractor.var());
+					validate_box();
 					return construct_direct_conflict(c.contractor.var());
 				} else {
 					auto excluded = find_excluded_interval(c.contractor.var(), res);
 					if (excluded) {
 						mDependencies.add(c.contractor);
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracted to exclude current model, conflict for " << c.contractor.var());
+						validate_box();
 						return construct_interval_conflict(c.contractor.var(), *excluded);
 					} else {
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contracted " << c.contractor.var() << " to " << res);
-						double factor = update_model(c.contractor.var(), res);
-						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Contraction factor: " << factor);
-						if (factor > 0) {
+						auto update_result = update_model(c.contractor.var(), res);
+						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "Updated: " << update_result.first << "; Contraction factor: " << update_result.second);
+						if (update_result.first) {
 							contracted = true;
 							mDependencies.add(c.contractor);
 						}
-						c.priority = weight_age * c.priority + factor * (1 - c.priority);
+						c.priority = weight_age * c.priority + update_result.second * (1 - c.priority);
 						SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "New priority: " << c.priority);
+						validate_box();
 					}
 				}
 			}

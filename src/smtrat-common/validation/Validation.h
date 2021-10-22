@@ -15,7 +15,7 @@ namespace smtrat {
         #define SMTRAT_VALIDATION_ADD_TO(member, formula, consistent) { \
             if (settings_validation().channel_active(member.channel())) { \
                 auto id = member.add(formula, consistent); \
-                SMTRAT_LOG_DEBUG(member.channel(), "Assumption " << member.name() << " #" << id << ": " << formula); \
+                SMTRAT_LOG_DEBUG(member.channel(), "Assumption " << member.channel() << "." << member.name() << " #" << id << ": " << formula); \
             } \
         }
         #define SMTRAT_VALIDATION_ADD(channel, name, formula, consistent) { SMTRAT_VALIDATION_INIT_STATIC(channel,name,tmp); SMTRAT_VALIDATION_ADD_TO(tmp,formula,consistent); }
