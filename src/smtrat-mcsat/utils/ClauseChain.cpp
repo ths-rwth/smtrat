@@ -81,12 +81,28 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
 
         case carl::FormulaType::OR:
         {
-            FormulasT newFormula;
-            for (const auto& sub : formula.subformulas()) {
-                FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
-                newFormula.push_back(std::move(tseitinSub));
+            if (!withEquivalences) {
+                FormulasT newFormula;
+                for (const auto& sub : formula.subformulas()) {
+                    FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
+                    newFormula.push_back(std::move(tseitinSub));
+                }
+                return FormulaT(carl::FormulaType::OR, std::move(newFormula));
+            } else {
+                FormulaT tseitinVar = chain.createTseitinVar(formula);
+                FormulasT newFormula;
+                for (const auto& sub : formula.subformulas()) {
+                    FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
+                    newFormula.push_back(std::move(tseitinSub));
+                    const auto& lit = newFormula.back();
+                    // newFormula_1 || newFormula_2 || ... -> tseitinVar
+                    chain.appendOptional(FormulaT(carl::FormulaType::OR, FormulasT({lit.negated(), tseitinVar})));
+                }
+                newFormula.push_back(tseitinVar.negated());
+                // tseitinVar -> newFormula_1 || newFormula_2 || ...
+                chain.appendPropagating(FormulaT(carl::FormulaType::OR, std::move(newFormula)), tseitinVar.negated());
+                return tseitinVar;
             }
-            return FormulaT(carl::FormulaType::OR, std::move(newFormula));
         }
         break;
 
@@ -98,9 +114,7 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
                 FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
                 newFormula.push_back(std::move(tseitinSub));
                 const auto& lit = newFormula.back();
-
                 // tseitinVar -> newFormula_1 && ... && newFormula_n
-
                 carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(sub, model);
                 assert(eval.isBool());
                 if (!eval.asBool()) {

@@ -151,6 +151,7 @@ public:
 
 		if (expl) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Obtained explanation " << (*expl));
+			SMTRAT_VALIDATION_ADD("smtrat.mcsat.vs", "explanation", expl->negated(), false);
 			return mcsat::Explanation(ClauseChain::from_formula(*expl, mModel, Settings::clauseChainWithEquivalences));
 		} else {
 			return std::nullopt;
