@@ -68,7 +68,7 @@ class ClauseChain {
 
         /**
          * Create a Tseitin variable for the given formula.
-         * The returned variable C should be used so that C <-> formula or at least ~C -> ~formula
+         * The returned variable C should be used so that C <-> formula or at least ~formula -> ~C
          */
         FormulaT createTseitinVar(const FormulaT& formula) {
             FormulaT var = carl::FormulaPool<smtrat::Poly>::getInstance().createTseitinVar(formula);
@@ -145,7 +145,7 @@ inline std::ostream& operator<< (std::ostream& stream, const ClauseChain::Link& 
     } else if (link.isPropagating()) {
         stream << link.clause() << " -> " << link.impliedTseitinLiteral();
     } else if (link.isConflicting()) {
-        stream << link.clause() << " -> FALSE";
+        stream << link.clause() << " -> CONFLICT";
     }
 	return stream;
 }
