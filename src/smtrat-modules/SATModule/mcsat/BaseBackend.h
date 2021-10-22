@@ -95,9 +95,13 @@ public:
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
 			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", "explanation", validation_point);
 			if (std::holds_alternative<FormulaT>(*res)) {
+				// Checking validity: forall x. phi(x) = ~exists x. ~phi(x)
 				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<FormulaT>(*res).negated(), false);
 			} else {
-				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).to_formula().negated(), false);
+				// Tseitin: phi(x) = exists t. phi'(x,t)
+				// Checking validaity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
+				// this is kind of ugly, so we just resolve the clause chain
+				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).resolve().negated(), false);
 			}
 			return *res;
 		} else {
