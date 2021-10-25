@@ -160,7 +160,7 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 	return boost::indeterminate;
 }
 
-boost::optional<AssignmentOrConflict> AssignmentFinder_SMT::findAssignment(const VariablePos excludeVar) const {
+std::optional<AssignmentOrConflict> AssignmentFinder_SMT::findAssignment(const VariablePos excludeVar) const {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Look for assignment on level " << *(excludeVar-1));
 
 	// set all variables to zero that do not occur in the given constraints
@@ -198,7 +198,7 @@ boost::optional<AssignmentOrConflict> AssignmentFinder_SMT::findAssignment(const
 		Answer answer = smtModule.check(); 
 		if (answer == UNKNOWN || answer == ABORTED) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Backend could not solve instance");
-			return boost::none;
+			return std::nullopt;
 		} else if (answer == SAT) {
 			assert(smtModule.model().size() > 0);
 			model.update(smtModule.model());
@@ -225,24 +225,24 @@ boost::optional<AssignmentOrConflict> AssignmentFinder_SMT::findAssignment(const
 		}
 	}
 	assert(false);
-	return boost::none;
+	return std::nullopt;
 }
 
-boost::optional<AssignmentOrConflict> AssignmentFinder_SMT::findAssignment() const {
+std::optional<AssignmentOrConflict> AssignmentFinder_SMT::findAssignment() const {
 	for (auto curVar = mVariables.first; curVar != mVariables.second; curVar++) {
 		auto res = findAssignment(curVar+1);
 		if (res) {
 			// if a conflict has been found OR we looked at the last variable, we return the result
-			if (carl::variant_is_type<FormulasT>(*res) || curVar == mVariables.second - 1) {
+			if (std::holds_alternative<FormulasT>(*res) || curVar == mVariables.second - 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Found result");
 				return res;
 			}
 		} else {
-			return boost::none;
+			return std::nullopt;
 		}
 	}
 	assert(false);
-	return boost::none;
+	return std::nullopt;
 }
 
 }

@@ -591,10 +591,9 @@ namespace vs
         #ifdef VS_DEBUG_SUBSTITUTION
         print( _result );
         #endif
-        #ifdef SMTRAT_STRAT_Factorization
-        if( !splitProducts( _result, true ) ) 
+        bool factorization = true;
+        if( factorization && !splitProducts( _result, true ) ) 
             result = false;
-        #endif
         if( result )
         {
             splitSosDecompositions( _result );

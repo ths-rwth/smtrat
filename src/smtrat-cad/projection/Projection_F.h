@@ -81,11 +81,11 @@ namespace full {
 			std::function<bool(std::size_t,std::size_t)> mCanBePurged;
 			
 			auto& data(std::size_t level) {
-				assert(level >= 0 && level < mData.size());
+				assert(/*level >= 0 &&*/ level < mData.size());
 				return mData[level];
 			}
 			const auto& data(std::size_t level) const {
-				assert(level >= 0 && level < mData.size());
+				assert(/*level >= 0 &&*/ level < mData.size());
 				return mData[level];
 			}
 		public:
@@ -100,7 +100,7 @@ namespace full {
 				data(qe.level).entries.push_back(qe);
 			}
 			void remove(std::size_t level, std::size_t id) {
-				assert(level >= 0 && level < mData.size());
+				assert(/*level >= 0 &&*/ level < mData.size());
 				data(level).evaluated.reset(id);
 				data(level).purged.reset(id);
 				auto it = std::remove_if(data(level).entries.begin(), data(level).entries.end(), [level,id](const QueueEntry& qe){
@@ -115,7 +115,7 @@ namespace full {
 			}
 			bool isPurged(std::size_t level, std::size_t id) const {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking whether " << level << "/" << id << " is purged.");
-				assert(level >= 0 && level < mData.size());
+				assert(/*level >= 0 &&*/ level < mData.size());
 				if (data(level).bounds.test(id)) {
 					SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Do not purge as " << level << "/" << id << " is a bound.");
 					return false;
@@ -129,7 +129,7 @@ namespace full {
 			}
 			bool isPurged(const QueueEntry& qe) const {
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Is " << qe << " purged?");
-				assert(qe.level >= 0 && qe.level < mData.size());
+				assert(/*qe.level >= 0 &&*/ qe.level < mData.size());
 				if (qe.level == 0) {
 					assert(qe.first == qe.second);
 					return mCanBePurged(0, qe.first);

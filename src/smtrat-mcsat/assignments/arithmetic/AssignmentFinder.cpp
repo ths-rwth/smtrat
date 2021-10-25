@@ -6,7 +6,7 @@ namespace smtrat {
 namespace mcsat {
 namespace arithmetic {
 
-boost::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
+std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Looking for an assignment for " << var);
 	#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.called();

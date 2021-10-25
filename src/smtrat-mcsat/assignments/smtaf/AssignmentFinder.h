@@ -19,7 +19,7 @@ struct AssignmentFinder {
 	SMTAFStatistics& mStatistics = statistics_get<SMTAFStatistics>("mcsat-assignment-smt");
 #endif
 
-	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
+	std::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Looking for an assignment for " << var << " with assignAllVariables = " << Settings::assignAllVariables);
 
 		#ifdef SMTRAT_DEVOPTION_Statistics
@@ -54,7 +54,7 @@ struct AssignmentFinder {
 			boost::tribool res = af.addConstraint(c);
 			if (indeterminate(res)) {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "Constraint " << c << " cannot be handled!");
-				return boost::none;
+				return std::nullopt;
 			} else if(!res){
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "No Assignment, built conflicting core " << c << " under model " << data.model());
 				return AssignmentOrConflict(FormulasT({c}));
@@ -66,7 +66,7 @@ struct AssignmentFinder {
 			boost::tribool res = af.addMVBound(c);
 			if (indeterminate(res)) {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.smtaf", "MVBound " << c << " cannot be handled!");
-				return boost::none;
+				return std::nullopt;
 			} else if(!res){
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "No Assignment, built conflicting core " << c << " under model " << data.model());
 				return AssignmentOrConflict(FormulasT({c}));
@@ -74,7 +74,7 @@ struct AssignmentFinder {
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Calling AssignmentFinder...");
-		boost::optional<AssignmentOrConflict> result;
+		std::optional<AssignmentOrConflict> result;
 		if (Settings::advance_level_by_level) {
 			result = af.findAssignment();
 		} else {

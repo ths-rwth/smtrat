@@ -14,7 +14,7 @@ struct AssignmentFinder {
 	AAFStatistics& mStatistics = statistics_get<AAFStatistics>("mcsat-assignment-arithmetic");
 #endif
 
-	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const;
+	std::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const;
 	bool active(const mcsat::Bookkeeping& data, const FormulaT& f) const;
 };
 

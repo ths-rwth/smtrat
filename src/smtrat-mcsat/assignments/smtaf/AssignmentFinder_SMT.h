@@ -43,9 +43,9 @@ public:
 
 	boost::tribool addMVBound(const FormulaT& f);
 
-	boost::optional<AssignmentOrConflict> findAssignment(const VariablePos excludeVar) const;
+	std::optional<AssignmentOrConflict> findAssignment(const VariablePos excludeVar) const;
 
-	boost::optional<AssignmentOrConflict> findAssignment() const;
+	std::optional<AssignmentOrConflict> findAssignment() const;
 };
 
 }

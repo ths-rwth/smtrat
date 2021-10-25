@@ -146,7 +146,27 @@ bool operator<(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs)
     return lhs.poly < rhs.poly;
 }
 std::ostream& operator<<(std::ostream& os, const poly_irreducible_del& data) {
-    os << data.poly << " si and delineable";
+    os << data.poly << " delineable and irreducible";
+    return os;
+}
+
+struct cell_connected {
+    std::size_t lvl;
+    std::size_t level() const {
+        return lvl;
+    }
+    std::size_t hash_on_level() const {
+        return 0;
+    }
+};
+bool operator==(const cell_connected& lhs, const cell_connected& rhs) {
+    return lhs.lvl == rhs.lvl;
+}
+bool operator<(const cell_connected& lhs, const cell_connected& rhs) {
+    return lhs.lvl < rhs.lvl;
+}
+std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
+    os << data.lvl << " connected";
     return os;
 }
 

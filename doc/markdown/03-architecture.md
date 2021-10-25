@@ -7,7 +7,7 @@ THe different parts of SMT-RAT are split into multiple libraries (in the sense o
 - `smtrat-analyzer`: static analysis of input formulae;
 - `smtrat-cad`: back all CAD-based techniques;
 - `smtrat-common`: common definitions and includes;
-- `smtrat-max`smt}: takes care of max SMT queries;
+- `smtrat-max-smt`: takes care of max SMT queries;
 - `smtrat-mcsat`: utilities for the MCSAT-based solver;
 - `smtrat-modules`: all regular SMT-RAT modules;
 - `smtrat-optimization`: takes care of optimization queries;

@@ -2818,10 +2818,13 @@ namespace smtrat
                         print(std::cout, "###");
                         #endif
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                        if (carl::variant_is_type<FormulaT>(*conflict)) {
-                            sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+                        if (std::holds_alternative<FormulaT>(*conflict)) {
+                            sat::detail::validateClause(std::get<FormulaT>(*conflict), Settings::validate_clauses);
                         }
                         handleTheoryConflict(*conflict);
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mMCSATStatistics.theoryConflict();
+                        #endif
                         continue;
                     }
                 }
@@ -2844,12 +2847,12 @@ namespace smtrat
                         assert(!mMCSAT.isAssignedTheoryVariable(tvar));
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for a theory decision, assigning...");
                         auto res = mMCSAT.makeTheoryDecision(tvar);
-                        if (carl::variant_is_type<FormulasT>(res)) {
+                        if (std::holds_alternative<FormulasT>(res)) {
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mMCSATStatistics.theoryDecision();
                             #endif
                             mCurrentAssignmentConsistent = SAT;
-                            const auto& assignments = boost::get<FormulasT>(res);
+                            const auto& assignments = std::get<FormulasT>(res);
                             assert(assignments.size() > 0);
                             static_assert(Settings::mcsat_num_insert_assignments > 0);
                             // create assignments
@@ -2875,11 +2878,11 @@ namespace smtrat
                             mCurrentAssignmentConsistent = UNSAT;
                             SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1));
                             insertVarOrder(var(next));
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << std::get<mcsat::Explanation>(res));
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mMCSATStatistics.theoryConflict();
                             #endif
-                            handleTheoryConflict(boost::get<mcsat::Explanation>(res));
+                            handleTheoryConflict(std::get<mcsat::Explanation>(res));
                             continue;
                         }
                     } else if (Settings::mc_sat && next != lit_Undef) { // Boolean decision
@@ -3101,9 +3104,6 @@ namespace smtrat
 
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Conflict clause " << _confl);
-        #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-        if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
-        #endif
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
@@ -4042,11 +4042,7 @@ NextClause:
                     if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
-                        #ifdef SMTRAT_DEVOPTION_Validation
-                        if (Settings().validation.log_lemmata) {
-                            addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
-                        }
-                        #endif
+                        SMTRAT_VALIDATION_ADD("smtrat.modules.sat.lemma",(*backend)->moduleName() + "_lemma",FormulaT( carl::FormulaType::NOT, lem.mLemma ), false);
                         int numOfLearnts = mLemmas.size();
                         /*{
                             std::lock_guard<std::mutex> lock( Module::mOldSplittingVarMutex );
@@ -4081,11 +4077,7 @@ NextClause:
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
                 assert( !infsubset->empty() );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                if (Settings().validation.log_infeasible_subsets) {
-                    addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
-                }
-                #endif
+                SMTRAT_VALIDATION_ADD("smtrat.modules.sat.infeasible_subset",(*backend)->moduleName() + "_infeasible_subset",*infsubset, false);
                 // Add the according literals to the conflict clause.
                 vec<Lit> explanation;
                 bool containsUpperBoundOnMinimal = false;

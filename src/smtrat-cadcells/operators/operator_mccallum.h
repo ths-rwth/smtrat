@@ -12,7 +12,7 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::poly_del,properties::poly_irreducible_del>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::poly_del,properties::poly_irreducible_del>;
 };
 
 template <>
@@ -51,7 +51,9 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
         }
     }
 
-    rules::cell_connected(deriv, repr.description); // TODO not needed on the highest level!
+    if (!deriv.properties<properties::cell_connected>().empty()) {
+        rules::cell_connected(deriv, repr.description);
+    }
     rules::cell_analytic_submanifold(deriv, repr.description);
     if (cell_represents) {
         rules::cell_represents(deriv, repr.description);

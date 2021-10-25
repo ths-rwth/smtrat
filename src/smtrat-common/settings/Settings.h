@@ -32,13 +32,6 @@ struct SolverSettings {
 	bool convert_to_cnf_smtlib;
 };
 
-struct ValidationSettings {
-	bool log_lemmata;
-	bool log_theory_calls;
-	bool log_infeasible_subsets;
-	std::string log_filename;
-};
-
 struct ModuleSettings {
 	std::vector<std::string> parameters;
 
@@ -63,7 +56,6 @@ private:
 	Settings() {
 		get<CoreSettings>("core");
 		get<SolverSettings>("solver");
-		get<ValidationSettings>("validation");
 		get<ModuleSettings>("module");
 	}
 };
@@ -80,10 +72,6 @@ inline const auto& settings_core() {
 }
 inline const auto& settings_solver() {
 	static const auto& s = settings::Settings::getInstance().get<settings::SolverSettings>("solver");
-	return s;
-}
-inline const auto& settings_validation() {
-	static const auto& s = settings::Settings::getInstance().get<settings::ValidationSettings>("validation");
 	return s;
 }
 inline const auto& settings_module() {
