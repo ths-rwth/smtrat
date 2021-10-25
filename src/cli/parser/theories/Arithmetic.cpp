@@ -350,8 +350,10 @@ namespace arithmetic {
 			auto o = boost::get<Poly::ConstructorOperation>(op);
 			if (o == Poly::ConstructorOperation::DIV) {
 				if (args.size() > 1 && carl::is_zero(args[1])) {
-					SMTRAT_LOG_WARN("smtrat.smtlib", "Though SMTLIB allows for the second operator of \"" << o << "\" to be zero, we strongly discourage doing this.");
-					result = Poly();
+					errors.next() << "division by zero is not supported, although allowed by SMT-LIB.";
+					return false;
+					// SMTRAT_LOG_WARN("smtrat.smtlib", "Though SMTLIB allows for the second operator of \"" << o << "\" to be zero, we strongly discourage doing this.");
+					// result = Poly();
 				} else {
 					result = Poly(o, args);
 				}
