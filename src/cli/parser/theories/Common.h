@@ -52,7 +52,9 @@ namespace parser {
 			return *this;
 		}
 		Identifier(const Identifier& i) {
-			*this = i;
+			symbol = i.symbol;
+			indices = nullptr;
+			if (i.indices != nullptr) indices = new std::vector<std::size_t>(*i.indices);
 		}
 		~Identifier() {
 			delete indices;
