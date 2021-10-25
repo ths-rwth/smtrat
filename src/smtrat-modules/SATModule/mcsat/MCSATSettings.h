@@ -22,6 +22,11 @@ struct MCSATSettingsNL {
     //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
 	using ExplanationBackend = SequentialExplanation<nlsat::Explanation>;
 };
+struct MCSATSettingsFMICPVSNL {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
+	using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation, nlsat::Explanation>;
+};
 
 //OneCell only
 struct MCSATSettingsOC {

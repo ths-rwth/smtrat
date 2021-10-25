@@ -6,8 +6,6 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
-#include <boost/variant.hpp>
-
 #include <algorithm>
 
 namespace smtrat {

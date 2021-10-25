@@ -76,23 +76,33 @@ public:
 		pushConstraint(f);
 		auto res = findAssignment(var);
 		popConstraint(f);
-		if (carl::variant_is_type<ModelValues>(res)) {
+		if (std::holds_alternative<ModelValues>(res)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is feasible");
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << boost::get<FormulasT>(res));
+			SMTRAT_LOG_DEBUG("smtrat.mcsat", f << " is infeasible with reason " << std::get<FormulasT>(res));
 		}
 		return res;
 	}
 
-	Explanation explain(carl::Variable var, const FormulasT& reason) const {
+	Explanation explain(carl::Variable var, const FormulasT& reason, bool force_use_core = false) const {
 		if (getModel().empty()) {
 			FormulasT expl;
 			for (const auto& r: reason) expl.emplace_back(r.negated());
 			return FormulaT(carl::FormulaType::OR, std::move(expl));
 		}
-		boost::optional<Explanation> res = mExplanation(getTrail(), var, reason);
+		std::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
+			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", "explanation", validation_point);
+			if (std::holds_alternative<FormulaT>(*res)) {
+				// Checking validity: forall x. phi(x) = ~exists x. ~phi(x)
+				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<FormulaT>(*res).negated(), false);
+			} else {
+				// Tseitin: phi(x) = exists t. phi'(x,t)
+				// Checking validity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
+				// this is kind of ugly, so we just resolve the clause chain
+				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).resolve().negated(), false);
+			}
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
@@ -102,7 +112,7 @@ public:
 
 	Explanation explain(carl::Variable var, const FormulaT& f, const FormulasT& reason) {
 		pushConstraint(f);
-		auto res = explain(var, reason);
+		auto res = explain(var, reason, true);
 		popConstraint(f);
 		return res;
 	}

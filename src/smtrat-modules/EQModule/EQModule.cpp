@@ -1518,14 +1518,10 @@ namespace smtrat {
 					std::cout << '\'' << or_ << '\'' << std::endl;
 				}
 
-#ifdef SMTRAT_DEVOPTION_Statistics
+				#ifdef SMTRAT_DEVOPTION_Statistics
 				mStatistics.countDeducedUnassignedLiterals();
-#endif
-                #ifdef SMTRAT_DEVOPTION_Validation
-				if (Settings().validation.log_lemmata) {
-                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_1" );
-				}
-                #endif
+				#endif
+				SMTRAT_VALIDATION_ADD("smtrat.modules.eq","lemma_1",FormulaT( carl::FormulaType::NOT, or_ ),false);
 				addLemma(or_);
 			} else {
 				std::size_t min, max;
@@ -1571,13 +1567,10 @@ namespace smtrat {
 						std::cout << '\'' << or_ << '\'' << std::endl;
 					}
 
-#ifdef SMTRAT_DEVOPTION_Statistics
+					#ifdef SMTRAT_DEVOPTION_Statistics
 					mStatistics.countDeducedUnassignedLiterals();
-#endif
-					#ifdef SMTRAT_DEVOPTION_Validation
-                    if (Settings().validation.log_lemmata)
-                        addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_2" );
-                    #endif
+					#endif
+					SMTRAT_VALIDATION_ADD("smtrat.modules.eq","lemma_2",FormulaT( carl::FormulaType::NOT, or_ ),false);
                     addLemma(or_);
 				} else {
 					++entry;
@@ -1626,10 +1619,7 @@ namespace smtrat {
 							if(innerformulas.size() > 1) {
 								innerformulas.insert(rhs);
 								FormulaT or_(carl::OR, std::move(innerformulas));
-								#ifdef SMTRAT_DEVOPTION_Validation
-                                if (Settings().validation.log_lemmata)
-                                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_3" );
-                                #endif
+								SMTRAT_VALIDATION_ADD("smtrat.modules.eq","lemma_3",FormulaT( carl::FormulaType::NOT, or_ ),false);
                                 addLemma(or_);
 
 								if(Settings::printFormulas) {
@@ -1642,10 +1632,7 @@ namespace smtrat {
 
 				outerformulas.insert(FormulaT(i->first, j->first, false));
 				FormulaT or_(carl::OR, std::move(outerformulas));
-                #ifdef SMTRAT_DEVOPTION_Validation
-                if (Settings().validation.log_lemmata)
-                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, or_ ), false, moduleName() + "_lemma_4" );
-                #endif
+				SMTRAT_VALIDATION_ADD("smtrat.modules.eq","lemma_4",FormulaT( carl::FormulaType::NOT, or_ ),false);
 				addLemma(or_);
 
 				if(Settings::printFormulas) {

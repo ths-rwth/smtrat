@@ -9,15 +9,6 @@
 
 #pragma once
 
-/// Flag activating some informative and not exaggerated output about module calls.
-//#define GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-#ifdef GENERATE_ONLY_PARSED_FORMULA_INTO_ASSUMPTIONS
-#ifndef SMTRAT_DEVOPTION_Validation
-//#define SMTRAT_DEVOPTION_Validation
-#endif
-#endif
-
-
 #include <vector>
 #include <set>
 #include <string>
@@ -276,10 +267,6 @@ namespace smtrat
              */
             virtual ~Module();
 
-            /// Contains the assumptions made, which can be stored in an smtlib-file and be verified later by an external tool.
-            static std::vector<std::string> mAssumptionToCheck;
-            /// All variables occurring in the assumptions made, which can be stored in an smtlib-file and be verified later by an external tool.
-            static std::set<std::string> mVariablesInAssumptionToCheck;
             /// The number of different variables to consider for a probable infinite loop of branchings.
             static size_t mNumOfBranchVarsToStore;
             /// Stores the last branches in a cycle buffer.
@@ -534,9 +521,7 @@ namespace smtrat
             void addLemma( const FormulaT& _lemma, const LemmaType& _lt = LemmaType::NORMAL, const FormulaT& _preferredFormula = FormulaT( carl::FormulaType::TRUE ) )
             {
                 #ifdef SMTRAT_DEVOPTION_Validation
-                if (Settings().validation.log_lemmata) {
-                    addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, _lemma ), false, moduleName() + "_lemma" );
-                }
+                SMTRAT_VALIDATION_ADD("smtrat.module.lemma",moduleName() + "_lemma",FormulaT( carl::FormulaType::NOT, _lemma ),false);
                 #endif
                 mLemmas.emplace_back( _lemma, _lt, _preferredFormula );
             }
@@ -661,71 +646,6 @@ namespace smtrat
             void collectOrigins( const FormulaT& _formula, FormulaSetT& _origins ) const;
 
             // Methods for debugging purposes.
-            /**
-             * Add a formula to the assumption vector and its predetermined consistency status.
-             * @param _formula The formula which should be consistent/inconsistent.
-             * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-             *         consistent or inconsistent.
-             * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
-             *               assumption, while keeping it equisatisfiable (the label could, e.g., be the name of the module
-             *               or its sub-procedure).
-             * @see Module::storeAssumptionsToCheck
-             */
-            static void addAssumptionToCheck( const FormulaT& _formula, bool _consistent, const std::string& _label );
-            
-            /**
-             * Add a formula to the assumption vector and its predetermined consistency status.
-             * @param _formula The formula that should be consistent/inconsistent.
-             * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-             *         consistent or inconsistent.
-             * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
-             *               assumption, while keeping it equisatisfiable (the label could, e.g., be the name of the module
-             *               or its sub-procedure).
-             * @see Module::storeAssumptionsToCheck
-             */
-            static void addAssumptionToCheck( const ModuleInput& _formula, bool _consistent, const std::string& _label );
-			/**
-             * Add a formula to the assumption vector and its predetermined consistency status.
-             * @param _subformulas The sub-formulas whose conjunction should be consistent/inconsistent.
-             * @param _status A flag indicating whether the conjunction of the given constraints should be
-             *         consistent or inconsistent.
-             * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
-             *               assumption, while keeping it equisatisfiable (the label could, e.g., be the name of the module
-             *               or its sub-procedure).
-             * @see Module::storeAssumptionsToCheck
-             */
-            static void addAssumptionToCheck( const ModuleInput& _subformulas, Answer _status, const std::string& _label );
-            
-            /**
-             * Add a conjunction of formulas to the assumption vector and its predetermined consistency status.
-             * @param _formulas The formulas, whose conjunction should be consistent/inconsistent.
-             * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-             *         consistent or inconsistent.
-             * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
-             *               assumption, while keeping it equisatisfiable (the label could, e.g., be the name of the module
-             *               or its sub-procedure).
-             * @see Module::storeAssumptionsToCheck
-             */
-            static void addAssumptionToCheck( const FormulasT& _formulas, bool _consistent, const std::string& _label );
-            static void addAssumptionToCheck( const FormulaSetT& _formulas, bool _consistent, const std::string& _label );
-            /**
-             * Add a conjunction of _constraints to the assumption vector and its predetermined consistency status.
-             * @param _constraints The constraints, whose conjunction should be consistent/inconsistent.
-             * @param _consistent A flag indicating whether the conjunction of the given constraints should be
-             *         consistent or inconsistent.
-             * @param _label A label which will be encoded as a Boolean variable into the formula to represent the 
-             *               assumption, while keeping it equisatisfiable (the label could, e.g., be the name of the module
-             *               or its sub-procedure).
-             * @see Module::storeAssumptionsToCheck
-             */
-            static void addAssumptionToCheck( const ConstraintsT& _constraints, bool _consistent, const std::string& _label );
-            
-            /**
-             * Prints the collected assumptions in the assumption vector into _filename with an appropriate smt2 
-             * header including all variables used.
-             * @param _manager The manager object of this solver to store the assumptions for.
-             */
-            static void storeAssumptionsToCheck( const Manager& _manager );
             
             /**
              * @return true, if the module has at least one valid infeasible subset, that is all its

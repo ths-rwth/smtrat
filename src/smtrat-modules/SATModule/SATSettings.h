@@ -249,6 +249,10 @@ struct SATSettingsMCSATOCPARALLEL : SATSettingsMCSAT {
 		static constexpr auto moduleName = "SATModule<MCSATNL>";
 		using MCSATSettings = mcsat::MCSATSettingsNL;
     };
+    struct SATSettingsMCSATFMICPVSNL : SATSettingsMCSAT {
+        static constexpr auto moduleName = "SATModule<MCSATFMICPVSNL>";
+        using MCSATSettings = mcsat::MCSATSettingsFMICPVSNL;
+    };
 	struct SATSettingsMCSATFMNL : SATSettingsMCSAT {
 		static constexpr auto moduleName = "SATModule<MCSATFMNL>";
 		using MCSATSettings = mcsat::MCSATSettingsFMNL;

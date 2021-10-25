@@ -22,22 +22,22 @@ private:
 	B mBackends;
 
     template<std::size_t N = 0, carl::EnableIfBool<N == std::tuple_size<B>::value> = carl::dummy>
-    boost::optional<Explanation> explain(const mcsat::Bookkeeping&, carl::Variable, const FormulasT&,
+    std::optional<Explanation> explain(const mcsat::Bookkeeping&, carl::Variable, const FormulasT&,
                  const std::size_t NUM_THREADS, std::mutex& mtx,
                  std::vector<std::thread>& threads, std::vector<pthread_t>& nativeHandles,
-                 size_t& counter, std::vector<boost::optional<Explanation>>& explanations) const {
+                 size_t& counter, std::vector<std::optional<Explanation>>& explanations) const {
 
         SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "All explanations started.");
         mtx.unlock();
         void *res;
         int s;
-        boost::optional<Explanation> explanation;
+        std::optional<Explanation> explanation;
         while(true) {
             if(counter == NUM_THREADS){ SMTRAT_LOG_ERROR("smtrat.mcsat.explanation", "No explanation left."); }
             SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Look for resulting explanation");
             for (size_t i = 0; i < NUM_THREADS; i++) {
                 explanation = explanations[i];
-                if (explanation != boost::none) {
+                if (explanation != std::nullopt) {
                     mtx.lock();
                     SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Found explanation: " << *explanation);
                     for(size_t j = 0; j < NUM_THREADS; j++){
@@ -62,10 +62,10 @@ private:
     }
 
     template<std::size_t N = 0, carl::EnableIfBool<N < std::tuple_size<B>::value> = carl::dummy>
-    boost::optional<Explanation> explain(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason,
+    std::optional<Explanation> explain(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason,
                  const std::size_t NUM_THREADS, std::mutex& mtx,
                  std::vector<std::thread>& threads, std::vector<pthread_t>& nativeHandles,
-                 size_t& counter, std::vector<boost::optional<Explanation>>& explanations) const {
+                 size_t& counter, std::vector<std::optional<Explanation>>& explanations) const {
 
         auto F = [&](){
             if(pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL)){
@@ -98,22 +98,22 @@ private:
     }
 
 public:
-    boost::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
+    std::optional<Explanation> operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
         const std::size_t NUM_THREADS = std::tuple_size<B>::value;
         if(NUM_THREADS <= 0){
             SMTRAT_LOG_ERROR("smtrat.mcsat.explanation", "No explanation given.");
-            return boost::none;
+            return std::nullopt;
         }
 
         std::mutex mtx;
         std::vector<std::thread> threads;
         std::vector<pthread_t> nativeHandles;
         size_t counter = 0;
-        std::vector<boost::optional<Explanation>> explanations(NUM_THREADS, boost::none);
+        std::vector<std::optional<Explanation>> explanations(NUM_THREADS, std::nullopt);
 
         mtx.lock();
         // same workarround as in sequential explanation
-        boost::optional<Explanation> explanation = explain<0>(data, var, reason, NUM_THREADS, mtx, threads, nativeHandles, counter, explanations);
+        std::optional<Explanation> explanation = explain<0>(data, var, reason, NUM_THREADS, mtx, threads, nativeHandles, counter, explanations);
         SMTRAT_LOG_DEBUG("smtrat.mcsat.explanation", "Explanation returned");
         return explanation;
 	}

@@ -46,12 +46,12 @@ This is then instantiated by calling
 
 or, as shortcut
 
-    SMTRAT_INIT_STATISTICS(myModule::MyStatistics, myStatistics, "MyModuleName")
+    SMTRAT_STATISTICS_INIT(myModule::MyStatistics, myStatistics, "MyModuleName")
 
 
 and statistics can be collected by calling the user defined operations (e.g. `myStatistics.count()`).
 
-All statistics-related code should be encapsulated by the `SMTRAT_DEVOPTION_Statistics` flag. Alternatively, code can be encapsulated in `SMTRAT_CALL_STATISTICS()`.
+All statistics-related code should be encapsulated by the `SMTRAT_DEVOPTION_Statistics` flag. Alternatively, code can be encapsulated in `SMTRAT_STATISTICS_CALL()`.
 
 ### Timing
 
@@ -72,7 +72,7 @@ The following code will measure the total running time of the code block as well
         }
     };
 
-    SMTRAT_INIT_STATISTICS(myModule::MyStatistics, myStatistics, "MyModuleName")
+    SMTRAT_STATISTICS_INIT(myModule::MyStatistics, myStatistics, "MyModuleName")
 
     auto start = SMTRAT_TIME_START();
 	// expensive code
