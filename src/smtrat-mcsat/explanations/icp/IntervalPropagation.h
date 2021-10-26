@@ -72,38 +72,44 @@ private:
 		assert(it != mBox.end());
 		auto& cur = it->second;
 		auto old = cur;
+		bool changed = false;
 		if (cur.lowerBound() < intervals.front().lowerBound()) {
 			cur = carl::Interval<double>(intervals.front().lower(), intervals.front().lowerBoundType(), cur.upper(), cur.upperBoundType());
+			changed = true;
 		}
 		if (intervals.back().upperBound() < cur.upperBound()) {
 			cur = carl::Interval<double>(cur.lower(), cur.lowerBoundType(), intervals.back().upper(), intervals.back().upperBoundType());
+			changed = true;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", old << " -> " << cur);
 		if (old.isInfinite()) {
 			if (cur.isInfinite()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still infinite");
-				return std::make_pair(false, 0.0);
+				return std::make_pair(changed, 0.0);
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "no longer infinite");
-				return std::make_pair(true, 1.0);
+				assert(changed);
+				return std::make_pair(changed, 1.0);
 			}
 		} else if (old.isUnbounded()) {
 			assert(!cur.isInfinite());
 			if (cur.isUnbounded()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still unbounded");
 				if (old.lower() < cur.lower() || cur.upper() < old.upper()) {
-					return std::make_pair(true, threshold_priority / 2);
+					assert(changed);
+					return std::make_pair(changed, threshold_priority / 2);
 				} else {
-					return std::make_pair(false, 0.0);
+					return std::make_pair(changed, 0.0);
 				}
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "no longer unbounded");
-				return std::make_pair(true, 1.0);
+				assert(changed);
+				return std::make_pair(changed, 1.0);
 			}
 		} else {
-			SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "reduced size");
+			SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "possibly reduced size");
 			auto size = old.diameter();
-			return std::make_pair(true, (size - cur.diameter()) / size);
+			return std::make_pair(changed, (size - cur.diameter()) / size);
 		}
 	}
 
