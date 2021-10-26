@@ -994,7 +994,7 @@ namespace smtrat
             if(_formula.getType() != carl::FormulaType::AND ){
                 SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
             }
-            assert( _formula.getType() != carl::FormulaType::AND );
+            assert( _formula.getType() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
