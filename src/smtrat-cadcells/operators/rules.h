@@ -3,6 +3,12 @@
 #include "properties.h"
 #include "../datastructures/derivation.h"
 
+/**
+ * Implementation of derivation rules.
+ * 
+ * Each rule is realized by a function which works on a derivation object. The parameters of the respective properties are passed as function parameter. The function realizing a derivation rule might either call other derivation rules or add properties to the given derivation.
+ * 
+ */
 namespace smtrat::cadcells::operators::rules {
 
 template<typename P>

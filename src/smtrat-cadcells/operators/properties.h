@@ -3,6 +3,11 @@
 #include <functional>
 #include "../datastructures/polynomials.h"
 
+/**
+ * Contains all properties that are stored in a derivation. 
+ * 
+ * Note that not all properties have a representation here as not all of them are stored but resolved directly in the derivation rules. 
+ */
 namespace smtrat::cadcells::operators::properties {
 
 struct poly_sgn_inv {

@@ -2,6 +2,14 @@
 
 #include "properties.h"
 
+/**
+ * Functions for adding the delineation of a property.
+ * 
+ * The delineation of a property is a set of indexed root expressions representing the critical points of the property.
+ * 
+ * E.g. for sign invariance of a polynomial, it is the set of roots of the polynomial.
+ * 
+ */
 namespace smtrat::cadcells::operators::delineation {
 
 template<typename P>
