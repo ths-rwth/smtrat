@@ -4,6 +4,7 @@
 - @subpage documentation
 - @subpage settings
 - @subpage logging
-- @subpage validation
 - @subpage statistics-and-timing
+- @subpage validation
+- @subpage checkpoints
 - @subpage bugs

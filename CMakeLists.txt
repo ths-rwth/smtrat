@@ -43,6 +43,7 @@ option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 # Development options
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
+option(SMTRAT_DEVOPTION_Checkpoints "Enable checkpoints" OFF)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE" "RELWITHDEBINFO")
 set(CLANG_SANITIZER "none" CACHE STRING "Compile with the respective sanitizer")

@@ -6,6 +6,7 @@
 
 #cmakedefine SMTRAT_DEVOPTION_Validation
 #cmakedefine SMTRAT_DEVOPTION_Statistics
+#cmakedefine SMTRAT_DEVOPTION_Checkpoints
 
 #cmakedefine SMTRAT_STRAT_PARALLEL_MODE
 #cmakedefine USE_GINAC
