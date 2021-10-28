@@ -69,6 +69,7 @@ bool poly_pdel(datastructures::SampledDerivation<P>& deriv, datastructures::Poly
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     if (!poly_non_null(deriv, poly)) return false;
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
+    deriv.insert(properties::cell_connected{ poly.level-1 });
     return true;
 }
 
@@ -81,6 +82,7 @@ void poly_irrecubile_ord_inv(datastructures::SampledDerivation<P>& deriv, datast
         if (deriv.proj().is_zero(deriv.sample(), poly)) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(" << poly << ")");
             deriv.insert(properties::poly_pdel{ poly });
+            deriv.insert(properties::cell_connected{ poly.level });
         } else {
             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << "(" << deriv.sample() << ") != 0 && sgn_inv(" << poly << ")");
         }
@@ -143,6 +145,7 @@ void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastruc
         assert(deriv.contains(properties::poly_pdel{ cell.lower()->poly }));
         assert(deriv.contains(properties::poly_pdel{ cell.upper()->poly }));
         deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.lower()->poly, cell.upper()->poly) });
+        deriv.insert(properties::cell_connected{ deriv.level()-1 });
     }
 }
 
@@ -157,6 +160,7 @@ void poly_irrecubile_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, con
     assert(cell.is_section());
     assert(deriv.contains(properties::poly_pdel{ cell.section_defining().poly }));
     assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(cell.section_defining().poly) }));
+    deriv.insert(properties::cell_connected{ poly.level-1 });
     if (cell.section_defining().poly != poly) {
         deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.section_defining().poly, poly) });
     }
@@ -202,6 +206,7 @@ void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastruct
 template<typename P>
 void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription&, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
+    deriv.insert(properties::cell_connected{ deriv.level() });
     for (const auto& rel : ordering.below()) {
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
@@ -222,6 +227,7 @@ template<typename P>
 void poly_irrecubile_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
+    deriv.insert(properties::cell_connected{ poly.level-1 });
     if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
         // not needed anymore:
         // auto roots = deriv.proj().real_roots(deriv.underlying_sample(), poly);
