@@ -135,13 +135,23 @@ void poly_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures
 }
 
 template<typename P>
-void poly_del(datastructures::BaseDerivation<P>& deriv, datastructures::PolyRef poly) {
+void poly_del(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
+    // TODO check if nullified??
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "del(" << poly << ")");
     if (deriv.proj().is_const(poly)) {
-        SMTRAT_LOG_TRACE("-> smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= " << poly << " const");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= " << poly << " const");
     } else {
         auto factors = deriv.proj().factors_nonconst(poly);
-        SMTRAT_LOG_TRACE("-> smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= del(factors(" << poly << ")) <=> del(" << factors << ")");
+        // TODO for this to be correct, we need to define another property than delineable (poly is sign invariant over each underlying cell ...)
+        // for (const auto& factor : factors) {
+        //     if (factor.level < poly.level && deriv.proj().is_zero(deriv.underlying_sample(), factor)) {
+        //         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= sgn_inv(" << factor << ") && "<< factor <<"("<< deriv.underlying_sample() <<")=0");
+        //         deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
+        //         return;
+        //     }
+        // }
+
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= del(factors(" << poly << ")) <=> del(" << factors << ")");
         for (const auto& factor : factors) {
             deriv.insert(properties::poly_irreducible_del{ factor });
         }

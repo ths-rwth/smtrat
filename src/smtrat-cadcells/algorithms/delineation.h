@@ -28,7 +28,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
         deriv->insert(operators::properties::poly_del{ proj.polys()(p) });
         // TODO can we use equational constraints here? -> other set of properties?
     }
-    operators::project_basic_properties<op>(*deriv->base());
+    operators::project_basic_properties<op>(*deriv);
     operators::delineate_properties<op>(*deriv);
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing delineation representation");
