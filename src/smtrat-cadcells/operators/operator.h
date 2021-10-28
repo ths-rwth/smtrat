@@ -11,7 +11,7 @@ template <op Op>
 struct PropertiesSet;
 
 template <op Op>
-void project_basic_properties(datastructures::BaseDerivation<typename PropertiesSet<Op>::type>& deriv);
+void project_basic_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);
 
 template <op Op>
 void delineate_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);

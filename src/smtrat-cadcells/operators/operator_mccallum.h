@@ -16,7 +16,7 @@ struct PropertiesSet<op::mccallum> {
 };
 
 template <>
-void project_basic_properties<op::mccallum>(datastructures::BaseDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+void project_basic_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
     }

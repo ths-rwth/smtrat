@@ -60,7 +60,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not project properties");
             return std::nullopt;
         }
-        operators::project_basic_properties<op>(*cell_deriv->base());
+        operators::project_basic_properties<op>(*cell_deriv->delineated());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
         operators::delineate_properties<op>(*cell_deriv->delineated());
         cell_deriv->delineate_cell();
