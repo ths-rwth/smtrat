@@ -12,24 +12,30 @@ def cumulate_by_column(df, column):
     df = df.reset_index().set_index('num')
     return df
 
-def performance_profile(df, solvers):
+def performance_profile(df, solvers, column = 'runtime'):
     ax = plt.gca()
     for solver in solvers:
-        cumulate_by_column(filter_solved(df, solver), (solver, "runtime")).plot.line(ax=ax)
-    ax.set_ylabel("running time (s)")
+        cumulate_by_column(filter_solved(df, solver), (solver, column)).plot.line(ax=ax)
+    ax.set_ylabel(column)
     ax.set_xlabel("number of solved instances")
     return ax
 
-def virtual_best(df, solvers, name):
+def virtual_best(df, solvers, name, statistics=[]):
     data = []
     for _, row in df.iterrows():
         s = solvers[0]
         for solver in solvers:
             if row[(solver,'runtime')] < row[(s,'runtime')]:
                 s = solver
-        data.append(tuple(row[s]))
-    columns = []
-    for a,b in df.columns:
-        if a == solvers[0]:
-            columns.append(b)
+        new_row = []
+        new_row.append(row[(s,'answer')])
+        new_row.append(row[(s,'runtime')])
+        for stat in statistics:
+            if stat in row[s]:
+                new_row.append(row[(s,stat)])
+            else:
+                new_row.append(None)
+
+        data.append(tuple(new_row))
+    columns = ['answer','runtime'] + statistics
     return pd.DataFrame(data, df.index, columns=pd.MultiIndex.from_product([[name], columns]))
