@@ -43,16 +43,15 @@ Some of these are enabled (or disabled) by a set of `cmake` options of the form 
 	  --print-all-models                    print all models of the input
 
 	Validation settings:
-	  --log.lemmata                         store all lemmata for validation
-	  --log.theory-calls                    store all theory calls for validation
-	  --log.infeasible-subsets              store all infeasible subsets for 
-	                                        validation
-	  --log.filename arg (=validationlog.smt2)
-	                                        store the validation information in 
-	                                        this file
+      --validation.export-smtlib            store validation formulas to smtlib 
+                                            file
+      --validation.smtlib-filename arg (=validation.smt2)
+                                            filename of smtlib output
+      --validation.channel arg              add a channel to be considered
+
 
 	Module settings:
-	  --module.parameter arg                add a parameter for modules
+	  --module.parameter arg                add a parameter for modules (key=value)
 
 	Parser settings:
 	  --dimacs                              parse input file as dimacs file
@@ -91,7 +90,7 @@ While many SMT-RAT strategies employ certain preprocessing techniques, it is som
 ### Quantifier elimination {#quantifier-elimination}
 
 Instead of regular SMT solving, SMT-RAT can also perform quantifier elimination tasks as described in @cite Neuhaeuser2018.
-This technique is used when the SMTLIB file contains a `eliminate-quantifier` command like `(eliminate-quantifier (exists x y) (forall z))`.
+This technique is used when the SMTLIB file contains a `eliminate-quantifiers` command like `(eliminate-quantifiers (exists x y) (forall z))`.
 
 ### DIMACS solving {#dimacs-solving}
 

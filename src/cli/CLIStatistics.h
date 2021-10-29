@@ -16,7 +16,7 @@ public:
 };
 
 static auto& statistics() {
-    static SMTRAT_INIT_STATISTICS(CLIStatistics, stats, "cli");
+    SMTRAT_STATISTICS_INIT_STATIC(CLIStatistics, stats, "cli");
     return stats;
 }
  

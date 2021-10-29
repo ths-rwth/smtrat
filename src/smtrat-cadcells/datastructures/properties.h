@@ -18,6 +18,12 @@ template<typename T>
 //using PropertiesTSet = std::unordered_set<T, property_hash<T>>;
 using PropertiesTSet = std::set<T>;
 
+/**
+ * Set of properties. 
+ * 
+ * This is a recursive template. The list of template parameters specifies the type of properties which can be hold by this set. 
+ * 
+ */
 template <class T, class... Ts>
 struct PropertiesT<T, Ts...> : PropertiesT<Ts...> {
     PropertiesTSet<T> content; 

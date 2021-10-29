@@ -24,6 +24,12 @@ using DelineatedDerivationRef = std::shared_ptr<DelineatedDerivation<Properties>
 template<typename Properties>
 using SampledDerivationRef = std::shared_ptr<SampledDerivation<Properties>>;
 
+/**
+ * A reference to a derivation, which is either
+ * - a BaseDerivation (a set of proprties for each level)
+ * - a DelineatedDerivation (a BaseDerivation with an underlying SampledDerivation on which the properties can be delineated)
+ * - a SampledDerivation (a DelineatedDerivation with an underlying SampledDerivation plus a sample on the current level such that a delineated interval can be computed)
+ */
 template<typename Properties>
 class DerivationRef {
 	std::variant<BaseDerivationRef<Properties>, DelineatedDerivationRef<Properties>, SampledDerivationRef<Properties>> m_data;
@@ -124,6 +130,11 @@ public:
 	}
 };
 
+/**
+ * A BaseDerivation has a level and a set of properties of this level, and an underlying derivation representing the lower levels.
+ *  
+ * @tparam Properties Set of properties (from the operator)
+ */
 template<typename Properties>
 class BaseDerivation {
 	template<typename P>
@@ -202,6 +213,11 @@ public:
 	}
 };
 
+/**
+ * A DelineatedDerivation is a BaseDerivation with a Delineation and an underlying SampledDerivation.
+ * 
+ * @tparam Properties Set of properties
+ */
 template<typename Properties>
 class DelineatedDerivation {
 	BaseDerivationRef<Properties> m_base;
@@ -269,6 +285,11 @@ public:
 	};
 };
 
+/**
+ * A SampledDerivation is a DelineatedDerivation with a sample and an DelineationInterval w.r.t. to this sample.
+ * 
+ * @tparam Properties Set of properties
+ */
 template<typename Properties>
 class SampledDerivation {
 	DelineatedDerivationRef<Properties> m_delineated;
@@ -276,85 +297,57 @@ class SampledDerivation {
 	Assignment m_sample;
 
 public:
-	// should be private, but does not work with make_shared
-	SampledDerivation(DelineatedDerivationRef<Properties> base, RAN main_sample)
-		: m_delineated(base) {
-		m_sample = m_delineated->underlying_sample();
-		if (m_delineated->level() > 0) {
-			m_sample.emplace(m_delineated->main_var(), main_sample);
-		}
-	}
 
-	DelineatedDerivationRef<Properties>& delineated() {
-		return m_delineated;
-	};
-	DelineatedDerivationRef<Properties>& delineated() const {
-		return m_delineated;
-	};
+    // should be private, but does not work with make_shared
+    SampledDerivation(DelineatedDerivationRef<Properties> base, RAN main_sample) : m_delineated(base) {
+        m_sample = m_delineated->underlying_sample();
+        if (m_delineated->level() > 0) {
+            m_sample.emplace(m_delineated->main_var(), main_sample);
+        }
+    }
 
-	const DelineationInterval& cell() const {
-		assert(m_cell.has_value());
-		return *m_cell;
-	}
-	void delineate_cell() {
-		if (m_delineated->level() > 0) {
-			m_cell = m_delineated->delin().delineate_cell(main_var_sample());
-		}
-	}
+    DelineatedDerivationRef<Properties>& delineated() { return m_delineated; };
+    DelineatedDerivationRef<Properties>& delineated() const { return m_delineated; };
 
-	const Assignment& sample() const {
-		return m_sample;
-	};
-	const RAN& main_var_sample() const {
-		return m_sample.at(m_delineated->main_var());
-	};
+    const DelineationInterval& cell() const { return *m_cell; }
+    /**
+     * Determines the cell w.r.t. the delineation.
+     * 
+     */
+    void delineate_cell() {
+        if (m_delineated->level() > 0) {
+            m_cell = m_delineated->delin().delineate_cell(main_var_sample());
+        }
+    }
 
-	BaseDerivationRef<Properties>& base() {
-		return m_delineated->base();
-	};
-	BaseDerivationRef<Properties>& base() const {
-		return m_delineated->base();
-	};
-	Delineation& delin() {
-		return m_delineated->delin();
-	};
-	const Assignment& underlying_sample() const {
-		return m_delineated->underlying_sample();
-	}
-	DerivationRef<Properties>& underlying() {
-		return m_delineated->underlying();
-	};
-	PolyPool& polys() {
-		return m_delineated->polys();
-	};
-	Projections& proj() {
-		return m_delineated->proj();
-	};
-	carl::Variable main_var() const {
-		return m_delineated->main_var();
-	};
-	size_t level() const {
-		return m_delineated->level();
-	};
-	template<typename P>
-	void insert(P property) {
-		m_delineated->insert(property);
-	};
-	template<typename P>
-	bool contains(const P& property) const {
-		return m_delineated->contains(property);
-	};
-	template<typename P>
-	const PropertiesTSet<P>& properties() const {
-		return m_delineated->template properties<P>();
-	};
+    const Assignment& sample() const { return m_sample; };
+    const RAN& main_var_sample() const { return m_sample.at(m_delineated->main_var()); };
 
-	void merge_with(const SampledDerivation<Properties>& other) {
-		assert(!m_cell && other.m_cell);
-		m_delineated->merge_with(other);
-	};
+    BaseDerivationRef<Properties>& base() { return m_delineated->base(); };
+    BaseDerivationRef<Properties>& base() const { return m_delineated->base(); };
+    Delineation& delin() { return m_delineated->delin(); };
+    const Assignment& underlying_sample() const { return m_delineated->underlying_sample(); }
+    DerivationRef<Properties>& underlying() { return m_delineated->underlying(); };
+    PolyPool& polys() { return m_delineated->polys(); };
+    Projections& proj() { return m_delineated->proj(); };
+    carl::Variable main_var() const { return m_delineated->main_var(); };
+    size_t level() const { return m_delineated->level(); };
+    template<typename P>
+    void insert(P property) { m_delineated->insert(property); };
+    template<typename P>
+    bool contains(const P& property) const { return m_delineated->contains(property); };
+    template<typename P>
+    const PropertiesTSet<P>& properties() const { return m_delineated->template properties<P>(); };
+
+    void merge_with(const SampledDerivation<Properties>& other) {
+        assert(!m_cell && other.m_cell);
+        m_delineated->merge_with(other);
+    };
 };
 
+/**
+ * Initializes a derivation according the the given assignment and level.
+ */
 template<typename Properties>
 DerivationRef<Properties> make_derivation(Projections& proj, const Assignment& assignment, size_t level) {
 	const auto& vars = proj.polys().var_order();
@@ -376,6 +369,9 @@ DerivationRef<Properties> make_derivation(Projections& proj, const Assignment& a
 	return current;
 }
 
+/**
+ * Initializes a sampled derivation w.r.t. the delineated derivation and sample.
+ */
 template<typename Properties>
 SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef<Properties> delineated, const RAN& main_sample) {
 	auto sampled_der = std::make_shared<SampledDerivation<Properties>>(delineated, main_sample);
@@ -383,6 +379,9 @@ SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef
 	return sampled_der;
 }
 
+/**
+ * Merges the underlying derivations of a set of sampled derivations. After the operation, all sampled derivations point to the same underlying derivation.
+ */
 template<typename Properties>
 void merge_underlying(std::vector<std::reference_wrapper<SampledDerivation<Properties>>>& derivations) {
 	std::set<DerivationRef<Properties>> underlying;

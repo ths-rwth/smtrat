@@ -382,8 +382,8 @@ namespace smtrat
 			
 			/// Calculate and activate the corresponding domain
 			RationalInterval domain(0, 1);
-			domain.mul_assign(Rational(Settings::initialRadius));
-			domain.add_assign(expansion.mNucleus);
+			domain.mul_assign(carl::Interval<Rational>(Rational(Settings::initialRadius)));
+			domain.add_assign(carl::Interval<Rational>(expansion.mNucleus));
 			domain = carl::set_intersection(domain, expansion.mMaximalDomain);
 			changeActiveDomain(expansion, std::move(domain));
 		}
@@ -461,7 +461,7 @@ namespace smtrat
 				domain = RationalInterval(0, carl::BoundType::WEAK, 0, carl::BoundType::INFTY);
 			else
 				domain = RationalInterval(0, candidate.mRadius);
-			domain.mul_assign(candidate.mDirection);
+			domain.mul_assign(carl::Interval<Rational>(candidate.mDirection));
 			domain.add_assign(candidate.mExpansion.mActiveDomain);
 			domain = carl::set_intersection(domain, candidate.mExpansion.mMaximalDomain);
 			changeActiveDomain(candidate.mExpansion, std::move(domain));

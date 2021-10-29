@@ -1974,13 +1974,10 @@ namespace smtrat
                             std::cout << "  }" << std::endl;
                             #endif
                             #ifdef SMTRAT_DEVOPTION_Validation
-                            if (Settings().validation.log_theory_calls)
-                            {
-                                smtrat::ConstraintsT constraints;
-                                for( auto cond = conflict.begin(); cond != conflict.end(); ++cond )
-                                    constraints.insert( (**cond).constraint() );
-                                smtrat::Module::addAssumptionToCheck( constraints, false, (*backend)->moduleName() + "_infeasible_subset" );
-                            }
+                            smtrat::ConstraintsT constraints;
+                            for( auto cond = conflict.begin(); cond != conflict.end(); ++cond )
+                                constraints.insert( (**cond).constraint() );
+                            SMTRAT_VALIDATION_ADD("smtrat.modules.vs",(*backend)->moduleName() + "_infeasible_subset",constraints,false);
                             #endif
                             assert( conflict.size() == infsubset->size() );
                             assert( !conflict.empty() );
@@ -2052,8 +2049,9 @@ namespace smtrat
             smtrat::ConstraintsT constraints;
             for( auto cond = _state.conditions().begin(); cond != _state.conditions().end(); ++cond )
                 constraints.insert( (**cond).constraint() );
-            if( _logAsDeduction )
-                smtrat::Module::addAssumptionToCheck( constraints, _assumption, _description );
+            if( _logAsDeduction ) {
+                SMTRAT_VALIDATION_ADD("smtrat.modules.vs",_description,constraints,_assumption);
+            }
             else
             {
 				std::cout << "(assert (and";

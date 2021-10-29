@@ -164,9 +164,9 @@ class IndexedRootOrdering {
 
 public:
     /**
-     * Second is the root closer to the lower bound.
+     * First is the root closer to the lower bound.
      * 
-     * Relations need to be added in descending order of the second elements.
+     * Relations need to be added in descending order of the first elements.
      */
     void add_below(IndexedRoot first, IndexedRoot second) {
         return add(m_data_below, first, second);
@@ -188,9 +188,42 @@ public:
     const auto& above() const {
         return m_data_above;
     }
+
+    bool poly_has_lower(PolyRef poly) const {
+        return std::find_if(below().begin(), below().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != below().end();
+    }
+
+    bool poly_has_upper(PolyRef poly) const {
+        return std::find_if(above().begin(), above().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != above().end();
+    }
 };
 inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
     os << data.below() << " " << data.above();
+    return os;
+}
+
+/**
+ * Describes an ordering of IndexedRoots.
+ */
+class GeneralIndexedRootOrdering {
+    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data;
+
+public:
+    /**
+     * Relations need to be added in ascending order of the first elements.
+     */
+    void add(IndexedRoot first, IndexedRoot second) {
+        assert(first.poly.level == second.poly.level);
+        assert(first != second);
+        m_data.push_back(std::make_pair(first, second));
+    }
+
+    const auto& data() const {
+        return m_data;
+    }
+};
+std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
+    os << data.data();
     return os;
 }
 

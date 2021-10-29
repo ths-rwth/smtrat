@@ -34,109 +34,76 @@ inline std::ostream& operator<<(std::ostream& os, const CellRepresentation<P>& d
      * 
      * The cells forming the covering are in increasing order (ordered by lower bound) and no cell is contained in another cell.
      */
-template<typename P>
-struct CoveringRepresentation {
-	/// Cells of the covering in increasing order and no cell is contained in another cell.
-	std::vector<CellRepresentation<P>> cells;
-	/// Returns a descriptions of the covering.
-	CoveringDescription get_covering() const {
-		assert(is_valid());
-		CoveringDescription cov;
-		for (const auto& cell : cells) {
-			cov.add(cell.description);
-		}
-		return cov;
-	}
-	/// Returns the derivations.
-	std::vector<std::reference_wrapper<SampledDerivation<P>>> sampled_derivations() {
-		std::vector<std::reference_wrapper<SampledDerivation<P>>> cov;
-		for (const auto& cell : cells) {
-			cov.push_back(*cell.derivation);
-		}
-		return cov;
-	}
+    template<typename P>
+    struct CoveringRepresentation {
+        /// Cells of the covering in increasing order and no cell is contained in another cell.
+        std::vector<CellRepresentation<P>> cells;
+        /// Returns a descriptions of the covering.
+        CoveringDescription get_covering() const {
+            assert(is_valid());
+            CoveringDescription cov;
+            for (const auto& cell : cells) {
+                cov.add(cell.description);
+            }
+            return cov;
+        }
+        /// Returns the derivations.
+        std::vector<std::reference_wrapper<SampledDerivation<P>>> sampled_derivations() {
+            std::vector<std::reference_wrapper<SampledDerivation<P>>> cov;
+            for (const auto& cell : cells) {
+                cov.push_back(cell.derivation);
+            }
+            return cov;
+        }
+        /// Checks whether this represents a proper non-redundant covering.
+        bool is_valid() const {
+            auto cell = cells.begin();
 
-	//returns true iff the a sample outside of the current covering has been found
-	bool sample_outside(RAN& sample) const {
+            // covering
+            if (!cell->derivation.cell().lower_unbounded()) return false;
+            while (cell != std::prev(cells.end())) {
+                cell++;
+                if (std::prev(cell)->derivation.cell().upper_unbounded()) return false;
+                if (cell->derivation.cell().lower_unbounded()) return false;
+                if (std::prev(cell)->derivation.cell().upper()->first < cell->derivation.cell().lower()->first) return false;
+                if (std::prev(cell)->derivation.cell().upper()->first == cell->derivation.cell().lower()->first && std::prev(cell)->derivation.cell().is_sector() && cell->derivation.cell().is_sector()) return false;
+            }
+            if (!cell->derivation.cell().upper_unbounded()) return false;
 
-		//Todo is_valid only for complete covering?
-		//assert(is_valid());
+            // redundancy
+            cell = cells.begin();
+            while (cell != std::prev(cells.end())) {
+                cell++;
+                if (std::prev(cell)->derivation.cell().upper_unbounded()) return false;
+                if (cell->derivation.cell().upper_unbounded()) continue;
+                if (std::prev(cell)->derivation.cell().upper()->first > cell->derivation.cell().upper()->first) return false;
+                if (std::prev(cell)->derivation.cell().upper()->first == cell->derivation.cell().upper()->first && std::prev(cell)->derivation.cell().is_sector() && cell->derivation.cell().is_sector()) return false;
+            }
 
-		if (cells.empty()) {
-			//There are no cells, just take trivially 0
-			sample = RAN(0);
-			return true;
-		}
+            return true;
+        }
+    };
+    template<typename P>
+    std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data) {
+        os << data.cells;
+        return os;
+    }
 
-		if (!cells.front().derivation->cell().lower_unbounded()) {
-			//Lower bound is finite, just take a sufficiently large negative number
-			sample = carl::sample_below(cells.front().derivation->cell().lower()->first);
-			return true;
-		}
+    /**
+     * Represents a delineation.
+     */
+    template<typename P>
+    struct DelineationRepresentation {
+        /// An ordering of the roots that represents the delineation.
+        GeneralIndexedRootOrdering ordering;
+        /// Derivation.
+        DelineatedDerivation<P>& derivation;
 
-		if (!cells.back().derivation->cell().upper_unbounded()) {
-			//Upper bound is finite, just take a sufficiently large positive number
-			sample = carl::sample_above(cells.back().derivation->cell().upper()->first);
-			return true;
-		}
-
-		//Search for adjacent disjoint cells and sample between
-		for (size_t i = 0; i + 1 < cells.size(); i++) {
-			if (disjoint(cells[i].derivation->cell(), cells[i + 1].derivation->cell())) {
-				sample = carl::sample_between(cells[i].derivation->cell().upper()->first, cells[i + 1].derivation->cell().lower()->first);
-				return true;
-			} else if (cells[i].derivation->cell().is_sector() && cells[i + 1].derivation->cell().is_sector()) {
-				//if (x, y), (y, z) we can choose y as a sample point
-                if(cells[i].derivation->cell().upper()->first == cells[i+1].derivation->cell().lower()->first){
-                    sample = cells[i].derivation->cell().upper()->first;
-				    return true;
-                }
-                
-			}
-		}
-
-		//There are no disjoint cells -> the covering spans the whole number line
-		return false;
-	}
-
-	/// Checks whether this represents a proper non-redundant covering.
-	bool is_valid() const {
-
-		for (const auto& cell : cells) {
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Validity: " << cell.derivation->cell());
-		}
-
-		if (cells.size() <= 1) return true;
-
-		auto cell = cells.begin();
-
-		// covering
-		if (!cell->derivation->cell().lower_unbounded()) return false;
-		while (cell != std::prev(cells.end())) {
-			cell++;
-			if (std::prev(cell)->derivation->cell().upper_unbounded()) return false;
-			if (cell->derivation->cell().lower_unbounded()) return false;
-			if (std::prev(cell)->derivation->cell().upper()->first < cell->derivation->cell().lower()->first) return false;
-			if (std::prev(cell)->derivation->cell().upper()->first == cell->derivation->cell().lower()->first && std::prev(cell)->derivation->cell().is_sector() && cell->derivation->cell().is_sector()) return false;
-		}
-		if (!cell->derivation->cell().upper_unbounded()) return false;
-
-		// redundancy
-		cell = cells.begin();
-		while (cell != std::prev(cells.end())) {
-			cell++;
-			if (std::prev(cell)->derivation->cell().upper_unbounded()) return false;
-			if (cell->derivation->cell().upper_unbounded()) continue;
-			if (std::prev(cell)->derivation->cell().upper()->first > cell->derivation->cell().upper()->first) return false;
-			if (std::prev(cell)->derivation->cell().upper()->first == cell->derivation->cell().upper()->first && std::prev(cell)->derivation->cell().is_sector() && cell->derivation->cell().is_sector()) return false;
-		}
-
-		return true;
-	}
-};
-template<typename P>
-inline std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data) {
-	os << data.cells;
-	return os;
+        DelineationRepresentation(DelineatedDerivation<P>& deriv) : derivation(deriv) {}
+    };
+    template<typename P>
+    std::ostream& operator<<(std::ostream& os, const DelineationRepresentation<P>& data) {
+        os << "(ordering: " << data.ordering << "; derivation: " << &data.derivation << ")";
+        return os;
+    }
 }
-} // namespace smtrat::cadcells::datastructures

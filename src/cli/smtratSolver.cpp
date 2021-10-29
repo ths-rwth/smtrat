@@ -26,6 +26,12 @@
 #include <smtrat-common/statistics/StatisticsSettings.h>
 #endif //SMTRAT_DEVOPTION_Statistics
 
+#ifdef SMTRAT_DEVOPTION_Validation
+#include <smtrat-common/validation/ValidationPrinter.h>
+#include <smtrat-common/validation/ValidationSettings.h>
+#endif //SMTRAT_DEVOPTION_Validation
+
+
 #include <smtrat-common/settings/SettingsComponents.h>
 #include <smtrat-common/settings/SettingsParser.h>
 
@@ -53,6 +59,14 @@ void print_statistics() {
 	}
 	if (smtrat::settings_statistics().export_as_xml) {
 		carl::statistics::statistics_to_xml_file(smtrat::settings_statistics().xml_filename);
+	}
+#endif
+}
+
+void store_validation_formulas() {
+#ifdef SMTRAT_DEVOPTION_Validation
+	if (smtrat::settings_validation().export_as_smtlib) {
+		smtrat::validation::validation_formulas_to_smtlib_file(smtrat::settings_validation().smtlib_filename);
 	}
 #endif
 }
@@ -90,6 +104,9 @@ int main( int argc, char* argv[] )
 	smtrat::parser::registerParserSettings(parser);
 	#ifdef SMTRAT_DEVOPTION_Statistics
 	smtrat::statistics::registerStatisticsSettings(parser);
+	#endif
+	#ifdef SMTRAT_DEVOPTION_Validation
+	smtrat::validation::registerValidationSettings(parser);
 	#endif
 	#ifdef CLI_ENABLE_ANALYZER
 	smtrat::analyzer::registerAnalyzerSettings(parser);
@@ -151,6 +168,7 @@ int main( int argc, char* argv[] )
 	}
 
 	print_statistics();
+	store_validation_formulas();
 
 	return exitCode;
 }

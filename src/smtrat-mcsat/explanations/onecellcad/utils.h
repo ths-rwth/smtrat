@@ -1,10 +1,15 @@
+#pragma once
+
 #include <carl/core/polynomialfunctions/Derivative.h>
 #include <carl/core/polynomialfunctions/Factorization.h>
 #include <carl/core/polynomialfunctions/Resultant.h>
+#include <carl/core/polynomialfunctions/Definiteness.h>
+#include <carl/core/polynomialfunctions/Representation.h>
 
-#include <smtrat-cad/projectionoperator/utils.h>
-#include <smtrat-common/model.h>
 #include <smtrat-common/smtrat-common.h>
+#include <smtrat-common/model.h>
+#include <smtrat-cad/projectionoperator/utils.h>
+#include <smtrat-mcsat/utils/Bookkeeping.h>
 
 #include <algorithm>
 #include <optional>
@@ -17,6 +22,8 @@
 #include <carl/ran/RealAlgebraicPoint.h>
 #include <carl/ran/interval/ran_interval_extra.h>
 
+#include "OCStatistics.h"
+#include "Assertables.h"
 
 namespace smtrat {
 namespace mcsat {
@@ -25,6 +32,9 @@ namespace onecellcad {
 using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
+#ifdef SMTRAT_DEVOPTION_Statistics
+    OCStatistics& getStatistic();
+#endif
 
 /**
  * Invariance Types
@@ -65,6 +75,9 @@ struct TagPoly {
 
     // Cache the poly's level to avoid recomputing it in many places.
     std::size_t level;
+
+    // Optional possibility to cache total degree of polynomial
+    std::size_t deg = 0;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const TagPoly& p) {
@@ -90,6 +103,17 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<std::vector<
         lvl--;
     }
     return os;
+}
+
+
+
+/**
+* @param p Polynomial to get degree from
+* @param v Rootvariable for degree calc
+* @return
+*/
+inline std::size_t getDegree(TagPoly p, carl::Variable v) {
+    return carl::total_degree(carl::to_univariate_polynomial(p.poly, v));
 }
 
 /**
@@ -166,6 +190,17 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
     // to do carl::normalize()
     for (const auto& factor : factors) {
         if (!factor.poly.isConstant()) {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCStatistics& mStatistics = getStatistic();
+                // change this to en-/disable mMaxDegree Statistic
+                bool maxDegStatisticOn = true;
+                if(maxDegStatisticOn){
+                    std::size_t curDeg = getDegree(factor, variableOrder[factor.level]);
+                    if(curDeg > mStatistics.getCurrentMaxDegree()){
+                        mStatistics.updateMaxDegree(curDeg);
+                    }
+                }
+            #endif
             TagPoly siFactor = factor;
             TagPoly oiFactor = factor;
             siFactor.tag = InvarianceType::SIGN_INV;
@@ -339,7 +374,7 @@ inline std::vector<std::pair<Poly, Poly>> duplicateElimination(std::vector<std::
     return vec;
 }
 
-inline std::vector<Poly> duplicateElimination(std::vector<Poly> vec){
+inline void duplicateElimination(std::vector<Poly>& vec){
     if(!vec.empty()) {
         for (auto it1 = vec.begin(); it1 != vec.end() - 1; it1++) {
             for (auto it2 = it1 + 1; it2 != vec.end();) {
@@ -351,7 +386,6 @@ inline std::vector<Poly> duplicateElimination(std::vector<Poly> vec){
             }
         }
     }
-    return vec;
 }
 
 
@@ -382,12 +416,12 @@ inline Poly leadcoefficient(const carl::Variable& mainVariable, const Poly& p) {
 }
 
 
-inline void addResultants(std::vector<std::pair<Poly, Poly>> resultants,
+inline void addResultants(std::vector<std::pair<Poly, Poly>>& resultants,
         std::vector<std::vector<TagPoly>>& polys,
         carl::Variable mainVar,
         const std::vector<carl::Variable>& variableOrder){
     if(!resultants.empty()) {
-        resultants = duplicateElimination(resultants);
+        duplicateElimination(resultants);
 
         for (auto const& elem : resultants) {
             Poly res = resultant(mainVar, elem.first, elem.second);
