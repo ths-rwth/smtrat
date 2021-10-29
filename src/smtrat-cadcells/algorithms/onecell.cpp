@@ -31,7 +31,7 @@ std::optional<datastructures::SampledDerivationRef<PropSet>> get_covering(datast
     datastructures::merge_underlying(cell_derivs);
     operators::project_covering_properties<op>(*covering_repr);
 
-    return covering_repr->cells.front().derivation.underlying().sampled_ref();
+    return covering_repr->cells.front().derivation->underlying().sampled_ref();
 }
 
 std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const VariableOrdering& vars, const Assignment& sample) {

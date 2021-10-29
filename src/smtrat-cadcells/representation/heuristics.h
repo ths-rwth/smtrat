@@ -46,7 +46,7 @@ namespace smtrat::cadcells::representation {
 
         template<typename T>
         static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
-            datastructures::CellRepresentation<T> response(*der);
+            datastructures::CellRepresentation<T> response(der);
             response.description = compute_simplest_cell(der->cell());
 
             if (der->cell().is_section()) {

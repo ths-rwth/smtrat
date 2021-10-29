@@ -31,7 +31,7 @@ inline void delineate_properties<op::mccallum>(datastructures::DelineatedDerivat
 
 template <>
 inline void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
-    auto& deriv = repr.derivation;
+    auto& deriv = *repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end()) {
@@ -86,7 +86,7 @@ inline void project_covering_properties<op::mccallum>(datastructures::CoveringRe
         project_delineated_cell_properties<op::mccallum>(cell_repr, false);
     }
     auto cov = repr.get_covering();
-    rules::covering_holds(repr.cells.front().derivation.underlying().delineated(), cov);
+    rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov);
 }
 
 }

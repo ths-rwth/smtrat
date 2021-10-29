@@ -40,8 +40,8 @@ private:
 	//Variable Ordering, Initialized in checkCore
 	std::vector<carl::Variable> mVariableOrdering;
 
-	//Contains the last model which satisfied the given constraints
-	Model mLastModel;
+	//Contains the last assignment which satisfied all the given known constraints (empty otherwise)
+	carl::ran_assignment<Rational> mLastAssignment;
 
 	//The actual algorithm
 	Backend<Settings> backend;

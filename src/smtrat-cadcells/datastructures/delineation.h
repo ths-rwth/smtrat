@@ -125,7 +125,7 @@ public:
                 }
             }
         }
-
+        
         return DelineationInterval(std::move(lower),std::move(upper),m_roots.end());
     }
 
@@ -175,6 +175,8 @@ inline bool upper_less(const DelineationInterval& del1, const DelineationInterva
 }
 
 //Return true iff the Intervals are disjoint
+//Attention: (x,y) == (y,z)
+// Open bounds are treated as closed bounds
 inline bool disjoint(const DelineationInterval& del1, const DelineationInterval& del2){
     assert(lower_less(del1, del2));
     if(del1.upper_unbounded()) return false ;

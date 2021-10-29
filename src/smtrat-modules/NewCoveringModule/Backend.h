@@ -52,8 +52,11 @@ private:
 	//Current (partial) satisfying assignment
 	carl::ran_assignment<Rational> mCurrentAssignment;
 
+	//Cache for the last (full) covering
+	datastructures::CoveringRepresentation<PropSet> mLastFullCovering;
+
 	//Current Covering Information
-	std::vector<datastructures::CoveringRepresentation<PropSet>> mCoveringInformation;
+	std::vector<std::vector<datastructures::SampledDerivationRef<PropSet>>> mCoveringInformation;
 
 public:
 	//Init with empty variable ordering
@@ -79,16 +82,16 @@ public:
 		return mVariableOrdering.size();
 	}
 
+	const carl::ran_assignment<Rational>& getCurrentAssignment() {
+		return mCurrentAssignment;
+	}
+
 	//Adds a constraint into the right level
 	void addConstraint(const ConstraintT& constraint) {
 		//We can substract 1 from level because we dont have constant polynomials
 		std::size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
 		mUnknownConstraints[level].insert(constraint);
-	}
-
-	carl::ran_assignment<Rational> getCurrentAssignment() {
-		return mCurrentAssignment;
 	}
 
 	//The new Variable ordering must be an "extension" to the old one
@@ -114,11 +117,26 @@ public:
 		}
 	}
 
+	void filterAndStoreDerivations(const datastructures::CoveringRepresentation<PropSet>& mCovering, const std::size_t& level) {
+		//Safe the derivations for the level
+		//We only need the derivations used in the current (partial) Covering
+		mCoveringInformation[level].clear();
+		for (const auto& cell : mCovering.cells) {
+			mCoveringInformation[level].push_back(cell.derivation);
+		}
+	}
+
 	Answer getUnsatCover(const std::size_t level) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " with current assignment: " << mCurrentAssignment);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " Dimension: " << dimension());
+		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints);
+		//Todo Add UnknownConstraints to Known constraints once the derivations exits
 		std::vector<datastructures::SampledDerivationRef<PropSet>> unsat_cells;
 		for (const ConstraintT& constraint : mUnknownConstraints[level]) {
 			auto intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
+			//Map von sampled deriv zu constraints für infeasible subset
+			//Alle constraints die irgendwie eine derivation erzeugt haben
 			for (const auto& interval : intervals) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
 			}
@@ -126,31 +144,33 @@ public:
 		}
 
 		//Add stored cells to unsat_cells to compute covering of all known cells
-		//for (const auto& cell : mCoveringInformation[level].sampled_derivations()) {
-		//	//todo reference_wrapper to shared_pointer?
-		//	unsat_cells.push_back(std::make_shared<datastructures::SampledDerivation<PropSet>>(cell.get()));
-		//}
+		for (const datastructures::SampledDerivationRef<PropSet>& deriv : mCoveringInformation[level]) {
+			//todo reference_wrapper to shared_pointer?
+			unsat_cells.push_back(deriv);
+		}
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsat cells: " << unsat_cells);
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
-		auto covering_repr = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
-		if (!covering_repr) {
+		auto mCurrentCovering = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
+		if (!mCurrentCovering.has_value()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed -> Aborting");
-			assert(false); //McCallum failed -> What do then?
+			return Answer::UNKNOWN;
 		}
 
-		//Store the new Covering
-		mCoveringInformation[level].cells = std::move(covering_repr.value().cells);
-
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got representation " << mCoveringInformation[level]);
+		//We only need to store the derivations used in the current (partial) covering
+		//Todo doppelt gemoppelt -> unsat_cells oder mCoveringInformation speichern?
+		filterAndStoreDerivations(mCurrentCovering.value(), level);
+		unsat_cells = mCoveringInformation[level];
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got (partial) covering " << mCurrentCovering);
 
 		RAN sample;
-		while (mCoveringInformation[level].sample_outside(sample)) {
+		while (mCurrentCovering.value().sample_outside(sample)) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Found sample outside " << sample);
 			mCurrentAssignment[mVariableOrdering[level]] = sample;
-			if (level == mVariableOrdering.size()) {
+			if (mCurrentAssignment.size() == mVariableOrdering.size()) {
 				//SAT
+				//We have a full dimensional satisfying assignment
 				return Answer::SAT;
 			}
 
@@ -162,20 +182,41 @@ public:
 				return nextLevel;
 			} else if (nextLevel == Answer::UNSAT) {
 				//NextLevel is Unsat -> Generate Unsat-Cell
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Got covering for the next level: " << mCoveringInformation[level + 1]);
-				operators::project_covering_properties(mCoveringInformation[level + 1]);
-				//operators::delineate_properties<op>(mCoveringInformation[level + 1].delineated()); //construct characterization
-				//auto cell = mCoveringInformation[level + 1]->delineate_cell();					   //interval from characterization
-				//SMTRAT_LOG_DEBUG("smtrat.covering", "Found UnsatCell: " << cell);
-				assert(false);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Last full covering: " << mLastFullCovering);
 
+			    auto cell_derivs = mLastFullCovering.sampled_derivations();
+				datastructures::merge_underlying(cell_derivs);
+				operators::project_covering_properties<op>(mLastFullCovering);
+				auto new_deriv = mLastFullCovering.cells.front().derivation->underlying().sampled_ref();
+				operators::project_basic_properties<op>(*new_deriv->base());
+        		operators::delineate_properties<op>(*new_deriv->delineated());
+        		new_deriv->delineate_cell();
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell: " << new_deriv->cell());
+
+				//add new cell to stored data and recalculate the current covering
+				unsat_cells.push_back(new_deriv);
+				auto newCovering = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
+				if (!newCovering.has_value()) {
+					SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed -> Aborting");
+					return Answer::UNKNOWN;
+				} else {
+					mCurrentCovering.value().cells = std::move(newCovering.value().cells);
+				}
+				filterAndStoreDerivations(mCurrentCovering.value(), level);
+				unsat_cells = mCoveringInformation[level];
+
+				//delete now obsolete information
+				mCurrentAssignment.erase(mVariableOrdering[level]);
+				mCoveringInformation[level + 1].clear();
 			} else {
-				assert(false);
+				//Something went wrong (McCallum failed)
 				return Answer::UNKNOWN;
 			}
 		}
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Cells cover the numberline ");
+		//operators::project_covering_properties<op>(mCurrentCovering.value());
+		mLastFullCovering = std::move(mCurrentCovering.value());
 		return Answer::UNSAT;
 	}
 

@@ -23,7 +23,7 @@ template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Got constraint: " << _constraint.constraint());
 	mUnknownConstraints.push_back(_constraint);
-	return true; 
+	return true;
 }
 
 template<class Settings>
@@ -34,7 +34,7 @@ bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformul
 	//Incremental call
 	//TODO: is it possible that new (unknown) Variable are in the new constraints?
 	mUnknownConstraints.push_back(_subformula->formula());
-	return true; 
+	return true;
 }
 
 template<class Settings>
@@ -47,8 +47,8 @@ void NewCoveringModule<Settings>::removeCore(ModuleInput::const_iterator _subfor
 template<class Settings>
 void NewCoveringModule<Settings>::updateModel() const {
 	clearModel();
-	if (solverState() == Answer::SAT) {
-		mModel.update(mLastModel, false);
+	for(const auto& pair : mLastAssignment){
+		mModel.assign(pair.first, pair.second);
 	}
 }
 
@@ -59,8 +59,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	//Check if this is the first time checkCore is called
 	if (mVariableOrdering.empty()) {
 		//Init variable odering
-		
-		for(const FormulaT& formula : mUnknownConstraints){
+
+		for (const FormulaT& formula : mUnknownConstraints) {
 			formula.gatherVariables(mVariables);
 		}
 
@@ -75,9 +75,9 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		backend.init(mVariableOrdering);
 
 		//Add unknown constraints to backend
-		for(const auto& constraint : mUnknownConstraints){
+		for (const auto& constraint : mUnknownConstraints) {
 			//Asserts that it is indeed a constraint
-			backend.addConstraint(constraint.constraint()) ;
+			backend.addConstraint(constraint.constraint());
 		}
 
 	} else if (backend.dimension() != mVariables.size()) {
@@ -96,6 +96,16 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	}
 
 	Answer answer = backend.getUnsatCover(0);
+
+	if (answer == Answer::UNSAT) {
+		//Just use the trivial infeasible subset for now
+		generateTrivialInfeasibleSubset();
+		clearModel();
+		mLastAssignment.clear();
+	}else if(answer == Answer::SAT){
+		mLastAssignment = backend.getCurrentAssignment();
+		updateModel() ;
+	}
 
 	return answer;
 }
