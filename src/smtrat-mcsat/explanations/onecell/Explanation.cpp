@@ -5,6 +5,9 @@ namespace smtrat::mcsat::onecell {
 
 std::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        mStatistics.explanationCalled();
+    #endif
     cadcells::Assignment ass;
     for (const auto& [key, value] : trail.model()) {
         if (value.isRAN()) {
@@ -35,6 +38,9 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         return std::nullopt;
     }
     else {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+            mStatistics.explanationSuccess();
+        #endif
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result->second << " of constraints " << result->first << " wrt " << vars << " and " << ass);
         FormulasT expl;
         for (const auto& f : result->first) expl.push_back(f.negated());
