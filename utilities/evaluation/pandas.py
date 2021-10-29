@@ -2,17 +2,9 @@ import logging
 import xml.etree.ElementTree as ET
 import pandas as pd
 
-# def remove_prefix(s, prefix):
-#     if s.startswith(prefix):
-#         return s[len(prefix):]
-#     return s
-
-def process_run(run, file, timeout, solver_override, statistics):
+def process_run(run, file, timeout, statistics):
     solver = run.attrib["solver_id"]
-    if solver in solver_override:
-        solver = solver_override[solver]
     filename = file.attrib["name"]
-    # filename = remove_prefix(filename, "QF_NRA/")
     answer = None
     runtime = None
     for res in run.find('./results'):
@@ -53,13 +45,29 @@ def xml_to_pandas(filename, solver_override = {}, statistics_filter = None):
     results = {}
     for file in root.findall('./benchmarks/*'):
         for run in file.findall('./*'):
-            idx,solver,res = process_run(run, file, timeout = timeout, solver_override = solver_override, statistics = statistics)
-            if not idx in results:
-                results[idx] = {}
-            results[idx][solver] = res
+            filename,solver,res = process_run(run, file, timeout = timeout, statistics = statistics)
+            if not filename in results:
+                results[filename] = {}
+            results[filename][solver] = res
 
-    print(results)
-    # TODO make indizes and stuff
+    data = []
+    index = []
+    empty = [None for _ in range(0,2+len(statistics))]
+    for filename in results:
+        index.append(filename)
+        row = []
+        for solver in solvers:
+            if solver in results[filename].keys():
+                row.extend(list(results[filename][solver]))
+            else:
+                row.extend(empty)
+        data.append(tuple(row))
 
-    df = pd.DataFrame(columns = pd.MultiIndex.from_product([solvers, ["answer", "runtime"] + statistics]))
+    def solver_name(s):
+        if s in solver_override:
+            return solver_override[s]
+        else:
+            return s
+    
+    df = pd.DataFrame(data, index, columns = pd.MultiIndex.from_product([map(solver_name, solvers), ["answer", "runtime"] + statistics]))
     return df
