@@ -20,7 +20,7 @@ struct PropertiesSet;
  * Project basic properties, i.e. independent from any sample or delineation.
  */
 template <op Op>
-void project_basic_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);
+inline void project_basic_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);
 
 /**
  * Delineate properties.
@@ -52,6 +52,6 @@ inline void project_covering_properties(datastructures::CoveringRepresentation<t
  * Project delineation properties.
  */
 template <op Op>
-void project_delineation_properties(datastructures::DelineationRepresentation<typename PropertiesSet<Op>::type>& repr);
+inline void project_delineation_properties(datastructures::DelineationRepresentation<typename PropertiesSet<Op>::type>& repr);
 
 } 

@@ -222,7 +222,7 @@ public:
         return m_data;
     }
 };
-std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
+inline std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
     os << data.data();
     return os;
 }

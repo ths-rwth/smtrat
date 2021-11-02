@@ -135,8 +135,7 @@ public:
 		std::vector<datastructures::SampledDerivationRef<PropSet>> unsat_cells;
 		for (const ConstraintT& constraint : mUnknownConstraints[level]) {
 			auto intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
-			//Map von sampled deriv zu constraints für infeasible subset
-			//Alle constraints die irgendwie eine derivation erzeugt haben
+			//TODO: Map von sampled deriv zu constraints für infeasible subset, Alle constraints die irgendwie eine derivation erzeugt haben
 			for (const auto& interval : intervals) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
 			}
@@ -145,7 +144,6 @@ public:
 
 		//Add stored cells to unsat_cells to compute covering of all known cells
 		for (const datastructures::SampledDerivationRef<PropSet>& deriv : mCoveringInformation[level]) {
-			//todo reference_wrapper to shared_pointer?
 			unsat_cells.push_back(deriv);
 		}
 
@@ -159,7 +157,6 @@ public:
 		}
 
 		//We only need to store the derivations used in the current (partial) covering
-		//Todo doppelt gemoppelt -> unsat_cells oder mCoveringInformation speichern?
 		filterAndStoreDerivations(mCurrentCovering.value(), level);
 		unsat_cells = mCoveringInformation[level];
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got (partial) covering " << mCurrentCovering);
@@ -188,7 +185,7 @@ public:
 				datastructures::merge_underlying(cell_derivs);
 				operators::project_covering_properties<op>(mLastFullCovering);
 				auto new_deriv = mLastFullCovering.cells.front().derivation->underlying().sampled_ref();
-				operators::project_basic_properties<op>(*new_deriv->base());
+				operators::project_basic_properties<op>(*new_deriv->delineated());
         		operators::delineate_properties<op>(*new_deriv->delineated());
         		new_deriv->delineate_cell();
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell: " << new_deriv->cell());

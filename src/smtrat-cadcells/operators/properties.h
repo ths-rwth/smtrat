@@ -124,13 +124,13 @@ struct poly_del {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-bool operator==(const poly_del& lhs, const poly_del& rhs) {
+inline bool operator==(const poly_del& lhs, const poly_del& rhs) {
     return lhs.poly == rhs.poly;
 }
-bool operator<(const poly_del& lhs, const poly_del& rhs) {
+inline bool operator<(const poly_del& lhs, const poly_del& rhs) {
     return lhs.poly < rhs.poly;
 }
-std::ostream& operator<<(std::ostream& os, const poly_del& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_del& data) {
     os << data.poly << " delineable";
     return os;
 }
@@ -144,13 +144,13 @@ struct poly_irreducible_del {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-bool operator==(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs) {
+inline bool operator==(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs) {
     return lhs.poly == rhs.poly;
 }
-bool operator<(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs) {
+inline bool operator<(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs) {
     return lhs.poly < rhs.poly;
 }
-std::ostream& operator<<(std::ostream& os, const poly_irreducible_del& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_irreducible_del& data) {
     os << data.poly << " delineable and irreducible";
     return os;
 }
@@ -164,13 +164,13 @@ struct cell_connected {
         return 0;
     }
 };
-bool operator==(const cell_connected& lhs, const cell_connected& rhs) {
+inline bool operator==(const cell_connected& lhs, const cell_connected& rhs) {
     return lhs.lvl == rhs.lvl;
 }
-bool operator<(const cell_connected& lhs, const cell_connected& rhs) {
+inline bool operator<(const cell_connected& lhs, const cell_connected& rhs) {
     return lhs.lvl < rhs.lvl;
 }
-std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
+inline std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
     os << data.lvl << " connected";
     return os;
 }

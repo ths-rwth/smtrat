@@ -1,7 +1,7 @@
 namespace smtrat::cadcells::representation {
 
 namespace util_del {
-    std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring) {
+   inline std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring) {
         assert(!bounds.empty());
         auto simplest = bounds.begin();
         for (auto iter = bounds.begin(); iter != bounds.end(); iter++) {
@@ -14,7 +14,7 @@ namespace util_del {
         return *simplest;
     }
 
-    datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds) {
+    inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds) {
         boost::container::flat_set<datastructures::PolyRef> ignoring;
         return *simplest_bound(proj, bounds, ignoring);
     }

@@ -3,6 +3,9 @@
 #include <map>
 #include <vector>
 #include <boost/container/flat_set.hpp>
+
+#include "roots.h"
+
 namespace smtrat::cadcells::datastructures {
 
 using RootMap = std::map<RAN, std::vector<IndexedRoot>>;
@@ -174,16 +177,6 @@ inline bool upper_less(const DelineationInterval& del1, const DelineationInterva
     else return del1.upper()->first < del2.upper()->first;
 }
 
-//Return true iff the Intervals are disjoint
-//Attention: (x,y) == (y,z)
-// Open bounds are treated as closed bounds
-inline bool disjoint(const DelineationInterval& del1, const DelineationInterval& del2){
-    assert(lower_less(del1, del2));
-    if(del1.upper_unbounded()) return false ;
-    if(del2.lower_unbounded()) return false ;
-    return del1.upper()->first < del2.lower()->first ;
-
-}
 
 
 } 

@@ -1,11 +1,12 @@
 #pragma once
 
-#include "../datastructures/roots.h"
+#include "operator.h"
 
+
+#include "../datastructures/roots.h"
 #include "properties.h"
 #include "rules.h"
 #include "delineation.h"
-#include "operator.h"
 
 
 namespace smtrat::cadcells::operators {
@@ -16,7 +17,7 @@ struct PropertiesSet<op::mccallum> {
 };
 
 template <>
-void project_basic_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+inline void project_basic_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
     }
@@ -101,7 +102,7 @@ inline void project_covering_properties<op::mccallum>(datastructures::CoveringRe
 }
 
 template <>
-void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+inline void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
     auto& deriv = repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_del>()) {
