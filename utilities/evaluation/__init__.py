@@ -1,5 +1,5 @@
 from .pandas import xml_to_pandas, xmls_to_pandas
-from .util import filter_solved, cumulate_by_column, performance_profile, virtual_best
+from .util import filter_solved, cumulate_by_column, performance_profile, virtual_best, scatter_plot
 
 # TODO remove:
 from .collect import load_file
