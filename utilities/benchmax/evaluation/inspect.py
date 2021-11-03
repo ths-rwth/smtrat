@@ -17,7 +17,9 @@ def inspect_answer(df):
                 r.append(0)
         data.append(tuple(r))
 
-    return pd.DataFrame(data,index = ['count'] + answers, columns=solvers)
+    data.append(tuple([data[1][i] + data[2][i] for i in range(len(solvers))]))
+
+    return pd.DataFrame(data,index = ['count'] + answers + ['solved'], columns=solvers)
 
 def inspect_wrongs(df, solver = None):
     if solver is None and len(get_solvers(df))==1:
