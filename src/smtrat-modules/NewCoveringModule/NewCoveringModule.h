@@ -28,11 +28,11 @@ namespace smtrat {
 template<typename Settings>
 class NewCoveringModule : public Module {
 private:
-	//List of unknown Constraints
+	//List of constraints that have not been passed to the backend
 	FormulasT mUnknownConstraints;
 
-	//List of known Constraints
-	FormulasT mKnownConstraints;
+	//List of constraints that have to be removed from the backend (For Backtracking)
+	FormulasT mRemoveConstraints;
 
 	//Set of all known Variables
 	carl::carlVariables mVariables;
@@ -68,7 +68,7 @@ public:
 	/**
 			 * Informs all backends about the so far encountered constraints, which have not yet been communicated.
 			 * This method must not and will not be called more than once and only before the first runBackends call.
-			 */
+			 */	
 	void init();
 
 	/**

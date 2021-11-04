@@ -34,9 +34,6 @@ private:
 	//Variable Ordering
 	std::vector<carl::Variable> mVariableOrdering;
 
-	//Main Variables of constraints need to be in the same ordering as the variable ordering
-	std::vector<FormulasT> mConstraints; //boost flat_set?
-
 	//Ordered List of unique unknown Constraints (flat_set by level)
 	std::vector<boost::container::flat_set<ConstraintT>> mUnknownConstraints;
 
@@ -94,6 +91,14 @@ public:
 		mUnknownConstraints[level].insert(constraint);
 	}
 
+	auto& getUnknownConstraints() {
+		return mUnknownConstraints;
+	}
+
+	auto& getKnownConstraints() {
+		return mKnownConstraints;
+	}
+
 	//The new Variable ordering must be an "extension" to the old one
 	void setVariableOrdering(const std::vector<carl::Variable>& newVarOrdering) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Old Variable ordering: " << mVariableOrdering);
@@ -112,9 +117,38 @@ public:
 	//Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
 		for (size_t i = level; i < dimension(); i++) {
-			//mCoveringInformation.erase(i); TODO
+			//Resetting the covering data
+			mCoveringInformation[i].clear();
+			//Resetting the assignment
 			mCurrentAssignment.erase(mVariableOrdering[i]);
+			//Resetting the known constraints
+			for (const auto& constraint : mKnownConstraints[i]) {
+				mUnknownConstraints[i].insert(std::move(constraint));
+			}
+			mKnownConstraints[i].clear();
 		}
+	}
+
+	void removeConstraint(const ConstraintT& constraint) {
+		//We can substract 1 from level because we dont have constant polynomials
+		std::size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Removing Constraint : " << constraint << " on level " << level);
+		
+		//If we find the constraint in the unknown constraints we have the easy case -> Just remove it and not care about the stored data
+		//Is that case even possible?
+		if(mUnknownConstraints[level].find(constraint) != mUnknownConstraints[level].end()) {
+			mUnknownConstraints[level].erase(constraint);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was in unknown constraints");
+			return;
+		}
+
+		//The hard case -> The constraint must be in the known constraints 
+		//We have to remove it and remove all the stored data that originated from this constraint
+		assert(mKnownConstraints[level].find(constraint) != mKnownConstraints[level].end());
+		mKnownConstraints[level].erase(constraint);
+		//TODO 
+		return ;
+
 	}
 
 	void filterAndStoreDerivations(const datastructures::CoveringRepresentation<PropSet>& mCovering, const std::size_t& level) {
@@ -126,12 +160,30 @@ public:
 		}
 	}
 
+	void setConstraintsKnown(const std::size_t& level) {
+		for (const auto& constraint : mUnknownConstraints[level]) {
+			mKnownConstraints[level].insert(std::move(constraint));
+		}
+		mUnknownConstraints[level].clear();
+	}
+
+
+	//Todo: Only delete the one level and not also all higher ones?
+	void setConstraintsUnknown(const std::size_t& level) {
+		//Set the constraints of the given level and all higher dimensions to be unknown.
+		for (std::size_t i = level; i < mVariableOrdering.size(); i++) {
+			for (const auto& constraint : mKnownConstraints[i]) {
+				mUnknownConstraints[i].insert(std::move(constraint));
+			}
+			mKnownConstraints[i].clear();
+		}
+	}
+
 	Answer getUnsatCover(const std::size_t level) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " with current assignment: " << mCurrentAssignment);
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Dimension: " << dimension());
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints);
-		//Todo Add UnknownConstraints to Known constraints once the derivations exits
 		std::vector<datastructures::SampledDerivationRef<PropSet>> unsat_cells;
 		for (const ConstraintT& constraint : mUnknownConstraints[level]) {
 			auto intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
@@ -141,6 +193,9 @@ public:
 			}
 			unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
 		}
+
+		//Set the unknown constraints to be known, as all new derivations have been calculated
+		setConstraintsKnown(level);
 
 		//Add stored cells to unsat_cells to compute covering of all known cells
 		for (const datastructures::SampledDerivationRef<PropSet>& deriv : mCoveringInformation[level]) {
@@ -153,6 +208,7 @@ public:
 		auto mCurrentCovering = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
 		if (!mCurrentCovering.has_value()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed -> Aborting");
+			setConstraintsUnknown(level);
 			return Answer::UNKNOWN;
 		}
 
@@ -171,7 +227,6 @@ public:
 				return Answer::SAT;
 			}
 
-			//Make iterative instead of recursion?
 			Answer nextLevel = getUnsatCover(level + 1);
 
 			if (nextLevel == Answer::SAT) {
@@ -181,13 +236,13 @@ public:
 				//NextLevel is Unsat -> Generate Unsat-Cell
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Last full covering: " << mLastFullCovering);
 
-			    auto cell_derivs = mLastFullCovering.sampled_derivations();
+				auto cell_derivs = mLastFullCovering.sampled_derivations();
 				datastructures::merge_underlying(cell_derivs);
 				operators::project_covering_properties<op>(mLastFullCovering);
 				auto new_deriv = mLastFullCovering.cells.front().derivation->underlying().sampled_ref();
 				operators::project_basic_properties<op>(*new_deriv->delineated());
-        		operators::delineate_properties<op>(*new_deriv->delineated());
-        		new_deriv->delineate_cell();
+				operators::delineate_properties<op>(*new_deriv->delineated());
+				new_deriv->delineate_cell();
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell: " << new_deriv->cell());
 
 				//add new cell to stored data and recalculate the current covering
@@ -214,6 +269,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Cells cover the numberline ");
 		//operators::project_covering_properties<op>(mCurrentCovering.value());
 		mLastFullCovering = std::move(mCurrentCovering.value());
+		setConstraintsUnknown(level);
 		return Answer::UNSAT;
 	}
 

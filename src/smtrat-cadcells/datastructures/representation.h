@@ -84,8 +84,10 @@ struct CoveringRepresentation {
 		//Search for adjacent disjoint cells and sample between
 		for (size_t i = 0; i + 1 < cells.size(); i++) {
 			//We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Checking between" << cells[i].derivation->cell().upper()->first << " and " << cells[i+1].derivation->cell().lower()->first);
 			if (!cells[i].derivation->cell().upper_unbounded() && !cells[i+1].derivation->cell().lower_unbounded() && cells[i].derivation->cell().upper()->first < cells[i+1].derivation->cell().lower()->first) {
 				sample = carl::sample_between(cells[i].derivation->cell().upper()->first, cells[i + 1].derivation->cell().lower()->first);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found sample between " << cells[i].derivation->cell().upper()->first << " and " << cells[i+1].derivation->cell().lower()->first << "  : " << sample);
 				return true;
 
 			//The check above does not care for open bounds

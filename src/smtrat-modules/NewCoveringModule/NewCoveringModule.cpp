@@ -22,7 +22,7 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Got constraint: " << _constraint.constraint());
-	mUnknownConstraints.push_back(_constraint);
+	//mUnknownConstraints.push_back(_constraint);
 	return true;
 }
 
@@ -33,28 +33,32 @@ template<class Settings>
 bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 	//Incremental call
 	//TODO: is it possible that new (unknown) Variable are in the new constraints?
+	assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
 	mUnknownConstraints.push_back(_subformula->formula());
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new unknown constraint: " << _subformula->formula().constraint());
 	return true;
 }
 
 template<class Settings>
 void NewCoveringModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
 	//Backtracking
-	assert(false);
-	// Your code.
+	assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+	mRemoveConstraints.push_back(_subformula->formula());
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding to remove constraint: " << _subformula->formula().constraint());
 }
 
 template<class Settings>
 void NewCoveringModule<Settings>::updateModel() const {
 	clearModel();
-	for(const auto& pair : mLastAssignment){
+	for (const auto& pair : mLastAssignment) {
 		mModel.assign(pair.first, pair.second);
 	}
 }
 
 template<class Settings>
 Answer NewCoveringModule<Settings>::checkCore() {
-	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with unknown constraints: " << mUnknownConstraints << " and known constraints: " << mKnownConstraints);
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with unknown constraints: " << mUnknownConstraints);
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with remove constraints: " << mRemoveConstraints);
 
 	//Check if this is the first time checkCore is called
 	if (mVariableOrdering.empty()) {
@@ -80,9 +84,12 @@ Answer NewCoveringModule<Settings>::checkCore() {
 			backend.addConstraint(constraint.constraint());
 		}
 
+		mUnknownConstraints.clear();
+
 	} else if (backend.dimension() != mVariables.size()) {
 		//This is an incremental call, we have more Variable than before and are out of sync with the backend and the Helpers
-		//Add unknown polynomials to PolyPool
+		//Add unknown constraints to backend
+		//TODO: IS THIS EVEN POSSIBLE?
 
 		//TODO: Change Var ordering in PolyPool
 		assert(false);
@@ -90,21 +97,113 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 	else {
 		//This is either an incremental call or a backtracking call but the set of known variables is the same
-		//Add unknown polynomials to PolyPool
 
-		assert(false);
+		if (!mUnknownConstraints.empty() && mRemoveConstraints.empty()) {
+			//This is an ONLY incremental call as we have new unknown constraints but no constraints to remove
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Incremental ONLY Call with new constraints: " << mUnknownConstraints << " and old assignment: " << mLastAssignment);
+
+			//Recheck the unknown constraints with the last satisfying assignment
+			std::size_t lowestLevelWithUnsatisfiedConstraint = mVariables.size() + 1;
+			for (const auto& constraint : mUnknownConstraints) {
+				//if (backend.check(constraint.constraint()) == Answer::UNSAT) {
+				if(carl::evaluate(constraint.constraint(), mLastAssignment) != true) {
+					//This constraint is unsat with the last assignment
+					SMTRAT_LOG_DEBUG("smtrat.covering", "This constraint is unsat with the last assignment: " << constraint.constraint());
+					
+					//We can substract 1 from level because we dont have constant polynomials
+					std::size_t level = cadcells::helper::level_of(mVariableOrdering, constraint.constraint().lhs()) - 1;
+					lowestLevelWithUnsatisfiedConstraint = std::min(lowestLevelWithUnsatisfiedConstraint, level);
+
+				} else {
+					//This constraint is sat with the last assignment
+					SMTRAT_LOG_DEBUG("smtrat.covering", "This constraint is sat with the last assignment: " << constraint.constraint());
+				}
+			}
+
+			//reset the backend for all levels higher and including the lowest level with an unsatisfied constraint
+			if (lowestLevelWithUnsatisfiedConstraint < mVariables.size() + 1) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Resetting backend for levels higher or equal to " << lowestLevelWithUnsatisfiedConstraint);
+				backend.resetStoredData(lowestLevelWithUnsatisfiedConstraint);
+			}else{
+				SMTRAT_LOG_DEBUG("smtrat.covering", "No unsatisfied constraints found -> we can trivially return SAT again with the same assignment");
+				return Answer::SAT;
+			}
+
+			//Add all unknown constraints to backend
+			for (const auto& constraint : mUnknownConstraints) {
+				//Asserts that it is indeed a constraint
+				backend.addConstraint(constraint.constraint());
+			}
+			mUnknownConstraints.clear();
+
+		} else if(mUnknownConstraints.empty() && !mRemoveConstraints.empty()) {
+			//This is an ONLY backtracking call as we only have constraints to remove but no new unknown constraints 
+			//not supported yet, we just reset all data in the backend 
+			//TODO : FULLY SUPPORT BACKTRACKING!
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Backtracking ONLY Call with remove constraints: " << mRemoveConstraints);
+
+			backend.resetStoredData(0);
+			
+			//remove the given constraints from the backend
+			for(const auto& constraint : mRemoveConstraints){
+				backend.removeConstraint(constraint.constraint());
+			}
+			mRemoveConstraints.clear();
+		}else if(!mUnknownConstraints.empty() && !mRemoveConstraints.empty()){
+			//Both incremental call and backtracking as we have constraints to remove new unknown constraints
+			//What do we do? first do backtracking and then do incremental?? -> Ask Jasper
+			//not supported, we the reset all the data and make a fresh start
+			
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Backtracking and Incremental Call with new constraints: " << mUnknownConstraints << " and remove constraints: " << mRemoveConstraints);
+
+			backend.resetStoredData(0);
+			//remove the given constraints from the backend
+			for(const auto& constraint : mRemoveConstraints){
+				backend.removeConstraint(constraint.constraint());
+			}
+			mRemoveConstraints.clear();
+
+			//Add all unknown constraints to backend
+			for (const auto& constraint : mUnknownConstraints) {
+				//Asserts that it is indeed a constraint
+				backend.addConstraint(constraint.constraint());
+			}
+			mUnknownConstraints.clear();
+		}else{
+			//No incremental call, no backtracking call, we have no new unknown constraints and no constraints to remove
+			//Why does this even happen?
+			//Just return the last answer
+			assert(mRemoveConstraints.empty());
+			assert(mUnknownConstraints.empty());
+
+			SMTRAT_LOG_DEBUG("smtrat.covering", "No incremental call, no backtracking call, we have no new unknown constraints and no constraints to remove");
+			SMTRAT_LOG_DEBUG("smtrat.covering", "We just return the last known result");
+
+			return solverState();
+		}
 	}
 
+	//Todo: for the incremental call we dont have to start at level 0 -> we could start at the lowest level with an unsatisfied constraint -> this would be faster
+	//In the current implementation we still calculate the new unsat-cells for levels that are satisfied with the last assignment -> this is not necessary
 	Answer answer = backend.getUnsatCover(0);
 
 	if (answer == Answer::UNSAT) {
 		//Just use the trivial infeasible subset for now
 		generateTrivialInfeasibleSubset();
-		clearModel();
 		mLastAssignment.clear();
-	}else if(answer == Answer::SAT){
+		updateModel();
+		for (const auto& knownConstraints : backend.getKnownConstraints()) {
+			assert(knownConstraints.empty());
+		}
+	} else if (answer == Answer::SAT) {
 		mLastAssignment = backend.getCurrentAssignment();
-		updateModel() ;
+		updateModel();
+
+		for (const auto& unknownConstraints : backend.getUnknownConstraints()) {
+			assert(unknownConstraints.empty());
+		}
+	} else {
+		//Answer is UNKNOWN and something went wrong
 	}
 
 	return answer;
