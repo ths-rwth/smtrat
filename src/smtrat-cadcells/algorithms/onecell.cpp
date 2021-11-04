@@ -15,7 +15,7 @@ namespace smtrat::cadcells::algorithms {
 constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
 constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
 constexpr auto op = operators::op::mccallum;
-constexpr bool use_delineation = false; 
+constexpr bool use_delineation = true; 
 
 using PropSet = operators::PropertiesSet<op>::type;
 

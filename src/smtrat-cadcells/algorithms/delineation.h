@@ -25,8 +25,8 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
             return std::nullopt;
         }
         assert(cadcells::helper::level_of(vars, p) == sample.size()+1);
-        deriv->insert(operators::properties::poly_del{ proj.polys()(p) });
-        // TODO can we use equational constraints here? -> other set of properties?
+        deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(p) });
+        // TODO can we use equational constraints?     
     }
     operators::project_basic_properties<op>(*deriv);
     operators::delineate_properties<op>(*deriv);

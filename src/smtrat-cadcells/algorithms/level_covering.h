@@ -11,6 +11,8 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
         unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
     }
 
+    // TODO can we use equational constraints in some cases?
+
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing covering representation");
     auto covering_repr = representation::covering<covering_heuristic>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
     if (!covering_repr) {
