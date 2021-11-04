@@ -21,8 +21,10 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
-	SMTRAT_LOG_DEBUG("smtrat.covering", "Got constraint: " << _constraint.constraint());
-	//mUnknownConstraints.push_back(_constraint);
+
+	//Gather all possibly occuring variables
+	_constraint.gatherVariables(mVariables);
+
 	return true;
 }
 
@@ -32,7 +34,6 @@ void NewCoveringModule<Settings>::init() {}
 template<class Settings>
 bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 	//Incremental call
-	//TODO: is it possible that new (unknown) Variable are in the new constraints?
 	assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
 	mUnknownConstraints.push_back(_subformula->formula());
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new unknown constraint: " << _subformula->formula().constraint());
@@ -64,10 +65,6 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	if (mVariableOrdering.empty()) {
 		//Init variable odering
 
-		for (const FormulaT& formula : mUnknownConstraints) {
-			formula.gatherVariables(mVariables);
-		}
-
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variables: " << mVariables);
 
 		//Just take the current ordering of the set -> we do heuristics later
@@ -85,18 +82,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		}
 
 		mUnknownConstraints.clear();
-
-	} else if (backend.dimension() != mVariables.size()) {
-		//This is an incremental call, we have more Variable than before and are out of sync with the backend and the Helpers
-		//Add unknown constraints to backend
-		//TODO: IS THIS EVEN POSSIBLE?
-
-		//TODO: Change Var ordering in PolyPool
-		assert(false);
-	}
-
-	else {
-		//This is either an incremental call or a backtracking call but the set of known variables is the same
+	} else {
+		//This is either an incremental call or a backtracking call (or both)
 
 		if (!mUnknownConstraints.empty() && mRemoveConstraints.empty()) {
 			//This is an ONLY incremental call as we have new unknown constraints but no constraints to remove
@@ -106,10 +93,10 @@ Answer NewCoveringModule<Settings>::checkCore() {
 			std::size_t lowestLevelWithUnsatisfiedConstraint = mVariables.size() + 1;
 			for (const auto& constraint : mUnknownConstraints) {
 				//if (backend.check(constraint.constraint()) == Answer::UNSAT) {
-				if(carl::evaluate(constraint.constraint(), mLastAssignment) != true) {
+				if (carl::evaluate(constraint.constraint(), mLastAssignment) != true) {
 					//This constraint is unsat with the last assignment
 					SMTRAT_LOG_DEBUG("smtrat.covering", "This constraint is unsat with the last assignment: " << constraint.constraint());
-					
+
 					//We can substract 1 from level because we dont have constant polynomials
 					std::size_t level = cadcells::helper::level_of(mVariableOrdering, constraint.constraint().lhs()) - 1;
 					lowestLevelWithUnsatisfiedConstraint = std::min(lowestLevelWithUnsatisfiedConstraint, level);
@@ -124,7 +111,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 			if (lowestLevelWithUnsatisfiedConstraint < mVariables.size() + 1) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Resetting backend for levels higher or equal to " << lowestLevelWithUnsatisfiedConstraint);
 				backend.resetStoredData(lowestLevelWithUnsatisfiedConstraint);
-			}else{
+			} else {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "No unsatisfied constraints found -> we can trivially return SAT again with the same assignment");
 				return Answer::SAT;
 			}
@@ -136,29 +123,29 @@ Answer NewCoveringModule<Settings>::checkCore() {
 			}
 			mUnknownConstraints.clear();
 
-		} else if(mUnknownConstraints.empty() && !mRemoveConstraints.empty()) {
-			//This is an ONLY backtracking call as we only have constraints to remove but no new unknown constraints 
-			//not supported yet, we just reset all data in the backend 
+		} else if (mUnknownConstraints.empty() && !mRemoveConstraints.empty()) {
+			//This is an ONLY backtracking call as we only have constraints to remove but no new unknown constraints
+			//not supported yet, we just reset all data in the backend
 			//TODO : FULLY SUPPORT BACKTRACKING!
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Backtracking ONLY Call with remove constraints: " << mRemoveConstraints);
 
 			backend.resetStoredData(0);
-			
+
 			//remove the given constraints from the backend
-			for(const auto& constraint : mRemoveConstraints){
+			for (const auto& constraint : mRemoveConstraints) {
 				backend.removeConstraint(constraint.constraint());
 			}
 			mRemoveConstraints.clear();
-		}else if(!mUnknownConstraints.empty() && !mRemoveConstraints.empty()){
+		} else if (!mUnknownConstraints.empty() && !mRemoveConstraints.empty()) {
 			//Both incremental call and backtracking as we have constraints to remove new unknown constraints
 			//What do we do? first do backtracking and then do incremental?? -> Ask Jasper
 			//not supported, we the reset all the data and make a fresh start
-			
+
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Backtracking and Incremental Call with new constraints: " << mUnknownConstraints << " and remove constraints: " << mRemoveConstraints);
 
 			backend.resetStoredData(0);
 			//remove the given constraints from the backend
-			for(const auto& constraint : mRemoveConstraints){
+			for (const auto& constraint : mRemoveConstraints) {
 				backend.removeConstraint(constraint.constraint());
 			}
 			mRemoveConstraints.clear();
@@ -169,7 +156,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 				backend.addConstraint(constraint.constraint());
 			}
 			mUnknownConstraints.clear();
-		}else{
+		} else {
 			//No incremental call, no backtracking call, we have no new unknown constraints and no constraints to remove
 			//Why does this even happen?
 			//Just return the last answer
