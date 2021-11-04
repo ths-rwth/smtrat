@@ -38,11 +38,17 @@ def inspect(df):
     for solver in get_solvers(df):
         if ai.loc['wrong',solver] > 0:
             print("\n\n\033[1mThere are wrongs in {}\033[0m".format(solver))
-            i = inspect_wrongs(df, solver)[[(solver,'runtime')]]
+            if (solver,'peak_memory_kbytes') in df.columns:
+                i = inspect_wrongs(df, solver)[[(solver,'runtime'),(solver,'peak_memory_kbytes')]]
+            else:
+                i = inspect_wrongs(df, solver)[[(solver,'runtime')]]
             print(list(i.index))
             print(i)
         if ai.loc['segfault',solver] > 0:
             print("\n\n\033[1mThere are segfaults in {}\033[0m".format(solver))
-            i = inspect_segfaults(df, solver)[[(solver,'runtime')]]
+            if (solver,'peak_memory_kbytes') in df.columns:
+                i = inspect_segfaults(df, solver)[[(solver,'runtime'),(solver,'peak_memory_kbytes')]]
+            else:
+                i = inspect_segfaults(df, solver)[[(solver,'runtime')]]
             print(list(i.index))
             print(i)
