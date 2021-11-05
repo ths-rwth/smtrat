@@ -54,7 +54,7 @@ df = df.join(ev.virtual_best(df, ["solver1","solver2","solver3"], "VB", ['statis
 
 We provide the `performance_profile` and `scatter_plot` functions to easily generate a performance profiles and scatter plots.
 
-## Inspect
+## Show a summary of an XML file
 
 There are several methods for quickly inspecting the results of a run provided. For instance, the following script can be used to view a summary of a singel XML file and to show instances with wrong results or segmentation faults:
 
@@ -65,6 +65,12 @@ import sys
 
 df = ev.xml_to_pandas(sys.argv[1])
 ev.inspect(df)
+```
+
+SMT-RAT provides a small utility script for showing a summary of one or more XML files:
+
+```bash
+~/Code/smtrat/utilities/benchmax/view.py result_1.xml result_2.xml
 ```
 
 ## Exporting data to Latex

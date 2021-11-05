@@ -4,4 +4,5 @@
 # TODO untested!
 
 ERROR=$($3 $1 2>&1 >/dev/null)
-ddsmt --match-err $ERROR $2 $3
+echo $ERROR
+ddsmt --match-err $ERROR $1 $2 $3
