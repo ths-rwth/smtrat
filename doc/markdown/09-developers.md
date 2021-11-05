@@ -8,3 +8,4 @@
 - @subpage validation
 - @subpage checkpoints
 - @subpage bugs
+- @ref tools
