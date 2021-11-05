@@ -100,6 +100,7 @@ void project_delineation_properties<op::mccallum>(datastructures::DelineationRep
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         deriv.insert(properties::poly_pdel{ prop.poly });
+        deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(prop.poly) });
     }
 
     for (const auto& poly : deriv.delin().nonzero()) {

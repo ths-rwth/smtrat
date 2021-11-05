@@ -72,8 +72,8 @@ bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::
 template<typename P>
 bool poly_pdel(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "proj_del(" << poly << ")");
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     if (!poly_non_null(deriv, poly)) return false;
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
     deriv.insert(properties::cell_connected{ poly.level-1 });
     return true;
@@ -236,6 +236,8 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
+            assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(rel.first.poly) }));
+            assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(rel.second.poly) }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
         }
     }
@@ -318,6 +320,7 @@ template<typename P>
 void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
+    assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) }));
     // guaranteed by ordering
 }
 
