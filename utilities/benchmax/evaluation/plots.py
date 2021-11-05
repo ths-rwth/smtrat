@@ -17,9 +17,9 @@ def scatter_plot(df, solver1, solver2, field, filter = False, category = None, c
 
     if category:
         for cat in df[category].unique():
-            df[df[category] == cat].plot.scatter(ax = ax, x=(solver1, field), y=(solver2, field), label=cat, c=colormap[cat])
+            df[df[category] == cat].plot.scatter(ax = ax, x=(solver1, field), y=(solver2, field), label=cat, c=colormap[cat], alpha=0.5)
     else:
-        df.plot.scatter(ax = ax, x=(solver1, field), y=(solver2, field))
+        df.plot.scatter(ax = ax, x=(solver1, field), y=(solver2, field), alpha=0.5)
     ax.set_xlabel(solver1)
     ax.set_ylabel(solver2)
     lower = max(ax.get_xlim()[0],ax.get_ylim()[0])
