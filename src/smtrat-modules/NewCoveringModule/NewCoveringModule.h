@@ -40,6 +40,9 @@ private:
 	//Variable Ordering, Initialized in checkCore
 	std::vector<carl::Variable> mVariableOrdering;
 
+	//The Result of the last check, unkown if not run yet
+	Answer mLastAnswer = Answer::UNKNOWN;
+
 	//Contains the last assignment which satisfied all the given known constraints (empty otherwise)
 	carl::ran_assignment<Rational> mLastAssignment;
 

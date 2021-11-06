@@ -83,6 +83,10 @@ public:
 		return mCurrentAssignment;
 	}
 
+	const auto& getCoveringInformation() {
+		return mCoveringInformation;
+	}
+
 	//Adds a constraint into the right level
 	void addConstraint(const ConstraintT& constraint) {
 		//We can substract 1 from level because we dont have constant polynomials
@@ -257,9 +261,8 @@ public:
 				filterAndStoreDerivations(mCurrentCovering.value(), level);
 				unsat_cells = mCoveringInformation[level];
 
-				//delete now obsolete information
+				//delete the now obsolete variable assignment
 				mCurrentAssignment.erase(mVariableOrdering[level]);
-				mCoveringInformation[level + 1].clear();
 			} else {
 				//Something went wrong (McCallum failed)
 				return Answer::UNKNOWN;
@@ -269,6 +272,8 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Cells cover the numberline ");
 		//operators::project_covering_properties<op>(mCurrentCovering.value());
 		mLastFullCovering = std::move(mCurrentCovering.value());
+		//Remove the stored covering information
+		mCoveringInformation[level].clear();
 		setConstraintsUnknown(level);
 		return Answer::UNSAT;
 	}
