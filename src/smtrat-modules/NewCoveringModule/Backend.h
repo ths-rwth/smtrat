@@ -137,22 +137,21 @@ public:
 		//We can substract 1 from level because we dont have constant polynomials
 		std::size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Removing Constraint : " << constraint << " on level " << level);
-		
+
 		//If we find the constraint in the unknown constraints we have the easy case -> Just remove it and not care about the stored data
 		//Is that case even possible?
-		if(mUnknownConstraints[level].find(constraint) != mUnknownConstraints[level].end()) {
+		if (mUnknownConstraints[level].find(constraint) != mUnknownConstraints[level].end()) {
 			mUnknownConstraints[level].erase(constraint);
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was in unknown constraints");
 			return;
 		}
 
-		//The hard case -> The constraint must be in the known constraints 
+		//The hard case -> The constraint must be in the known constraints
 		//We have to remove it and remove all the stored data that originated from this constraint
 		assert(mKnownConstraints[level].find(constraint) != mKnownConstraints[level].end());
 		mKnownConstraints[level].erase(constraint);
-		//TODO 
-		return ;
-
+		//TODO
+		return;
 	}
 
 	void filterAndStoreDerivations(const datastructures::CoveringRepresentation<PropSet>& mCovering, const std::size_t& level) {
@@ -170,7 +169,6 @@ public:
 		}
 		mUnknownConstraints[level].clear();
 	}
-
 
 	//Todo: Only delete the one level and not also all higher ones?
 	void setConstraintsUnknown(const std::size_t& level) {
@@ -244,6 +242,10 @@ public:
 				datastructures::merge_underlying(cell_derivs);
 				operators::project_covering_properties<op>(mLastFullCovering);
 				auto new_deriv = mLastFullCovering.cells.front().derivation->underlying().sampled_ref();
+				if (!operators::project_cell_properties<op>(*new_deriv)) {
+					SMTRAT_LOG_TRACE("smtrat.covering", "Could not project properties");
+					return Answer::UNKNOWN;
+				}
 				operators::project_basic_properties<op>(*new_deriv->delineated());
 				operators::delineate_properties<op>(*new_deriv->delineated());
 				new_deriv->delineate_cell();
