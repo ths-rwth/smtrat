@@ -8,10 +8,12 @@ Dependencies:
 
 * [pandas](https://pandas.pydata.org/)
 * matplotlib
-* [tikzplotlib](https://github.com/nschloe/tikzplotlib) (recommended)
+* pillow
+* numpy
+* [tikzplotlib](https://github.com/nschloe/tikzplotlib)
 
 ```bash
-pip3 install pandas matplotlib tikzplotlib
+pip3 install pandas matplotlib tikzplotlib numpy pillow
 ```
 
 ## Loading XMLs into a pandas dataframe
