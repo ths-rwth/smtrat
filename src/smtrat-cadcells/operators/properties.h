@@ -120,7 +120,7 @@ std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
     return os;
 }
 
-struct cell_connected { // TODO this is a flag -> replace by Boolean?
+struct cell_connected {
     static constexpr bool is_flag = true; 
     std::size_t lvl;
     std::size_t level() const {
