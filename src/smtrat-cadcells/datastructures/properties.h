@@ -1,8 +1,8 @@
 #pragma once
 
 #include "../common.h"
-#include <set>
-//#include <boost/container/flat_set.hpp>
+//#include <set>
+#include <boost/container/flat_set.hpp>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -15,8 +15,8 @@ struct property_hash {
 
 template<typename T>
 //using PropertiesTSet = std::unordered_set<T, property_hash<T>>;
-using PropertiesTSet = std::set<T>; // TODO flat_set?
-//using PropertiesTSet = boost::container::flat_set<T>;
+//using PropertiesTSet = std::set<T>;
+using PropertiesTSet = boost::container::flat_set<T>;
 
 template<typename T, bool is_flag>
 struct PropertiesTContent;
