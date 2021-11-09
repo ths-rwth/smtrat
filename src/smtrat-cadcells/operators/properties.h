@@ -11,6 +11,7 @@
 namespace smtrat::cadcells::operators::properties {
 
 struct poly_sgn_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
@@ -31,6 +32,7 @@ std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
 }
 
 struct poly_irreducible_sgn_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;   
     size_t level() const {
         return poly.level;
@@ -51,6 +53,7 @@ std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv& data)
 }
 
 struct poly_ord_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
@@ -71,6 +74,7 @@ std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
 }
 
 struct root_well_def {
+    static constexpr bool is_flag = false; 
     datastructures::IndexedRoot root;
     size_t level() const {
         return root.poly.level-1;
@@ -96,6 +100,7 @@ std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
 }
 
 struct poly_pdel {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level-1;
@@ -115,7 +120,8 @@ std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
     return os;
 }
 
-struct cell_connected {
+struct cell_connected { // TODO this is a flag -> replace by Boolean?
+    static constexpr bool is_flag = true; 
     std::size_t lvl;
     std::size_t level() const {
         return lvl;

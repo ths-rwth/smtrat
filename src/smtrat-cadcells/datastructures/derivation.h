@@ -151,7 +151,7 @@ public:
         assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
-            get<P>(m_properties).emplace(property);
+            prop_insert<P>(m_properties, property);
         } else {
             assert(!m_underlying.is_null());
             m_underlying.base().insert(property);
@@ -163,7 +163,7 @@ public:
         assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
-            return get<P>(m_properties).find(property) != get<P>(m_properties).end();
+            return prop_has<P>(m_properties, property);
         } else {
             assert(!m_underlying.is_null());
             return m_underlying.base().contains(property);
@@ -171,7 +171,7 @@ public:
     }
     template<typename P>
     const PropertiesTSet<P>& properties() const {
-        return get<P>(m_properties);
+        return prop_get<P>(m_properties);
     }
 
     void merge_with(const BaseDerivation<Properties>& other) {

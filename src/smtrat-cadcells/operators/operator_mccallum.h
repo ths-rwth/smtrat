@@ -45,7 +45,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
         }
     }
 
-    if (!deriv.properties<properties::cell_connected>().empty()) {
+    if (deriv.contains(properties::cell_connected{deriv.level()})) {
         rules::cell_connected(deriv, repr.description);
     }
     rules::cell_analytic_submanifold(deriv, repr.description);
