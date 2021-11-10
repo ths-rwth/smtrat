@@ -2,17 +2,19 @@
 
 #include <smtrat-solver/Manager.h>
 
-//#include "../modules/FPPModule/FPPModule.h"
+#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 
 namespace smtrat
 {
-	class MCSATFMICPVSOCNew: public Manager
+	class MCSATFMICPVSOCNewPP: public Manager
 	{
 		public:
-			MCSATFMICPVSOCNew(): Manager() { // TODO change to PP version later
+			MCSATFMICPVSOCNewPP(): Manager() {
 				setStrategy(
+					addBackend<FPPModule<FPPSettings1>>(
 						addBackend<SATModule<SATSettingsMCSATFMICPVSOCNew>>()
+					)
 				);
 			}
 	};
