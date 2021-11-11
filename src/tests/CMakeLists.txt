@@ -8,10 +8,8 @@
 # )
 # 
 # add_subdirectory(cad)
-# add_subdirectory(parser)
 # add_subdirectory(pseudobool)
 # add_subdirectory(onecellcad)
-# add_subdirectory(datastructures)
 # add_subdirectory(nlsat)
 # add_subdirectory(mcsat)
 # add_subdirectory(mcsatvs)
