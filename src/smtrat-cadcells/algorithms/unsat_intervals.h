@@ -160,7 +160,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
 }
 
 /**
- * Returns the unsat intervals of the given atom w.r.t. a sample.
+ * Returns the unsat intervals of the given atom w.r.t. an underlying sample.
+ * 
+ * @param c A constraint or a variable comparison.
+ * @param sample A sample point such that the highest variable in @ref c w.r.t. the variable odering in @ref proj is the only unassigned variable.
+ * @return A list of sampled derivations with the same delineated derivations. The samples for the unassigned variables are sampled from the respective interval.
  */
 template <cadcells::operators::op op>
 std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const FormulaT& c, datastructures::Projections& proj, const Assignment& sample) {

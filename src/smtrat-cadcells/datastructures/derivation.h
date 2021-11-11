@@ -23,9 +23,13 @@ using SampledDerivationRef = std::shared_ptr<SampledDerivation<Properties>>;
 
 /**
  * A reference to a derivation, which is either
- * - a BaseDerivation (a set of proprties for each level)
- * - a DelineatedDerivation (a BaseDerivation with an underlying SampledDerivation on which the properties can be delineated)
- * - a SampledDerivation (a DelineatedDerivation with an underlying SampledDerivation plus a sample on the current level such that a delineated interval can be computed)
+ * - a @ref BaseDerivation (a set of properties for each level)
+ * - a @ref DelineatedDerivation (a @ref BaseDerivation with an underlying @ref SampledDerivation on which the properties can be delineated)
+ * - a @ref SampledDerivation (a @ref DelineatedDerivation with an underlying @ref SampledDerivation plus a sample on the current level such that a delineated interval can be computed)
+ * 
+ * ## Memory management
+ * 
+ * Memory management is based on std::shared_ptr. A SampledDerivation holds a shared pointer to a DelineatedDerivation, which in turn holds a shared pointer to BaseDerivation. The BaseDerivation holds a @ref DerivationRef to the underlying derivation. Note that not all combinations are legal; i.e. the underlying derivation of a delineated derivation must be a sampled derivation.
  */
 template<typename Properties>
 class DerivationRef {
