@@ -2,6 +2,15 @@
 
 namespace smtrat::cadcells::algorithms {
 
+/**
+ * Computes an unsat covering w.r.t. a set of constraints.
+ * 
+ * If a constraint is univariate under a sample, for the unassinged variables, the constraint induces intervals in which the constraint will be conflicting. If multiple such intervals from a set of constraints cover the real line, then the partial sample cannot be extended without making a conflict. This conflict is generalized.
+ * 
+ * @param constraints Atoms of the same level such that @ref sample cannot be extended for the highest variable without making one atom false. Note that this property is not checked.
+ * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
+ * @return A sampled derivation which contains the information to reproduce the conflict. 
+ */
 template<cadcells::operators::op op, representation::CoveringHeuristic covering_heuristic>
 std::optional<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_level_covering(datastructures::Projections& proj, const FormulasT& constraints, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << sample);
