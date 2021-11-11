@@ -16,6 +16,10 @@ namespace smtrat {
  * - @ref cadcells::algorithms contains helper methods, building blocks for algorithms as well as algorithms themselves. Go here for usage of the framework and high-level interfaces.
  * 
  * 
+ * ## Quick start
+ * 
+ * For an introduction, we refer to the code of @ref algorithms::onecell.
+ *  
  */
 namespace cadcells {
 
