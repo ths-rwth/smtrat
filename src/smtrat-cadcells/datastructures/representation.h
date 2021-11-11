@@ -89,7 +89,7 @@ namespace smtrat::cadcells::datastructures {
     }
 
     /**
-     * Represents a delineation.
+     * Represents a delineation over a cell; that is, the ordering of roots over a sample.
      */
     template<typename P>
     struct DelineationRepresentation {

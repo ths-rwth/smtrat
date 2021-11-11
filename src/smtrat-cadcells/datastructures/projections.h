@@ -87,6 +87,7 @@ public:
     auto& polys() { return m_pool; }
     const auto& polys() const { return m_pool; }
 
+    /// Clears all polynomials of the specified level and higher in the polynomial cache as well as their projection results.
     void clear_cache(size_t level) {
         assert(level > 0);
         m_pool.clear_levels(level);
@@ -98,6 +99,7 @@ public:
         }
     }
 
+    /// Clears all projections cached with respect to this assignment.
     void clear_assignment_cache(const Assignment& assignment) {
         if (level_of(assignment) < m_assignment_cache.size()) {
             m_assignment_cache[level_of(assignment)].erase(assignment);

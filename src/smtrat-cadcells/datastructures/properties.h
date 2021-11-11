@@ -31,15 +31,22 @@ struct PropertiesTContent<T, false> {
     using type = PropertiesTSet<T>;
 };
 
-template<typename... Ts>
-struct PropertiesT {};
-
 /**
  * Set of properties. 
  * 
- * This is a recursive template. The list of template parameters specifies the type of properties which can be hold by this set. 
+ * This is a recursive template. The list of template parameters specifies the type of properties which can be hold by this set.
  * 
+ * Note that only properties of the same level should be stored within this datastructure.
+ * 
+ * Properties have the following requirements:
+ * * They need to implement level().
+ * * They need to implement hash_on_level(), operator< and operator== for comparing with properties of the same type and level.
+ * * They need to have a member `static constexpr bool is_flag`. If set to `true`, this indicates that there is only one property of this kind per level and thus, it is not stored in a set but only a Boolean flag is stored.
+ * * They need to implement operator<<.
  */
+template<typename... Ts>
+struct PropertiesT {};
+
 template <class T, class... Ts>
 struct PropertiesT<T, Ts...> : PropertiesT<Ts...> {
     typename PropertiesTContent<T, T::is_flag>::type content;
