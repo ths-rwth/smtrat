@@ -22,6 +22,6 @@ namespace smtrat {
         #define SMTRAT_STATISTICS_INIT_STATIC(class, member, name)
         #define SMTRAT_STATISTICS_CALL(function)
         #define SMTRAT_TIME_START() carl::statistics::timing::time_point()
-        #define SMTRAT_TIME_FINISH(timer, start) static_cast<carl::statistics::timing::time_point>(start)
+        #define SMTRAT_TIME_FINISH(timer, start)
     #endif
 }

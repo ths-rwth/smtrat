@@ -71,3 +71,12 @@ def xml_to_pandas(filename, solver_override = {}, statistics_filter = None):
     
     df = pd.DataFrame(data, index, columns = pd.MultiIndex.from_product([map(solver_name, solvers), ["answer", "runtime"] + statistics]))
     return df
+
+def xmls_to_pandas(params, statistics_filter = None):
+    df = None
+    for filename in params:
+        if df is None:
+            df = xml_to_pandas(filename, params[filename], statistics_filter)
+        else:
+            df = df.join(xml_to_pandas(filename, params[filename], statistics_filter))
+    return df

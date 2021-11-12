@@ -27,6 +27,12 @@ class Executor : public smtrat::parser::InstructionHandler {
 public:
 	smtrat::Answer lastAnswer;
 	Executor(Strategy& solver) : smtrat::parser::InstructionHandler(), solver(solver), maxsmt(solver), optimization(solver), unsatcore(solver) {
+		settings::Settings::getInstance().get<settings::ModuleSettings>("module").set_callbacks([this](const std::string& key){
+			return this->options.find(key) != this->options.end();
+		}, [this](const std::string& key){
+			return this->options.template get<std::string>(key);
+		});
+
 		state.set_add_assertion_handler([this](const FormulaT& f) {
 			this->solver.add(f);
 		});
@@ -289,6 +295,7 @@ public:
 		state.push(n);
 	}
 	void reset() {
+		InstructionHandler::reset();
 		smtrat::resource::Limiter::getInstance().reset();
 		state.reset();
 		solver.reset();

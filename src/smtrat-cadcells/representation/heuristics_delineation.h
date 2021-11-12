@@ -28,6 +28,8 @@ struct delineation<DelineationHeuristic::CHAIN> {
 
         if (!der->delin().nullified().empty()) return std::nullopt;
 
+        if (der->delin().roots().empty()) return response;
+
         auto it = der->delin().roots().begin();
         auto barrier = util_del::simplest_bound(der->proj(), it->second);
         while(it != der->delin().roots().end()) {

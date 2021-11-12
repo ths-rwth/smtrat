@@ -2,6 +2,10 @@
 
 #include "../datastructures/representation.h"
 
+/**
+ * @brief Heuristics for computing representations.
+ * 
+ */
 namespace smtrat::cadcells::representation {
     enum CellHeuristic {
         BIGGEST_CELL, CHAIN_EQ, LOWEST_DEGREE_BARRIERS, LOWEST_DEGREE_BARRIERS_EQ

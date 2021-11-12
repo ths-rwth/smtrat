@@ -27,14 +27,12 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # options
 option( DEVELOPER "Compile with extra warnings" OFF )
-option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option( LOGGING "Enable logging within the carl library" OFF )
 option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 option( USE_COCOA "Use CoCoALib" ON )
-option( ENABLE_TESTING "Enables test target" OFF)
 
 # Strategy
 set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
@@ -73,10 +71,7 @@ else()
 	endfunction(cotire)
 endif()
 
-if(ENABLE_TESTING)
-    message("-- testing enabled")
-    enable_testing()
-endif()
+enable_testing()
 
 include(compiler-options)
 
@@ -123,17 +118,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # # # # # # # # # # # # # # # # # # # # # #
 
 include(resources/resources.cmake)
-
-# use carl, carl pulls in the required libraries.
-
-if(STATICLIB_SWITCH)
-	set( libraries ${libraries} carl-static)
-	set( libraries ${libraries} Boost_STATIC)
-else()
-	set( libraries ${libraries} carl-shared)
-	set( libraries ${libraries} Boost_SHARED)
-endif()
-
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries

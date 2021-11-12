@@ -26,9 +26,9 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
 
     std::optional<datastructures::SampledDerivationRef<PropSet>> first_level_res;
     if (use_delineation) {
-        auto first_level_res = get_delineation<op, representation::CHAIN>(proj, constraints, sample);
+        first_level_res = get_delineation<op, representation::CHAIN>(proj, constraints, sample);
     } else {
-        auto first_level_res = get_level_covering<op, covering_heuristic>(proj, constraints, sample);
+        first_level_res = get_level_covering<op, covering_heuristic>(proj, constraints, sample);
     }
     if (!first_level_res) {
         return std::nullopt;

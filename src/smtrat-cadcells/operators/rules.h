@@ -72,8 +72,8 @@ bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::
 template<typename P>
 bool poly_pdel(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "proj_del(" << poly << ")");
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     if (!poly_non_null(deriv, poly)) return false;
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
     deriv.insert(properties::cell_connected{ poly.level-1 });
     return true;
@@ -135,43 +135,13 @@ void poly_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures
 }
 
 template<typename P>
-void poly_del(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
-    // TODO check if nullified??
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "del(" << poly << ")");
-    if (deriv.proj().is_const(poly)) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= " << poly << " const");
-    } else {
-        auto factors = deriv.proj().factors_nonconst(poly);
-        // TODO for this to be correct, we need to define another property than delineable (poly is sign invariant over each underlying cell ...)
-        // for (const auto& factor : factors) {
-        //     if (factor.level < poly.level && deriv.proj().is_zero(deriv.underlying_sample(), factor)) {
-        //         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= sgn_inv(" << factor << ") && "<< factor <<"("<< deriv.underlying_sample() <<")=0");
-        //         deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-        //         return;
-        //     }
-        // }
-
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= del(factors(" << poly << ")) <=> del(" << factors << ")");
-        for (const auto& factor : factors) {
-            deriv.insert(properties::poly_irreducible_del{ factor });
-        }
-    }
-}
-
-template<typename P>
-void poly_irrecubile_nonzero_del(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "del(" << poly << "), " << poly << " irreducible and non-zero");
+void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and non-zero");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
     if (deriv.proj().is_ldcf_zero(deriv.underlying_sample(), poly)) {
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
     }
-}
-
-template<typename P>
-void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and non-zero");
-    poly_irrecubile_nonzero_del(deriv, poly);
 }
 
 template<typename P>
@@ -191,7 +161,7 @@ void cell_analytic_submanifold(datastructures::SampledDerivation<P>& deriv, cons
 }
 
 template<typename P>
-void poly_irrecubile_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), using EC");
     assert(cell.is_section());
     assert(deriv.contains(properties::poly_pdel{ cell.section_defining().poly }));
@@ -266,13 +236,15 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
+            assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(rel.first.poly) }));
+            assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(rel.second.poly) }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
         }
     }
 }
 
 template<typename P>
-void poly_irrecubile_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     deriv.insert(properties::cell_connected{ poly.level-1 });
@@ -345,9 +317,10 @@ void poly_irrecubile_sgn_inv(datastructures::SampledDerivation<P>& deriv, const 
 }
 
 template<typename P>
-void poly_irreducible_del(datastructures::DelineatedDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
+    assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) }));
     // guaranteed by ordering
 }
 

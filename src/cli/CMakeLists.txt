@@ -102,7 +102,5 @@ set_target_properties(smtrat-shared PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 set_target_properties(smtrat-static PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(smtrat DEPENDS smtrat-shared)
-if (STATICLIB_SWITCH)
-	add_dependencies(smtrat smtrat-static)
-endif()
+# add_dependencies(smtrat smtrat-static)
 

@@ -26,9 +26,13 @@ using SampledDerivationRef = std::shared_ptr<SampledDerivation<Properties>>;
 
 /**
  * A reference to a derivation, which is either
- * - a BaseDerivation (a set of proprties for each level)
- * - a DelineatedDerivation (a BaseDerivation with an underlying SampledDerivation on which the properties can be delineated)
- * - a SampledDerivation (a DelineatedDerivation with an underlying SampledDerivation plus a sample on the current level such that a delineated interval can be computed)
+ * - a @ref BaseDerivation (a set of properties for each level)
+ * - a @ref DelineatedDerivation (a @ref BaseDerivation with an underlying @ref SampledDerivation on which the properties can be delineated)
+ * - a @ref SampledDerivation (a @ref DelineatedDerivation with an underlying @ref SampledDerivation plus a sample on the current level such that a delineated interval can be computed)
+ * 
+ * ## Memory management
+ * 
+ * Memory management is based on std::shared_ptr. A SampledDerivation holds a shared pointer to a DelineatedDerivation, which in turn holds a shared pointer to BaseDerivation. The BaseDerivation holds a @ref DerivationRef to the underlying derivation. Note that not all combinations are legal; i.e. the underlying derivation of a delineated derivation must be a sampled derivation.
  */
 template<typename Properties>
 class DerivationRef {
@@ -147,70 +151,57 @@ class BaseDerivation {
 	Properties m_properties;
 
 public:
-	// should be private, but does not work with make_shared:
-	BaseDerivation(Projections& Projections, DerivationRef<Properties> underlying, size_t level)
-		: m_underlying(underlying), m_projections(Projections), m_level(level) {
-		assert((level == 0 && m_underlying.is_null()) || (level > 0 && !m_underlying.is_null()));
-	}
+    // should be private, but does not work with make_shared:
+    BaseDerivation(Projections& Projections, DerivationRef<Properties> underlying, size_t level) : m_underlying(underlying), m_projections(Projections), m_level(level) {
+        assert((level == 0 && m_underlying.is_null()) || (level > 0 && !m_underlying.is_null()));
+    }
 
-	DerivationRef<Properties>& underlying() {
-		return m_underlying;
-	}
-	DerivationRef<Properties>& underlying() const {
-		return m_underlying;
-	}
+    DerivationRef<Properties>& underlying() { return m_underlying; }
+    DerivationRef<Properties>& underlying() const { return m_underlying; }
 
-	PolyPool& polys() {
-		return m_projections.polys();
-	}
-	Projections& proj() {
-		return m_projections;
-	}
-	carl::Variable main_var() const {
-		if (m_level == 0)
-			return carl::Variable::NO_VARIABLE;
-		else
-			return m_projections.polys().var_order()[m_level - 1];
-	}
-	size_t level() const {
-		return m_level;
-	}
+    PolyPool& polys() { return m_projections.polys(); }
+    Projections& proj() { return m_projections; }
+    carl::Variable main_var() const {
+        if (m_level == 0) return carl::Variable::NO_VARIABLE;
+        else return m_projections.polys().var_order()[m_level-1];
+    }
+    size_t level() const { return m_level; }
 
-	template<typename P>
-	void insert(P property) {
-		assert(property.level() <= m_level && property.level() >= 0);
+    template<typename P>
+    void insert(P property) {
+        assert(property.level() <= m_level && property.level() >= 0);
 
-		if (property.level() == m_level) {
-			get<P>(m_properties).emplace(property);
-		} else {
-			assert(!m_underlying.is_null());
-			m_underlying.base().insert(property);
-		}
-	}
+        if (property.level() == m_level) {
+            prop_insert<P>(m_properties, property);
+        } else {
+            assert(!m_underlying.is_null());
+            m_underlying.base().insert(property);
+        }
+    }
 
-	template<typename P>
-	bool contains(const P& property) const {
-		assert(property.level() <= m_level && property.level() >= 0);
+    template<typename P>
+    bool contains(const P& property) const {
+        assert(property.level() <= m_level && property.level() >= 0);
 
-		if (property.level() == m_level) {
-			return get<P>(m_properties).find(property) != get<P>(m_properties).end();
-		} else {
-			assert(!m_underlying.is_null());
-			return m_underlying.base().contains(property);
-		}
-	}
-	template<typename P>
-	const PropertiesTSet<P>& properties() const {
-		return get<P>(m_properties);
-	}
+        if (property.level() == m_level) {
+            return prop_has<P>(m_properties, property);
+        } else {
+            assert(!m_underlying.is_null());
+            return m_underlying.base().contains(property);
+        }
+    }
+    template<typename P>
+    const PropertiesTSet<P>& properties() const {
+        return prop_get<P>(m_properties);
+    }
 
-	void merge_with(const BaseDerivation<Properties>& other) {
-		assert(other.m_level == m_level && &other.m_projections == &m_projections);
-		merge(m_properties, other.m_properties);
-		if (m_level > 0) {
-			m_underlying.base().merge_with(other.m_underlying.base());
-		}
-	}
+    void merge_with(const BaseDerivation<Properties>& other) {
+        assert(other.m_level == m_level && &other.m_projections == &m_projections);
+        merge(m_properties, other.m_properties);
+        if (m_level > 0) {
+            m_underlying.base().merge_with(other.m_underlying.base());
+        }
+    }
 };
 
 /**

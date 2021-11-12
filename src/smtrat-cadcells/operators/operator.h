@@ -8,6 +8,29 @@
  * 
  * Currently, only the McCallum based operator is implemented.
  * 
+ * ## Relevant projection functions
+ * 
+ * We refer to @ref algorithms for usage examples.
+ * 
+ * ### Cells
+ * - project_cell_properties
+ * - project_basic_properties
+ * - delineate_properties
+ * - project_delineated_cell_properties
+ * 
+ * ### Coverings
+ * 
+ * - project_cell_properties (on each cell individually)
+ * - project_basic_properties (on each cell individually)
+ * - delineate_properties (on each cell individually)
+ * - project_covering_properties
+ * 
+ * ### Delineaton
+ * 
+ * - project_basic_properties
+ * - delineate_properties
+ * - project_delineation_properties
+ * 
  */
 namespace smtrat::cadcells::operators {
 

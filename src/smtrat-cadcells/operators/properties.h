@@ -11,6 +11,7 @@
 namespace smtrat::cadcells::operators::properties {
 
 struct poly_sgn_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
@@ -31,6 +32,7 @@ inline std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
 }
 
 struct poly_irreducible_sgn_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;   
     size_t level() const {
         return poly.level;
@@ -51,6 +53,7 @@ inline std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv
 }
 
 struct poly_ord_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
@@ -71,6 +74,7 @@ inline std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
 }
 
 struct root_well_def {
+    static constexpr bool is_flag = false; 
     datastructures::IndexedRoot root;
     size_t level() const {
         return root.poly.level-1;
@@ -96,6 +100,7 @@ inline std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
 }
 
 struct poly_pdel {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level-1;
@@ -115,47 +120,8 @@ inline std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
     return os;
 }
 
-struct poly_del {
-    datastructures::PolyRef poly;
-    size_t level() const {
-        return poly.level;
-    }
-    std::size_t hash_on_level() const {
-        return std::hash<std::size_t>()(poly.id);
-    }
-};
-inline bool operator==(const poly_del& lhs, const poly_del& rhs) {
-    return lhs.poly == rhs.poly;
-}
-inline bool operator<(const poly_del& lhs, const poly_del& rhs) {
-    return lhs.poly < rhs.poly;
-}
-inline std::ostream& operator<<(std::ostream& os, const poly_del& data) {
-    os << data.poly << " delineable";
-    return os;
-}
-
-struct poly_irreducible_del {
-    datastructures::PolyRef poly;   
-    size_t level() const {
-        return poly.level;
-    }
-     std::size_t hash_on_level() const {
-        return std::hash<std::size_t>()(poly.id);
-    }
-};
-inline bool operator==(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs) {
-    return lhs.poly == rhs.poly;
-}
-inline bool operator<(const poly_irreducible_del& lhs, const poly_irreducible_del& rhs) {
-    return lhs.poly < rhs.poly;
-}
-inline std::ostream& operator<<(std::ostream& os, const poly_irreducible_del& data) {
-    os << data.poly << " delineable and irreducible";
-    return os;
-}
-
 struct cell_connected {
+    static constexpr bool is_flag = true; 
     std::size_t lvl;
     std::size_t level() const {
         return lvl;
