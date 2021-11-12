@@ -35,15 +35,35 @@ struct SolverSettings {
 struct ModuleSettings {
 	std::vector<std::string> parameters;
 
+private:
+	std::function<bool(const std::string&)> has_option;
+	std::function<const std::string&(const std::string&)> get_option;
+
+public:
+	ModuleSettings() : has_option([](const std::string&){return false;}), get_option([](const std::string&){return "";}) {
+	}
+
+	void set_callbacks(std::function<bool(const std::string&)> callback_has, std::function<const std::string&(const std::string&)> callback_get) {
+		has_option = callback_has;
+		get_option = callback_get;
+	}
+
 	template<typename T>
 	T get(const std::string& key, T default_value) const {
-		for (const auto& param : parameters) {
-			std::string p_key = param.substr(0, param.find("="));
-			if (p_key == key) {
-	            std::istringstream iss(param.substr(param.find("=")+1));
-                T value;
-                iss >> value;
-                return value;		
+		if (has_option(key)) {
+			std::istringstream iss(get_option(key));
+			T value;
+			iss >> value;
+			return value;	
+		} else {
+			for (const auto& param : parameters) {
+				std::string p_key = param.substr(0, param.find("="));
+				if (p_key == key) {
+					std::istringstream iss(param.substr(param.find("=")+1));
+					T value;
+					iss >> value;
+					return value;		
+				}
 			}
 		}
         return default_value;
