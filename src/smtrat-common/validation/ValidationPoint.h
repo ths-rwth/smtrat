@@ -37,7 +37,7 @@ public:
 	const auto& name() const {
 		return m_name;
 	}
-	const auto identifier() const {
+	auto identifier() const {
 		return m_channel + "." + m_name;
 	}
 	const auto& formulas() const {
