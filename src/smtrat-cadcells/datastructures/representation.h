@@ -56,6 +56,14 @@ struct CoveringRepresentation {
 		return cov;
 	}
 
+	std::vector<SampledDerivationRef<P>> sampled_derivation_refs() {
+		std::vector<SampledDerivationRef<P>> cov;
+		for (const auto& cell : cells) {
+			cov.push_back(cell.derivation);
+		}
+		return cov;
+	}
+
 	//returns true iff the a sample outside of the current covering has been found
 	bool sample_outside(RAN& sample) const {
 

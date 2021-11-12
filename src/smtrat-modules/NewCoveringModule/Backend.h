@@ -24,6 +24,8 @@ namespace smtrat {
 constexpr auto op = cadcells::operators::op::mccallum;
 using PropSet = cadcells::operators::PropertiesSet<op>::type;
 
+//Use lowest degree barier
+
 using namespace cadcells;
 
 template<typename Settings>
@@ -52,8 +54,14 @@ private:
 	//Cache for the last (full) covering
 	datastructures::CoveringRepresentation<PropSet> mLastFullCovering;
 
-	//Current Covering Information
+	//Current Covering Information, only contains partial coverings
 	std::vector<std::vector<datastructures::SampledDerivationRef<PropSet>>> mCoveringInformation;
+
+	//Levelwise Mapping from derivation to its resulting constraint
+	std::map<datastructures::SampledDerivationRef<PropSet>, ConstraintT> mDerivationToConstraint;
+
+	//Infeasible subsets, contains levelwise all constraints which resulted in a complete covering
+	std::vector<boost::container::flat_set<ConstraintT>> mInfeasibleSubsets;
 
 public:
 	//Init with empty variable ordering
@@ -73,6 +81,7 @@ public:
 		mKnownConstraints.resize(varOrdering.size());
 		mUnknownConstraints.resize(varOrdering.size());
 		mCoveringInformation.resize(varOrdering.size());
+		mInfeasibleSubsets.resize(varOrdering.size());
 	}
 
 	size_t dimension() {
@@ -85,6 +94,17 @@ public:
 
 	const auto& getCoveringInformation() {
 		return mCoveringInformation;
+	}
+
+	//TODO: The reasons from constructCharacterization are not added yet!!
+	FormulaSetT getInfeasibleSubset(){
+		FormulaSetT infeasibleSubset;
+		for (const auto& infeasibleSubsetLevel : mInfeasibleSubsets) {
+			for (const auto& infeasibleSubsetConstraint : infeasibleSubsetLevel) {
+				infeasibleSubset.insert(FormulaT(infeasibleSubsetConstraint));
+			}
+		}
+		return infeasibleSubset;
 	}
 
 	//Adds a constraint into the right level
@@ -103,26 +123,13 @@ public:
 		return mKnownConstraints;
 	}
 
-	//The new Variable ordering must be an "extension" to the old one
-	void setVariableOrdering(const std::vector<carl::Variable>& newVarOrdering) {
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Old Variable ordering: " << mVariableOrdering);
-
-		assert(newVarOrdering.size() > mVariableOrdering.size());
-
-		for (std::size_t i = 0; i < mVariableOrdering.size(); i++) {
-			assert(newVarOrdering[i] == mVariableOrdering[i]);
-		}
-
-		std::copy(newVarOrdering.begin() + mVariableOrdering.size(), newVarOrdering.end(), std::back_inserter(mVariableOrdering));
-		mCoveringInformation.resize(mVariableOrdering.size());
-		SMTRAT_LOG_DEBUG("smtrat.covering", "New Variable ordering: " << mVariableOrdering);
-	}
-
 	//Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
 		for (size_t i = level; i < dimension(); i++) {
 			//Resetting the covering data
 			mCoveringInformation[i].clear();
+			//Resetting the infeasible subsets
+			mInfeasibleSubsets[i].clear();
 			//Resetting the assignment
 			mCurrentAssignment.erase(mVariableOrdering[i]);
 			//Resetting the known constraints
@@ -188,10 +195,20 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints);
 		std::vector<datastructures::SampledDerivationRef<PropSet>> unsat_cells;
 		for (const ConstraintT& constraint : mUnknownConstraints[level]) {
+
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Checking constraint: " << constraint);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Current Assignment size: " << mCurrentAssignment.size());
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Current level: " << level);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Level of constraint: " << helper::level_of(mVariableOrdering, constraint.lhs()));
+			SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Projection Variable Ordering: " << mProjections->polys().var_order());
+
 			auto intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
 			//TODO: Map von sampled deriv zu constraints für infeasible subset, Alle constraints die irgendwie eine derivation erzeugt haben
 			for (const auto& interval : intervals) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
+				//Insert into the derivation to constraint map
+				mDerivationToConstraint.insert(std::make_pair(interval, constraint));
 			}
 			unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
 		}
@@ -210,7 +227,6 @@ public:
 		auto mCurrentCovering = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
 		if (!mCurrentCovering.has_value()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed -> Aborting");
-			setConstraintsUnknown(level);
 			return Answer::UNKNOWN;
 		}
 
@@ -225,7 +241,7 @@ public:
 			mCurrentAssignment[mVariableOrdering[level]] = sample;
 			if (mCurrentAssignment.size() == mVariableOrdering.size()) {
 				//SAT
-				//We have a full dimensional satisfying assignment
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found satisfying variable assignment: " << mCurrentAssignment);
 				return Answer::SAT;
 			}
 
@@ -236,6 +252,7 @@ public:
 				return nextLevel;
 			} else if (nextLevel == Answer::UNSAT) {
 				//NextLevel is Unsat -> Generate Unsat-Cell
+				//Todo: how to get the constraints which resulted in the unsat-cell for the infeasible subset?
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Last full covering: " << mLastFullCovering);
 
 				auto cell_derivs = mLastFullCovering.sampled_derivations();
@@ -277,6 +294,21 @@ public:
 		//Remove the stored covering information
 		mCoveringInformation[level].clear();
 		setConstraintsUnknown(level);
+
+		//Construct the infeasible subset for the current level
+		//First reset the stored infeasible subset if there is one 
+		mInfeasibleSubsets[level].clear();
+		//now add the constraints which resulted in the unsat-cells of full covering of this level 
+		for (const auto& unsat_derivation : mLastFullCovering.sampled_derivation_refs()) {
+			//only insert constraints from derivations which where created 
+			if(mDerivationToConstraint.find(unsat_derivation) != mDerivationToConstraint.end()) {
+				mInfeasibleSubsets[level].insert(mDerivationToConstraint.at(unsat_derivation));
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Added constraint " << mDerivationToConstraint.at(unsat_derivation) << " to infeasible subset");
+			}else{
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Could not find constraint for derivation " << unsat_derivation);
+			}
+		}
+
 		return Answer::UNSAT;
 	}
 

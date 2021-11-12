@@ -230,9 +230,12 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Backend encountered an error: " << answer);
 		mLastAnswer = Answer::UNKNOWN;
 
+		//remove all stored information in the backend
+		backend.resetStoredData(0);
+
 		//ASSERTS FOR DEBUGGING
-		for (const auto& unknownConstraints : backend.getUnknownConstraints()) {
-			assert(unknownConstraints.empty());
+		for (const auto& knownConstraints : backend.getKnownConstraints()) {
+			assert(knownConstraints.empty());
 		}
 
 		for(const auto& coveringInformation : backend.getCoveringInformation()) {
