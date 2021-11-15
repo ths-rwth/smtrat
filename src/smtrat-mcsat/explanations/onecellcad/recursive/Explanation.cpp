@@ -140,6 +140,9 @@ boost::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(c
     SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys after possible reordering: \n" << projectionLevels);
 
 	setNullification(Setting1::cover_nullification);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        getStatistic().addLevels(projectionLevels.size());
+    #endif
 	std::optional<CADCell> cellOpt = cad.pointEnclosingCADCell(projectionLevels);
 	if (!cellOpt) {
 		SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");

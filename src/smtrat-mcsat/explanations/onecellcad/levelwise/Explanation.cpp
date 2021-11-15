@@ -105,6 +105,9 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 
     assert(1 <= Setting1::sectionHeuristic && Setting1::sectionHeuristic <= 3);
     assert(1 <= Setting2::sectorHeuristic && Setting2::sectorHeuristic <= 3);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        getStatistic().addLevels(projectionLevels.size());
+    #endif
 	std::optional<CADCell> cellOpt =
 	        cad.constructCADCellEnclosingPoint(projectionLevels, Setting1::sectionHeuristic, Setting2::sectorHeuristic);
 	if (!cellOpt) {

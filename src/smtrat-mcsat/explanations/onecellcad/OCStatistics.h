@@ -16,6 +16,8 @@ private:
 	std::size_t mResultantBarriersH3 = 0;
 	// saves the maximal degree a polynomial has during calculations
 	std::size_t mMaxDegree = 0;
+    // saves the number of traversed levels during Onecell cad
+    std::size_t mLevels = 0;
 public:
 	bool enabled() const {
 		return true;
@@ -26,6 +28,7 @@ public:
 		Statistics::addKeyValuePair("explanation_success", mExplanationSuccess);
         Statistics::addKeyValuePair("resultant_barriers", mResultantBarriersH3);
         Statistics::addKeyValuePair("max_degree", mMaxDegree);
+        Statistics::addKeyValuePair("num_of_levels", mLevels);
 	}
 
 	void explanationCalled() {
@@ -39,6 +42,10 @@ public:
 	void resultantBarrierCreated(){
 	    ++mResultantBarriersH3;
 	}
+
+    void addLevels(std::size_t l){
+        mLevels += l;
+    }
 
 	// To disable this statistics, set variable in appendOnCorrectLevel() in utils.h
 	void updateMaxDegree(std::size_t NewDeg){
