@@ -8,7 +8,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Include own macros.
 include(macros)
 
-set_version(21 05)
+set_version(21 11)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
@@ -27,24 +27,21 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # options
 option( DEVELOPER "Compile with extra warnings" OFF )
-option( STATICLIB_SWITCH "Compile a statically linked version of the library." OFF )
 option( LOGGING "Enable logging within the carl library" OFF )
 option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
 option( USE_COCOA "Use CoCoALib" ON )
-option( ENABLE_TESTING "Enables test target" OFF)
 
 # Strategy
-option( SMTRAT_STRAT_Factorization "Factorization" ON )
 set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
-option(SMTRAT_DEVOPTION_Statistics_Expensive "Enable expensive statistics" OFF)
+option(SMTRAT_DEVOPTION_Checkpoints "Enable checkpoints" OFF)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE" "RELWITHDEBINFO")
 set(CLANG_SANITIZER "none" CACHE STRING "Compile with the respective sanitizer")
@@ -74,10 +71,7 @@ else()
 	endfunction(cotire)
 endif()
 
-if(ENABLE_TESTING)
-    message("-- testing enabled")
-    enable_testing()
-endif()
+enable_testing()
 
 include(compiler-options)
 
@@ -124,17 +118,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 # # # # # # # # # # # # # # # # # # # # # #
 
 include(resources/resources.cmake)
-
-# use carl, carl pulls in the required libraries.
-
-if(STATICLIB_SWITCH)
-	set( libraries ${libraries} carl-static)
-	set( libraries ${libraries} Boost_STATIC)
-else()
-	set( libraries ${libraries} carl-shared)
-	set( libraries ${libraries} Boost_SHARED)
-endif()
-
 
 # # # # # # # # # # # # # # # # # # # # # #
 # C.2. required libraries

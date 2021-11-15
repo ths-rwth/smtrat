@@ -167,7 +167,10 @@ public:
 	virtual void addObjective(const Poly& p, OptimizationType ot) = 0;
 	virtual void pop(std::size_t) = 0;
 	virtual void push(std::size_t) = 0;
-	virtual void reset() = 0;
+	virtual void reset() {
+		this->infos.clear();
+		this->options.clear();
+	};
 	virtual void resetAssertions() = 0;
 	void setInfo(const Attribute& attr) {
 		if (this->infos.count(attr.key) > 0) warn() << "overwriting info for :" << attr.key;

@@ -20,11 +20,8 @@ namespace smtrat
         static const bool local_conflict_search                                 = false;
         static const bool use_backjumping                                       = true;
         static const bool use_strict_inequalities_for_test_candidate_generation = true;
-        #ifdef SMTRAT_VS_VARIABLEBOUNDS
         static const bool use_variable_bounds                                   = true;
-        #else
-        static const bool use_variable_bounds                                   = false;
-        #endif
+        // static const bool use_variable_bounds                                   = false;
         static const bool sturm_sequence_for_root_check                         = use_variable_bounds && false;
         static const bool check_conflict_for_side_conditions                    = false;
         static const bool incremental_solving                                   = true;

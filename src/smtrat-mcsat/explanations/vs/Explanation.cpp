@@ -6,7 +6,7 @@ namespace smtrat {
 namespace mcsat {
 namespace vs {
 
-boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason) const {
+std::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Explain conflict " << reason);
 	#ifdef SMTRAT_DEVOPTION_Statistics
 	mStatistics.explanationCalled();
@@ -25,7 +25,7 @@ boost::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkee
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Bookkeep: " << data);
 	ExplanationGenerator<DefaultSettings> eg(reason, varOrder, var, data.model());
 	auto ret = eg.getExplanation();
-	if (ret == boost::none) {
+	if (ret == std::nullopt) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate explanation");
 	} else {
 		#ifdef SMTRAT_DEVOPTION_Statistics

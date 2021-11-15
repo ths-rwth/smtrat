@@ -1,6 +1,6 @@
 #pragma once
 
-#include "OCStatistics.h"
+#include "../utils.h"
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
@@ -34,15 +34,10 @@ struct SectorHeuristic3 {
 
 template<class Setting1, class Setting2>
 struct Explanation {
-
-#ifdef SMTRAT_DEVOPTION_Statistics
-	OCStatistics& mStatistics = statistics_get<OCStatistics>("mcsat-explanation-onecellcad-lw");
-#endif
-
-	boost::optional<mcsat::Explanation>
+	std::optional<mcsat::Explanation>
 	operator()(const mcsat::Bookkeeping& trail, // current assignment state
 			   carl::Variable var,
-			   const FormulasT& trailLiterals) const;
+			   const FormulasT& trailLiterals, bool) const;
 };
 
 } // namespace levelwise

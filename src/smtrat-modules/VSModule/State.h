@@ -9,7 +9,6 @@
 
 #include <map>
 #include <limits.h>
-#include "config.h"
 #include "Substitution.h"
 #include <carl/util/IDPool.h>
 #include <smtrat-variablebounds/VariableBounds.h>

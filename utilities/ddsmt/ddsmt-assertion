@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# This script can be called on smt2-files on which an assertion fails. 
+# TODO untested!
+
+ERROR=$($3 $1 2>&1 >/dev/null)
+echo $ERROR
+ddsmt --match-err $ERROR $1 $2 $3

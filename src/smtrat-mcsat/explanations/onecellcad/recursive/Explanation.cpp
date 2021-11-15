@@ -15,10 +15,10 @@ inline void setNullification(bool n){
 	cover_nullification = n;
 }
 
-template<class Settings>
-boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
+template<class Setting1, class Setting2>
+std::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
-						const FormulasT& trailLiterals) const {
+						const FormulasT& trailLiterals, bool) const {
 	
 	bool covering_at_first_level=false;
 	bool strict_unassigned_handling=false;
@@ -26,7 +26,7 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
 	assert(trail.model().size() == trail.assignedVariables().size());
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationCalled();
+	getStatistic().explanationCalled();
 #endif
 
 	#if not (defined USE_COCOA || defined USE_GINAC)
@@ -50,7 +50,7 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
         FormulasT explainLiterals;
         for (const auto& trailLiteral : trailLiterals)
             explainLiterals.emplace_back(trailLiteral.negated());
-        return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
+        return std::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
     }
     assert(trail.assignedVariables().size() > 0);
 
@@ -102,7 +102,7 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
             bool failcheck = optimized_singleLevelFullProjection(currentVar, currentLvl, projectionLevels, cad);
             if(!failcheck){
                 SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
-                return boost::none;
+                return std::nullopt;
             }
         } else{
             singleLevelFullProjection(fullProjectionVarOrder, currentVar, currentLvl, projectionLevels);
@@ -112,11 +112,38 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
         SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
     }
 
-	setNullification(Settings::cover_nullification);
+    if(Setting2::heuristic == 1){
+        // reorder polynomials in ascending order by degree
+        for (int i = (int)projectionLevels.size()-1; i >= 0; i--){
+            for(auto & tpoly : projectionLevels[i]){
+                tpoly.deg = getDegree(tpoly, fullProjectionVarOrder[i]);
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Add level of poly: " << tpoly.deg);
+            }
+            std::sort(projectionLevels[i].begin(), projectionLevels[i].end(), [](auto const &t1, auto const &t2) {
+                return t1.deg < t2.deg;
+            });
+        }
+    } else if(Setting2::heuristic == 2){
+        // reorder polynomials in descending order by degree
+        for (int i = (int)projectionLevels.size()-1; i >= 0; i--){
+            for(auto & tpoly : projectionLevels[i]){
+                tpoly.deg = getDegree(tpoly, fullProjectionVarOrder[i]);
+                SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Add level of poly: " << tpoly.deg);
+            }
+            std::sort(projectionLevels[i].begin(), projectionLevels[i].end(), [](auto const &t1, auto const &t2) {
+                return t1.deg > t2.deg;
+            });
+        }
+    } else if(Setting2::heuristic != 0){
+        SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "Invalid heuristic input");
+    }
+    SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys after possible reordering: \n" << projectionLevels);
+
+	setNullification(Setting1::cover_nullification);
 	std::optional<CADCell> cellOpt = cad.pointEnclosingCADCell(projectionLevels);
 	if (!cellOpt) {
 		SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
-		return boost::none;
+		return std::nullopt;
 	}
 
 	auto cell = *cellOpt;
@@ -162,14 +189,16 @@ boost::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsa
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationSuccess();
+	getStatistic().explanationSuccess();
 #endif
-	return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
+	return std::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 }
 
 // Instantiations
-template struct Explanation<CoverNullification>;
-template struct Explanation<DontCoverNullification>;
+template struct Explanation<CoverNullification, NoHeuristic>;
+template struct Explanation<DontCoverNullification, NoHeuristic>;
+template struct Explanation<DontCoverNullification, DegreeAscending>;
+template struct Explanation<DontCoverNullification, DegreeDescending>;
 
 } // namespace recursive
 } // namespace onecellcad

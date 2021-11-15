@@ -50,7 +50,6 @@ namespace smtrat
     
     Manager::~Manager()
     {
-        Module::storeAssumptionsToCheck( *this );
         #ifdef SMTRAT_STRAT_PARALLEL_MODE
         if( mpThreadPool != nullptr )
             delete mpThreadPool;

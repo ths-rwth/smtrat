@@ -29,7 +29,10 @@ It is recommended to aggregate statistics as much as possible inside SMT-RAT. Ho
 
 ### Working with the results
 
-In the SMT-RAT repository, several tools for converting the result XML file are included: `utilities/xml2ods.py` converting it to a *Flat XML LibreOffice Calc Sheet*. In `utilities/evaluation` is a small python library for importing the results into Python (or a Jupyter notebook).
+In the SMT-RAT repository, two utilites for converting the result XML file are included:
+* `utilities/benchmax/xml2ods.py` for converting it to a *Flat XML LibreOffice Calc Sheet*.
+* An XML filter `utilities/benchmax/OOCImporter.xsl` for converting it to a *Flat XML LibreOffice Calc Sheet*.
+* `utilities/benchmax/evaluation` is a small python library for importing the results into Python (or a Jupyter notebook), inspecting the results and preparing plots. For more information, see @subpage benchmax-evaluation.
 
 ## Tools {#tools}
 
