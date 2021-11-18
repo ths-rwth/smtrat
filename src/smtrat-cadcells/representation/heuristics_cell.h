@@ -143,7 +143,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->poly)) continue;
-                if (!compare_simplest(der->proj(),ir->poly,response.description.section_defining().poly)) {
+                if (!util::compare_simplest(der->proj(),ir->poly,response.description.section_defining().poly)) {
                     response.equational.insert(ir->poly);
                 }
             }
@@ -156,7 +156,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->poly)) continue;
-                if (!compare_simplest(der->proj(),ir->poly,response.description.section_defining().poly)) {
+                if (!util::compare_simplest(der->proj(),ir->poly,response.description.section_defining().poly)) {
                     response.equational.insert(ir->poly);
                 }
             }
@@ -177,7 +177,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ignoring.contains(ir->poly)) continue;
                 if (section && response.equational.contains(ir->poly)) continue;
-                if (compare_simplest(der->proj(),ir->poly,barrier.poly)) {
+                if (util::compare_simplest(der->proj(),ir->poly,barrier.poly)) {
                     barrier = *ir;
                 }
             }
@@ -206,7 +206,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ignoring.contains(ir->poly)) continue;
                 if (section && response.equational.contains(ir->poly)) continue;
-                if (compare_simplest(der->proj(),ir->poly,barrier.poly)) {
+                if (util::compare_simplest(der->proj(),ir->poly,barrier.poly)) {
                     barrier = *ir;
                 }
             }
