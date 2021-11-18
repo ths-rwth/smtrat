@@ -38,6 +38,7 @@ namespace smtrat::cadcells::representation {
     };
 }
 
+#include "util.h"
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
 #include "heuristics_delineation.h"

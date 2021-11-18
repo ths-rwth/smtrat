@@ -252,6 +252,15 @@ public:
         return m_pool(p).degree(main_var(p));
     }
 
+    std::size_t max_degree(PolyRef p) {
+        const auto& poly = m_pool(p);
+        size_t deg = 0;
+        for (const auto var : carl::variables(poly)) {
+            deg = std::max(deg, poly.degree(var));
+        }
+        return deg;
+    }
+
 };
 
 }
