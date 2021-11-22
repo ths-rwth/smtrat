@@ -77,6 +77,7 @@ docs:
   stage: documentation
   cache: {}
   script:
+    - TASK=getCarl BRANCH_NAME=development JOB_NAME="build-gcc10" TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh #get carl for doxygen dependency
     - MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} TASK=documentation source .ci/build.sh
   only:
     - master

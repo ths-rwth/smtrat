@@ -1,34 +1,16 @@
 namespace smtrat::cadcells::representation {
 
-std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring) {
-    assert(!bounds.empty());
-    auto simplest = bounds.begin();
-    for (auto iter = bounds.begin(); iter != bounds.end(); iter++) {
-        if (ignoring.contains(iter->poly)) continue;
-        if (proj.degree(iter->poly) < proj.degree(simplest->poly)) {
-            simplest = iter;
-        }
-    }
-    if (ignoring.contains(bounds.begin()->poly)) return std::nullopt;
-    return *simplest;
-}
-
-datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds) {
-    boost::container::flat_set<datastructures::PolyRef> ignoring;
-    return *simplest_bound(proj, bounds, ignoring);
-}
-
 datastructures::CellDescription compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del) {
     if (del.is_section()) {
-        return datastructures::CellDescription(simplest_bound(proj, del.lower()->second));
+        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second));
     } else if (del.lower_unbounded() && del.upper_unbounded()) {
         return datastructures::CellDescription(datastructures::Bound::infty, datastructures::Bound::infty);
     } else if (del.lower_unbounded() ) {
-        return datastructures::CellDescription(datastructures::Bound::infty, simplest_bound(proj, del.upper()->second));
+        return datastructures::CellDescription(datastructures::Bound::infty, util::simplest_bound(proj, del.upper()->second));
     } else if (del.upper_unbounded()) {
-        return datastructures::CellDescription(simplest_bound(proj, del.lower()->second), datastructures::Bound::infty);
+        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second), datastructures::Bound::infty);
     } else {
-        return datastructures::CellDescription(simplest_bound(proj, del.lower()->second), simplest_bound(proj, del.upper()->second));
+        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second), util::simplest_bound(proj, del.upper()->second));
     }
 }
 
@@ -106,7 +88,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                 auto it = der->cell().lower();
                 auto barrier = *response.description.lower();
                 while(true) {
-                    auto simplest = simplest_bound(der->proj(), it->second, ignoring);
+                    auto simplest = util::simplest_bound(der->proj(), it->second, ignoring);
                     if (simplest) {
                         if (*simplest != *response.description.lower()) {
                             response.ordering.add_below(barrier, *simplest);
@@ -129,7 +111,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                 auto it = der->cell().upper();
                 auto barrier = *response.description.upper();
                 while(it != der->delin().roots().end()) {
-                    auto simplest = simplest_bound(der->proj(), it->second, ignoring);
+                    auto simplest = util::simplest_bound(der->proj(), it->second, ignoring);
                     if (simplest) {
                         if (*simplest != *response.description.upper()) {
                             response.ordering.add_above(barrier, *simplest);
@@ -151,55 +133,6 @@ struct cell<CellHeuristic::CHAIN_EQ> {
     }
 };
 
-/*
-template<typename T>
-void compute_sector_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
-    if (!der->cell().lower_unbounded()) {
-        auto it = der->cell().lower();
-        auto barrier = *response.description.lower();
-        while(true) {
-            auto old_barrier = barrier;
-            auto current_simplest = simplest_bound(der->proj(), it->second);
-            if (der->proj().degree(current_simplest.poly) < der->proj().degree(barrier.poly)) {
-                barrier = current_simplest;
-            }
-            assert(it != der->cell().lower() || barrier == *response.description.lower());
-            if (barrier != old_barrier) {
-                response.ordering.add_below(old_barrier, barrier);
-            }
-            for (const auto& ir : it->second) {
-                if (ir != barrier) {
-                    response.ordering.add_below(barrier, ir);
-                } 
-            }
-            if (it != der->delin().roots().begin()) it--;
-            else break;
-        }
-    }
-    if (!der->cell().upper_unbounded()) {
-        auto it = der->cell().upper();
-        auto barrier = *response.description.upper();
-        while(it != der->delin().roots().end()) {
-            auto old_barrier = barrier;
-            auto current_simplest = simplest_bound(der->proj(), it->second);
-            if (der->proj().degree(current_simplest.poly) < der->proj().degree(barrier.poly)) {
-                barrier = current_simplest;
-            }
-            assert(it != der->cell().upper() || barrier == *response.description.upper());
-            if (barrier != old_barrier) {
-                response.ordering.add_above(old_barrier, barrier);
-            }
-            for (const auto& ir : it->second) {
-                if (ir != barrier) {
-                    response.ordering.add_above(barrier, ir);
-                } 
-            }
-            it++;
-        }
-    }
-}
-*/
-
 template<typename T>
 void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response, bool section) {
     while(section) {
@@ -210,7 +143,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->poly)) continue;
-                if (der->proj().degree(ir->poly) >= der->proj().degree(response.description.section_defining().poly)) {
+                if (!util::compare_simplest(der->proj(),ir->poly,response.description.section_defining().poly)) {
                     response.equational.insert(ir->poly);
                 }
             }
@@ -223,7 +156,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->poly)) continue;
-                if (der->proj().degree(ir->poly) >= der->proj().degree(response.description.section_defining().poly)) {
+                if (!util::compare_simplest(der->proj(),ir->poly,response.description.section_defining().poly)) {
                     response.equational.insert(ir->poly);
                 }
             }
@@ -244,7 +177,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ignoring.contains(ir->poly)) continue;
                 if (section && response.equational.contains(ir->poly)) continue;
-                if (der->proj().degree(ir->poly) < der->proj().degree(barrier.poly)) {
+                if (util::compare_simplest(der->proj(),ir->poly,barrier.poly)) {
                     barrier = *ir;
                 }
             }
@@ -273,7 +206,7 @@ void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructur
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ignoring.contains(ir->poly)) continue;
                 if (section && response.equational.contains(ir->poly)) continue;
-                if (der->proj().degree(ir->poly) < der->proj().degree(barrier.poly)) {
+                if (util::compare_simplest(der->proj(),ir->poly,barrier.poly)) {
                     barrier = *ir;
                 }
             }
