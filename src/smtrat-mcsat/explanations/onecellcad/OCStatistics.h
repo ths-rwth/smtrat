@@ -14,10 +14,18 @@ private:
 	std::size_t mExplanationSuccess = 0;
 	// counts the number of "resultant-barriers" created in the third (smart Heuristic)
 	std::size_t mResultantBarriersH3 = 0;
-	// saves the maximal degree a polynomial has during calculations
+	// the maximal degree a polynomial has during calculations
 	std::size_t mMaxDegree = 0;
-    // saves the number of traversed levels during Onecell cad
+    // number of traversed levels during Onecell cad
     std::size_t mLevels = 0;
+    // number of zeros encountered during onecell cad
+    std::size_t mZeros = 0;
+    // number of resultants encountered during onecell cad
+    std::size_t mResultants = 0;
+    // saves the number of traversed levels which did not have any roots
+    std::size_t mLevelsWOzeros = 0;
+    // saves the number of traversed levels which did not have any polynomials
+    std::size_t mLevelsWOpols = 0;
 public:
 	bool enabled() const {
 		return true;
@@ -29,6 +37,10 @@ public:
         Statistics::addKeyValuePair("resultant_barriers", mResultantBarriersH3);
         Statistics::addKeyValuePair("max_degree", mMaxDegree);
         Statistics::addKeyValuePair("num_of_levels", mLevels);
+        Statistics::addKeyValuePair("num_of_zeros", mZeros);
+        Statistics::addKeyValuePair("num_of_resultants", mResultants);
+        Statistics::addKeyValuePair("num_of_levels_wo_zeros", mLevelsWOzeros);
+        Statistics::addKeyValuePair("num_of_levels_wo_Pols", mLevelsWOpols);
 	}
 
 	void explanationCalled() {
@@ -55,6 +67,22 @@ public:
 	std::size_t getCurrentMaxDegree(){
 	    return mMaxDegree;
 	}
+
+    void addZeros(std::size_t z){
+        mZeros += z;
+    }
+
+    void addResultants(std::size_t r){
+        mResultants += r;
+    }
+
+    void levelWOzeros(){
+        ++mLevelsWOzeros;
+    }
+
+    void levelWOpols(){
+        ++mLevelsWOpols;
+    }
 };
 
 }

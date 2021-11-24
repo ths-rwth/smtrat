@@ -61,6 +61,15 @@ class LevelwiseCAD : public OneCellCAD {
         for (int i = (int) point.dim() - 1; i >= 0; i--) {
             carl::Variable rootVariable = variableOrder[i];
 
+            if(polys[i].empty()) {
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                    getStatistic().levelWOpols();
+                    getStatistic().levelWOzeros();
+                #endif
+                continue;
+            }
+
+
             bool sector = true;
             TagPoly t;
             int deg = -1;
@@ -142,11 +151,22 @@ class LevelwiseCAD : public OneCellCAD {
                     if (sectionHeuristic == 1) {
                         for (auto &poly : polys[i]) {
                             //Heuristic 1: calculate resultant between defining pol t and every pol that has root above or below t
-                            if (!isolateLastVariableRoots(poly.level, poly.poly).empty()) {
-                                if (poly.poly != t.poly) {
-                                    resultants.emplace_back(std::make_pair(t.poly, poly.poly));
+                            #ifndef SMTRAT_DEVOPTION_Statistics
+                                if (!isolateLastVariableRoots(poly.level, poly.poly).empty()) {
+                                    if (poly.poly != t.poly) {
+                                        resultants.emplace_back(std::make_pair(t.poly, poly.poly));
+                                    }
                                 }
-                            }
+                            #else
+                                auto roots = isolateLastVariableRoots(poly.level, poly.poly);
+                                if (!roots.empty()) {
+                                    getStatistic().addZeros(roots.size());
+                                    if (poly.poly != t.poly) {
+                                        resultants.emplace_back(std::make_pair(t.poly, poly.poly));
+                                    }
+                                }
+                            #endif
+
                         }
 
                         #ifdef SMTRAT_DEVOPTION_Statistics
@@ -165,6 +185,9 @@ class LevelwiseCAD : public OneCellCAD {
                                 continue;
                             } else {
                                 SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    getStatistic().addZeros(isolatedRoots.size());
+                                #endif
                             }
 
                             //guaranteed at least one root
@@ -270,6 +293,9 @@ class LevelwiseCAD : public OneCellCAD {
                                 continue;
                             } else {
                                 SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+                                #ifdef SMTRAT_DEVOPTION_Statistics
+                                    getStatistic().addZeros(isolatedRoots.size());
+                                #endif
                             }
 
                             //guaranteed at least one root
@@ -487,6 +513,12 @@ class LevelwiseCAD : public OneCellCAD {
                     }
 
                     // Add all calculate resultants (independent from heuristic)
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                        getStatistic().addResultants(resultants.size());
+                        if(resultants.size() == 0){
+                            getStatistic().levelWOzeros();
+                        }
+                    #endif
                     addResultants(resultants, polys, variableOrder[i], variableOrder);
                 }
             } else {
@@ -517,6 +549,9 @@ class LevelwiseCAD : public OneCellCAD {
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                getStatistic().addZeros(isolatedRoots.size());
+                            #endif
                         }
 
                         // Search for closest isolatedRoots/boundPoints to pointComp, i.e.
@@ -581,6 +616,9 @@ class LevelwiseCAD : public OneCellCAD {
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                getStatistic().addZeros(isolatedRoots.size());
+                            #endif
                         }
 
                         // Search for closest isolatedRoots/boundPoints to pointComp, i.e.
@@ -678,6 +716,9 @@ class LevelwiseCAD : public OneCellCAD {
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                getStatistic().addZeros(isolatedRoots.size());
+                            #endif
                         }
 
                         //guaranteed at least one root
@@ -796,6 +837,9 @@ class LevelwiseCAD : public OneCellCAD {
                             continue;
                         } else {
                             SMTRAT_LOG_TRACE("smtrat.cad", "Isolated roots: " << isolatedRoots);
+                            #ifdef SMTRAT_DEVOPTION_Statistics
+                                getStatistic().addZeros(isolatedRoots.size());
+                            #endif
                         }
 
                         //guaranteed at least one root
@@ -1066,6 +1110,12 @@ class LevelwiseCAD : public OneCellCAD {
                     upper2.clear();
 
                     //Add resultants and leadcoefficients depending on heuristic
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                        getStatistic().addResultants(resultants.size());
+                        if(resultants.size() == 0){
+                            getStatistic().levelWOzeros();
+                        }
+                    #endif
                     addResultants(resultants, polys, variableOrder[i], variableOrder);
 
                     for (auto &poly : polys[i]) {
