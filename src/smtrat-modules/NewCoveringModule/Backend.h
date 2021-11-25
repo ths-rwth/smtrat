@@ -58,10 +58,10 @@ private:
 	std::vector<std::vector<datastructures::SampledDerivationRef<PropSet>>> mCoveringInformation;
 
 	//Levelwise Mapping from derivation to its resulting constraint
-	std::map<datastructures::SampledDerivationRef<PropSet>, ConstraintT> mDerivationToConstraint;
+	std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>> mDerivationToConstraint;
 
 	//Infeasible subsets, contains levelwise all constraints which resulted in a complete covering
-	std::vector<boost::container::flat_set<ConstraintT>> mInfeasibleSubsets;
+	std::vector<std::vector<ConstraintT>> mInfeasibleSubsets;
 
 public:
 	//Init with empty variable ordering
@@ -97,7 +97,7 @@ public:
 	}
 
 	//TODO: The reasons from constructCharacterization are not added yet!!
-	FormulaSetT getInfeasibleSubset(){
+	inline FormulaSetT getInfeasibleSubset(){
 		FormulaSetT infeasibleSubset;
 		for (const auto& infeasibleSubsetLevel : mInfeasibleSubsets) {
 			for (const auto& infeasibleSubsetConstraint : infeasibleSubsetLevel) {
@@ -188,27 +188,34 @@ public:
 		}
 	}
 
+	//gather all constraints used in the last Covering
+	inline std::vector<ConstraintT> getConstraintsOfLastCovering(){
+		std::vector<ConstraintT> constraints;
+		for(const datastructures::SampledDerivationRef<PropSet>& covering_deriv : mLastFullCovering.sampled_derivation_refs()){
+			assert(mDerivationToConstraint.find(covering_deriv) != mDerivationToConstraint.end());
+			std::vector<ConstraintT> new_constraints = mDerivationToConstraint[covering_deriv];
+			constraints.insert(constraints.end(), new_constraints.begin(), new_constraints.end());
+		}
+
+		//remove duplicates of the constraints
+		std::sort(constraints.begin(), constraints.end());
+		constraints.erase(std::unique(constraints.begin(), constraints.end()), constraints.end());
+		return constraints;
+	}
+		
+
 	Answer getUnsatCover(const std::size_t level) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " with current assignment: " << mCurrentAssignment);
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
-		SMTRAT_LOG_DEBUG("smtrat.covering", " Dimension: " << dimension());
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints);
 		std::vector<datastructures::SampledDerivationRef<PropSet>> unsat_cells;
 		for (const ConstraintT& constraint : mUnknownConstraints[level]) {
-
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Checking constraint: " << constraint);
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Current Assignment size: " << mCurrentAssignment.size());
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Current level: " << level);
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Level of constraint: " << helper::level_of(mVariableOrdering, constraint.lhs()));
-			SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Projection Variable Ordering: " << mProjections->polys().var_order());
-
 			auto intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
 			//TODO: Map von sampled deriv zu constraints für infeasible subset, Alle constraints die irgendwie eine derivation erzeugt haben
 			for (const auto& interval : intervals) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
 				//Insert into the derivation to constraint map
-				mDerivationToConstraint.insert(std::make_pair(interval, constraint));
+				mDerivationToConstraint.insert(std::make_pair(interval, std::vector<ConstraintT>{constraint}));
 			}
 			unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
 		}
@@ -220,8 +227,6 @@ public:
 		for (const datastructures::SampledDerivationRef<PropSet>& deriv : mCoveringInformation[level]) {
 			unsat_cells.push_back(deriv);
 		}
-
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsat cells: " << unsat_cells);
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
 		auto mCurrentCovering = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
@@ -270,6 +275,7 @@ public:
 
 				//add new cell to stored data and recalculate the current covering
 				unsat_cells.push_back(new_deriv);
+
 				auto newCovering = representation::covering<representation::DEFAULT_COVERING>::compute(unsat_cells);
 				if (!newCovering.has_value()) {
 					SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed -> Aborting");
@@ -279,6 +285,10 @@ public:
 				}
 				filterAndStoreDerivations(mCurrentCovering.value(), level);
 				unsat_cells = mCoveringInformation[level];
+
+				//The origin of the new derivation are all constraints used in the last full covering
+				//See paper Section 4.6
+				mDerivationToConstraint.insert(std::make_pair(new_deriv, getConstraintsOfLastCovering()));
 
 				//delete the now obsolete variable assignment
 				mCurrentAssignment.erase(mVariableOrdering[level]);
@@ -295,24 +305,13 @@ public:
 		mCoveringInformation[level].clear();
 		setConstraintsUnknown(level);
 
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Constructing infeasible subset");
 		//Construct the infeasible subset for the current level
-		//First reset the stored infeasible subset if there is one 
 		mInfeasibleSubsets[level].clear();
-		//now add the constraints which resulted in the unsat-cells of full covering of this level 
-		for (const auto& unsat_derivation : mLastFullCovering.sampled_derivation_refs()) {
-			//only insert constraints from derivations which where created 
-			if(mDerivationToConstraint.find(unsat_derivation) != mDerivationToConstraint.end()) {
-				mInfeasibleSubsets[level].insert(mDerivationToConstraint.at(unsat_derivation));
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Added constraint " << mDerivationToConstraint.at(unsat_derivation) << " to infeasible subset");
-			}else{
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Could not find constraint for derivation " << unsat_derivation);
-			}
-		}
+		mInfeasibleSubsets[level] = getConstraintsOfLastCovering() ;
 
 		return Answer::UNSAT;
 	}
 
-	~Backend() {
-	}
 };
 } // namespace smtrat

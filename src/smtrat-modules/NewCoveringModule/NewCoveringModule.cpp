@@ -203,10 +203,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	mLastAnswer = answer;
 
 	if (answer == Answer::UNSAT) {
-		//Just use the trivial infeasible subset for now
-		//Todo: Use all constraints which resulted in a derivation used in the UNSAT-Covering
 		//Todo: Also clear the projection/assignment cache?
-		generateTrivialInfeasibleSubset();
+		mInfeasibleSubsets.push_back( backend.getInfeasibleSubset() );
 		mLastAssignment.clear();
 		updateModel();
 		for (const auto& knownConstraints : backend.getKnownConstraints()) {
