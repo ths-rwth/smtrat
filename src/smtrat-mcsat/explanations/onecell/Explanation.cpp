@@ -3,8 +3,11 @@
 
 namespace smtrat::mcsat::onecell {
 
-boost::optional<mcsat::Explanation>
-Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason) const {
+std::optional<mcsat::Explanation>
+Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        mStatistics.explanationCalled();
+    #endif
     cadcells::Assignment ass;
     for (const auto& [key, value] : trail.model()) {
         if (value.isRAN()) {
@@ -23,7 +26,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
     for (const auto v : reason_vars) {
         if (ass.find(v) == ass.end() && v != var) {
             SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Conflict reasons are of higher level than the current one.");
-            return boost::none;
+            return std::nullopt;
         }
     }
 
@@ -32,9 +35,12 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");
-        return boost::none;
+        return std::nullopt;
     }
     else {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+            mStatistics.explanationSuccess();
+        #endif
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result->second << " of constraints " << result->first << " wrt " << vars << " and " << ass);
         FormulasT expl;
         for (const auto& f : result->first) expl.push_back(f.negated());

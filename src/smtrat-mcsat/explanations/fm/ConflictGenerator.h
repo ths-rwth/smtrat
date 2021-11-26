@@ -4,6 +4,40 @@
 
 namespace smtrat {
 namespace mcsat {
+/**
+ * @brief A Fourier-Motzkin based backend 
+ * 
+ * Preprocessing of constraints:
+ * 
+ * The input is a constraint c: p*x~q which can be used as a bound on x with p,q multivariate polynomials.
+ * If x only occurs linearly in c, this decomposition is possible.
+ * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return (c && p=0) -> 0~q as explanation.
+ * Otherwise, we evaluate c over the partial model and obtain x~r, where r is a rational.
+ * To properly perform the elimination step detailed below, we additionally store whether p is negative over the current assignment as a Boolean.
+ *
+ * We store (c,p,q,r,n) for each bound.
+ * 
+ * 
+ * FM elimination:
+ *
+ * Given a lower bound l and an upper bound u, the elimination is as follows:
+ *   Conflict if l.r >= u.r (or strict, if both relations from c are weak)
+ *   l.q * u.p < u.q * l.p
+ *
+ * If exactly one of u.p and l.p was found to be negative, the relation has to be inverted.
+ * If u.p or l.p are not constants, we additionally have to add a literal stating that their sign does not change.
+ * 
+ * For all bounds involved, we add b.p < 0 resp. b.p > 0 as side condition to the explanation.
+ * 
+ * 
+ * Handling of "not equal":
+ * 
+ * For linear arithmetic, a bound i belonging to a constraint with relation != can be in conflict with
+ * * a bound e for a constraint with = iff i.r == e.r, then we return i.c && e.c -> i.q * e.p != e.q * i.p
+ * * two bounds l, u with >= resp. <= as relation and i.r == l.r == u.r, then we return i.c && l.c && u.c && (l.q * u.p = u.q * l.p) -> l.q * i.p != i.q * l.p
+ * 
+ * For all bounds b involved, we add b.p != 0 as side condition to the explanation. 
+ */
 namespace fm {
 
 
@@ -30,39 +64,6 @@ inline std::ostream& operator<<(std::ostream& os, const Bound& b) {
 
 template<class Comparator>
 struct ConflictGenerator {
-	/**
-	 * Preprocessing of constraints:
-	 * 
-	 * The input is a constraint c: p*x~q which can be used as a bound on x with p,q multivariate polynomials.
-	 * If x only occurs linearly in c, this decomposition is possible.
-	 * If p is zero, then c is conflicting iff !(0~q). If this is the case, we can return (c && p=0) -> 0~q as explanation.
-	 * Otherwise, we evaluate c over the partial model and obtain x~r, where r is a rational.
-	 * To properly perform the elimination step detailed below, we additionally store whether p is negative over the current assignment as a Boolean.
-	 *
-	 * We store (c,p,q,r,n) for each bound.
-	 * 
-	 * 
-	 * FM elimination:
-	 *
-	 * Given a lower bound l and an upper bound u, the elimination is as follows:
-	 *   Conflict if l.r >= u.r (or strict, if both relations from c are weak)
-	 *   l.q * u.p < u.q * l.p
-	 *
-	 * If exactly one of u.p and l.p was found to be negative, the relation has to be inverted.
-	 * If u.p or l.p are not constants, we additionally have to add a literal stating that their sign does not change.
-	 * 
-	 * For all bounds involved, we add b.p < 0 resp. b.p > 0 as side condition to the explanation.
-	 * 
-	 * 
-	 * Handling of "not equal":
-	 * 
-	 * For linear arithmetic, a bound i belonging to a constraint with relation != can be in conflict with
-	 * * a bound e for a constraint with = iff i.r == e.r, then we return i.c && e.c -> i.q * e.p != e.q * i.p
-	 * * two bounds l, u with >= resp. <= as relation and i.r == l.r == u.r, then we return i.c && l.c && u.c && (l.q * u.p = u.q * l.p) -> l.q * i.p != i.q * l.p
-	 * 
-	 * For all bounds b involved, we add b.p != 0 as side condition to the explanation. 
-	 */
-
 
 	#define mcsat_yield(callback, result) if (callback(std::move(result))) { return; }
 

@@ -3,9 +3,15 @@
 #include <functional>
 #include "../datastructures/polynomials.h"
 
+/**
+ * Contains all properties that are stored in a derivation. 
+ * 
+ * Note that not all properties have a representation here as not all of them are stored but resolved directly in the derivation rules. 
+ */
 namespace smtrat::cadcells::operators::properties {
 
 struct poly_sgn_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
@@ -26,6 +32,7 @@ std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
 }
 
 struct poly_irreducible_sgn_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;   
     size_t level() const {
         return poly.level;
@@ -46,6 +53,7 @@ std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv& data)
 }
 
 struct poly_ord_inv {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
@@ -66,6 +74,7 @@ std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
 }
 
 struct root_well_def {
+    static constexpr bool is_flag = false; 
     datastructures::IndexedRoot root;
     size_t level() const {
         return root.poly.level-1;
@@ -91,6 +100,7 @@ std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
 }
 
 struct poly_pdel {
+    static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
         return poly.level-1;
@@ -107,6 +117,27 @@ bool operator<(const poly_pdel& lhs, const poly_pdel& rhs) {
 }
 std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
     os << data.poly << " projectively delineable";
+    return os;
+}
+
+struct cell_connected {
+    static constexpr bool is_flag = true; 
+    std::size_t lvl;
+    std::size_t level() const {
+        return lvl;
+    }
+    std::size_t hash_on_level() const {
+        return 0;
+    }
+};
+bool operator==(const cell_connected& lhs, const cell_connected& rhs) {
+    return lhs.lvl == rhs.lvl;
+}
+bool operator<(const cell_connected& lhs, const cell_connected& rhs) {
+    return lhs.lvl < rhs.lvl;
+}
+std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
+    os << data.lvl << " connected";
     return os;
 }
 

@@ -14,12 +14,12 @@ private:
 	using B = std::tuple<Backends...>;
 	B mBackends;
 	template<std::size_t N = 0, carl::EnableIfBool<N == std::tuple_size<B>::value> = carl::dummy>
-	boost::optional<AssignmentOrConflict> findAssignment(const mcsat::Bookkeeping&, carl::Variable) const {
+	std::optional<AssignmentOrConflict> findAssignment(const mcsat::Bookkeeping&, carl::Variable) const {
 		SMTRAT_LOG_ERROR("smtrat.mcsat.assignment", "No assignment finder left.");
-		return boost::none;
+		return std::nullopt;
 	}
 	template<std::size_t N = 0, carl::EnableIfBool<N < std::tuple_size<B>::value> = carl::dummy>
-	boost::optional<AssignmentOrConflict> findAssignment(const mcsat::Bookkeeping& data, carl::Variable var) const {
+	std::optional<AssignmentOrConflict> findAssignment(const mcsat::Bookkeeping& data, carl::Variable var) const {
 		auto res = std::get<N>(mBackends)(data, var);
 		if (res) return res;
 		return findAssignment<N+1>(data, var);
@@ -36,7 +36,7 @@ private:
 		return res && active<N+1>(data, f);
 	}
 public:
-	boost::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
+	std::optional<AssignmentOrConflict> operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 		return findAssignment<0>(data, var);
 	}
 

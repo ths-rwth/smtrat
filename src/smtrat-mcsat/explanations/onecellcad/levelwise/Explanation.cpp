@@ -9,15 +9,15 @@ namespace onecellcad {
 namespace levelwise {
 
 template<class Setting1, class Setting2>
-boost::optional<mcsat::Explanation>
+std::optional<mcsat::Explanation>
 Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // current assignment state
 						carl::Variable var,
-						const FormulasT& trailLiterals) const {
+						const FormulasT& trailLiterals, bool) const {
 
 	assert(trail.model().size() == trail.assignedVariables().size());
 
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationCalled();
+	getStatistic().explanationCalled();
 #endif
 
 #if not(defined USE_COCOA || defined USE_GINAC)
@@ -41,7 +41,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 		FormulasT explainLiterals;
 		for (const auto& trailLiteral : trailLiterals)
 			explainLiterals.emplace_back(trailLiteral.negated());
-		return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
+		return std::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 	}
 	assert(trail.assignedVariables().size() > 0);
 
@@ -93,7 +93,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
             bool failcheck = optimized_singleLevelFullProjection(currentVar, currentLvl,projectionLevels, cad);
             if(!failcheck){
                 SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
-                return boost::none;
+                return std::nullopt;
             }
         } else{
             singleLevelFullProjection(fullProjectionVarOrder, currentVar, currentLvl, projectionLevels);
@@ -103,11 +103,13 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Polys at levels after a CAD projection at level: " << currentLvl << ":\n" << projectionLevels);
 	}
 
+    assert(1 <= Setting1::sectionHeuristic && Setting1::sectionHeuristic <= 3);
+    assert(1 <= Setting2::sectorHeuristic && Setting2::sectorHeuristic <= 3);
 	std::optional<CADCell> cellOpt =
 	        cad.constructCADCellEnclosingPoint(projectionLevels, Setting1::sectionHeuristic, Setting2::sectorHeuristic);
 	if (!cellOpt) {
 		SMTRAT_LOG_WARN("smtrat.mcsat.nlsat", "OneCell construction failed");
-		return boost::none;
+		return std::nullopt;
 	}
 
 	auto cell = *cellOpt;
@@ -153,9 +155,9 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);
 #ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationSuccess();
+	getStatistic().explanationSuccess();
 #endif
-	return boost::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
+	return std::variant<FormulaT, ClauseChain>(FormulaT(carl::FormulaType::OR, std::move(explainLiterals)));
 }
 
 // Instantiations

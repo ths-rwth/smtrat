@@ -21,6 +21,16 @@ using DelineatedDerivationRef = std::shared_ptr<DelineatedDerivation<Properties>
 template<typename Properties>
 using SampledDerivationRef = std::shared_ptr<SampledDerivation<Properties>>;
 
+/**
+ * A reference to a derivation, which is either
+ * - a @ref BaseDerivation (a set of properties for each level)
+ * - a @ref DelineatedDerivation (a @ref BaseDerivation with an underlying @ref SampledDerivation on which the properties can be delineated)
+ * - a @ref SampledDerivation (a @ref DelineatedDerivation with an underlying @ref SampledDerivation plus a sample on the current level such that a delineated interval can be computed)
+ * 
+ * ## Memory management
+ * 
+ * Memory management is based on std::shared_ptr. A SampledDerivation holds a shared pointer to a DelineatedDerivation, which in turn holds a shared pointer to BaseDerivation. The BaseDerivation holds a @ref DerivationRef to the underlying derivation. Note that not all combinations are legal; i.e. the underlying derivation of a delineated derivation must be a sampled derivation.
+ */
 template<typename Properties>
 class DerivationRef {
     std::variant<BaseDerivationRef<Properties>, DelineatedDerivationRef<Properties>, SampledDerivationRef<Properties>> m_data;
@@ -106,7 +116,11 @@ public:
     }  
 };
 
-
+/**
+ * A BaseDerivation has a level and a set of properties of this level, and an underlying derivation representing the lower levels.
+ *  
+ * @tparam Properties Set of properties (from the operator)
+ */
 template<typename Properties>
 class BaseDerivation {
     template<typename P>
@@ -141,7 +155,7 @@ public:
         assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
-            get<P>(m_properties).emplace(property);
+            prop_insert<P>(m_properties, property);
         } else {
             assert(!m_underlying.is_null());
             m_underlying.base().insert(property);
@@ -153,7 +167,7 @@ public:
         assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
-            return get<P>(m_properties).find(property) != get<P>(m_properties).end();
+            return prop_has<P>(m_properties, property);
         } else {
             assert(!m_underlying.is_null());
             return m_underlying.base().contains(property);
@@ -161,7 +175,7 @@ public:
     }
     template<typename P>
     const PropertiesTSet<P>& properties() const {
-        return get<P>(m_properties);
+        return prop_get<P>(m_properties);
     }
 
     void merge_with(const BaseDerivation<Properties>& other) {
@@ -173,6 +187,11 @@ public:
     }
 };
 
+/**
+ * A DelineatedDerivation is a BaseDerivation with a Delineation and an underlying SampledDerivation.
+ * 
+ * @tparam Properties Set of properties
+ */
 template<typename Properties>
 class DelineatedDerivation {
     BaseDerivationRef<Properties> m_base;
@@ -214,6 +233,11 @@ public:
     };
 };
 
+/**
+ * A SampledDerivation is a DelineatedDerivation with a sample and an DelineationInterval w.r.t. to this sample.
+ * 
+ * @tparam Properties Set of properties
+ */
 template<typename Properties>
 class SampledDerivation {
     DelineatedDerivationRef<Properties> m_delineated;
@@ -234,6 +258,10 @@ public:
     DelineatedDerivationRef<Properties>& delineated() const { return m_delineated; };
 
     const DelineationInterval& cell() const { return *m_cell; }
+    /**
+     * Determines the cell w.r.t. the delineation.
+     * 
+     */
     void delineate_cell() {
         if (m_delineated->level() > 0) {
             m_cell = m_delineated->delin().delineate_cell(main_var_sample());
@@ -265,6 +293,9 @@ public:
     };
 };
 
+/**
+ * Initializes a derivation according the the given assignment and level.
+ */
 template<typename Properties>
 DerivationRef<Properties> make_derivation(Projections& proj, const Assignment& assignment, size_t level) {
     const auto& vars = proj.polys().var_order();
@@ -286,6 +317,9 @@ DerivationRef<Properties> make_derivation(Projections& proj, const Assignment& a
     return current;
 }
 
+/**
+ * Initializes a sampled derivation w.r.t. the delineated derivation and sample.
+ */
 template<typename Properties>
 SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef<Properties> delineated, const RAN& main_sample) {
     auto sampled_der = std::make_shared<SampledDerivation<Properties>>(delineated, main_sample);
@@ -293,6 +327,9 @@ SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef
     return sampled_der;
 }
 
+/**
+ * Merges the underlying derivations of a set of sampled derivations. After the operation, all sampled derivations point to the same underlying derivation.
+ */
 template<typename Properties>
 void merge_underlying(std::vector<std::reference_wrapper<SampledDerivation<Properties>>>& derivations) {
     std::set<DerivationRef<Properties>> underlying;

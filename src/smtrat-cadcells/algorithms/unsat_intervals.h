@@ -17,7 +17,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size() + 1).delineated_ref();
 
     deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
-    operators::project_basic_properties<op>(*deriv->base());
+    operators::project_basic_properties<op>(*deriv);
     operators::delineate_properties<op>(*deriv);
 
     std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> results;
@@ -96,7 +96,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             RAN root = std::get<RAN>(c.value());
             auto p = c.definingPolynomial();
             auto poly = proj.polys()(p);
-            auto poly_roots = proj.real_roots(Assignment(), poly);
+            auto poly_roots = proj.real_roots(sample, poly); // TODO sample is irrelevant here, but needed for the correct level...
             size_t index = (size_t)std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
             datastructures::IndexedRoot iroot(poly, index);
             return std::make_pair(iroot, root);
@@ -160,7 +160,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
 }
 
 /**
- * Returns the unsat intervals of the given atom w.r.t. a sample.
+ * Returns the unsat intervals of the given atom w.r.t. an underlying sample.
+ * 
+ * @param c A constraint or a variable comparison.
+ * @param sample A sample point such that the highest variable in @ref c w.r.t. the variable odering in @ref proj is the only unassigned variable.
+ * @return A list of sampled derivations with the same delineated derivations. The samples for the unassigned variables are sampled from the respective interval.
  */
 template <cadcells::operators::op op>
 std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const FormulaT& c, datastructures::Projections& proj, const Assignment& sample) {

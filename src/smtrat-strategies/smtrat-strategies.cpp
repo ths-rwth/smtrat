@@ -2,7 +2,7 @@
 
 namespace smtrat {
 
-void load_configured_strategy(Manager& m) {
-}
+//void load_configured_strategy(Manager& m) {
+//}
 
 }

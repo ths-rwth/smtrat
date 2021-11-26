@@ -2445,7 +2445,7 @@ namespace smtrat
         if ( boxCheck == UNSAT )
         {
             FormulaT actualAssumptions = FormulaT(*mValidationFormula);
-            Module::addAssumptionToCheck(actualAssumptions,false,"ICP_BoxValidation");
+            SMTRAT_VALIDATION_ADD("smtrat.modules.icp","ICP_BoxValidation",actualAssumptions,false);
         }
         #endif
         if( boxCheck != UNKNOWN )

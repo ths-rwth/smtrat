@@ -38,19 +38,9 @@ SettingsParser::SettingsParser() {
 	}
 
 	{
-		auto& s = settings.get<settings::ValidationSettings>("validation");
-		add("Validation settings").add_options()
-			("log.lemmata", po::bool_switch(&s.log_lemmata), "store all lemmata for validation")
-			("log.theory-calls", po::bool_switch(&s.log_theory_calls), "store all theory calls for validation")
-			("log.infeasible-subsets", po::bool_switch(&s.log_infeasible_subsets), "store all infeasible subsets for validation")
-			("log.filename", po::value<std::string>(&s.log_filename)->default_value("validationlog.smt2"), "store the validation information in this file")
-		;
-	}
-
-	{
 		auto& s = settings.get<settings::ModuleSettings>("module");
 		add("Module settings").add_options()
-			("module.parameter", po::value<std::vector<std::string>>(&s.parameters), "add a parameter for modules")
+			("module.parameter", po::value<std::vector<std::string>>(&s.parameters), "add a parameter for modules (key=value)")
 		;
 	}
 }

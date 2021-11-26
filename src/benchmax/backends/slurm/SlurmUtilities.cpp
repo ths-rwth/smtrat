@@ -221,7 +221,7 @@ bool is_job_finished(int jobid) {
 	std::getline(iss, line);
 	assert(line.find("----------") != std::string::npos);
 	while (std::getline(iss, line)) {
-		if (line.find("COMPLETED") == std::string::npos && line.find("CANCELLED") == std::string::npos) {
+		if (line.find("COMPLETED") == std::string::npos && line.find("CANCELLED") == std::string::npos && line.find("TIMEOUT") == std::string::npos) {
 			return false;
 		}
 	}

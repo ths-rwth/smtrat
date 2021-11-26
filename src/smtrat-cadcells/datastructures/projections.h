@@ -87,15 +87,19 @@ public:
     auto& polys() { return m_pool; }
     const auto& polys() const { return m_pool; }
 
+    /// Clears all polynomials of the specified level and higher in the polynomial cache as well as their projection results.
     void clear_cache(size_t level) {
         assert(level > 0);
         m_pool.clear_levels(level);
         if (level <= m_poly_cache.size()) {
             m_poly_cache.erase(m_poly_cache.begin() + (level - 1), m_poly_cache.end());
+        }
+        if (level < m_assignment_cache.size()) {
             m_assignment_cache.erase(m_assignment_cache.begin() + level, m_assignment_cache.end());
         }
     }
 
+    /// Clears all projections cached with respect to this assignment.
     void clear_assignment_cache(const Assignment& assignment) {
         if (level_of(assignment) < m_assignment_cache.size()) {
             m_assignment_cache[level_of(assignment)].erase(assignment);
@@ -178,8 +182,8 @@ public:
         assert(!m_pool(p).isConstant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
-            assert(cache(sample).real_roots.at(p).is_univariate());
         }
+        assert(cache(sample).real_roots.at(p).is_univariate());
         return cache(sample).real_roots.at(p).roots().size();
     }
 
@@ -188,8 +192,8 @@ public:
         assert(!m_pool(p).isConstant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
-            assert(cache(sample).real_roots.at(p).is_univariate());
         }
+        assert(cache(sample).real_roots.at(p).is_univariate());
         return cache(sample).real_roots.at(p).roots();
     }
 
@@ -200,7 +204,6 @@ public:
 		if (poly.isLinear()) return false;
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
-            assert(cache(sample).real_roots.at(p).is_univariate());
         }
 		return cache(sample).real_roots.at(p).is_nullified();
     }
@@ -243,6 +246,19 @@ public:
         }
         assert(result);
         return m_pool(*result);
+    }
+
+    std::size_t degree(PolyRef p) {
+        return m_pool(p).degree(main_var(p));
+    }
+
+    std::size_t max_degree(PolyRef p) {
+        const auto& poly = m_pool(p);
+        size_t deg = 0;
+        for (const auto var : carl::variables(poly)) {
+            deg = std::max(deg, poly.degree(var));
+        }
+        return deg;
     }
 
 };

@@ -2104,7 +2104,7 @@ namespace vs
             smtrat::ConstraintsT constraints;
             for( auto cond = covSet.begin(); cond != covSet.end(); ++cond )
                 constraints.insert( (**cond).constraint() );
-            smtrat::Module::addAssumptionToCheck( constraints, false, "VSModule_IS_1" );
+            SMTRAT_VALIDATION_ADD("smtrat.modules.vs","VSModule_IS_1",constraints,false);
             #endif
             // Get the original conditions to the covering set.
             carl::PointerSet<Condition> coverSetOConds;

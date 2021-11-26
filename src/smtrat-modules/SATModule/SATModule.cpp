@@ -28,8 +28,6 @@
 #include "SATModule.h"
 #include <iomanip>
 
-#include <smtrat-mcsat/verifier/Verifier.h>
-
 #ifdef LOGGING
 //#define DEBUG_SATMODULE
 //#define DEBUG_SATMODULE_THEORY_PROPAGATION
@@ -155,14 +153,11 @@ namespace smtrat
         mTrueVar = newVar();
         uncheckedEnqueue( mkLit( mTrueVar, false ) );
         mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
-
-		mcsat::initializeVerifier();
     }
 
     template<class Settings>
     SATModule<Settings>::~SATModule()
     {
-		mcsat::clearVerifier();
         while( mBooleanConstraintMap.size() > 0 )
         {
             Abstraction* abstrAToDel = mBooleanConstraintMap.last().first;
@@ -1865,7 +1860,7 @@ namespace smtrat
 			}
 		}
 		SMTRAT_LOG_DEBUG("smtrat.sat", "Backtracking to " << backtrackLevel);
-		CARL_CHECKPOINT("nlsat", "backtrack", backtrackLevel);
+		SMTRAT_CHECKPOINT("nlsat", "backtrack", backtrackLevel);
 		cancelUntil(backtrackLevel, true);
 
 		CRef conflict = CRef_Undef;
@@ -1942,7 +1937,7 @@ namespace smtrat
 				}
 			} else if (value(lemma[0]) == l_Undef && value(lemma[1]) == l_False) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", "-- Lemma is unit, propagating " << lemma[0]);
-				CARL_CHECKPOINT("nlsat", "propagation", lemma_ref, lemma[0]);
+				SMTRAT_CHECKPOINT("nlsat", "propagation", lemma_ref, lemma[0]);
 				uncheckedEnqueue(lemma[0], lemma_ref);
 			} else if (value(lemma[0]) == l_False) {
 				SMTRAT_LOG_DEBUG("smtrat.sat", lemma[0] << " is false, hence " << lemma[1] << " should also be false...");
@@ -2818,10 +2813,13 @@ namespace smtrat
                         print(std::cout, "###");
                         #endif
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << *conflict);
-                        if (carl::variant_is_type<FormulaT>(*conflict)) {
-                            sat::detail::validateClause(boost::get<FormulaT>(*conflict), Settings::validate_clauses);
+                        if (std::holds_alternative<FormulaT>(*conflict)) {
+                            sat::detail::validateClause(std::get<FormulaT>(*conflict), Settings::validate_clauses);
                         }
                         handleTheoryConflict(*conflict);
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                        mMCSATStatistics.theoryConflict();
+                        #endif
                         continue;
                     }
                 }
@@ -2844,12 +2842,12 @@ namespace smtrat
                         assert(!mMCSAT.isAssignedTheoryVariable(tvar));
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Picked " << next << " for a theory decision, assigning...");
                         auto res = mMCSAT.makeTheoryDecision(tvar);
-                        if (carl::variant_is_type<FormulasT>(res)) {
+                        if (std::holds_alternative<FormulasT>(res)) {
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mMCSATStatistics.theoryDecision();
                             #endif
                             mCurrentAssignmentConsistent = SAT;
-                            const auto& assignments = boost::get<FormulasT>(res);
+                            const auto& assignments = std::get<FormulasT>(res);
                             assert(assignments.size() > 0);
                             static_assert(Settings::mcsat_num_insert_assignments > 0);
                             // create assignments
@@ -2875,11 +2873,11 @@ namespace smtrat
                             mCurrentAssignmentConsistent = UNSAT;
                             SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Conflict while generating theory decision on level " << (mMCSAT.level()+1));
                             insertVarOrder(var(next));
-                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << boost::get<mcsat::Explanation>(res));
+                            SMTRAT_LOG_DEBUG("smtrat.sat", "Conflict: " << std::get<mcsat::Explanation>(res));
                             #ifdef SMTRAT_DEVOPTION_Statistics
                             mMCSATStatistics.theoryConflict();
                             #endif
-                            handleTheoryConflict(boost::get<mcsat::Explanation>(res));
+                            handleTheoryConflict(std::get<mcsat::Explanation>(res));
                             continue;
                         }
                     } else if (Settings::mc_sat && next != lit_Undef) { // Boolean decision
@@ -3001,7 +2999,7 @@ namespace smtrat
                     #ifdef DEBUG_SATMODULE
                     std::cout << "### Decide " <<  (sign(next) ? "-" : "" ) << var(next) << std::endl;
                     #endif
-					CARL_CHECKPOINT("nlsat", "decision", next);
+					SMTRAT_CHECKPOINT("nlsat", "decision", next);
                     uncheckedEnqueue( next );
                 }
             }
@@ -3053,7 +3051,7 @@ namespace smtrat
         std::cout << "###" << std::endl;
         #endif
 		
-		CARL_CHECKPOINT("nlsat", "backtrack", backtrack_level);
+		SMTRAT_CHECKPOINT("nlsat", "backtrack", backtrack_level);
        
         if(Settings::mc_sat) {
             // TODO testing necessary
@@ -3101,13 +3099,10 @@ namespace smtrat
 
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Conflict clause " << _confl);
-        #ifdef SMTRAT_DEVOPTION_Validation // this is often an indication that something is wrong with our theory, so we do store our assumptions.
-        if( value( learnt_clause[0] ) != l_Undef ) Module::storeAssumptionsToCheck( *mpManager );
-        #endif
         assert( value( learnt_clause[0] ) == l_Undef );
         if( learnt_clause.size() == 1 )
         {
-			CARL_CHECKPOINT("nlsat", "new-assumption", learnt_clause[0]);
+			SMTRAT_CHECKPOINT("nlsat", "new-assumption", learnt_clause[0]);
             assert((Settings::mc_sat && decisionLevel() <= assumptions.size()) || (!Settings::mc_sat && decisionLevel() == assumptions.size()));
             assumptions.push( learnt_clause[0] );
             // assumptions are inserted in search()
@@ -3125,7 +3120,7 @@ namespace smtrat
 			}
 			if (Settings::mc_sat) {
 				if (value(learnt_clause[1]) == l_False) {
-					CARL_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
+					SMTRAT_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
                     SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Propagate asserting clause");
 					uncheckedEnqueue( learnt_clause[0], _confl );
 				} else if (Settings::mcsat_backjump_decide) {
@@ -3138,7 +3133,7 @@ namespace smtrat
                     uncheckedEnqueue( learnt_clause[0], _confl );
                 }
 			} else {
-				CARL_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
+				SMTRAT_CHECKPOINT("nlsat", "propagation", _confl, learnt_clause[0]);
             	uncheckedEnqueue( learnt_clause[0], _confl );
 			}
             decrementLearntSizeAdjustCnt();
@@ -3883,7 +3878,7 @@ namespace smtrat
                 if( value( first ) == l_False )
                 {
 					SMTRAT_LOG_DEBUG("smtrat.sat.bcp", "Clause is conflicting " << c);
-					CARL_CHECKPOINT("nlsat", "conflict-clause", cr);
+					SMTRAT_CHECKPOINT("nlsat", "conflict-clause", cr);
                     confl = cr;
                     qhead = trail.size();
                     // Copy the remaining watches:
@@ -3896,7 +3891,7 @@ namespace smtrat
 					if (Settings::mc_sat && value(first) != l_Undef) {
 						assert(value(first) != l_Undef);
 					} else {
-						CARL_CHECKPOINT("nlsat", "propagation", cr, first);
+						SMTRAT_CHECKPOINT("nlsat", "propagation", cr, first);
 	                    assert( value( first ) == l_Undef );
 	                    uncheckedEnqueue( first, cr );
 	                    #ifdef SMTRAT_DEVOPTION_Statistics
@@ -4042,11 +4037,7 @@ NextClause:
                     if( lem.mLemma.getType() != carl::FormulaType::TRUE )
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
-                        #ifdef SMTRAT_DEVOPTION_Validation
-                        if (Settings().validation.log_lemmata) {
-                            addAssumptionToCheck( FormulaT( carl::FormulaType::NOT, lem.mLemma ), false, (*backend)->moduleName() + "_lemma" );
-                        }
-                        #endif
+                        SMTRAT_VALIDATION_ADD("smtrat.modules.sat.lemma",(*backend)->moduleName() + "_lemma",FormulaT( carl::FormulaType::NOT, lem.mLemma ), false);
                         int numOfLearnts = mLemmas.size();
                         /*{
                             std::lock_guard<std::mutex> lock( Module::mOldSplittingVarMutex );
@@ -4081,11 +4072,7 @@ NextClause:
             for( auto infsubset = infSubsets.begin(); infsubset != infSubsets.end(); ++infsubset )
             {
                 assert( !infsubset->empty() );
-                #ifdef SMTRAT_DEVOPTION_Validation
-                if (Settings().validation.log_infeasible_subsets) {
-                    addAssumptionToCheck( *infsubset, false, (*backend)->moduleName() + "_infeasible_subset" );
-                }
-                #endif
+                SMTRAT_VALIDATION_ADD("smtrat.modules.sat.infeasible_subset",(*backend)->moduleName() + "_infeasible_subset",*infsubset, false);
                 // Add the according literals to the conflict clause.
                 vec<Lit> explanation;
                 bool containsUpperBoundOnMinimal = false;
