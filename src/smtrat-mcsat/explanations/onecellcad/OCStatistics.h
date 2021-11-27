@@ -40,7 +40,7 @@ public:
         Statistics::addKeyValuePair("num_of_zeros", mZeros);
         Statistics::addKeyValuePair("num_of_resultants", mResultants);
         Statistics::addKeyValuePair("num_of_levels_wo_zeros", mLevelsWOzeros);
-        Statistics::addKeyValuePair("num_of_levels_wo_Pols", mLevelsWOpols);
+        Statistics::addKeyValuePair("num_of_levels_wo_pols", mLevelsWOpols);
 	}
 
 	void explanationCalled() {
