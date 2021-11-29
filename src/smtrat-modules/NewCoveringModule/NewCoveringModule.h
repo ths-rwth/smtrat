@@ -106,5 +106,10 @@ public:
 			 *		 Unknown, otherwise.
 			 */
 	Answer checkCore();
+
+	
+	//Backend Interface to pass all new constraints to the backend
+	//This includes the removal of constraints and the addition of new constraints
+	void passConstraintInformationToBackend(); 
 };
 } // namespace smtrat
