@@ -149,6 +149,9 @@ class LevelwiseCAD : public OneCellCAD {
 
 
                     if (sectionHeuristic == 1) {
+                        #ifdef SMTRAT_DEVOPTION_Statistics
+                            bool f = false;
+                        #endif
                         for (auto &poly : polys[i]) {
                             //Heuristic 1: calculate resultant between defining pol t and every pol that has root above or below t
                             #ifndef SMTRAT_DEVOPTION_Statistics
@@ -160,6 +163,7 @@ class LevelwiseCAD : public OneCellCAD {
                             #else
                                 auto roots = isolateLastVariableRoots(poly.level, poly.poly);
                                 if (!roots.empty()) {
+                                    f = true;
                                     getStatistic().addZeros(roots.size());
                                     if (poly.poly != t.poly) {
                                         resultants.emplace_back(std::make_pair(t.poly, poly.poly));
@@ -170,7 +174,9 @@ class LevelwiseCAD : public OneCellCAD {
                         }
 
                         #ifdef SMTRAT_DEVOPTION_Statistics
-                            getStatistic().resultantBarrierCreated();
+                            if(f){
+                                getStatistic().resultantBarrierCreated();
+                            }
                         #endif
 
                     } else if (sectionHeuristic == 2) {
