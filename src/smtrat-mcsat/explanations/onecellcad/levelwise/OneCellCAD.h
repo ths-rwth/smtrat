@@ -130,12 +130,14 @@ class LevelwiseCAD : public OneCellCAD {
 
                     Poly disc = discriminant(variableOrder[i], t.poly);
                     SMTRAT_LOG_TRACE("smtrat.cad", "Add discriminant: " << disc << " (if not const)");
+                    SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
                     appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
 
 
                     Poly ldcf = leadcoefficient(variableOrder[i], t.poly);
                     SMTRAT_LOG_TRACE("smtrat.cad",
                                      "Add leadcoefficient: " << ldcf << " (if not const)");
+                    SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
                     appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
 
 
@@ -229,6 +231,7 @@ class LevelwiseCAD : public OneCellCAD {
                             disc = discriminant(variableOrder[i], poly.poly);
                             SMTRAT_LOG_TRACE("smtrat.cad",
                                              "Add discriminant: " << disc << " (if not const)");
+                            SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
                             appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
                         }
 
@@ -284,6 +287,7 @@ class LevelwiseCAD : public OneCellCAD {
                             if (!contains(noLdcf, poly.poly)) {
                                 ldcf = leadcoefficient(variableOrder[i], poly.poly);
                                 SMTRAT_LOG_TRACE("smtrat.cad", "Add leadcoefficient: " << ldcf << " (if not const)");
+                                SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
                                 appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
                             }
                         }
@@ -480,12 +484,14 @@ class LevelwiseCAD : public OneCellCAD {
                             if (!contains(noDisc1, poly.poly) && !contains(noDisc2, poly.poly)) {
                                 disc = discriminant(variableOrder[i], poly.poly);
                                 SMTRAT_LOG_TRACE("smtrat.cad", "Add discriminant: " << disc << " (if not const)");
+                                SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
                                 appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
                             }
 
                             if (!contains(noLdcf, poly.poly)) {
                                 ldcf = leadcoefficient(variableOrder[i], poly.poly);
                                 SMTRAT_LOG_TRACE("smtrat.cad", "Add leadcoefficient: " << ldcf << " (if not const)");
+                                SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
                                 appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
                             }
                         }
@@ -503,12 +509,14 @@ class LevelwiseCAD : public OneCellCAD {
                                     auto coeff = coeffNonNull(poly);
                                     if (coeff.has_value()) {
                                         SMTRAT_LOG_TRACE("smtrat.cad", "Add result of coeffNonNull: " << coeff.value() << " (if not const)");
+                                        SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
                                         appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV, polys, variableOrder);
                                     }
                                     if (sectionHeuristic == 1) {
                                         //for other heuristics, discriminants have already been calculated
                                         disc = discriminant(variableOrder[i], poly.poly);
                                         SMTRAT_LOG_TRACE("smtrat.cad", "Add discriminant: " << disc << " (if not const)");
+                                        SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
                                         appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
                                     }
                                 }
@@ -520,7 +528,6 @@ class LevelwiseCAD : public OneCellCAD {
 
                     // Add all calculate resultants (independent from heuristic)
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                        getStatistic().addResultants(resultants.size());
                         if(resultants.size() == 0){
                             getStatistic().levelWOzeros();
                         }
@@ -936,6 +943,7 @@ class LevelwiseCAD : public OneCellCAD {
                         Poly disc = discriminant(variableOrder[i], poly.poly);
                         SMTRAT_LOG_TRACE("smtrat.cad",
                                          "Add discriminant(" << poly.poly << ") = " << disc << " (if not const)");
+                        SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
                         appendOnCorrectLevel(disc, InvarianceType::ORD_INV, polys, variableOrder);
 
                         SMTRAT_LOG_TRACE("smtrat.cad", "Check for vanishing coefficient");
@@ -943,6 +951,7 @@ class LevelwiseCAD : public OneCellCAD {
                         if (coeff.has_value()) {
                             SMTRAT_LOG_TRACE("smtrat.cad",
                                              "Add result of coeffNonNull: " << coeff.value() << " (if not const)");
+                            SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
                             appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV, polys, variableOrder);
                         }
 
@@ -1117,7 +1126,6 @@ class LevelwiseCAD : public OneCellCAD {
 
                     //Add resultants and leadcoefficients depending on heuristic
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                        getStatistic().addResultants(resultants.size());
                         if(resultants.size() == 0){
                             getStatistic().levelWOzeros();
                         }
@@ -1128,6 +1136,7 @@ class LevelwiseCAD : public OneCellCAD {
                         if (!contains(noLdcf, poly.poly)) {
                             Poly ldcf = leadcoefficient(variableOrder[i], poly.poly);
                             SMTRAT_LOG_TRACE("smtrat.cad", "Add leadcoefficient(" << poly.poly << ") = " << ldcf << " (if not const)");
+                            SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
                             appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, polys, variableOrder);
                         }
                     }

@@ -192,13 +192,9 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
         if (!factor.poly.isConstant()) {
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCStatistics& mStatistics = getStatistic();
-                // change this to en-/disable mMaxDegree Statistic
-                bool maxDegStatisticOn = true;
-                if(maxDegStatisticOn){
+                if (true){
                     std::size_t curDeg = getDegree(factor, variableOrder[factor.level]);
-                    if(curDeg > mStatistics.getCurrentMaxDegree()){
-                        mStatistics.updateMaxDegree(curDeg);
-                    }
+                    mStatistics.updateMaxDegree(curDeg);
                 }
             #endif
             TagPoly siFactor = factor;
@@ -426,6 +422,7 @@ inline void addResultants(std::vector<std::pair<Poly, Poly>>& resultants,
         for (auto const& elem : resultants) {
             Poly res = resultant(mainVar, elem.first, elem.second);
             SMTRAT_LOG_TRACE("smtrat.cad", "Add resultant(" << elem.first << "," << elem.second << ") = " << res << " (if not const)");
+            SMTRAT_CALL_STATISTICS(getStatistic().addResultants(1));
             appendOnCorrectLevel(res, InvarianceType::ORD_INV, polys, variableOrder);
         }
     }
@@ -627,17 +624,20 @@ inline bool optimized_singleLevelFullProjection(
 
         Poly ldcf = leadcoefficient(mainVar, poly);
         SMTRAT_LOG_TRACE("smtrat.cad.projection", "Add leadcoefficient(" << poly << ") = " << ldcf << " (if not const)");
+        SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
         appendOnCorrectLevel(ldcf, InvarianceType::SIGN_INV, projectionLevels, cad.variableOrder);
 
         auto coeff = cad.coeffNonNull(tpoly);
         if (coeff.has_value()) {
             SMTRAT_LOG_TRACE("smtrat.cad", "Add result of coeffNonNull: " << coeff.value() << " (if not const)");
+            SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
             appendOnCorrectLevel(coeff.value(), InvarianceType::SIGN_INV, projectionLevels, cad.variableOrder);
         }
 
         Poly disc = discriminant(mainVar, poly);
         SMTRAT_LOG_TRACE("smtrat.cad.projection", "Add discriminant(" << poly << ") = " << disc << " (if not const)");
         appendOnCorrectLevel(disc, InvarianceType::ORD_INV, projectionLevels, cad.variableOrder);
+        SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
     }
 
     //Resultant calcultaion
@@ -670,11 +670,13 @@ inline void singleLevelFullProjection(
         std::vector<Poly> coeffs = carl::to_univariate_polynomial(poly, mainVar).coefficients();
         for (const auto& coeff : coeffs) {
             SMTRAT_LOG_TRACE("smtrat.cad.projection", "Add coefficient(" << poly << ") = " << coeff << " (if not const)");
+            SMTRAT_CALL_STATISTICS(getStatistic().addCoefficients(1));
             appendOnCorrectLevel(coeff, InvarianceType::SIGN_INV, projectionLevels, variableOrder);
         }
 
         Poly disc = discriminant(mainVar, poly);
         SMTRAT_LOG_TRACE("smtrat.cad.projection", "Add discriminant(" << poly << ") = " << disc << " (if not const)");
+        SMTRAT_CALL_STATISTICS(getStatistic().addDiscriminants(1));
         appendOnCorrectLevel(disc, InvarianceType::ORD_INV, projectionLevels, variableOrder);
 
         std::vector<std::pair<Poly, Poly>> resultants;
