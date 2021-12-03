@@ -11,3 +11,4 @@
 /src/smtrat-modules/NewCADModule/NewCADSettings.h
 CMakeCache.txt
 CMakeFiles/cmake.check_cache
+**.pyc
