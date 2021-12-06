@@ -106,7 +106,6 @@ public:
         mCoefficients += mCoefficientsTemp;
         mLevelsWOzeros += mLevelsWOzerosTemp;
         mLevelsWOpols += mLevelsWOpolsTemp;
-        // TODO
 	}
 
 	void resultantBarrierCreated(){
@@ -115,43 +114,43 @@ public:
 	}
 
     void addLevels(std::size_t l){
-        mLevels += l;
+        mLevelsTotal += l;
         mLevelsTemp += l;
     }
 
 	// To disable this statistics, set variable in appendOnCorrectLevel() in utils.h
 	void updateMaxDegree(std::size_t NewDeg){
-        mMaxDegree = std::max(NewDeg,mMaxDegree);
+        mMaxDegreeTotal = std::max(NewDeg,mMaxDegreeTotal);
 	    mMaxDegreeTemp = std::max(NewDeg,mMaxDegreeTemp);
 	}
 
     void addZeros(std::size_t z){
-        mZeros += z;
+        mZerosTotal += z;
         mZerosTemp += z;
     }
 
     void addResultants(std::size_t r){
-        mResultants += r;
+        mResultantsTotal += r;
         mResultantsTemp += r;
     }
 
     void addDiscriminants(std::size_t r){
-        mDiscriminants += r;
+        mDiscriminantsTotal += r;
         mDiscriminantsTemp += r;
     }
 
     void addCoefficients(std::size_t r){
-        mCoefficients += r;
+        mCoefficientsTotal += r;
         mCoefficientsTemp += r;
     }
 
     void levelWOzeros(){
-        ++mLevelsWOzeros;
+        ++mLevelsWOzerosTotal;
         ++mLevelsWOzerosTemp;
     }
 
     void levelWOpols(){
-        ++mLevelsWOpols;
+        ++mLevelsWOpolsTotal;
         ++mLevelsWOpolsTemp;
     }
 };
