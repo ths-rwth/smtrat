@@ -78,13 +78,13 @@ Further instructions on running benchmax (i.e. running parallel jobs or using jo
 
 ## Results
 
-The result XML files used in the paper are contained in `results/`. There, also our [Jupyter notebooks](https://jupyter.org/) for evaluating the data are contained. For using them, you need to install the python package located at `utilities/benchmax/` as described [here](https://smtrat.github.io/dc/d44/benchmax-evaluation.html), that is
+The result XML files used in the paper are contained in `results/`. There, also our [Jupyter notebooks](https://jupyter.org/) for evaluating the data are contained. For using them, you need to install the python package located at `utilities/benchmax/`: 
 
     pip3 install pandas matplotlib tikzplotlib numpy pillow
     cd ~/.local/lib/python3.8/site-packages/ # path to your python site-packages directory
     ln -s ~/src/smtrat/utilities/benchmax/ # path to the benchmax utility
 
-
+For futher informaiton, see [here](https://smtrat.github.io/dc/d44/benchmax-evaluation.html).
 
 ## Documentation
 
