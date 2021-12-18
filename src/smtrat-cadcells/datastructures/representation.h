@@ -64,8 +64,9 @@ struct CoveringRepresentation {
 		return cov;
 	}
 
-	//returns true iff the a sample outside of the current covering has been found
-	bool sample_outside(RAN& sample) const {
+	//returns 0 iff the a sample outside of the current covering has been found
+	//returns 1 otherwise
+	size_t sample_outside(RAN& sample) const {
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Sampling Outside of: " << *this)
 
@@ -73,19 +74,19 @@ struct CoveringRepresentation {
 		if (cells.empty()) {
 			//There are no cells, just take trivially 0
 			sample = RAN(0);
-			return true;
+			return 0;
 		}
 
 		if (!cells.front().derivation->cell().lower_unbounded()) {
 			//Lower bound is finite, just take a sufficiently large negative number
 			sample = carl::sample_below(cells.front().derivation->cell().lower()->first);
-			return true;
+			return 0;
 		}
 
 		if (!cells.back().derivation->cell().upper_unbounded()) {
 			//Upper bound is finite, just take a sufficiently large positive number
 			sample = carl::sample_above(cells.back().derivation->cell().upper()->first);
-			return true;
+			return 0;
 		}
 
 		//Search for adjacent disjoint cells and sample between
@@ -93,20 +94,20 @@ struct CoveringRepresentation {
 			//We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
 			if (!cells[i].derivation->cell().upper_unbounded() && !cells[i+1].derivation->cell().lower_unbounded() && cells[i].derivation->cell().upper()->first < cells[i+1].derivation->cell().lower()->first) {
 				sample = carl::sample_between(cells[i].derivation->cell().upper()->first, cells[i + 1].derivation->cell().lower()->first);
-				return true;
+				return 0;
 
 			//The check above does not care for open bounds
 			//i.e if we have (x, y), (y, z) we can still choose y as a sample point
 			} else if (cells[i].derivation->cell().is_sector() && cells[i + 1].derivation->cell().is_sector() && cells[i].derivation->cell().upper()->first == cells[i + 1].derivation->cell().lower()->first) {
 				sample = cells[i].derivation->cell().upper()->first;
-				return true;
+				return 0;
 			}
 		}
 
 
 		//The cells cover the number line -> There is no sample to be found
 		assert(is_valid());
-		return false ;
+		return 1 ;
 	}
 
 	/// Checks whether this represents a proper non-redundant covering.

@@ -70,17 +70,20 @@ void NewCoveringModule<Settings>::updateModel() const {
 
 template<class Settings>
 void NewCoveringModule<Settings>::passConstraintInformationToBackend() {
-	// remove the given constraints from the backend
-	for (const auto& constraint : mRemoveConstraints) {
-		backend.removeConstraint(constraint.constraint());
-	}
-	mRemoveConstraints.clear();
 
 	// Add all unknown constraints to backend
 	for (const auto& constraint : mUnknownConstraints) {
-		backend.addConstraint(constraint.constraint());
+		backend.addConstraint(std::move(constraint.constraint()));
 	}
 	mUnknownConstraints.clear();
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Successfully added constraints");
+
+	// remove the given constraints from the backend
+	for (const auto& constraint : mRemoveConstraints) {
+		backend.removeConstraint(std::move(constraint.constraint()));
+	}
+	mRemoveConstraints.clear();
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Successfully removed constraints");
 }
 
 template<class Settings>
@@ -122,44 +125,49 @@ Answer NewCoveringModule<Settings>::checkCore() {
 			// This is an ONLY incremental call as we have new unknown constraints but no constraints to remove
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Incremental ONLY Call with new constraints: " << mUnknownConstraints << " and old assignment: " << mLastAssignment);
 
-			// Recheck the unknown constraints with the last satisfying assignment
-			std::size_t lowestLevelWithUnsatisfiedConstraint = mVariables.size() + 1;
-
+			// now add the new constraints to the backend
 			for (const auto& constraint : mUnknownConstraints) {
-				// if (backend.check(constraint.constraint()) == Answer::UNSAT) {
-				if (carl::evaluate(constraint.constraint(), mLastAssignment) != true) {
-					// This constraint is unsat with the last assignment
-					SMTRAT_LOG_DEBUG("smtrat.covering", "This constraint is unsat with the last assignment: " << constraint.constraint());
-
-					// We can substract 1 from level because we dont have constant polynomials
-					std::size_t level = cadcells::helper::level_of(mVariableOrdering, constraint.constraint().lhs()) - 1;
-					lowestLevelWithUnsatisfiedConstraint = std::min(lowestLevelWithUnsatisfiedConstraint, level);
-
-				} else {
-					// This constraint is sat with the last assignment
-					SMTRAT_LOG_DEBUG("smtrat.covering", "This constraint is sat with the last assignment: " << constraint.constraint());
-				}
+				backend.addConstraint(constraint.constraint());
 			}
+			mUnknownConstraints.clear();
 
-			// reset the backend for all levels higher and including the lowest level with an unsatisfied constraint
-			if (lowestLevelWithUnsatisfiedConstraint < mVariables.size() + 1) {
+			// Recheck the unknown constraints with the last satisfying assignment
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Rechecking the unknown constraints with the last satisfying assignment");
+			std::size_t lowestLevelWithUnsatisfiedConstraint = 0;
+			bool foundUnsatisfiedConstraint = false;
+			while (lowestLevelWithUnsatisfiedConstraint < mVariableOrdering.size() && !foundUnsatisfiedConstraint) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << lowestLevelWithUnsatisfiedConstraint << "/" << mVariableOrdering.size());
+				for (const auto& constraint : backend.getUnknownConstraints(lowestLevelWithUnsatisfiedConstraint)) {
+					if (carl::evaluate(constraint, mLastAssignment) != true) {
+						// This constraint is unsat with the last assignment
+						foundUnsatisfiedConstraint = true;
+						break;
+					}
+				}
+				lowestLevelWithUnsatisfiedConstraint++;
+			}
+			if (foundUnsatisfiedConstraint) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Resetting backend for levels higher or equal to " << lowestLevelWithUnsatisfiedConstraint);
 				backend.resetStoredData(lowestLevelWithUnsatisfiedConstraint);
 			} else {
+				// we can trivially return SAT again with the same assignment
 				SMTRAT_LOG_DEBUG("smtrat.covering", "No unsatisfied constraints found -> we can trivially return SAT again with the same assignment");
-				// Todo: can we add the constraint to the backend here already?
 				return Answer::SAT;
 			}
 
-			passConstraintInformationToBackend();
-
 		} else if (mUnknownConstraints.empty() && !mRemoveConstraints.empty()) {
 			// This is an ONLY backtracking call as we only have constraints to remove but no new unknown constraints
-			// not supported yet, we just reset all data in the backend
-			// TODO : FULLY SUPPORT BACKTRACKING!
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Backtracking ONLY Call with remove constraints: " << mRemoveConstraints);
 
-			passConstraintInformationToBackend();
+			// we only remove the constraints from the backend and return SAT again.
+			// removing constraints only makes the partial covering smaller and our satisfying assignment stays satisfying
+
+			for (const auto& constraint : mRemoveConstraints) {
+				backend.removeConstraint(constraint.constraint());
+			}
+			mRemoveConstraints.clear();
+
+			return Answer::SAT;
 
 		} else if (!mUnknownConstraints.empty() && !mRemoveConstraints.empty()) {
 			// Both incremental call and backtracking as we have constraints to remove new unknown constraints
@@ -168,7 +176,44 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Backtracking and Incremental Call with new constraints: " << mUnknownConstraints << " and remove constraints: " << mRemoveConstraints);
 
-			passConstraintInformationToBackend();
+			// now add the new constraints to the backend
+			for (const auto& constraint : mUnknownConstraints) {
+				backend.addConstraint(constraint.constraint());
+			}
+			mUnknownConstraints.clear();
+
+			// remove the constraints to remove. As the partial covering can only get smaller doing that our current satisfying assingment stays satisfying
+			// and we can do the lazy incremental check afterwards again
+			// Todo: make more modular with a function for the incremental check
+
+			for (const auto& constraint : mRemoveConstraints) {
+				backend.removeConstraint(constraint.constraint());
+			}
+			mRemoveConstraints.clear();
+
+			// Recheck the unknown constraints with the last satisfying assignment
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Rechecking the unknown constraints with the last satisfying assignment");
+			std::size_t lowestLevelWithUnsatisfiedConstraint = 0;
+			bool foundUnsatisfiedConstraint = false;
+			while (lowestLevelWithUnsatisfiedConstraint < mVariableOrdering.size() && !foundUnsatisfiedConstraint) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << lowestLevelWithUnsatisfiedConstraint << "/" << mVariableOrdering.size());
+				for (const auto& constraint : backend.getUnknownConstraints(lowestLevelWithUnsatisfiedConstraint)) {
+					if (carl::evaluate(constraint, mLastAssignment) != true) {
+						// This constraint is unsat with the last assignment
+						foundUnsatisfiedConstraint = true;
+						break;
+					}
+				}
+				lowestLevelWithUnsatisfiedConstraint++;
+			}
+			if (foundUnsatisfiedConstraint) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Resetting backend for levels higher or equal to " << lowestLevelWithUnsatisfiedConstraint);
+				backend.resetStoredData(lowestLevelWithUnsatisfiedConstraint);
+			} else {
+				// we can trivially return SAT again with the same assignment
+				SMTRAT_LOG_DEBUG("smtrat.covering", "No unsatisfied constraints found -> we can trivially return SAT again with the same assignment");
+				return Answer::SAT;
+			}
 		}
 	} else {
 
@@ -186,6 +231,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 	if (mLastAnswer == Answer::UNSAT) {
 		mInfeasibleSubsets.push_back(backend.getInfeasibleSubset());
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Infeasible Subset: " << mInfeasibleSubsets.back());
 		mLastAssignment.clear(); // There is no satisfying assignment
 
 	} else if (mLastAnswer == Answer::SAT) {
