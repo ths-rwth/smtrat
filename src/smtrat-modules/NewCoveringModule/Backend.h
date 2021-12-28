@@ -74,7 +74,7 @@ public:
 		mCoveringInformation.resize(varOrdering.size());
 	}
 
-	size_t dimension() {
+	std::size_t dimension() {
 		return mVariableOrdering.size();
 	}
 
@@ -129,7 +129,7 @@ public:
 
 	// Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
-		for (size_t i = level; i < dimension(); i++) {
+		for (std::size_t i = level; i < dimension(); i++) {
 			// Resetting the covering data
 			mCoveringInformation[i].clear();
 			// Resetting the assignment

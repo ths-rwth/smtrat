@@ -62,7 +62,7 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Rechecking the unknown constraints with the last satisfying assignment");
 	std::size_t lowestLevelWithUnsatisfiedConstraint = 0;
 	bool foundUnsatisfiedConstraint = false;
-	while (lowestLevelWithUnsatisfiedConstraint < mVariableOrdering.size() && !foundUnsatisfiedConstraint) {
+	while (lowestLevelWithUnsatisfiedConstraint < mVariableOrdering.size()) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << lowestLevelWithUnsatisfiedConstraint << "/" << mVariableOrdering.size());
 		for (const auto& constraint : mUnknownConstraints) {
 			if (carl::evaluate(constraint.constraint(), mLastAssignment) != true) {
@@ -71,6 +71,9 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
 				foundUnsatisfiedConstraint = true;
 				break;
 			}
+		}
+		if (foundUnsatisfiedConstraint) {
+			break;
 		}
 		lowestLevelWithUnsatisfiedConstraint++;
 	}
@@ -181,6 +184,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 					return Answer::SAT;
 				} else {
 					// Remove all the data from the levels higher than lowestLevel
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Removing data from level " << lowestLevel);
 					backend.resetStoredData(lowestLevel);
 				}
 			} else {
