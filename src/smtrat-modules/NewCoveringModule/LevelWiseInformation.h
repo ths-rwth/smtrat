@@ -28,7 +28,7 @@ enum CoveringStatus {
 	partial = 0,
 	full = 1,
 	unknown = 2,
-	failed = 3
+	failed = 3,
 };
 
 // override the << operator for CoveringStatus
@@ -118,7 +118,12 @@ public:
 	// Also sets the full covering flag and the sample point if the covering is not a full covering
 	// TODO: Make type of covering computation dependent on the settings
 	void computeCovering() {
-		assert(isUnknownCovering() || isPartialCovering());
+
+		// If there is an already existing covering which is also full, we are done
+		if (isFullCovering()) {
+			return;
+		}
+		// We assume that there are new derivations
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
 		mCovering = representation::covering<representation::DEFAULT_COVERING>::compute(mDerivations);
 		if (!mCovering.has_value()) {
@@ -203,6 +208,7 @@ public:
 			}
 		}
 
+		//Now remove the derivation from the list
 		mDerivations.erase(std::remove(mDerivations.begin(), mDerivations.end(), derivation), mDerivations.end());
 	}
 
@@ -225,6 +231,7 @@ public:
 				// delete the current covering
 				mCovering.reset();
 				mCoveringStatus = CoveringStatus::unknown;
+				;
 			}
 		}
 

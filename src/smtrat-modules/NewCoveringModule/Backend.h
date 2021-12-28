@@ -21,10 +21,6 @@
 
 namespace smtrat {
 
-// Todo: put in settings?
-//constexpr auto op = cadcells::operators::op::mccallum;
-//using PropSet = cadcells::operators::PropertiesSet<op>::type;
-
 // TODO: Use lowest degree barrier
 
 using namespace cadcells;
@@ -76,7 +72,6 @@ public:
 		mUnknownConstraints.resize(varOrdering.size());
 		mKnownConstraints.resize(varOrdering.size());
 		mCoveringInformation.resize(varOrdering.size());
-
 	}
 
 	size_t dimension() {
@@ -87,18 +82,19 @@ public:
 		return mCurrentAssignment;
 	}
 
-	const auto& getCoveringInformation() {
+	auto& getCoveringInformation() {
 		return mCoveringInformation;
 	}
 
-	// Todo: is it enough to just iterate over level 0?
-	// As all the constraints of higher levels get pushed down in construct_characterization
 	inline FormulaSetT getInfeasibleSubset() {
+		assert(mCoveringInformation[0].isFullCovering()) ;
+
 		SMTRAT_LOG_DEBUG("smtrat.covering", "getInfeasibleSubset");
 		FormulaSetT infeasibleSubset;
-			for (auto& infeasibleConstraint : mCoveringInformation[0].getConstraintsOfCovering(mDerivationToConstraint)) {
-				infeasibleSubset.insert(FormulaT(infeasibleConstraint));
-			}
+		// We can just take the constraints used in level 0, as all the constraints of higher levels get pushed down if used in the covering
+		for (auto& infeasibleConstraint : mCoveringInformation[0].getConstraintsOfCovering(mDerivationToConstraint)) {
+			infeasibleSubset.insert(FormulaT(infeasibleConstraint));
+		}
 		SMTRAT_LOG_DEBUG("smtrat.covering", "getInfeasibleSubset done: " << infeasibleSubset);
 		return infeasibleSubset;
 	}
@@ -127,6 +123,10 @@ public:
 		return mKnownConstraints[level];
 	}
 
+	void updateAssignment(std::size_t level){
+		mCurrentAssignment[mVariableOrdering[level]] = mCoveringInformation[level].getSampleOutside();
+	}
+
 	// Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
 		for (size_t i = level; i < dimension(); i++) {
@@ -142,6 +142,10 @@ public:
 		}
 	}
 
+	void resetDerivationToConstraintMap(){
+		mDerivationToConstraint.clear();
+	}
+
 	// Return true if the constraint to remove was used in the current covering
 	void removeConstraint(const ConstraintT& constraint) {
 		// We can substract 1 from level because we dont have constant polynomials
@@ -152,20 +156,23 @@ public:
 
 		// If we find the constraint in the unknown constraints we have the easy case -> Just remove it and not care about the stored data
 		if (mUnknownConstraints[level].find(constraint) != mUnknownConstraints[level].end()) {
+			//remove all stored information which resulted from the constraint
+			for (std::size_t cur_level = 0; cur_level <= level; cur_level++) {
+			mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
+			}
 			mUnknownConstraints[level].erase(constraint);
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was in unknown constraints");
 			return;
 		}
 
-		if (mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end()) {
+		if(mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end()){
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was not in known constraints");
-			// TODO: Ask Jasper. Remove Constraint can be called for a constraint that has only been added to the known constraints but not passed to the backend.
-			// Should the constraint be passed to backend or no?
-			// MIGHT BE WRONG!!
+			//This can happen if the constraint is to be added in the same iteration
+			//TODO: what to do then?
 			return;
 		}
 
-		// The hard case -> The constraint must be in the known constraints
+		// The constraint must be in the known constraints
 		// remove all stored information which resulted from the constraint
 		for (std::size_t cur_level = 0; cur_level <= level; cur_level++) {
 			mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
@@ -227,8 +234,8 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got covering " << mCoveringInformation[level].getCovering());
 
 		while (mCoveringInformation[level].isPartialCovering()) {
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Found sample outside " << mCoveringInformation[level].getSampleOutside());
-			mCurrentAssignment[mVariableOrdering[level]] = mCoveringInformation[level].getSampleOutside();
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Sample outside " << mCoveringInformation[level].getSampleOutside());
+			updateAssignment(level);
 			if (mCurrentAssignment.size() == mVariableOrdering.size()) {
 				// SAT
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found satisfying variable assignment: " << mCurrentAssignment);
@@ -268,6 +275,12 @@ public:
 				// add new cell to stored data and recalculate the current covering
 				mCoveringInformation[level].addDerivation(new_deriv);
 
+				// delete the now obsolete data
+				mCurrentAssignment.erase(mVariableOrdering[level]);
+				mCoveringInformation[level + 1].clear();
+				setConstraintsUnknown(level+1);
+
+
 				// If there are unknown constraints on this level, we need to process them now
 				processUnknownConstraints(level);
 
@@ -280,10 +293,6 @@ public:
 					return Answer::UNKNOWN;
 				}
 
-				// delete the now obsolete data
-				mCurrentAssignment.erase(mVariableOrdering[level]);
-				mCoveringInformation[level + 1].clear();
-
 			} else {
 				// Something went wrong (McCallum failed)
 				return Answer::UNKNOWN;
@@ -292,7 +301,6 @@ public:
 
 		assert(mCoveringInformation[level].isFullCovering());
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Cells cover the numberline ");
-		setConstraintsUnknown(level);
 
 		return Answer::UNSAT;
 	}
