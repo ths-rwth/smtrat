@@ -21,13 +21,12 @@
 
 namespace smtrat {
 
-// TODO: Use lowest degree barrier
-
 using namespace cadcells;
+
+using PropSet = operators::PropertiesSet<op>::type;
 
 template<typename Settings>
 class Backend {
-	using SettingsT = Settings;
 
 private:
 	// Variable Ordering
@@ -129,6 +128,9 @@ public:
 
 	// Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
+		if(level == 0){
+			resetDerivationToConstraintMap();
+		}
 		for (std::size_t i = level; i < dimension(); i++) {
 			// Resetting the covering data
 			mCoveringInformation[i].clear();
@@ -248,38 +250,23 @@ public:
 				// Push down SAT
 				return nextLevelAnswer;
 			} else if (nextLevelAnswer == Answer::UNSAT) {
-				// nextLevelAnswer is Unsat -> Generate Unsat-Cell
-				assert(mCoveringInformation[level + 1].isFullCovering());
-				auto mLastFullCovering = mCoveringInformation[level + 1].getCovering();
-				auto usedConstraints = mCoveringInformation[level + 1].getConstraintsOfCovering(mDerivationToConstraint);
-
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Full covering of the higher dimension: " << mLastFullCovering);
-
-				auto cell_derivs = mLastFullCovering.sampled_derivations();
-				datastructures::merge_underlying(cell_derivs);
-				operators::project_covering_properties<op>(mLastFullCovering);
-				auto new_deriv = mLastFullCovering.cells.front().derivation->underlying().sampled_ref();
-				if (!operators::project_cell_properties<op>(*new_deriv)) {
-					SMTRAT_LOG_TRACE("smtrat.covering", "Could not project properties");
+		
+				auto new_derivation = mCoveringInformation[level+1].constructDerivation(mDerivationToConstraint);
+				
+				if(!new_derivation.has_value()){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "No new derivation found -> Abort");
 					return Answer::UNKNOWN;
 				}
-				operators::project_basic_properties<op>(*new_deriv->delineated());
-				operators::delineate_properties<op>(*new_deriv->delineated());
-				new_deriv->delineate_cell();
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell: " << new_deriv->cell());
 
-				// The origin of the new derivation are all constraints used in the last full covering
-				// See paper Section 4.6
-				mDerivationToConstraint.insert(std::make_pair(new_deriv, usedConstraints));
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found new derivation: " << new_derivation.value()->cell());
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new derivation to Covering Information");
+				mCoveringInformation[level].addDerivation(std::move(new_derivation.value()));
 
-				// add new cell to stored data and recalculate the current covering
-				mCoveringInformation[level].addDerivation(new_deriv);
 
 				// delete the now obsolete data
 				mCurrentAssignment.erase(mVariableOrdering[level]);
 				mCoveringInformation[level + 1].clear();
 				setConstraintsUnknown(level+1);
-
 
 				// If there are unknown constraints on this level, we need to process them now
 				processUnknownConstraints(level);

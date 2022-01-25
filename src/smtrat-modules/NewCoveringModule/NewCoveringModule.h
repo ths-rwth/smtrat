@@ -21,14 +21,19 @@
 #include <smtrat-cadcells/operators/operator_mccallum.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
+#include <smtrat-mcsat/variableordering/VariableOrdering.h>
+
 #include "Backend.h"
 #include "LevelWiseInformation.h"
+
+#include "NewCoveringStatistics.h"
 
 namespace smtrat {
 
 template<typename Settings>
 class NewCoveringModule : public Module {
 private:
+
 	// List of constraints that have not been passed to the backend
 	FormulasT mUnknownConstraints;
 

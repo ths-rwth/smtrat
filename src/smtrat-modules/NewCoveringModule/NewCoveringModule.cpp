@@ -137,8 +137,13 @@ bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 	return backend.getCoveringInformation()[0].isFullCovering();
 }
 
+//TODO: WRITE PSEUDOCODE
+
 template<class Settings>
 Answer NewCoveringModule<Settings>::checkCore() {
+
+	SMTRAT_STATISTICS_CALL(getStatistics().called());
+
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with unknown constraints: " << mUnknownConstraints);
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core called with remove constraints: " << mRemoveConstraints);
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Last Answer: " << mLastAnswer);
@@ -150,13 +155,19 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variables: " << mVariables);
 
-		// Just take the current ordering of the set -> we do heuristics later
-		std::copy(mVariables.as_vector().begin(), mVariables.as_vector().end(), std::back_inserter(mVariableOrdering));
+		std::vector<ConstraintT> allConstraints; 
+		for(const auto& moduleInput : rReceivedFormula()){
+			allConstraints.push_back(moduleInput.formula().constraint());
+		}
+
+		mVariableOrdering = mcsat::calculate_variable_order<mcsat::VariableOrdering::FeatureBasedBrown>(allConstraints) ;
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variable Ordering : " << mVariableOrdering);
 
 		// init backend
 		backend.init(mVariableOrdering);
+
+		SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
 
 		// Add unknown constraints to backend
 		for (const auto& constraint : mUnknownConstraints) {
@@ -174,6 +185,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 		if (mRemoveConstraints.empty() && !mUnknownConstraints.empty()) {
 			// we only have constraints to add, and no constraints to remove
+
+			SMTRAT_STATISTICS_CALL(getStatistics().calledIncrementalOnly());
 
 			if (mLastAnswer == Answer::SAT) {
 				// Hard case:
@@ -197,6 +210,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		} else if (!mRemoveConstraints.empty() && mUnknownConstraints.empty()) {
 			// We only have constraints to remove, and no constraints to add
 
+			SMTRAT_STATISTICS_CALL(getStatistics().calledBacktrackingOnly());
+
 			if (mLastAnswer == Answer::SAT) {
 				// Easy case
 				removeConstraintsSAT();
@@ -217,6 +232,9 @@ Answer NewCoveringModule<Settings>::checkCore() {
 				}
 			}
 		} else if (!mRemoveConstraints.empty() && !mUnknownConstraints.empty()) {
+
+			SMTRAT_STATISTICS_CALL(getStatistics().calledIncrementalAndBacktracking());
+
 			// We have both constraints to add and constraints to remove
 			// First make sure that the vectors are disjoint
 			FormulasT intersection;

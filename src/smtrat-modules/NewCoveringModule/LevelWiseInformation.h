@@ -9,6 +9,7 @@
 
 #include "NewCoveringModule.h"
 #include "NewCoveringSettings.h"
+#include "NewCoveringStatistics.h"
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
 #include <smtrat-cadcells/operators/operator_mccallum.h>
@@ -17,11 +18,12 @@
 
 namespace smtrat {
 
-using namespace smtrat::cadcells;
+using namespace cadcells;
 
-// Todo: This needs to be read from the passed settings
-constexpr auto op = cadcells::operators::op::mccallum;
-using PropSet = cadcells::operators::PropertiesSet<op>::type;
+static constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
+static constexpr auto op = operators::op::mccallum;
+
+using PropSet = operators::PropertiesSet<op>::type;
 
 // Possible types of covering information
 enum CoveringStatus {
@@ -119,16 +121,21 @@ public:
 	// TODO: Make type of covering computation dependent on the settings
 	void computeCovering() {
 
+		auto startTime = SMTRAT_TIME_START();
+
 		// If there is an already existing covering which is also full, we are done
 		if (isFullCovering()) {
+			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
 			return;
 		}
 		// We assume that there are new derivations
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
-		mCovering = representation::covering<representation::DEFAULT_COVERING>::compute(mDerivations);
+		SMTRAT_LOG_DEBUG("smtrat.covering", "With derivations: " << mDerivations);
+		mCovering = representation::covering<covering_heuristic>::compute(mDerivations);
 		if (!mCovering.has_value()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed");
 			mCoveringStatus = CoveringStatus::failed;
+			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
 			return;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
@@ -137,6 +144,7 @@ public:
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "CoveringStatus: " << mCoveringStatus);
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Sample point: " << mSamplePoint);
+		SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
 	}
 
 	// Get the current sample point which is outside of the current covering
@@ -208,7 +216,7 @@ public:
 			}
 		}
 
-		//Now remove the derivation from the list
+		// Now remove the derivation from the list
 		mDerivations.erase(std::remove(mDerivations.begin(), mDerivations.end(), derivation), mDerivations.end());
 	}
 
@@ -231,7 +239,6 @@ public:
 				// delete the current covering
 				mCovering.reset();
 				mCoveringStatus = CoveringStatus::unknown;
-				;
 			}
 		}
 
@@ -240,6 +247,8 @@ public:
 							   return std::find(derivationConstraints.at(deriv).begin(), derivationConstraints.at(deriv).end(), constraint) != derivationConstraints.at(deriv).end();
 						   }),
 						   mDerivations.end());
+
+		// TODO: for memory reasons we should also remove the derivation from the derivationConstraints map
 	}
 
 	// Get the constraints used in the current covering
@@ -259,6 +268,42 @@ public:
 		std::sort(constraints.begin(), constraints.end());
 		constraints.erase(std::unique(constraints.begin(), constraints.end()), constraints.end());
 		return constraints;
+	}
+
+	// Construct a new derivation based on the current covering
+	//  Asserts that the covering is full
+	std::optional<datastructures::SampledDerivationRef<PropSet>> constructDerivation(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& mDerivationToConstraint) {
+ 		auto startTime = SMTRAT_TIME_START();
+
+		assert(mCovering.has_value());
+		assert(isFullCovering());
+
+		auto& fullCovering = mCovering.value();
+
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Got full covering: " << fullCovering);
+
+		auto usedConstraints = getConstraintsOfCovering(mDerivationToConstraint);
+		auto cell_derivs = fullCovering.sampled_derivations();
+		datastructures::merge_underlying(cell_derivs);
+		operators::project_covering_properties<op>(fullCovering);
+		datastructures::SampledDerivationRef<PropSet> new_deriv = fullCovering.cells.front().derivation->underlying().sampled_ref();
+		if (!operators::project_cell_properties<op>(*new_deriv)) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Could not project properties");
+			SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
+
+			return std::nullopt;
+		}
+		operators::project_basic_properties<op>(*new_deriv->delineated());
+		operators::delineate_properties<op>(*new_deriv->delineated());
+		new_deriv->delineate_cell();
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());
+
+		// The origin of the new derivation are all constraints used in the last full covering
+		// See paper Section 4.6
+		mDerivationToConstraint.insert(std::make_pair(new_deriv, usedConstraints));
+		SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
+
+		return new_deriv;
 	}
 };
 

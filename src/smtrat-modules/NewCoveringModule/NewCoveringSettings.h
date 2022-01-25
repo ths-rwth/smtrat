@@ -8,15 +8,13 @@
 
 #pragma once
 
+#include <smtrat-cadcells/operators/operator.h>
+
 namespace smtrat
 {
 	struct NewCoveringSettings1
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "NewCoveringModule<NewCoveringSettings1>";
-		/**
-		 * Example for a setting.
-		 */
-		static const bool example_setting = true;
 	};
 }
