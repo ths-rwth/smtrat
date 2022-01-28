@@ -12,7 +12,11 @@ namespace smtrat {
 template<class Settings>
 NewCoveringModule<Settings>::NewCoveringModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
 	: Module(_formula, _conditionals, _manager) {
-	SMTRAT_LOG_DEBUG("smtrat.covering", "Init New Covering Module")
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Init New Covering Module") ;
+	//Pass informations about the settings to the statistics
+	SMTRAT_STATISTICS_CALL(getStatistics().setVariableOrderingType(mcsat::get_name(Settings::variableOrderingStrategy)));
+	SMTRAT_STATISTICS_CALL(getStatistics().setCoveringHeuristicType(cadcells::representation::get_name(Settings::covering_heuristic)));
+	SMTRAT_STATISTICS_CALL(getStatistics().setOperatorType(cadcells::operators::get_name(Settings::op)));
 }
 
 template<class Settings>
@@ -21,9 +25,8 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
 
-	// Gather all possibly occuring variables
-	_constraint.gatherVariables(mVariables);
-
+	//Gather all possible constraints for the initial (complete!) variable ordering
+	mAllConstraints.push_back(_constraint.constraint());
 	return true;
 }
 
@@ -139,7 +142,7 @@ bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 
 //TODO: WRITE PSEUDOCODE
 
-template<class Settings>
+template<typename Settings>
 Answer NewCoveringModule<Settings>::checkCore() {
 
 	SMTRAT_STATISTICS_CALL(getStatistics().called());
@@ -151,23 +154,20 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 	// Check if this is the first time checkCore is called
 	if (mVariableOrdering.empty()) {
-		// Init variable odering
 
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variables: " << mVariables);
-
-		std::vector<ConstraintT> allConstraints; 
-		for(const auto& moduleInput : rReceivedFormula()){
-			allConstraints.push_back(moduleInput.formula().constraint());
-		}
-
-		mVariableOrdering = mcsat::calculate_variable_order<mcsat::VariableOrdering::FeatureBasedBrown>(allConstraints) ;
+		// Init variable odering, we use the variable ordering which was declared in the settings 
+		mVariableOrdering = mcsat::calculate_variable_order<Settings::variableOrderingStrategy>(mAllConstraints) ;
+	
+		SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
+		
+		//We can clear mAllConstraints now, as we don't need it anymore -> Its only needed to calculate the variable ordering 
+		mAllConstraints.clear();
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variable Ordering : " << mVariableOrdering);
 
 		// init backend
 		backend.init(mVariableOrdering);
 
-		SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
 
 		// Add unknown constraints to backend
 		for (const auto& constraint : mUnknownConstraints) {
@@ -228,7 +228,6 @@ Answer NewCoveringModule<Settings>::checkCore() {
 					return Answer::UNSAT;
 				} else {
 					backend.resetStoredData(1);
-					// TODO: This unnecessarily recomputes the covering for level 0 in the call to getUnsatCover
 				}
 			}
 		} else if (!mRemoveConstraints.empty() && !mUnknownConstraints.empty()) {

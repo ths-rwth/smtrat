@@ -40,8 +40,8 @@ private:
 	// List of constraints that have to be removed from the backend (For Backtracking)
 	FormulasT mRemoveConstraints;
 
-	// Set of all known Variables
-	carl::carlVariables mVariables;
+	// List of all constraints (Only used once for the initial variable ordering and then cleared)
+	std::vector<ConstraintT> mAllConstraints;
 
 	// Variable Ordering, Initialized in checkCore
 	std::vector<carl::Variable> mVariableOrdering;

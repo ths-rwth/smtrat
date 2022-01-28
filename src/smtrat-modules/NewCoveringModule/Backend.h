@@ -23,10 +23,13 @@ namespace smtrat {
 
 using namespace cadcells;
 
-using PropSet = operators::PropertiesSet<op>::type;
-
 template<typename Settings>
 class Backend {
+
+
+static constexpr cadcells::operators::op op = Settings::op;
+using PropSet = typename operators::PropertiesSet<Settings::op>::type;
+
 
 private:
 	// Variable Ordering
@@ -214,7 +217,7 @@ public:
 	}
 
 	Answer getUnsatCover(const std::size_t level) {
-		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " with current assignment: " << mCurrentAssignment);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " / " << dimension());
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints);
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Current Covering Information: " << mCoveringInformation[level]);

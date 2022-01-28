@@ -36,6 +36,16 @@ namespace smtrat::cadcells::operators {
 
 enum op { mccallum };
 
+inline std::string get_name(op op){
+    switch (op) {
+        case op::mccallum: return "mccallum";
+    }
+}
+
+inline std::ostream& operator<<(std::ostream& os, op op){
+    return os << get_name(op);
+}
+
 template <op Op>
 struct PropertiesSet;
 

@@ -21,8 +21,9 @@ private:
 	std::size_t mBacktrackingOnlyCalls = 0;
 	std::size_t mIncrementalAndBacktrackingCalls = 0;
 	std::size_t mDimension = 0;
-	std::size_t mCalledComputeCovering = 0;
-	std::size_t mCalledConstructDerivation = 0;
+	std::string mVariableOrderingType = "";
+	std::string mCoveringHeuristicType = "";
+	std::string mOperatorType = "";
 	carl::statistics::timer mTimerComputeCovering;
 	carl::statistics::timer mTimerConstructDerivation;
 
@@ -35,6 +36,9 @@ public:
 		Statistics::addKeyValuePair("dimension", mDimension);
 		Statistics::addKeyValuePair("time_compute_covering", mTimerComputeCovering);
 		Statistics::addKeyValuePair("time_construct_derivation", mTimerConstructDerivation);
+		Statistics::addKeyValuePair("variable_ordering_type", mVariableOrderingType);
+		Statistics::addKeyValuePair("covering_heuristic_type", mCoveringHeuristicType);
+		Statistics::addKeyValuePair("operator_type", mOperatorType);
 	}
 	void called() {
 		mTotalCalls++;
@@ -61,6 +65,19 @@ public:
 	auto& timeForConstructDerivation() {
 		return mTimerConstructDerivation;
 	}
+
+	void setVariableOrderingType(std::string variableOrderingType) {
+		mVariableOrderingType = variableOrderingType;
+	}
+
+	void setCoveringHeuristicType(std::string coveringHeuristicType) {
+		mCoveringHeuristicType = coveringHeuristicType;
+	}
+
+	void setOperatorType(std::string operatorType) {
+		mOperatorType = operatorType;
+	}
+
 };
 
 static auto& getStatistics() {

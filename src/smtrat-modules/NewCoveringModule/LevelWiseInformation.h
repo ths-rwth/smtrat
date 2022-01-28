@@ -20,11 +20,6 @@ namespace smtrat {
 
 using namespace cadcells;
 
-static constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
-static constexpr auto op = operators::op::mccallum;
-
-using PropSet = operators::PropertiesSet<op>::type;
-
 // Possible types of covering information
 enum CoveringStatus {
 	partial = 0,
@@ -61,8 +56,15 @@ inline std::ostream& operator<<(std::ostream& os, const CoveringStatus& status) 
  * This class is used to store all calculated information about the given level.
  * This is used for both backtracking,incrementality and caching in general
  */
-template<typename Settings>
+template<class Settings>
 class LevelWiseInformation {
+
+
+//get the covering heuristic from the settings 
+static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = Settings::covering_heuristic;
+static constexpr cadcells::operators::op op = Settings::op;
+
+using PropSet = typename operators::PropertiesSet<Settings::op>::type;
 
 private:
 	// All Information that has been gathered for this level
@@ -248,7 +250,7 @@ public:
 						   }),
 						   mDerivations.end());
 
-		// TODO: for memory reasons we should also remove the derivation from the derivationConstraints map
+		// TODO: for memory reasons we could also remove the derivation from the derivationConstraints map -> is this worth it?
 	}
 
 	// Get the constraints used in the current covering
