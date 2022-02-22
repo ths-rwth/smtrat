@@ -262,54 +262,95 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const
         } else {
             bool has_lower = (poly == cell.lower_defining()->poly) || ordering.poly_has_lower(poly);
             bool has_upper = (poly == cell.upper_defining()->poly) || ordering.poly_has_upper(poly);
-            if (!(has_lower && has_upper)) {
-                if (!has_upper) {
-                    boost::container::flat_set<datastructures::PolyRef> res_polys;
-                    for (const auto& rel : ordering.below()) {
-                        if (rel.first.poly == poly) {
-                            res_polys.insert(rel.second.poly);
-                        } else if (rel.second.poly == poly) {
-                            res_polys.insert(rel.first.poly);
-                        }
-                    }
 
-                    for (const auto& res_poly : res_polys) {
-                        if (res_poly == cell.upper_defining()->poly) {
-                            return;
-                        } else {
-                            auto root_it = std::find_if(ordering.above().begin(), ordering.above().end(), [&res_poly](const auto& rel) { return rel.second.poly == res_poly; });
-                            if (root_it != ordering.above().end()) {
-                                if (deriv.contains(properties::root_well_def{root_it->second}) || is_trivial_root_well_def(deriv.underlying().sampled(), root_it->second)) {
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    assert(has_upper);
-                    boost::container::flat_set<datastructures::PolyRef> res_polys;
-                    for (const auto& rel : ordering.above()) {
-                        if (rel.first.poly == poly) {
-                            res_polys.insert(rel.second.poly);
-                        } else if (rel.second.poly == poly) {
-                            res_polys.insert(rel.first.poly);
-                        }
-                    }
-
-                    for (const auto& res_poly : res_polys) {
-                        if (res_poly == cell.lower_defining()->poly) {
-                            return;
-                        } else {
-                            auto root_it = std::find_if(ordering.below().begin(), ordering.below().end(), [&res_poly](const auto& rel) { return rel.second.poly == res_poly; });
-                            if (root_it != ordering.below().end()) {
-                                if (deriv.contains(properties::root_well_def{root_it->second}) || is_trivial_root_well_def(deriv.underlying().sampled(), root_it->second)) {
-                                    return;
-                                }
+            // compute set of polynomials that have a resultant with the current polynomials (according to the given ordering)
+            boost::container::flat_set<datastructures::PolyRef> res_polys;
+            for (const auto& rel : ordering.below()) {
+                if (rel.first.poly == poly) {
+                    res_polys.insert(rel.second.poly);
+                } else if (rel.second.poly == poly) {
+                    res_polys.insert(rel.first.poly);
+                }
+            }
+            for (const auto& rel : ordering.above()) {
+                if (rel.first.poly == poly) {
+                    res_polys.insert(rel.second.poly);
+                } else if (rel.second.poly == poly) {
+                    res_polys.insert(rel.first.poly);
+                }
+            }
+            
+            // compute protection for lower bound
+            bool lower_protected = false;
+            if (has_upper) {
+                // check if a res_poly has a well defined root below
+                for (const auto& res_poly : res_polys) {
+                    if (res_poly == cell.lower_defining()->poly) {
+                        lower_protected = true;
+                        break;
+                    } else {
+                        auto root_it = std::find_if(ordering.below().begin(), ordering.below().end(), [&res_poly](const auto& rel) { return rel.second.poly == res_poly; });
+                        if (root_it != ordering.below().end()) {
+                            if (deriv.contains(properties::root_well_def{root_it->second}) || is_trivial_root_well_def(deriv.underlying().sampled(), root_it->second)) {
+                                lower_protected = true;
+                                break;
                             }
                         }
                     }
                 }
-                
+            }
+
+            if (poly == cell.lower_defining()->poly) {
+                lower_protected = true;
+            }
+            if (has_lower && !lower_protected) {
+                for (const auto& rel : ordering.below()) {
+                    if (rel.second.poly == poly) {
+                        deriv.insert(properties::root_well_def{rel.second});
+                        lower_protected = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!lower_protected) {
+                deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
+            }
+
+            // compute protection for upper bound
+            bool upper_protected = false;
+            if (has_lower) {
+                // check if a res_poly has a well defined root above
+                for (const auto& res_poly : res_polys) {
+                    if (res_poly == cell.upper_defining()->poly) {
+                        upper_protected = true;
+                        break;
+                    } else {
+                        auto root_it = std::find_if(ordering.above().begin(), ordering.above().end(), [&res_poly](const auto& rel) { return rel.second.poly == res_poly; });
+                        if (root_it != ordering.above().end()) {
+                            if (deriv.contains(properties::root_well_def{root_it->second}) || is_trivial_root_well_def(deriv.underlying().sampled(), root_it->second)) {
+                                upper_protected = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } 
+
+            if (poly == cell.upper_defining()->poly) {
+                upper_protected = true;
+            }
+            if (has_upper && !upper_protected) {
+                for (const auto& rel : ordering.above()) {
+                    if (rel.second.poly == poly) {
+                        deriv.insert(properties::root_well_def{rel.second});
+                        upper_protected = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!upper_protected) {
                 deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
             }
         }
