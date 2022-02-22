@@ -99,6 +99,13 @@ public:
         if (is_sector()) return upper();
         else return section_defining();
     }
+
+    boost::container::flat_set<PolyRef> polys() const {
+        boost::container::flat_set<PolyRef> result;
+        if (m_lower) result.insert(m_lower->poly);
+        if (m_upper) result.insert(m_upper->poly);
+        return result;
+    }
 };
 std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
     if (data.is_section()) {
@@ -195,6 +202,19 @@ public:
 
     bool poly_has_upper(PolyRef poly) const {
         return std::find_if(above().begin(), above().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != above().end();
+    }
+
+    boost::container::flat_set<PolyRef> polys() const {
+        boost::container::flat_set<PolyRef> result;
+        for (const auto& pair : m_data_below) {
+            result.insert(pair.first.poly);
+            result.insert(pair.second.poly);
+        }
+        for (const auto& pair : m_data_above) {
+            result.insert(pair.first.poly);
+            result.insert(pair.second.poly);
+        }
+        return result;
     }
 };
 std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {

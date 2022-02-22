@@ -137,8 +137,8 @@ void poly_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures
 template<typename P>
 void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and non-zero");
-    assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
+    deriv.insert(properties::poly_pdel{ poly });
     if (deriv.proj().is_ldcf_zero(deriv.underlying_sample(), poly)) {
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
     }

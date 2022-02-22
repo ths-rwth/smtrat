@@ -33,10 +33,16 @@ template <>
 void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
     auto& deriv = repr.derivation;
 
-    for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-        if (repr.equational.find(prop.poly) == repr.equational.end()) {
-            deriv.insert(properties::poly_pdel{ prop.poly });
-        }
+    // for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
+    //     if (repr.equational.find(prop.poly) == repr.equational.end()) {
+    //         deriv.insert(properties::poly_pdel{ prop.poly });
+    //     }
+    // }
+    for(const auto& poly : repr.description.polys()) {
+        deriv.insert(properties::poly_pdel{ poly });
+    }
+    for(const auto& poly : repr.ordering.polys()) {
+        deriv.insert(properties::poly_pdel{ poly });
     }
 
     for (const auto& poly : deriv.delin().nonzero()) {
