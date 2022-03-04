@@ -88,11 +88,13 @@ public:
 		return mCoveringInformation;
 	}
 
+	//Return all constraints that are reason for the derivation used in the full covering on level 0
 	inline FormulaSetT getInfeasibleSubset() {
 		assert(mCoveringInformation[0].isFullCovering()) ;
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "getInfeasibleSubset");
-		FormulaSetT infeasibleSubset;
+		//Use Set to avoid duplicates
+		FormulaSetT infeasibleSubset; 
 		// We can just take the constraints used in level 0, as all the constraints of higher levels get pushed down if used in the covering
 		for (auto& infeasibleConstraint : mCoveringInformation[0].getConstraintsOfCovering(mDerivationToConstraint)) {
 			infeasibleSubset.insert(FormulaT(infeasibleConstraint));
@@ -105,6 +107,13 @@ public:
 	void addConstraint(const ConstraintT& constraint) {
 		// We can substract 1 from level because we dont have constant polynomials
 		std::size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
+		mUnknownConstraints[level].insert(constraint);
+	}
+
+	// Adds a constraint into the right level, already given the level
+	void addConstraint(const ConstraintT& constraint, const size_t level) {
+		assert((helper::level_of(mVariableOrdering, constraint.lhs()) - 1) == level) ;
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
 		mUnknownConstraints[level].insert(constraint);
 	}

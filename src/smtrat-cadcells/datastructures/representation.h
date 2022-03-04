@@ -64,8 +64,12 @@ struct CoveringRepresentation {
 		return cov;
 	}
 
-	//returns 0 iff the a sample outside of the current covering has been found
-	//returns 1 otherwise
+	/**
+	 * @brief Search of a sample point outside of the cells of the covering. 
+	 * 
+	 * @param reference to a RAN, in which the sample point is written, if one can be found
+	 * @return size_t indicating whether a sample point has been found: 0 iff sample point has been found, 1 otherwise.
+	 */
 	size_t sample_outside(RAN& sample) const {
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Sampling Outside of: " << *this)

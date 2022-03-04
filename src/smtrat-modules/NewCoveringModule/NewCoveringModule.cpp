@@ -12,8 +12,8 @@ namespace smtrat {
 template<class Settings>
 NewCoveringModule<Settings>::NewCoveringModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
 	: Module(_formula, _conditionals, _manager) {
-	SMTRAT_LOG_DEBUG("smtrat.covering", "Init New Covering Module") ;
-	//Pass informations about the settings to the statistics
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Init New Covering Module");
+	// Pass informations about the settings to the statistics
 	SMTRAT_STATISTICS_CALL(getStatistics().setVariableOrderingType(mcsat::get_name(Settings::variableOrderingStrategy)));
 	SMTRAT_STATISTICS_CALL(getStatistics().setCoveringHeuristicType(cadcells::representation::get_name(Settings::covering_heuristic)));
 	SMTRAT_STATISTICS_CALL(getStatistics().setOperatorType(cadcells::operators::get_name(Settings::op)));
@@ -24,8 +24,8 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
-
-	//Gather all possible constraints for the initial (complete!) variable ordering
+	// Gather all possible constraints for the initial (complete!) variable ordering
+	assert(_constraint.getType() == carl::FormulaType::CONSTRAINT);
 	mAllConstraints.push_back(_constraint.constraint());
 	return true;
 }
@@ -65,20 +65,26 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Rechecking the unknown constraints with the last satisfying assignment");
 	std::size_t lowestLevelWithUnsatisfiedConstraint = 0;
 	bool foundUnsatisfiedConstraint = false;
-	while (lowestLevelWithUnsatisfiedConstraint < mVariableOrdering.size()) {
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << lowestLevelWithUnsatisfiedConstraint << "/" << mVariableOrdering.size());
-		for (const auto& constraint : mUnknownConstraints) {
-			if (carl::evaluate(constraint.constraint(), mLastAssignment) != true) {
+
+	std::map<size_t, std::vector<ConstraintT>> constraintsByLevel;
+
+	for (const auto& formula : mUnknownConstraints) {
+		ConstraintT constraint = formula.constraint();
+		size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
+		constraintsByLevel[level].push_back(constraint);
+	}
+
+	// Now iterate over the constraints by level, starting with lowest first
+	for (const auto& levelConstraints : constraintsByLevel) {
+		if (foundUnsatisfiedConstraint) break;
+		for (const auto& constraint : levelConstraints.second) {
+			if (!carl::evaluate(constraint, mLastAssignment)) {
 				// This constraint is unsat with the last assignment
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsatisfied constraint on level:" << lowestLevelWithUnsatisfiedConstraint);
 				foundUnsatisfiedConstraint = true;
-				break;
+				lowestLevelWithUnsatisfiedConstraint = levelConstraints.first;
 			}
 		}
-		if (foundUnsatisfiedConstraint) {
-			break;
-		}
-		lowestLevelWithUnsatisfiedConstraint++;
 	}
 
 	// We can add the new constraints to the backend now
@@ -94,8 +100,7 @@ template<class Settings>
 void NewCoveringModule<Settings>::removeConstraintsSAT() {
 	// Easy case:
 	// we can just remove the constraints and the corresponding stored information
-	// this does not change the current satisfying assignment
-	// Also: The satisfying assignment stays satisfying
+	// this does not change the current satisfying assignment/ satisfyability of the given set of constraints
 	for (const auto& constraint : mRemoveConstraints) {
 		backend.removeConstraint(std::move(constraint.constraint()));
 	}
@@ -104,7 +109,7 @@ void NewCoveringModule<Settings>::removeConstraintsSAT() {
 
 template<class Settings>
 void NewCoveringModule<Settings>::addConstraintsUNSAT() {
-	// Easy case
+	// Easy case:
 	//  Add all unknown constraints to backend
 	//  We can do this with no further calculations, as the model stays unsatisfiable
 	for (const auto& constraint : mUnknownConstraints) {
@@ -116,20 +121,20 @@ void NewCoveringModule<Settings>::addConstraintsUNSAT() {
 template<class Settings>
 bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 	// Hard case:
-	//  We have to remove the constraints and the corresponding stored information
-	//  This might include information in the old full coverings
-	//  If not: the model stays unsatisfiable
+	//  We have to remove the constraints and the corresponding stored information (derivations with the constraint as origin)
+	//  This might include information in the stored full coverings
+	//  If not: Nothing changes and the model stays unsatisfiable
 	//  If yes: the model might become satisfiable or stays unsatisfiable -> Needs recalculation of the covering at level 0
 	//  If level 0 is still full after removal of constraints: the model is still unsatisfiable
-	//  If level 0 is not full after removal of constraints: the model might become satisfiable or stays unsatisfiable -> Needs recalculation off all the higher levels
+	//  If level 0 is not full after removal of constraints: the model might become satisfiable or stays unsatisfiable -> Needs recalculation off all the higher levels : TODO Ask Jasper if this is correct
 
-	// First: remove all constraints from the backend
+	// First: remove all constraints from the backend, this also removes the corresponding derivations and invalidates the coverings, if they used a removed derivations
 	for (const auto& constraint : mRemoveConstraints) {
 		backend.removeConstraint(std::move(constraint.constraint()));
 	}
 	mRemoveConstraints.clear();
 
-	// Second: Check if the covering on level 0 has changed
+	// Second: Check if the covering on level 0 has changed/ was invalidated
 	bool hasChanged = backend.getCoveringInformation()[0].isUnknownCovering();
 
 	// Third: If the covering has changed, we need to recompute it
@@ -139,8 +144,6 @@ bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 
 	return backend.getCoveringInformation()[0].isFullCovering();
 }
-
-//TODO: WRITE PSEUDOCODE
 
 template<typename Settings>
 Answer NewCoveringModule<Settings>::checkCore() {
@@ -155,19 +158,18 @@ Answer NewCoveringModule<Settings>::checkCore() {
 	// Check if this is the first time checkCore is called
 	if (mVariableOrdering.empty()) {
 
-		// Init variable odering, we use the variable ordering which was declared in the settings 
-		mVariableOrdering = mcsat::calculate_variable_order<Settings::variableOrderingStrategy>(mAllConstraints) ;
-	
+		// Init variable odering, we use the variable ordering which was declared in the settings
+		mVariableOrdering = mcsat::calculate_variable_order<Settings::variableOrderingStrategy>(mAllConstraints);
+
 		SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
-		
-		//We can clear mAllConstraints now, as we don't need it anymore -> Its only needed to calculate the variable ordering 
+
+		// We can clear mAllConstraints now, as we don't need it anymore -> Its only needed to calculate the variable ordering
 		mAllConstraints.clear();
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variable Ordering : " << mVariableOrdering);
 
 		// init backend
 		backend.init(mVariableOrdering);
-
 
 		// Add unknown constraints to backend
 		for (const auto& constraint : mUnknownConstraints) {
@@ -246,7 +248,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 				// There is an intersection between the two vectors
 				// This means that we need to remove the intersection from the remove constraints
 				// NOTE: This is a rare case, but it can happen
-				// TODO: remove intersection from mRemoveConstraints or mUnknownConstraints???
+				// TODO: remove intersection from mRemoveConstraints or mUnknownConstraints? Ask Jasper
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Intersection between unknown and remove constraints: " << intersection);
 				for (const auto& constraint : intersection) {
 					mRemoveConstraints.erase(std::remove(mRemoveConstraints.begin(), mRemoveConstraints.end(), constraint), mRemoveConstraints.end());
@@ -288,7 +290,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		backend.resetDerivationToConstraintMap();
 	}
 
-	// Todo: for the incremental call we dont have to start at level 0 -> we could start at the lowest level with an unsatisfied constraint -> this would be faster
+	// TODO: As getUnsatCover is recursive we have to start at level 0 for completeness
+	// For incremental solving, when we can start at the lowest level with unsatisfied constraints, as the data for the lower levels is not deleted, those are skipped.
 	mLastAnswer = backend.getUnsatCover(0);
 
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core returned: " << mLastAnswer);

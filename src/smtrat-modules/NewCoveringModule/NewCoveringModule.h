@@ -116,15 +116,16 @@ public:
 	// ----Backend Interfaces for addition and removal of constraints if the previous call was SAT ----
 
 	/**
-	 * Adds the given constraint to the backend
+	 * @brief Adds the given constraint to the backend
 	 * @return the lowest level with an unsatisfied new constraint
 	 * @note returns mVariableOrdering.size()+1 if all new constraints are satisfied
+	 * @note If not all new constraints are satisfied the 
 	 */
 	size_t addConstraintsSAT();
 
 	/**
-	 * Removes the given constraints from the backend
-	 * Also removes all stored information about the removed constraints
+	 * @brief Removes the given constraints from the backend
+	 * @note This also removes all stored information about the removed constraints
 	 */
 	void removeConstraintsSAT();
 
