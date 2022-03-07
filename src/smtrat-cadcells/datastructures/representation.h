@@ -114,6 +114,46 @@ struct CoveringRepresentation {
 		return 1 ;
 	}
 
+	bool isSampleOutside(const RAN& sample){
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Checking if sample " << sample << " is outside of: " << *this)
+		if(cells.empty()){
+			return true;
+		}
+
+		if (!cells.front().derivation->cell().lower_unbounded()) {
+			//Lower bound is finite, checking if the sample is lower than the lower bound
+			if(sample < cells.front().derivation->cell().lower()->first){
+				return true;
+			}
+		}
+
+		if (!cells.back().derivation->cell().upper_unbounded()) {
+			//Upper bound is finite,checking if the sample is greater than the upper bound
+			if(sample > cells.back().derivation->cell().upper()->first){
+				return true;
+			}
+		}
+
+		//Search for adjacent disjoint cells and sample between
+		for (size_t i = 0; i + 1 < cells.size(); i++) {
+			//We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
+			if (!cells[i].derivation->cell().upper_unbounded() && !cells[i+1].derivation->cell().lower_unbounded() && cells[i].derivation->cell().upper()->first < cells[i+1].derivation->cell().lower()->first) {
+				if(cells[i].derivation->cell().upper()->first < sample && sample < cells[i + 1].derivation->cell().lower()->first){
+					return true;
+				}
+
+			//The check above does not care for open bounds
+			//i.e if we have (x, y), (y, z)
+			} else if (cells[i].derivation->cell().is_sector() && cells[i + 1].derivation->cell().is_sector() && cells[i].derivation->cell().upper()->first == cells[i + 1].derivation->cell().lower()->first) {
+				if(sample == cells[i].derivation->cell().upper()->first){
+					return true;
+				}
+			}
+		}
+
+		return false ;
+	}
+
 	/// Checks whether this represents a proper non-redundant covering.
 	bool is_valid() const {
 		auto cell = cells.begin();

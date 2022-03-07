@@ -100,14 +100,14 @@ public:
 	* @brief Compute the covering based on the current derivations
 	* Also set the covering flag accordingly and the find a sample point if the covering is not a full covering
 	*/
-	void computeCovering() {
+	bool computeCovering() {
 
 		auto startTime = SMTRAT_TIME_START();
 
 		// If there is an already existing covering which is also full, we are done
 		if (isFullCovering()) {
 			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
-			return;
+			return false;
 		}
 		// We assume that there are new derivations
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
@@ -117,15 +117,31 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed");
 			mCoveringStatus = CoveringStatus::failed;
 			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
-			return;
+			return true;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
 		// we can convert the return value of sample_outside to CoveringStatus as 0 == partial covering and 1 == full covering
+		// Note: if covering is partial, mSamplePoint will be set to a RAN outside of the covering
+		// We only have to recompute the sample point if the covering before was not partial
+		if(isPartialCovering()){
+			//check if the old sample point is still outside of the new covering 
+			if(mCovering.value().isSampleOutside(mSamplePoint)){
+				//if yes, we are done 
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample point is still outside of the covering");
+				SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
+				return false;
+			}else{
+				mCoveringStatus = CoveringStatus(mCovering.value().sample_outside(mSamplePoint));
+				return true ;
+			}
+		}
+		
 		mCoveringStatus = CoveringStatus(mCovering.value().sample_outside(mSamplePoint));
-
+		
 		SMTRAT_LOG_DEBUG("smtrat.covering", "CoveringStatus: " << mCoveringStatus);
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Sample point: " << mSamplePoint);
 		SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
+		return true ;
 	}
 
 	// Get the current sample point which is outside of the current covering

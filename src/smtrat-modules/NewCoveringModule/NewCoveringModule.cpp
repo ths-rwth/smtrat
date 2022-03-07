@@ -60,44 +60,54 @@ void NewCoveringModule<Settings>::updateModel() const {
 
 template<class Settings>
 size_t NewCoveringModule<Settings>::addConstraintsSAT() {
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding constraints: " << mUnknownConstraints);
 	// Hard case:
 	//  Recheck the unknown constraints with the last satisfying assignment
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Rechecking the unknown constraints with the last satisfying assignment");
-	std::size_t lowestLevelWithUnsatisfiedConstraint = 0;
+	std::size_t lowestLevelWithUnsatisfiedConstraint = mVariableOrdering.size()+1;
 	bool foundUnsatisfiedConstraint = false;
 
 	std::map<size_t, std::vector<ConstraintT>> constraintsByLevel;
 
-	for (const auto& formula : mUnknownConstraints) {
+	for(const auto& formula : mUnknownConstraints) {
 		ConstraintT constraint = formula.constraint();
 		size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
-		constraintsByLevel[level].push_back(constraint);
+		constraintsByLevel[level].push_back(std::move(constraint));
 	}
+	mUnknownConstraints.clear();
 
-	// Now iterate over the constraints by level, starting with lowest first
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Build constraint map: " << constraintsByLevel);
+
+	// Now iterate over the constraints by level, starting with lowest first (the keys in a std::map are implicitly sorted using std::less)
 	for (const auto& levelConstraints : constraintsByLevel) {
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << levelConstraints.first);
 		if (foundUnsatisfiedConstraint) break;
 		for (const auto& constraint : levelConstraints.second) {
-			if (!carl::evaluate(constraint, mLastAssignment)) {
+			if (carl::evaluate(constraint, mLastAssignment) != true) {
 				// This constraint is unsat with the last assignment
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsatisfied constraint on level:" << lowestLevelWithUnsatisfiedConstraint);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsatisfied constraint on level:" << levelConstraints.first);
 				foundUnsatisfiedConstraint = true;
 				lowestLevelWithUnsatisfiedConstraint = levelConstraints.first;
+				break ;
 			}
 		}
 	}
 
-	// We can add the new constraints to the backend now
-	for (const auto& constraint : mUnknownConstraints) {
-		backend.addConstraint(std::move(constraint.constraint()));
-	}
-	mUnknownConstraints.clear();
+	
 
-	return lowestLevelWithUnsatisfiedConstraint;
+	// We can add the new constraints to the backend now
+	for (const auto& levelConstraints : constraintsByLevel) {
+		backend.addConstraint(levelConstraints.first, std::move(levelConstraints.second));
+	}
+	constraintsByLevel.clear();
+
+	return lowestLevelWithUnsatisfiedConstraint ;
+	
 }
 
 template<class Settings>
 void NewCoveringModule<Settings>::removeConstraintsSAT() {
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Removing constraints: " << mRemoveConstraints);
 	// Easy case:
 	// we can just remove the constraints and the corresponding stored information
 	// this does not change the current satisfying assignment/ satisfyability of the given set of constraints
@@ -109,6 +119,7 @@ void NewCoveringModule<Settings>::removeConstraintsSAT() {
 
 template<class Settings>
 void NewCoveringModule<Settings>::addConstraintsUNSAT() {
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding constraints: " << mUnknownConstraints);
 	// Easy case:
 	//  Add all unknown constraints to backend
 	//  We can do this with no further calculations, as the model stays unsatisfiable
@@ -120,6 +131,8 @@ void NewCoveringModule<Settings>::addConstraintsUNSAT() {
 
 template<class Settings>
 bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Removing constraints: " << mRemoveConstraints);
+	assert(backend.getCoveringInformation()[0].isFullCovering());
 	// Hard case:
 	//  We have to remove the constraints and the corresponding stored information (derivations with the constraint as origin)
 	//  This might include information in the stored full coverings
@@ -137,10 +150,14 @@ bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 	// Second: Check if the covering on level 0 has changed/ was invalidated
 	bool hasChanged = backend.getCoveringInformation()[0].isUnknownCovering();
 
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Covering on level 0 has changed: " << hasChanged);
+
 	// Third: If the covering has changed, we need to recompute it
 	if (hasChanged) {
 		backend.getCoveringInformation()[0].computeCovering();
 	}
+
+	SMTRAT_LOG_DEBUG("smtrat.covering", "Covering on level is still full: " << backend.getCoveringInformation()[0].isFullCovering());
 
 	return backend.getCoveringInformation()[0].isFullCovering();
 }
@@ -164,7 +181,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
 
 		// We can clear mAllConstraints now, as we don't need it anymore -> Its only needed to calculate the variable ordering
-		mAllConstraints.clear();
+		//mAllConstraints.clear();
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variable Ordering : " << mVariableOrdering);
 
@@ -279,6 +296,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 					SMTRAT_LOG_DEBUG("smtrat.covering", "Infeasible Subset: " << mInfeasibleSubsets.back());
 					return Answer::UNSAT;
 				} else {
+					//delete everything, but keep level 0
 					backend.resetStoredData(1);
 				}
 			}
@@ -303,6 +321,19 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 	} else if (mLastAnswer == Answer::SAT) {
 		mLastAssignment = backend.getCurrentAssignment();
+		//check that all constraints have been processed
+
+		//debugging, recheck all constraints by level and check that the constraints are all satisfied 
+		for(size_t i = 0; i < mVariableOrdering.size(); i++){
+			auto constraints = backend.getKnownConstraints(i);
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Checking Level " << i << " with " << constraints.size() << " constraints");
+			for(const auto& constraint : constraints){
+				if(carl::evaluate(constraint, mLastAssignment) != true){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint " << constraint << " is not satisfied");
+					exit(1) ;
+				}
+			}
+		}
 
 	} else {
 		// Answer is UNKNOWN and something went wrong

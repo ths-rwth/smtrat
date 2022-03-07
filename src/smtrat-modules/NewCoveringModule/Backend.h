@@ -26,10 +26,8 @@ using namespace cadcells;
 template<typename Settings>
 class Backend {
 
-
-static constexpr cadcells::operators::op op = Settings::op;
-using PropSet = typename operators::PropertiesSet<Settings::op>::type;
-
+	static constexpr cadcells::operators::op op = Settings::op;
+	using PropSet = typename operators::PropertiesSet<Settings::op>::type;
 
 private:
 	// Variable Ordering
@@ -88,13 +86,13 @@ public:
 		return mCoveringInformation;
 	}
 
-	//Return all constraints that are reason for the derivation used in the full covering on level 0
+	// Return all constraints that are reason for the derivation used in the full covering on level 0
 	inline FormulaSetT getInfeasibleSubset() {
-		assert(mCoveringInformation[0].isFullCovering()) ;
+		assert(mCoveringInformation[0].isFullCovering());
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "getInfeasibleSubset");
-		//Use Set to avoid duplicates
-		FormulaSetT infeasibleSubset; 
+		// Use Set to avoid duplicates
+		FormulaSetT infeasibleSubset;
 		// We can just take the constraints used in level 0, as all the constraints of higher levels get pushed down if used in the covering
 		for (auto& infeasibleConstraint : mCoveringInformation[0].getConstraintsOfCovering(mDerivationToConstraint)) {
 			infeasibleSubset.insert(FormulaT(infeasibleConstraint));
@@ -112,10 +110,12 @@ public:
 	}
 
 	// Adds a constraint into the right level, already given the level
-	void addConstraint(const ConstraintT& constraint, const size_t level) {
-		assert((helper::level_of(mVariableOrdering, constraint.lhs()) - 1) == level) ;
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
-		mUnknownConstraints[level].insert(constraint);
+	void addConstraint(const size_t level, const std::vector<ConstraintT>&& constraints) {
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraints : " << constraints << " on level " << level);
+		for (const auto& constraint : constraints) {
+			assert((helper::level_of(mVariableOrdering, constraint.lhs()) - 1) == level);
+			mUnknownConstraints[level].insert(std::move(constraint));
+		}
 	}
 
 	auto& getUnknownConstraints() {
@@ -134,13 +134,13 @@ public:
 		return mKnownConstraints[level];
 	}
 
-	void updateAssignment(std::size_t level){
+	void updateAssignment(std::size_t level) {
 		mCurrentAssignment[mVariableOrdering[level]] = mCoveringInformation[level].getSampleOutside();
 	}
 
 	// Delete all stored data with level higher or equal
 	void resetStoredData(std::size_t level) {
-		if(level == 0){
+		if (level == 0) {
 			resetDerivationToConstraintMap();
 		}
 		for (std::size_t i = level; i < dimension(); i++) {
@@ -156,7 +156,7 @@ public:
 		}
 	}
 
-	void resetDerivationToConstraintMap(){
+	void resetDerivationToConstraintMap() {
 		mDerivationToConstraint.clear();
 	}
 
@@ -170,25 +170,30 @@ public:
 
 		// If we find the constraint in the unknown constraints we have the easy case -> Just remove it and not care about the stored data
 		if (mUnknownConstraints[level].find(constraint) != mUnknownConstraints[level].end()) {
-			//remove all stored information which resulted from the constraint
+			assert(mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end());
+			// remove all stored information which resulted from the constraint
 			for (std::size_t cur_level = 0; cur_level <= level; cur_level++) {
-			mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Removing on level " << cur_level);
+				mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
 			}
 			mUnknownConstraints[level].erase(constraint);
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was in unknown constraints");
 			return;
 		}
 
-		if(mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end()){
+		if (mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was not in known constraints");
-			//This can happen if the constraint is to be added in the same iteration
-			//TODO: what to do then?
+			// This can happen if the constraint is to be added in the same iteration
+			// TODO: what to do then?
 			return;
 		}
 
+
 		// The constraint must be in the known constraints
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was in known constraints");
 		// remove all stored information which resulted from the constraint
 		for (std::size_t cur_level = 0; cur_level <= level; cur_level++) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Removing on level " << cur_level);
 			mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
 		}
 
@@ -203,11 +208,16 @@ public:
 		mUnknownConstraints[level].clear();
 	}
 
+
 	void setConstraintsUnknown(const std::size_t& level) {
-		for (const auto& constraint : mKnownConstraints[level]) {
-			mUnknownConstraints[level].insert(std::move(constraint));
+		//Note: this also resets all higher levels
+		for (std::size_t i = level; i < dimension(); i++) {
+			for (const auto& constraint : mKnownConstraints[i]) {
+				mUnknownConstraints[i].insert(std::move(constraint));
+			}
+			mKnownConstraints[i].clear();
 		}
-		mKnownConstraints[level].clear();
+		
 	}
 
 	void processUnknownConstraints(const std::size_t& level) {
@@ -228,17 +238,36 @@ public:
 	Answer getUnsatCover(const std::size_t level) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " / " << dimension());
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
-		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints[level]);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " Known Constraints: " << mKnownConstraints[level]);
 		SMTRAT_LOG_DEBUG("smtrat.covering", " Current Covering Information: " << mCoveringInformation[level]);
+		SMTRAT_LOG_DEBUG("smtrat.covering", " Current Assignment: " << mCurrentAssignment);
 
 		// incase of incremental solving, we need to check if the current level is already assigned
 		// if it is assigned, the current assignment is satisfying all unknown constraints and we dont need to process the unknown constraints
+		// If we know that the assignment is still satisfying we also dont need to recalculate the (partial!) covering.
 		if (mCurrentAssignment.find(mVariableOrdering[level]) == mCurrentAssignment.end()) {
 			processUnknownConstraints(level);
+			SMTRAT_LOG_DEBUG("smtrat-covering", "Computing Covering represenentation")
+			bool invalidates = mCoveringInformation[level].computeCovering();
+				if(invalidates){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
+					resetStoredData(level + 1 );
+				}
+		}else{
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Current variable is assigned, skipping processing of new constraints and computing covering representation");
+			//Possible in the case that SAT was reported before and constraints were removed and invalidated the current partial covering
+			if(mCoveringInformation[level].isUnknownCovering()){
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Covering was invalidated, recomputing covering representation");
+				bool invalidates = mCoveringInformation[level].computeCovering();
+				if(invalidates){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
+					resetStoredData(level + 1 );
+				}
+				assert(mCoveringInformation[level].isPartialCovering());
+			}
 		}
-
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
-		mCoveringInformation[level].computeCovering();
+		
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got CoveringStatus: " << mCoveringInformation[level].getCoveringStatus());
 		if (mCoveringInformation[level].isFailedCovering()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Covering failed -> Abort");
@@ -258,14 +287,41 @@ public:
 
 			Answer nextLevelAnswer = getUnsatCover(level + 1);
 
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Continueing on level: " << level);
+
 			if (nextLevelAnswer == Answer::SAT) {
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Got SAT on level: " << level);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Unknown Constraints: " << mUnknownConstraints[level]);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Current Assignment: " << mCurrentAssignment[mVariableOrdering[level]]);
+				bool invalidates = mCoveringInformation[level].computeCovering();
+				if(invalidates){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
+					resetStoredData(level + 1 );
+				}
+				assert(mCoveringInformation[level].isPartialCovering());
+				assert(mCurrentAssignment[mVariableOrdering[level]] == mCoveringInformation[level].getSampleOutside());
+				for(const auto& constraint : mUnknownConstraints[level]){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Checking unknown constraint: " << constraint);
+					if(carl::evaluate(constraint, mCurrentAssignment) != true){
+						SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint is not satisfied by current assignment");
+						exit(0);
+					}
+				}
+
+				for(const auto& constraint : mKnownConstraints[level]){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Checking known constraint: " << constraint);
+					if(carl::evaluate(constraint, mCurrentAssignment) != true){
+						SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint is not satisfied by current assignment");
+						exit(0);
+					}
+				}
 				// Push down SAT
 				return nextLevelAnswer;
 			} else if (nextLevelAnswer == Answer::UNSAT) {
-		
-				auto new_derivation = mCoveringInformation[level+1].constructDerivation(mDerivationToConstraint);
-				
-				if(!new_derivation.has_value()){
+
+				auto new_derivation = mCoveringInformation[level + 1].constructDerivation(mDerivationToConstraint);
+
+				if (!new_derivation.has_value()) {
 					SMTRAT_LOG_DEBUG("smtrat.covering", "No new derivation found -> Abort");
 					return Answer::UNKNOWN;
 				}
@@ -274,18 +330,21 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new derivation to Covering Information");
 				mCoveringInformation[level].addDerivation(std::move(new_derivation.value()));
 
-
 				// delete the now obsolete data
 				mCurrentAssignment.erase(mVariableOrdering[level]);
 				mCoveringInformation[level + 1].clear();
-				setConstraintsUnknown(level+1);
+				setConstraintsUnknown(level + 1);
 
 				// If there are unknown constraints on this level, we need to process them now
 				processUnknownConstraints(level);
 
 				// Recalculate the current covering
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
-				mCoveringInformation[level].computeCovering();
+				bool invalidates = mCoveringInformation[level].computeCovering();
+				if(invalidates){
+					SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
+					resetStoredData(level + 1 );
+				}
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Got CoveringStatus: " << mCoveringInformation[level].getCoveringStatus());
 				if (mCoveringInformation[level].isFailedCovering()) {
 					SMTRAT_LOG_DEBUG("smtrat.covering", "Covering failed -> Abort");
