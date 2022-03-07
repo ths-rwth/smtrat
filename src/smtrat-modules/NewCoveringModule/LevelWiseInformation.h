@@ -99,6 +99,7 @@ public:
 	/*
 	* @brief Compute the covering based on the current derivations
 	* Also set the covering flag accordingly and the find a sample point if the covering is not a full covering
+	* @returns True, if the result invalidates the covering of all higher levels (i.e. if the variable assignment of the current level changes)
 	*/
 	bool computeCovering() {
 
@@ -123,24 +124,23 @@ public:
 		// we can convert the return value of sample_outside to CoveringStatus as 0 == partial covering and 1 == full covering
 		// Note: if covering is partial, mSamplePoint will be set to a RAN outside of the covering
 		// We only have to recompute the sample point if the covering before was not partial
-		if(isPartialCovering()){
-			//check if the old sample point is still outside of the new covering 
-			if(mCovering.value().isSampleOutside(mSamplePoint)){
-				//if yes, we are done 
-				SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample point is still outside of the covering");
-				SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
-				return false;
-			}else{
-				mCoveringStatus = CoveringStatus(mCovering.value().sample_outside(mSamplePoint));
-				return true ;
-			}
+		//check if the old sample point is still outside of the new covering 
+		if(mCovering.value().isSampleOutside(mSamplePoint)){
+			//if yes, we are done 
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample point is still outside of the covering");
+			mCoveringStatus = CoveringStatus::partial;
+			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
+			return false;
 		}
-		
+
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample is not outside of the covering anymore, trying to find a new one");
 		mCoveringStatus = CoveringStatus(mCovering.value().sample_outside(mSamplePoint));
-		
 		SMTRAT_LOG_DEBUG("smtrat.covering", "CoveringStatus: " << mCoveringStatus);
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Sample point: " << mSamplePoint);
+		if(isPartialCovering()){
+			SMTRAT_LOG_DEBUG("smtrat.covering", "New Sample point: " << mSamplePoint);
+		}
 		SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
+
 		return true ;
 	}
 
