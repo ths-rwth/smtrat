@@ -93,8 +93,6 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
 		}
 	}
 
-	
-
 	// We can add the new constraints to the backend now
 	for (const auto& levelConstraints : constraintsByLevel) {
 		backend.addConstraint(levelConstraints.first, std::move(levelConstraints.second));
@@ -265,7 +263,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 				// There is an intersection between the two vectors
 				// This means that we need to remove the intersection from the remove constraints
 				// NOTE: This is a rare case, but it can happen
-				// TODO: remove intersection from mRemoveConstraints or mUnknownConstraints? Ask Jasper
+				// We remove the intersection from the remove constraints
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Intersection between unknown and remove constraints: " << intersection);
 				for (const auto& constraint : intersection) {
 					mRemoveConstraints.erase(std::remove(mRemoveConstraints.begin(), mRemoveConstraints.end(), constraint), mRemoveConstraints.end());
@@ -308,8 +306,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		backend.resetDerivationToConstraintMap();
 	}
 
-	// TODO: As getUnsatCover is recursive we have to start at level 0 for completeness
-	// For incremental solving, when we can start at the lowest level with unsatisfied constraints, as the data for the lower levels is not deleted, those are skipped.
+	// As getUnsatCover is recursive we always have to start at level 0 
 	mLastAnswer = backend.getUnsatCover(0);
 
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core returned: " << mLastAnswer);
@@ -321,20 +318,6 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
 	} else if (mLastAnswer == Answer::SAT) {
 		mLastAssignment = backend.getCurrentAssignment();
-		//check that all constraints have been processed
-
-		//debugging, recheck all constraints by level and check that the constraints are all satisfied 
-		for(size_t i = 0; i < mVariableOrdering.size(); i++){
-			auto constraints = backend.getKnownConstraints(i);
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Checking Level " << i << " with " << constraints.size() << " constraints");
-			for(const auto& constraint : constraints){
-				if(carl::evaluate(constraint, mLastAssignment) != true){
-					SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint " << constraint << " is not satisfied");
-					exit(1) ;
-				}
-			}
-		}
-
 	} else {
 		// Answer is UNKNOWN and something went wrong
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Backend encountered an error: " << mLastAnswer);
@@ -343,7 +326,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		backend.resetStoredData(0);
 		mLastAssignment.clear(); // There is no satisfying assignment
 	}
-	updateModel();
+
+	updateModel(); // Update the model according to the last assignment from the backend
 
 	return mLastAnswer;
 }

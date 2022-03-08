@@ -99,7 +99,7 @@ public:
 	/*
 	* @brief Compute the covering based on the current derivations
 	* Also set the covering flag accordingly and the find a sample point if the covering is not a full covering
-	* @returns True, if the result invalidates the covering of all higher levels (i.e. if the variable assignment of the current level changes)
+	* @returns True, iff the result invalidates the covering of all higher levels (i.e. if the variable assignment of the current level changes)
 	*/
 	bool computeCovering() {
 
@@ -124,7 +124,8 @@ public:
 		// we can convert the return value of sample_outside to CoveringStatus as 0 == partial covering and 1 == full covering
 		// Note: if covering is partial, mSamplePoint will be set to a RAN outside of the covering
 		// We only have to recompute the sample point if the covering before was not partial
-		//check if the old sample point is still outside of the new covering 
+
+		//check if the old sample point is still outside of the new covering, if we can keep the same sample point we can also keep the stored information about the higher levels 
 		if(mCovering.value().isSampleOutside(mSamplePoint)){
 			//if yes, we are done 
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample point is still outside of the covering");
