@@ -1,0 +1,7 @@
+#include "${Prefix}Module.h"
+
+namespace smtrat {
+
+${INSTANTIATIONS}
+
+}
