@@ -12,22 +12,41 @@ namespace smtrat {
 	template<class Settings>
 	FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& _foundAnswer, uint_fast64_t _varNumber, uint_fast64_t _constrNumber, Manager* _manager) :
 	  Module(_formula, _foundAnswer, _manager), mVarNumber(_varNumber), mConstrNumber(_constrNumber){
-		// Intentionally empty for now
+		mFMPlexBranch = std::list<FmplexLvl>();
 	}
 
 	template<typename Settings>
 	bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
-		// TODO Implement
+		auto formulaPtr = std::make_shared<FormulaWithOrigins>(*formula);
+		mAllConstraints.push_back(formulaPtr);
+		mNewConstraints.push_back(formulaPtr);
 	}
 
 	template<typename Settings>
 	void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
+		// Remove from AllConstraints
 		// TODO Implement
 	}
 
 	template<typename Settings>
 	Answer FMPlexModule<Settings>::checkCore() {
-		// TODO Implement
+		// TODO Check if current model (if available) satisfies the new additional constraints
+
+		// Convert mNewConstraints to ConstraintsWithInfo
+		std::list<ConstraintWithInfo> newConstr = std::list<ConstraintWithInfo>();
+		for (const auto& formula : mNewConstraints) {
+			newConstr.push_back(ConstraintWithInfo(*formula, &mAllConstraints));
+		}
+		mNewConstraints.clear();
+
+		// Add to first lvl (create it if necessary)
+		if(mFMPlexBranch.empty()) {
+			mFMPlexBranch.push_back(FmplexLvl(std::move(newConstr)));
+		} else {
+			mFMPlexBranch.front().addNonUsed(std::move(newConstr));
+		}
+
+		auto currentIterator = mFMPlexBranch.front();
 	}
 
 	template<typename Settings>
@@ -42,7 +61,19 @@ namespace smtrat {
 
 	template<typename Settings>
 	void FMPlexModule<Settings>::resetBelow(typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator lvl) {
+		lvl++;
+		assert(lvl!= mFMPlexBranch.end());
 		mFMPlexBranch.erase(lvl, mFMPlexBranch.end());
+	}
+
+	template<typename Settings>
+	std::list<typename FMPlexModule<Settings>::ConstraintWithInfo> FMPlexModule<Settings>::convertNewFormulas() {
+		auto res = std::list<ConstraintWithInfo>();
+		for (auto subformula : mNewConstraints){
+			res.push_back(ConstraintWithInfo(subformula.formula(), mConstrNumber, ));
+		}
+		mNewConstraints.clear();
+		return std::move(res);
 	}
 
 	/*** Nested Class FMPlexLvl Function Implementations ***/
@@ -69,4 +100,9 @@ namespace smtrat {
 		assert(!todoConstraints.empty());
 		// TODO implement: choose variable and direction, then set according class attributes.
 	}
+	template<typename Settings>
+	void FMPlexModule<Settings>::FmplexLvl::addNonUsed(std::list<ConstraintWithInfo> additionalConstr) {
+		notUsed.splice(notUsed.end(), additionalConstr);
+	}
+
 	}

@@ -35,51 +35,78 @@ namespace smtrat {
 			struct ConstraintWithInfo{
 				FormulaWithOrigins formula;
 				typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator conflictLevel;
-				std::vector<double> derivationCoefficients;
+				std::map<std::shared_ptr<FormulaWithOrigins>, double> derivationCoefficients;
+
+				// TODO define combination operator / function
+
+
+				ConstraintWithInfo(FormulaWithOrigins f, std::list<std::shared_ptr<FormulaWithOrigins>>* ogConstraints){
+					formula = f;
+					conflictLevel =
+					derivationCoefficients = std::map<std::shared_ptr<FormulaWithOrigins>, double>();
+					for (std::shared_ptr<FormulaWithOrigins> it : *ogConstraints){
+						if (it.get()->formula() == f) {
+							derivationCoefficients[it] = 1;
+						} else {
+							derivationCoefficients[it] = 0;
+						}
+					}
+				}
 			};
 
 			class FmplexLvl{
-				// Not (yet) used / relevant constraints on the lvl
-				std::list<ConstraintWithInfo> notUsed;
+				public:
+					// Constructor to create new lvl
+					explicit FmplexLvl(std::list<ConstraintWithInfo> notUsed);
 
-				// The variable to be eliminated
-				boost::optional<carl::Variable> varToEliminate;
+					// Function to call variable + direction choice function based on Settings
+					void chooseVarAndDirection();
 
-				// True if we eliminate with an assumed GLB, false if we eliminate with an assumed SUB
-				bool eliminateViaLB;
+					// Function to call constraint choice function based on Settings
+					void chooseNextConstraint();
 
-				// Constraints not yet tried as assumed GLB/SUB
-				std::list<ConstraintWithInfo> todoConstraints;
+					// Adds a list of constraints to the notUsed list
+					void addNonUsed(std::list<ConstraintWithInfo> additionalConstr);
 
-				// Constraints already tried (+ who failed) as assumed GLB/SUB
-				std::list<ConstraintWithInfo> doneConstraints;
+					// Checks for trivially true and trivially false constraints
+					std::pair<bool, bool> trueFalseCheck();
 
-				// Constraint currently assumed as GLB/SUB
-				boost::optional<ConstraintWithInfo> currentEliminator;
+				private:
+					// Not (yet) used / relevant constraints on the lvl
+					std::list<ConstraintWithInfo> notUsed;
 
-				// Constraints with the opposite kind of bound as the one we use to eliminate
-				std::list<ConstraintWithInfo> oppositeDirectionConstraints;
+					// The variable to be eliminated
+					boost::optional<carl::Variable> varToEliminate;
 
-				// Constructor to create new lvl
-				FmplexLvl(std::list<ConstraintWithInfo> notUsed);
+					// True if we eliminate with an assumed GLB, false if we eliminate with an assumed SUB
+					bool eliminateViaLB;
 
-				// Function to call variable + direction choice function based on Settings
-				void chooseVarAndDirection();
+					// Constraints not yet tried as assumed GLB/SUB
+					std::list<ConstraintWithInfo> todoConstraints;
 
-				// Basic heuristic for variable + direction
-				void baseHeuristicVarDir();
+					// Constraints already tried (+ who failed) as assumed GLB/SUB
+					std::list<ConstraintWithInfo> doneConstraints;
 
-				// Function to call constraint choice function based on Settings
-				void chooseNextConstraint();
+					// Constraint currently assumed as GLB/SUB
+					boost::optional<ConstraintWithInfo> currentEliminator;
 
-				// Basic heuristic for next constraint
-				void baseHeuristicNextConstraint();
+					// Constraints with the opposite kind of bound as the one we use to eliminate
+					std::list<ConstraintWithInfo> oppositeDirectionConstraints;
+
+					// Basic heuristic for variable + direction
+					void baseHeuristicVarDir();
+
+					// Basic heuristic for next constraint
+					void baseHeuristicNextConstraint();
 
 			};
 
 			/*** Member Variables ***/
 			// Contains constraints newly added since last checkCore()
-			ModuleInput* mNewConstraints;
+			std::list<std::shared_ptr<FormulaWithOrigins>> mNewConstraints;
+
+			// Bc I cant access mpReceived bc it is a private member in the superclass
+			std::list<std::shared_ptr<FormulaWithOrigins>> mAllConstraints;
 
 			// Total possible number of constraints
 			uint_fast64_t mVarNumber;
@@ -88,7 +115,7 @@ namespace smtrat {
 			uint_fast64_t mConstrNumber;
 
 			// Main structure for algorithm, represents the current branch of the decision tree
-			std::vector<FmplexLvl> mFMPlexBranch;
+			std::list<FmplexLvl> mFMPlexBranch;
 
 			/*** Member Functions ***/
 
@@ -102,7 +129,13 @@ namespace smtrat {
 			 */
 			std::list<ConstraintWithInfo> fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, std::list<ConstraintWithInfo>* sameBounds, std::list<ConstraintWithInfo>* oppositeBounds);
 
+			/*!
+			 *
+			 * @param lvl
+			 */
 			void resetBelow(typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator lvl);
+
+			std::list<ConstraintWithInfo> convertNewFormulas();
 
 	};
 
