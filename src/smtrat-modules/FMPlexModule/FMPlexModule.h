@@ -9,12 +9,22 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
+
+#include <utility>
 #include "FMPlexSettings.h"
 
 namespace smtrat {
 	template<typename Settings>
 	class FMPlexModule : public Module {
 		public:
+			/*!
+			 * Constructor.
+			 * @param _formula
+			 * @param _foundAnswer
+			 * @param _varNumber
+			 * @param _constrNumber
+			 * @param _manager
+			 */
 			FMPlexModule(const ModuleInput* _formula, Conditionals& _foundAnswer, uint_fast64_t _varNumber, uint_fast64_t _constrNumber, Manager* _manager = nullptr);
 
 			~FMPlexModule() override = default;
@@ -33,25 +43,26 @@ namespace smtrat {
 			class FmplexLvl; // Pre-Declaration for use in ConstraintWithInfo
 
 			struct ConstraintWithInfo{
-				FormulaWithOrigins formula;
+				FormulaT formula;
 				typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator conflictLevel;
-				std::map<std::shared_ptr<FormulaWithOrigins>, double> derivationCoefficients;
+				// TODO QUESTION What type should the derivation coefficients have? Adjust in constructors etc when decided
+				std::map<std::shared_ptr<FormulaWithOrigins>, carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>> derivationCoefficients;
 
-				// TODO define combination operator / function
-
-
-				ConstraintWithInfo(FormulaWithOrigins f, std::list<std::shared_ptr<FormulaWithOrigins>>* ogConstraints){
-					formula = f;
-					conflictLevel =
-					derivationCoefficients = std::map<std::shared_ptr<FormulaWithOrigins>, double>();
-					for (std::shared_ptr<FormulaWithOrigins> it : *ogConstraints){
-						if (it.get()->formula() == f) {
-							derivationCoefficients[it] = 1;
-						} else {
-							derivationCoefficients[it] = 0;
-						}
-					}
+				// Constructor for adding new constraints
+				ConstraintWithInfo(const std::shared_ptr<FormulaWithOrigins>& f, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator cl){
+					formula = f->formula();
+					conflictLevel = cl;
+					derivationCoefficients = std::map<std::shared_ptr<FormulaWithOrigins>, carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>>();
+					derivationCoefficients[f] = carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>(1); // TODO QUESTION does this constant initialization work?
 				}
+
+				// Constructor for combinations
+				ConstraintWithInfo(FormulaT f, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator cl){
+					formula = std::move(f);
+					conflictLevel = cl;
+					derivationCoefficients = std::map<std::shared_ptr<FormulaWithOrigins>, carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>>();
+				}
+
 			};
 
 			class FmplexLvl{
@@ -68,8 +79,24 @@ namespace smtrat {
 					// Adds a list of constraints to the notUsed list
 					void addNonUsed(std::list<ConstraintWithInfo> additionalConstr);
 
-					// Checks for trivially true and trivially false constraints
-					std::pair<bool, bool> trueFalseCheck();
+					/*!
+					 * Checks for trivially true and trivially false constraints,
+					 * also removes the trivially true ones while at it so we don't
+					 * drag them along all the time.
+					 * @return First component true iff NotUsed only contained trivially true constraints,
+					 * second one contains iterators pointing to all trivially false constraints.
+					 */
+					std::pair<bool, std::set<typename std::list<FMPlexModule<Settings>::ConstraintWithInfo>::iterator>> trueFalseCheck();
+
+					/*!
+					 *
+					 * @param conflictConstraints A set of iterators pointing to constraints with conflicts
+					 * @param branch The FMPlex Branch we are working on
+					 * @return An iterator on the given branch that points to the furthest backtrack level.
+					 */
+					typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator analyzeConflict(std::set<typename std::list<FMPlexModule<Settings>::ConstraintWithInfo>::iterator> conflictConstraints, std::list<FmplexLvl> branch);
+
+					void sortNonUsedIntoSameAndOpposite(std::list<ConstraintWithInfo>& sameBounds, std::list<ConstraintWithInfo>& oppositeBounds);
 
 				private:
 					// Not (yet) used / relevant constraints on the lvl
@@ -127,7 +154,7 @@ namespace smtrat {
 			 * @param oppositeBounds The constraints that are the opposite type of bound as the eliminator
 			 * @return List of constraints resulting from this elimination
 			 */
-			std::list<ConstraintWithInfo> fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, std::list<ConstraintWithInfo>* sameBounds, std::list<ConstraintWithInfo>* oppositeBounds);
+			std::list<ConstraintWithInfo> fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, std::list<ConstraintWithInfo> sameBounds, std::list<ConstraintWithInfo> oppositeBounds, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator currentLvl);
 
 			/*!
 			 *
@@ -137,6 +164,8 @@ namespace smtrat {
 
 			std::list<ConstraintWithInfo> convertNewFormulas();
 
+			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator currentLvl);
+
 	};
 
-}
+	}
