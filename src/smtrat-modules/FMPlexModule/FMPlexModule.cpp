@@ -82,6 +82,11 @@ namespace smtrat {
 			auto sameBoundsToCombine = std::list<ConstraintWithInfo>();
 			auto oppositeBoundsToCombine = std::list<ConstraintWithInfo>();
 			currentIterator.sortNonUsedIntoSameAndOpposite(&sameBoundsToCombine, &oppositeBoundsToCombine);
+			if(backtracked){
+				// TODO Continue Here
+			} else {
+				// TODO Continue Here
+			}
 
 		}
 
