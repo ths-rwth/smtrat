@@ -24,6 +24,8 @@ private:
 	std::string mVariableOrderingType = "";
 	std::string mCoveringHeuristicType = "";
 	std::string mOperatorType = "";
+	std::string mSamplingAlgorithm = "";
+	std::string mIsSampleOutsideAlgorithm = "";
 	carl::statistics::timer mTimerComputeCovering;
 	carl::statistics::timer mTimerConstructDerivation;
 
@@ -39,6 +41,8 @@ public:
 		Statistics::addKeyValuePair("variable_ordering_type", mVariableOrderingType);
 		Statistics::addKeyValuePair("covering_heuristic_type", mCoveringHeuristicType);
 		Statistics::addKeyValuePair("operator_type", mOperatorType);
+		Statistics::addKeyValuePair("sampling_algorithm", mSamplingAlgorithm);
+		Statistics::addKeyValuePair("is_sample_outside_algorithm", mIsSampleOutsideAlgorithm);
 	}
 	void called() {
 		mTotalCalls++;
@@ -76,6 +80,14 @@ public:
 
 	void setOperatorType(std::string operatorType) {
 		mOperatorType = operatorType;
+	}
+
+	void setSamplingAlgorithm(std::string samplingAlgorithm) {
+		mSamplingAlgorithm = samplingAlgorithm;
+	}
+
+	void setIsSampleOutsideAlgorithm(std::string isSampleOutsideAlgorithm) {
+		mIsSampleOutsideAlgorithm = isSampleOutsideAlgorithm;
 	}
 
 };

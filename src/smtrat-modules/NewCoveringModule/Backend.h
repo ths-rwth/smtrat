@@ -238,8 +238,8 @@ public:
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
 				// Insert into the derivation to constraint map
 				mDerivationToConstraint.insert(std::make_pair(interval, std::vector<ConstraintT>{constraint}));
+				mCoveringInformation[level].addDerivation(std::move(interval));
 			}
-			mCoveringInformation[level].addDerivations(std::move(intervals));
 		}
 
 		// Set the unknown constraints to be known, as all new derivations have been calculated
@@ -285,8 +285,6 @@ public:
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Covering failed -> Abort");
 			return Answer::UNKNOWN;
 		}
-
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Got covering " << mCoveringInformation[level].getCovering());
 
 		while (mCoveringInformation[level].isPartialCovering()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Sample outside " << mCoveringInformation[level].getSampleOutside());
@@ -347,5 +345,7 @@ public:
 
 		return Answer::UNSAT;
 	}
+
+		
 };
 } // namespace smtrat

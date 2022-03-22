@@ -17,6 +17,8 @@ NewCoveringModule<Settings>::NewCoveringModule(const ModuleInput* _formula, Cond
 	SMTRAT_STATISTICS_CALL(getStatistics().setVariableOrderingType(mcsat::get_name(Settings::variableOrderingStrategy)));
 	SMTRAT_STATISTICS_CALL(getStatistics().setCoveringHeuristicType(cadcells::representation::get_name(Settings::covering_heuristic)));
 	SMTRAT_STATISTICS_CALL(getStatistics().setOperatorType(cadcells::operators::get_name(Settings::op)));
+	SMTRAT_STATISTICS_CALL(getStatistics().setSamplingAlgorithm(get_name(Settings::sampling_algorithm)));
+	SMTRAT_STATISTICS_CALL(getStatistics().setIsSampleOutsideAlgorithm(get_name(Settings::is_sample_outside_algorithm)));
 }
 
 template<class Settings>
@@ -179,7 +181,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
 		SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
 
 		// We can clear mAllConstraints now, as we don't need it anymore -> Its only needed to calculate the variable ordering
-		//mAllConstraints.clear();
+		mAllConstraints.clear();
 
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Got Variable Ordering : " << mVariableOrdering);
 

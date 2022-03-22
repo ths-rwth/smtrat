@@ -27,6 +27,7 @@
 #include "LevelWiseInformation.h"
 
 #include "NewCoveringStatistics.h"
+#include "Sampling.h"
 
 namespace smtrat {
 

@@ -5,6 +5,7 @@
  */
 #pragma once
 
+#include "Helper.h"
 #include "NewCoveringModule.h"
 #include "NewCoveringSettings.h"
 #include "NewCoveringStatistics.h"
@@ -38,15 +39,17 @@ enum CoveringStatus {
 template<class Settings>
 class LevelWiseInformation {
 
-
-//get the covering heuristic from the settings 
-static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = Settings::covering_heuristic;
-static constexpr cadcells::operators::op op = Settings::op;
-using PropSet = typename operators::PropertiesSet<Settings::op>::type;
+	// get the covering heuristic from the settings
+	static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = Settings::covering_heuristic;
+	static constexpr cadcells::operators::op op = Settings::op;
+	static constexpr SamplingAlgorithm sampling_algorithm = Settings::sampling_algorithm;
+	static constexpr IsSampleOutsideAlgorithm is_sample_outside_algorithm = Settings::is_sample_outside_algorithm;
+	using PropSet = typename operators::PropertiesSet<Settings::op>::type;
 
 private:
 	// All Information that has been gathered for this level
-	std::vector<datastructures::SampledDerivationRef<PropSet>> mDerivations;
+	// Implicitly uses the defined operator< (std::less)
+	std::set<datastructures::SampledDerivationRef<PropSet>, SampledDerivationRefCompare> mDerivations;
 
 	// Do the current set of derivations covering the whole numberline?
 	CoveringStatus mCoveringStatus;
@@ -71,22 +74,16 @@ public:
 
 	// Add a new derivation
 	void addDerivation(const datastructures::SampledDerivationRef<PropSet>& derivation) {
-		mDerivations.push_back(derivation);
+		mDerivations.insert(derivation);
 	}
 
 	// move in a new derivation
 	void addDerivation(datastructures::SampledDerivationRef<PropSet>&& derivation) {
-		mDerivations.push_back(std::move(derivation));
+		mDerivations.insert(std::move(derivation));
 	}
 
-	// Add a vector of new derivations
-	void addDerivations(const std::vector<datastructures::SampledDerivationRef<PropSet>>& derivations) {
-		mDerivations.insert(mDerivations.end(), derivations.begin(), derivations.end());
-	}
-
-	// Move a vector of new derivations
-	void addDerivations(std::vector<datastructures::SampledDerivationRef<PropSet>>&& derivations) {
-		mDerivations.insert(mDerivations.end(), std::make_move_iterator(derivations.begin()), std::make_move_iterator(derivations.end()));
+	const std::set<datastructures::SampledDerivationRef<PropSet>, SampledDerivationRefCompare>& getDerivations() const {
+		return mDerivations;
 	}
 
 	// clear all derivations and the computed covering and set the full covering flag
@@ -97,10 +94,10 @@ public:
 	}
 
 	/*
-	* @brief Compute the covering based on the current derivations
-	* Also set the covering flag accordingly and the find a sample point if the covering is not a full covering
-	* @returns True, iff the result invalidates the covering of all higher levels (i.e. if the variable assignment of the current level changes)
-	*/
+	 * @brief Compute the covering based on the current derivations
+	 * Also set the covering flag accordingly and the find a sample point if the covering is not a full covering
+	 * @returns True, iff the result invalidates the covering of all higher levels (i.e. if the variable assignment of the current level changes)
+	 */
 	bool computeCovering() {
 
 		auto startTime = SMTRAT_TIME_START();
@@ -111,37 +108,43 @@ public:
 			return false;
 		}
 		// We assume that there are new derivations
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
-		SMTRAT_LOG_DEBUG("smtrat.covering", "With derivations: " << mDerivations);
-		mCovering = representation::covering<covering_heuristic>::compute(mDerivations);
-		if (!mCovering.has_value()) {
-			SMTRAT_LOG_DEBUG("smtrat.covering", "McCallum failed");
-			mCoveringStatus = CoveringStatus::failed;
+
+		// If we had a partial covering before, we need to check if the sample point is still outside of the cells
+		// If that is the case, we can keep all information is the higher levels
+		if (isPartialCovering()) {
+			// Checking if the old sample point is still valid, i.e. outside if the all derivations
+			if (is_sample_outside<is_sample_outside_algorithm>::is_outside(mSamplePoint, mDerivations)) {
+				// The old sample Point is still valid, we are done
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Sample " << mSamplePoint << " is still outside of the cells");
+				mCoveringStatus = CoveringStatus::partial;
+				SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
+				return false;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Sample " << mSamplePoint << " not outside of the cells anymore");
+		}
+
+		//based on the underlying set the vector is already sorted, now remove redundancies of the first kind
+	
+
+		// Check if the derivations cover the whole numberline
+		//  we can convert the return value of sample_outside to CoveringStatus as 0 == partial covering and 1 == full covering
+		mCoveringStatus = CoveringStatus(sampling<sampling_algorithm>::sample_outside(mSamplePoint, mDerivations));
+
+		if (isPartialCovering()) {
 			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
 			return true;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
-		// we can convert the return value of sample_outside to CoveringStatus as 0 == partial covering and 1 == full covering
-		// Note: if covering is partial, mSamplePoint will be set to a RAN outside of the covering
-		// We only have to recompute the sample point if the covering before was not partial
-
-		//check if the old sample point is still outside of the new covering, if we can keep the same sample point we can also keep the stored information about the higher levels 
-		if(mCovering.value().isSampleOutside(mSamplePoint)){
-			//if yes, we are done 
-			SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample point is still outside of the covering");
-			mCoveringStatus = CoveringStatus::partial;
+		// The cells cover the numberline -> Compute the covering representation
+		std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end());
+		mCovering = representation::covering<covering_heuristic>::compute(derivationsVector);
+		if (!mCovering.has_value()) {
+			SMTRAT_LOG_DEBUG("smtrat.covering", "Covering with " << representation::get_name(covering_heuristic) << " failed");
+			mCoveringStatus = CoveringStatus::failed;
 			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
-			return false;
+			return true ;
 		}
-
-		SMTRAT_LOG_DEBUG("smtrat.covering", "Old Sample is not outside of the covering anymore, trying to find a new one");
-		mCoveringStatus = CoveringStatus(mCovering.value().sample_outside(mSamplePoint));
-		SMTRAT_LOG_DEBUG("smtrat.covering", "CoveringStatus: " << mCoveringStatus);
-		if(isPartialCovering()){
-			SMTRAT_LOG_DEBUG("smtrat.covering", "New Sample point: " << mSamplePoint);
-		}
+		SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
 		SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
-
 		return true ;
 	}
 
@@ -172,13 +175,6 @@ public:
 		return mCoveringStatus;
 	}
 
-	// Get the current covering
-	// Asserts that the covering actually has been computed and is not unknown or failed
-	const datastructures::CoveringRepresentation<PropSet>& getCovering() const {
-		assert(mCovering.has_value() && mCoveringStatus != CoveringStatus::unknown && mCoveringStatus != CoveringStatus::failed);
-		return mCovering.value();
-	}
-
 	// override the =operator to move the current covering
 	LevelWiseInformation& operator=(LevelWiseInformation&& other) {
 		mCovering = std::move(other.mCovering);
@@ -199,8 +195,8 @@ public:
 
 	// Remove a single derivations
 	/*
-	* @brief Remove a single derivation from the current set of derivations, if a covering was computed before, and the derivation was used, the covering is invalidated
-	*/
+	 * @brief Remove a single derivation from the current set of derivations, if a covering was computed before, and the derivation was used, the covering is invalidated
+	 */
 	void removeDerivation(const datastructures::SampledDerivationRef<PropSet>& derivation) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Removing derivation: " << derivation);
 		assert(std::find(mDerivations.begin(), mDerivations.end(), derivation) != mDerivations.end());
@@ -217,7 +213,7 @@ public:
 		}
 
 		// Now remove the derivation from the list
-		mDerivations.erase(std::remove(mDerivations.begin(), mDerivations.end(), derivation), mDerivations.end());
+		mDerivations.erase(derivation);
 	}
 
 	// Remove a vector of derivations -> Just call removeDerivation for each derivation in the vector
@@ -228,8 +224,8 @@ public:
 	}
 
 	/*
-	* @brief Remove all derivations that were created using the given constraint, if a covering was computed before, and the derivation was used, the covering is invalidated
-	*/
+	 * @brief Remove all derivations that were created using the given constraint, if a covering was computed before, and the derivation was used, the covering is invalidated
+	 */
 	void removeConstraint(const ConstraintT& constraint, const std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& derivationConstraints) {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Removing constraint: " << constraint);
 		if (mCovering.has_value()) {
@@ -245,25 +241,28 @@ public:
 		}
 
 		// remove all derivations that use the constraint
-		mDerivations.erase(std::remove_if(mDerivations.begin(), mDerivations.end(), [&](const datastructures::SampledDerivationRef<PropSet>& deriv) {
-							   return std::find(derivationConstraints.at(deriv).begin(), derivationConstraints.at(deriv).end(), constraint) != derivationConstraints.at(deriv).end();
-						   }),
-						   mDerivations.end());
-
+		// TODO: When we switch to C++20, we can use erase_if here
+		for (auto it = mDerivations.begin(); it != mDerivations.end();) {
+			if (std::find(derivationConstraints.at(*it).begin(), derivationConstraints.at(*it).end(), constraint) != derivationConstraints.at(*it).end()) {
+				it = mDerivations.erase(it);
+			} else {
+				++it;
+			}
+		}
 		// TODO: for memory reasons we could also remove the derivation from the derivationConstraints map -> is this worth it?
 	}
 
 	/*
-	* @brief Get the constraints used in the current covering
-	* @return A vector of constraints
-	* @param derivationConstraints A map of derivations to constraints which created it
-	* This can only be used for infeasible subset -> so assert that the covering is full and use the last full covering
-	*/
+	 * @brief Get the constraints used in the current covering
+	 * @return A vector of constraints
+	 * @param derivationConstraints A map of derivations to constraints which created it
+	 * This can only be used for infeasible subset -> so assert that the covering is full and use the last full covering
+	 */
 	std::vector<ConstraintT> getConstraintsOfCovering(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& mDerivationToConstraint) {
 		assert(isFullCovering() && mCovering.has_value());
 
 		std::vector<ConstraintT> constraints;
-
+		assert(mCovering.has_value());
 		for (const auto& derivation : mCovering.value().sampled_derivation_refs()) {
 			assert(mDerivationToConstraint.find(derivation) != mDerivationToConstraint.end());
 			std::vector<ConstraintT> new_constraints = mDerivationToConstraint[derivation];
@@ -279,13 +278,13 @@ public:
 	// Construct a new derivation based on the current covering
 	//  Asserts that the covering is full
 	/*
-	* @brief Construct a new derivation based on the current covering
-	* @return SampledDerivationRef: Information for the lower dimension, derived from the current covering
-	* @param derivationConstraints A map of derivations to constraints which created it
-	* @note: This represents Section 4.6 in the paper https://arxiv.org/pdf/2003.05633.pdf
-	*/
+	 * @brief Construct a new derivation based on the current covering
+	 * @return SampledDerivationRef: Information for the lower dimension, derived from the current covering
+	 * @param derivationConstraints A map of derivations to constraints which created it
+	 * @note: This represents Section 4.6 in the paper https://arxiv.org/pdf/2003.05633.pdf
+	 */
 	std::optional<datastructures::SampledDerivationRef<PropSet>> constructDerivation(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& mDerivationToConstraint) {
- 		auto startTime = SMTRAT_TIME_START();
+		auto startTime = SMTRAT_TIME_START();
 
 		assert(mCovering.has_value());
 		assert(isFullCovering());
@@ -311,7 +310,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());
 
 		// The origin of the new derivation are all constraints used in the last full covering
-		
+
 		mDerivationToConstraint.insert(std::make_pair(new_deriv, usedConstraints));
 		SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
 
@@ -349,7 +348,7 @@ inline std::ostream& operator<<(std::ostream& os, const LevelWiseInformation<Set
 		os << "SamplePoint: " << levelWiseInformation.getSampleOutside() << std::endl;
 	}
 	if (levelWiseInformation.isFullCovering() || levelWiseInformation.isPartialCovering()) {
-		os << "Covering: " << levelWiseInformation.getCovering() << std::endl;
+		os << "Derivations: " << levelWiseInformation.getDerivations() << std::endl;
 	}
 	return os;
 }

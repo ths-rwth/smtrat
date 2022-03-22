@@ -10,6 +10,7 @@
 
 #include <smtrat-cadcells/operators/operator.h>
 #include <smtrat-cadcells/representation/heuristics.h>
+#include "Sampling.h"
 
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
@@ -22,5 +23,7 @@ namespace smtrat
 		static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::GreedyMaxUnivariate;
 		static constexpr smtrat::cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::DEFAULT_COVERING;
 		static constexpr smtrat::cadcells::operators::op op = cadcells::operators::op::mccallum;
+		static constexpr smtrat::SamplingAlgorithm sampling_algorithm = smtrat::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
+		static constexpr smtrat::IsSampleOutsideAlgorithm is_sample_outside_algorithm = smtrat::IsSampleOutsideAlgorithm::DEFAULT;
 	};
 }
