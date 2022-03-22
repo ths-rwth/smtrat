@@ -9,13 +9,22 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-
 #include <utility>
+#include <carl/core/SimpleConstraint.h>
 #include "FMPlexSettings.h"
 
 namespace smtrat {
 	template<typename Settings>
 	class FMPlexModule : public Module {
+		// Pre-Declaration
+		struct ConstraintWithInfo;
+		class FmplexLvl;
+		// Typedefs
+		typedef carl::SimpleConstraint<Poly> SimpleConstraint;
+		typedef std::list<ConstraintWithInfo> ConstraintList;
+		typedef std::list<FmplexLvl> FMPlexBranch;
+		typedef typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator BranchIterator;
+		
 		public:
 			/*!
 			 * Constructor.
@@ -25,7 +34,7 @@ namespace smtrat {
 			 * @param _constrNumber
 			 * @param _manager
 			 */
-			FMPlexModule(const ModuleInput* _formula, Conditionals& _foundAnswer, uint_fast64_t _varNumber, uint_fast64_t _constrNumber, Manager* _manager = nullptr);
+			FMPlexModule(const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = nullptr);
 
 			~FMPlexModule() override = default;
 
@@ -40,27 +49,25 @@ namespace smtrat {
 		private:
 
 			/*** Nested Classes and Structs ***/
-			class FmplexLvl; // Pre-Declaration for use in ConstraintWithInfo
-
+			
 			struct ConstraintWithInfo{
-				FormulaT formula;
-				typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator conflictLevel;
-				// TODO QUESTION What type should the derivation coefficients have? Adjust in constructors etc when decided
-				std::map<std::shared_ptr<FormulaWithOrigins>, carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>> derivationCoefficients;
+				SimpleConstraint constraint;
+				BranchIterator conflictLevel;
+				std::map<std::shared_ptr<SimpleConstraint>, Rational> derivationCoefficients;
 
 				// Constructor for adding new constraints
-				ConstraintWithInfo(const std::shared_ptr<FormulaWithOrigins>& f, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator cl){
-					formula = f->formula();
+				ConstraintWithInfo(const std::shared_ptr<SimpleConstraint>& f, BranchIterator cl){
+					constraint = *f;
 					conflictLevel = cl;
-					derivationCoefficients = std::map<std::shared_ptr<FormulaWithOrigins>, carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>>();
-					derivationCoefficients[f] = carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>(1); // TODO QUESTION does this constant initialization work?
+					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
+					derivationCoefficients[f] = Rational (1);
 				}
 
 				// Constructor for combinations
-				ConstraintWithInfo(FormulaT f, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator cl){
-					formula = std::move(f);
+				ConstraintWithInfo(SimpleConstraint f, BranchIterator cl){
+					constraint = std::move(f);
 					conflictLevel = cl;
-					derivationCoefficients = std::map<std::shared_ptr<FormulaWithOrigins>, carl::MultivariatePolynomial<__gmp_expr<mpz_t, mpz_t>>>();
+					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
 				}
 
 			};
@@ -68,7 +75,7 @@ namespace smtrat {
 			class FmplexLvl{
 				public:
 					// Constructor to create new lvl
-					explicit FmplexLvl(std::list<ConstraintWithInfo> notUsed);
+					explicit FmplexLvl(ConstraintList notUsed);
 
 					// Function to call variable + direction choice function based on Settings
 					void chooseVarAndDirection();
@@ -77,7 +84,7 @@ namespace smtrat {
 					void chooseNextConstraint();
 
 					// Adds a list of constraints to the notUsed list
-					void addNonUsed(std::list<ConstraintWithInfo> additionalConstr);
+					void addNonUsed(ConstraintList additionalConstr);
 
 					/*!
 					 * Checks for trivially true and trivially false constraints,
@@ -86,7 +93,7 @@ namespace smtrat {
 					 * @return First component true iff NotUsed only contained trivially true constraints,
 					 * second one contains iterators pointing to all trivially false constraints.
 					 */
-					std::pair<bool, std::set<typename std::list<FMPlexModule<Settings>::ConstraintWithInfo>::iterator>> trueFalseCheck();
+					std::pair<bool, std::set<typename ConstraintList::iterator>> trueFalseCheck();
 
 					/*!
 					 *
@@ -94,13 +101,12 @@ namespace smtrat {
 					 * @param branch The FMPlex Branch we are working on
 					 * @return An iterator on the given branch that points to the furthest backtrack level.
 					 */
-					typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator analyzeConflict(std::set<typename std::list<FMPlexModule<Settings>::ConstraintWithInfo>::iterator> conflictConstraints, std::list<FmplexLvl> branch);
+					BranchIterator analyzeConflict(std::set<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch branch);
 
-					void sortNonUsedIntoSameAndOpposite(std::list<ConstraintWithInfo>& sameBounds, std::list<ConstraintWithInfo>& oppositeBounds);
+					void sortNonUsedIntoSameAndOpposite(ConstraintList& sameBounds, ConstraintList& oppositeBounds);
 
-				private:
 					// Not (yet) used / relevant constraints on the lvl
-					std::list<ConstraintWithInfo> notUsed;
+					ConstraintList notUsed;
 
 					// The variable to be eliminated
 					boost::optional<carl::Variable> varToEliminate;
@@ -109,16 +115,16 @@ namespace smtrat {
 					bool eliminateViaLB;
 
 					// Constraints not yet tried as assumed GLB/SUB
-					std::list<ConstraintWithInfo> todoConstraints;
+					ConstraintList todoConstraints;
 
 					// Constraints already tried (+ who failed) as assumed GLB/SUB
-					std::list<ConstraintWithInfo> doneConstraints;
+					ConstraintList doneConstraints;
 
 					// Constraint currently assumed as GLB/SUB
 					boost::optional<ConstraintWithInfo> currentEliminator;
 
 					// Constraints with the opposite kind of bound as the one we use to eliminate
-					std::list<ConstraintWithInfo> oppositeDirectionConstraints;
+					ConstraintList oppositeDirectionConstraints;
 
 					// Basic heuristic for variable + direction
 					void baseHeuristicVarDir();
@@ -130,19 +136,13 @@ namespace smtrat {
 
 			/*** Member Variables ***/
 			// Contains constraints newly added since last checkCore()
-			std::list<std::shared_ptr<FormulaWithOrigins>> mNewConstraints;
+			std::list<std::shared_ptr<SimpleConstraint>> mNewConstraints;
 
 			// Bc I cant access mpReceived bc it is a private member in the superclass
-			std::list<std::shared_ptr<FormulaWithOrigins>> mAllConstraints;
-
-			// Total possible number of constraints
-			uint_fast64_t mVarNumber;
-
-			// Total possible number of constraints
-			uint_fast64_t mConstrNumber;
+			std::list<std::shared_ptr<SimpleConstraint>> mAllConstraints;
 
 			// Main structure for algorithm, represents the current branch of the decision tree
-			std::list<FmplexLvl> mFMPlexBranch;
+			FMPlexBranch mFMPlexBranch;
 
 			/*** Member Functions ***/
 
@@ -154,17 +154,17 @@ namespace smtrat {
 			 * @param oppositeBounds The constraints that are the opposite type of bound as the eliminator
 			 * @return List of constraints resulting from this elimination
 			 */
-			std::list<ConstraintWithInfo> fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, std::list<ConstraintWithInfo> sameBounds, std::list<ConstraintWithInfo> oppositeBounds, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator currentLvl);
+			ConstraintList fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, ConstraintList sameBounds, ConstraintList oppositeBounds, BranchIterator currentLvl);
 
 			/*!
 			 *
 			 * @param lvl
 			 */
-			void resetBelow(typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator lvl);
+			void resetBelow(BranchIterator lvl);
 
-			std::list<ConstraintWithInfo> convertNewFormulas();
+			ConstraintList convertNewFormulas();
 
-			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator currentLvl);
+			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, BranchIterator currentLvl);
 
 	};
 
