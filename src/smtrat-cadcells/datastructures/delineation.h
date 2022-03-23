@@ -3,6 +3,9 @@
 #include <map>
 #include <vector>
 #include <boost/container/flat_set.hpp>
+
+#include "roots.h"
+
 namespace smtrat::cadcells::datastructures {
 
 using RootMap = std::map<RAN, std::vector<IndexedRoot>>;
@@ -44,7 +47,7 @@ public:
         return m_upper == m_end;
     }
 };    
-std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
+inline std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
     if (data.is_section()) {
         os << "[" << *data.lower() << ", " << *data.upper() << "]";
     } else if (!data.lower_unbounded() && !data.upper_unbounded()) {
@@ -125,7 +128,7 @@ public:
                 }
             }
         }
-
+        
         return DelineationInterval(std::move(lower),std::move(upper),m_roots.end());
     }
 
@@ -148,31 +151,32 @@ public:
         m_polys_nullified.insert(poly);
     }
 };
-std::ostream& operator<<(std::ostream& os, const Delineation& data) {
+inline std::ostream& operator<<(std::ostream& os, const Delineation& data) {
     os << "(roots: " << data.roots() << "; nonzero: " << data.nonzero() << "; nullified: "  << data.nullified() << ")";
     return os;
 }
 
-bool lower_less(const DelineationInterval& del1, const DelineationInterval& del2) {
+inline bool lower_less(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();
     else if (del2.lower_unbounded()) return false;
     else if (del1.lower()->first == del2.lower()->first) return del1.is_section() && del2.is_sector();
     else return del1.lower()->first < del2.lower()->first;
 }
 
-bool lower_equal(const DelineationInterval& del1, const DelineationInterval& del2) {
+inline bool lower_equal(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
     else if (del1.lower_unbounded() != del2.lower_unbounded()) return false;
     else if (del1.lower()->first == del2.lower()->first) return del1.is_section() == del2.is_section();
     else return false;
 }
 
-bool upper_less(const DelineationInterval& del1, const DelineationInterval& del2) {
+inline bool upper_less(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.upper_unbounded()) return false;
     else if (del2.upper_unbounded()) return !del1.upper_unbounded();
     else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
     else return del1.upper()->first < del2.upper()->first;
 }
+
 
 
 } 

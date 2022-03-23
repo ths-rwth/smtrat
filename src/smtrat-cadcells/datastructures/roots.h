@@ -18,16 +18,16 @@ struct IndexedRoot {
     IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { assert(i>0); }
     IndexedRoot() : IndexedRoot( PolyRef{0,0}, 1) {}
 };
-bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
+inline bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
 }
-bool operator<(const IndexedRoot& lhs, const IndexedRoot& rhs) {
+inline bool operator<(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly < rhs.poly || (lhs.poly == rhs.poly &&  lhs.index < rhs.index);
 }
-bool operator!=(const IndexedRoot& lhs, const IndexedRoot& rhs) {
+inline bool operator!=(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return !(lhs == rhs);
 }
-std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
+inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     os << "root(" << data.poly << ", " << data.index << ")";
     return os;
 }
@@ -107,7 +107,7 @@ public:
         return result;
     }
 };
-std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
+inline std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
     if (data.is_section()) {
         os << "[" << data.section_defining() << ", " << data.section_defining() << "]";
     } else if (data.lower() && data.upper()) {
@@ -151,7 +151,7 @@ public:
         return m_data;
     }
 };
-std::ostream& operator<<(std::ostream& os, const CoveringDescription& data) {
+inline std::ostream& operator<<(std::ostream& os, const CoveringDescription& data) {
     os << data.cells();
     return os;
 }
@@ -217,7 +217,7 @@ public:
         return result;
     }
 };
-std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
+inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
     os << data.below() << " " << data.above();
     return os;
 }
@@ -242,7 +242,7 @@ public:
         return m_data;
     }
 };
-std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
+inline std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
     os << data.data();
     return os;
 }
