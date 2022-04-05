@@ -60,18 +60,22 @@ namespace smtrat {
 				std::map<std::shared_ptr<SimpleConstraint>, Rational> derivationCoefficients;
 
 				// Constructor for adding new constraints
-				ConstraintWithInfo(const std::shared_ptr<SimpleConstraint>& f, BranchIterator cl){
-					constraint = *f;
-					conflictLevel = cl;
+				ConstraintWithInfo(const std::shared_ptr<SimpleConstraint>& f, BranchIterator cl): constraint(*f), conflictLevel(cl){
 					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
 					derivationCoefficients[f] = Rational (1);
 				}
 
 				// Constructor for combinations
-				ConstraintWithInfo(SimpleConstraint f, BranchIterator cl){
-					constraint = std::move(f);
-					conflictLevel = cl;
+				ConstraintWithInfo(SimpleConstraint f, BranchIterator cl): constraint(f), conflictLevel(cl){
 					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
+				}
+
+				bool operator == (ConstraintWithInfo other) {
+					bool res = true;
+					// this should be sufficient, at least for what I want
+					res &= (this->constraint.lhs() == other.constraint.lhs());
+					res &= (this->constraint.rel() == other.constraint.rel());
+					return res;
 				}
 
 			};
@@ -97,7 +101,7 @@ namespace smtrat {
 					 * @return First component true iff NotUsed only contained trivially true constraints,
 					 * second one contains iterators pointing to all trivially false constraints.
 					 */
-					std::pair<bool, std::set<typename ConstraintList::iterator>> trueFalseCheck();
+					std::pair<bool, std::list<typename ConstraintList::iterator>> trueFalseCheck();
 
 					/*!
 					 *
@@ -105,7 +109,7 @@ namespace smtrat {
 					 * @param branch The FMPlex Branch we are working on
 					 * @return An iterator on the given branch that points to the furthest backtrack level.
 					 */
-					BranchIterator analyzeConflict(std::set<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch branch);
+					BranchIterator analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl);
 
 					void sortNonUsedIntoSameAndOpposite(ConstraintList& sameBounds, ConstraintList& oppositeBounds);
 
@@ -170,7 +174,7 @@ namespace smtrat {
 			 * @param oppositeBounds The constraints that are the opposite type of bound as the eliminator
 			 * @return List of constraints resulting from this elimination
 			 */
-			ConstraintList fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, ConstraintList sameBounds, ConstraintList oppositeBounds, BranchIterator currentLvl);
+			ConstraintList fmplexCombine(boost::optional<carl::Variable> var, boost::optional<ConstraintWithInfo> eliminator, ConstraintList sameBounds, ConstraintList oppositeBounds, BranchIterator currentLvl);
 
 			/*!
 			 *
@@ -181,6 +185,7 @@ namespace smtrat {
 			ConstraintList convertNewFormulas();
 
 			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, BranchIterator currentLvl);
+
 
 	};
 
