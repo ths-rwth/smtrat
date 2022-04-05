@@ -23,7 +23,7 @@ inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& p
     return *simplest_bound(proj, bounds, ignoring);
 }
 
-datastructures::CellDescription compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del) {
+inline datastructures::CellDescription compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del) {
     if (del.is_section()) {
         return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second));
     } else if (del.lower_unbounded() && del.upper_unbounded()) {
@@ -37,7 +37,7 @@ datastructures::CellDescription compute_simplest_cell(datastructures::Projection
     }
 }
 
-std::optional<datastructures::GeneralIndexedRootOrdering> simplest_delineation_ordering(datastructures::Projections& proj, datastructures::Delineation& delin) {
+inline std::optional<datastructures::GeneralIndexedRootOrdering> simplest_delineation_ordering(datastructures::Projections& proj, datastructures::Delineation& delin) {
     datastructures::GeneralIndexedRootOrdering ordering;
 
     if (!delin.nullified().empty()) return std::nullopt;
@@ -62,7 +62,7 @@ std::optional<datastructures::GeneralIndexedRootOrdering> simplest_delineation_o
 }
 
 /// Assumes that the general ordering matches already the cell description. 
-datastructures::IndexedRootOrdering cell_ordering_from_general(datastructures::GeneralIndexedRootOrdering& general, datastructures::CellDescription& cell) {
+inline datastructures::IndexedRootOrdering cell_ordering_from_general(datastructures::GeneralIndexedRootOrdering& general, datastructures::CellDescription& cell) {
     datastructures::IndexedRootOrdering ordering;
 
     std::cout << general << std::endl; 
