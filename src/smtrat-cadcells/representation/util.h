@@ -1,11 +1,11 @@
 namespace smtrat::cadcells::representation::util {
 
-bool compare_simplest(datastructures::Projections& proj, datastructures::PolyRef p1, datastructures::PolyRef p2) {
+inline bool compare_simplest(datastructures::Projections& proj, datastructures::PolyRef p1, datastructures::PolyRef p2) {
     return proj.degree(p1) < proj.degree(p2);
     //return proj.max_degree(p1) < proj.max_degree(p2);
 }
     
-std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring) {
+inline std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring) {
     assert(!bounds.empty());
     auto simplest = bounds.begin();
     for (auto iter = bounds.begin(); iter != bounds.end(); iter++) {
@@ -18,7 +18,7 @@ std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projec
     return *simplest;
 }
 
-datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds) {
+inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::IndexedRoot>& bounds) {
     boost::container::flat_set<datastructures::PolyRef> ignoring;
     return *simplest_bound(proj, bounds, ignoring);
 }
