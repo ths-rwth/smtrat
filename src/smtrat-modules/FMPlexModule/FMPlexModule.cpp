@@ -11,10 +11,12 @@
 namespace smtrat {
 
 template<class Settings>
-FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager) : Module(_formula, _foundAnswer, _manager){
+FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager) : Module(_formula, _conditionals, _manager){
 	mFMPlexBranch = FMPlexBranch();
 	mAllConstraints = std::list<std::shared_ptr<SimpleConstraint>>();
 	mAllConstraints = std::list<std::shared_ptr<SimpleConstraint>>();
+	mModelFit = false;
+	mModelFitUntilHere = mNewConstraints.end();
 }
 
 template<typename Settings>
@@ -49,10 +51,27 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 
 template<typename Settings>
 Answer FMPlexModule<Settings>::checkCore() {
-	// TODO Check if current model (if available) satisfies the new additional constraints
-
 	// Convert mNewConstraints to ConstraintsWithInfo
 	ConstraintList newConstr = convertNewFormulas();
+
+	// Check current model
+	if (!mModel.empty()) {
+		mModelFit = true;
+		for (auto c : newConstr) {
+			auto checkConstr = substitute(c.constraint().lhs, mModel);
+			if (!checkConstr.isTrivialTrue()) {
+				mModelFit = false;
+				break;
+			}
+		}
+		if (mModelFit) {
+			mModelFitUntilHere = mNewConstraints.end();
+			mModelFitUntilHere--;
+			return SAT; // TODO how to enable / disable incrementality here?
+		} else {
+			mNewConstraints.clear();
+		}
+	}
 
 	// Add to first lvl (create it if necessary)
 	if(mFMPlexBranch.empty()) {
@@ -70,6 +89,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 			currentIterator = currentIterator->analyzeConflict(statusCheckResult.second, mFMPlexBranch);
 			if (currentIterator == mFMPlexBranch.end()) {
 				// Global Conflict, we are done
+				mFMPlexBranch.clear();
 				return UNSAT;
 			} else {
 				// Local Conflict, we backtracked
@@ -104,20 +124,79 @@ Answer FMPlexModule<Settings>::checkCore() {
 		statusCheckResult = currentIterator.trueFalseCheck();
 	}
 
+	if(!Settings::incremental) {
+		mFMPlexBranch.clear();
+	}
 	return SAT;
 
 }
 
 template<typename Settings>
 void FMPlexModule<Settings>::updateModel() const {
-	// TODO Implement
-	
+	assert(!mFMPlexBranch.empty());
+	if (mModelFit) {
+		return;
+	} else {
+		mModel.clear();
+		// For now, we can ignore variables that are implicitly eliminated for which we at this point have no assigned value in the model yet
+		// because we will later simply set them to 0
+		for (auto itr = mFMPlexBranch.rbegin(); itr != mFMPlexBranch.rend(); itr++) {
+			carl::Variable var = itr->varToEliminate;
+			if (itr->currentEliminator.has_value()){
+				// Solve for varToEliminate.
+				auto lhs = substitute(itr->constraint().lhs, mModel);
+				Rational varValue = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate);
+				mModel.assign(var, varValue);
+			} else if (itr->eliminateViaLB) {
+				// We only have upper bounds and thus haven't actually chosen an eliminator.
+				// So now we need to find the sub
+				Rational sub;
+				bool set = false;
+				for (ConstraintWithInfo c : itr->oppositeDirectionConstraints) {
+					auto lhs = substitute(itr->constraint().lhs, mModel);
+					Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate);
+					if (!set || bound < sub) {
+						sub = bound;
+						set = true;
+					}
+				}
+				mModel.assign(var, sub);
+			} else {
+				// We only have lower bounds and thus haven't actually chosen an eliminator.
+				// So now we need to find the glb
+				Rational glb;
+				bool set = false;
+				for (ConstraintWithInfo c : itr->oppositeDirectionConstraints) {
+					auto lhs = substitute(itr->constraint().lhs, mModel);
+					Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate);
+					if (!set || bound > glb) {
+						glb = bound;
+						set = true;
+					}
+				}
+				mModel.assign(var, glb);
+			}
+		}
+		// Set all remaining vars to 0 (it is important that this is 0!)
+		auto vars = std::set<carl::Variable>();
+		for (std::shared_ptr<SimpleConstraint> constraint : mAllConstraints) {
+			carl::carlVariables newVars = carl::variables(constraint->lhs());
+			vars.template insert(newVars.begin(), newVars.end());
+		}
+		for (carl::Variable var : vars) {
+			if (!mModel.template contains(var)) mModel.template assign(var, Rational(0));
+		}
+	}
+
+
+
+
 }
 
 template<typename Settings>
 typename FMPlexModule<Settings>::ConstraintList FMPlexModule<Settings>::fmplexCombine(boost::optional<carl::Variable> var, ConstraintWithInfo eliminator, ConstraintList sameBounds, ConstraintList oppositeBounds, BranchIterator currentLvl) {
-	if (!var)  return typename FMPlexModule<Settings>::ConstraintList();
-	auto res = typename FMPlexModule<Settings>::ConstraintList();
+	if (!var)  return ConstraintList();
+	auto res = ConstraintList();
 	for (auto it : *sameBounds) {
 		res.push_back(combine(eliminator, *it, var.get(), true, currentLvl));
 	}
@@ -137,9 +216,9 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 	BranchIterator cl;
 	Rational factor = elimineePolynomial.lcoeff(var).constantPart() / eliminatorPolynomial.lcoeff(var).constantPart();
 	if (sameBound) {
-		factor = factor * (-1);
+		factor = factor * Rational(-1);
 		cl = currentLvl;
-	} else if (std::distance(eliminator.conflictLevel, currentLvl) <= std::distance(eliminee.conflictLevel, currentLvl)){
+	} else if (std::distance(eliminator.conflictLevel, currentLvl) <= std::distance(eliminee.conflictLevel, currentLvl)){ // TODO handle here that upon constraint creation, cl value is branch.end()
 		cl = eliminator.conflictLevel;
 	} else {
 		cl = eliminee.conflictLevel;
@@ -181,13 +260,13 @@ typename FMPlexModule<Settings>::ConstraintList FMPlexModule<Settings>::convertN
 	for (const auto& subformula : mNewConstraints){
 		res.push_back(ConstraintWithInfo(subformula, mFMPlexBranch.end()));
 	}
-	mNewConstraints.clear();
 	return std::move(res);
 }
 
 /*** Nested Class FMPlexLvl Function Implementations ***/
 template<typename Settings>
 FMPlexModule<Settings>::FmplexLvl::FmplexLvl(ConstraintList notUsed) : notUsed(notUsed){
+	eliminateViaLB = true;
 	chooseVarAndDirection();
 }
 
@@ -195,8 +274,8 @@ template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::chooseVarAndDirection() {
 	// Other heuristics may be added here (+ create option in settings)
 	switch (Settings::variableDirectionHeuristic) {
-		case "Basic":
-			baseHeuristicVarDir();
+		case "Simple":
+			simpleHeuristicVarDir();
 			break;
 		default:
 			baseHeuristicVarDir();
@@ -204,29 +283,89 @@ void FMPlexModule<Settings>::FmplexLvl::chooseVarAndDirection() {
 	}
 }
 
+
 template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::baseHeuristicVarDir() {
-	// TODO implement: choose variable and direction, then set according class attributes.
+	// Set varToEliminate to next best var we can find
+	carl::carlVariables occurringVars = carl::variables(notUsed.constraint.lhs());
+	varToEliminate = *occurringVars.begin();
+	eliminateViaLB = true;
+}
+
+template<typename Settings>
+void FMPlexModule<Settings>::FmplexLvl::simpleHeuristicVarDir() {
+	// first integer: number of upper bounds. second integer: number of lower bounds.
+	auto varBoundCounter = std::map<carl::Variable, std::pair<uint_fast64_t, uint_fast64_t>>();
+	for (auto it : notUsed) {
+		carl::carlVariables occurringVars = carl::variables(notUsed.constraint.lhs());
+		for (auto var : occurringVars) {
+			if (varBoundCounter.find(var) == varBoundCounter.end()) {
+				varBoundCounter[var] = std::make_pair(0,0);
+			}
+			assert (it.constraint.lhs().lcoeff(var) != Rational(0));
+			if (it.constraint.lhs().lcoeff(var) > Rational(0)){
+				varBoundCounter[var].first++;
+			} else {
+				varBoundCounter[var].second++;
+			}
+		}
+	}
+	std::pair<carl::Variable, std::pair<uint_fast64_t, uint_fast64_t>> bestVar = *varBoundCounter.begin();
+	bool bestOneDir = bestVar.second.first * bestVar.second.second == 0;
+	for (auto currentVar : varBoundCounter) {
+		bool currentOneDir = currentVar.second.first * currentVar.second.second == 0;
+		// This is all in one if to make use of the short-circuiting AND and OR operators, I know it's not very readable :')
+		if ((!bestOneDir && currentOneDir) || (bestOneDir && currentOneDir && bestVar.second.first + bestVar.second.second < currentVar.second.first + currentVar.second.second) || (!bestOneDir && !currentOneDir && std::min(currentVar.second.first, currentVar.second.second) < std::min(bestVar.second.first, bestVar.second.second))){
+			bestVar = currentVar;
+			bestOneDir = currentOneDir;
+		}
+	}
+	varToEliminate = bestVar.first;
+	if (bestVar.second.first >= bestVar.second.second){
+		eliminateViaLB = true;
+	} else {
+		eliminateViaLB = false;
+	}
 }
 
 template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::chooseNextConstraint() {
 	// Other heuristics may be added here (+ create option in settings)
 	switch (Settings::constraintHeuristic) {
-	case "Basic":
-		baseHeuristicNextConstraint();
+	case "Simple":
+		simpleHeuristicNextConstraint();
 		break;
 	default:
 		baseHeuristicNextConstraint();
 		break;
 	}
-	baseHeuristicNextConstraint();
 }
 
 template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::baseHeuristicNextConstraint() {
 	assert(!todoConstraints.empty());
-	// TODO implement: choose variable and direction, then set according class attributes.
+	// Move to doneConstraints
+	if (currentEliminator.has_value()) doneConstraints.push_back(currentEliminator.get());
+	// Choose next best one
+	currentEliminator = todoConstraints.front();
+	todoConstraints.pop_front();
+}
+
+template<typename Settings>
+void FMPlexModule<Settings>::FmplexLvl::simpleHeuristicNextConstraint() {
+	assert(!todoConstraints.empty());
+	// Move to doneConstraints
+	if (currentEliminator.has_value()) doneConstraints.push_back(currentEliminator.get());
+	// Chose one with fewest number of different original constriants in linear combination
+	ConstraintWithInfo bestEliminator = todoConstraints.front();
+	for (auto constr : todoConstraints) {
+		if (constr.derivationCoefficients.size() < bestEliminator.derivationCoefficients.size()) {
+			bestEliminator = constr;
+		}
+	}
+	currentEliminator = bestEliminator;
+	todoConstraints.remove(bestEliminator);
+
 }
 
 template<typename Settings>
@@ -238,17 +377,11 @@ template<typename Settings>
 std::pair<bool, std::set<typename FMPlexModule<Settings>::ConstraintList::iterator>> FMPlexModule<Settings>::FmplexLvl::trueFalseCheck() {
 	auto res = std::set<typename ConstraintList::iterator>();
 	auto toRemove = std::set<ConstraintWithInfo>();
-	for (auto constraint: notUsed) {
-		Poly lhs = constraint.constraint.lhs();
-		if (lhs.isConstant()){
-			// TODO QUESTION changes / additional cases needed here for constraints other than LEQ
-			if (lhs.constantPart() <= Rational(0)) {
-				// Trivially true
-				toRemove.push_back(*constraint);
-			} else {
-				// Trivially false
-				res.push_back(constraint);
-			}
+	for (auto it: notUsed) {
+		if (it->constraint.isTrivialTrue()){
+			toRemove.push_back(*it);
+		} else if (it->constraint.isTrivialFalse()){
+			res.push_back(it);
 		}
 	}
 	for (auto r : toRemove) notUsed.remove(r);
@@ -269,14 +402,26 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 				negFound = true;
 			}
 		}
-		if (negFound && posFound && std::distance(branch.begin(), backtrackIt) > std::distance(branch.begin(), cConstr->conflictLevel)) {
-			// Local Conflict with further backtracking required
-			backtrackIt = cConstr->conflictLevel;
+		if (negFound && posFound) {
+			// Local Conflict, apply chosen backtracking mode
+			switch (Settings::backTrackingMode) {
+				case "oneStep":
+					backtrackIt = branch.find(this);
+					backtrackIt--;
+					break;
+				case "furthest":
+					if (std::distance(branch.begin(), backtrackIt) > std::distance(branch.begin(), cConstr->conflictLevel)){
+							backtrackIt = cConstr->conflictLevel;
+					}
+					break;
+				}
+				// TODO possible third backtracking mode here?
 		} else {
 			// Global Conflict
 			return branch.end();
 		}
 	}
+	return backtrackIt;
 }
 
 template<typename Settings>

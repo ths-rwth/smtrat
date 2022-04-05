@@ -34,9 +34,13 @@ namespace smtrat {
 			 * @param _constrNumber
 			 * @param _manager
 			 */
-			FMPlexModule(const ModuleInput* _formula, Conditionals& _foundAnswer, Manager* _manager = nullptr);
-
+			FMPlexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL);
 			~FMPlexModule() override = default;
+
+			typedef Settings SettingsType;
+			std::string moduleName() const override {
+				return SettingsType::moduleName;
+			}
 
 			bool addCore( ModuleInput::const_iterator formula) override;
 
@@ -129,8 +133,14 @@ namespace smtrat {
 					// Basic heuristic for variable + direction
 					void baseHeuristicVarDir();
 
+					// Simple heuristic for variable + direction
+					void simpleHeuristicVarDir();
+
 					// Basic heuristic for next constraint
 					void baseHeuristicNextConstraint();
+
+					// Simple heuristic for next constraint
+					void simpleHeuristicNextConstraint();
 
 			};
 
@@ -143,6 +153,12 @@ namespace smtrat {
 
 			// Main structure for algorithm, represents the current branch of the decision tree
 			FMPlexBranch mFMPlexBranch;
+
+			// Flag that is true if in our last checkCore we could derive SAT simply by applying our current model.
+			bool mModelFit;
+
+			// Iterator indicating up to which constraint in mNewConstraints we successfully tested our model.
+			std::list<std::shared_ptr<SimpleConstraint>>::iterator mModelFitUntilHere;
 
 			/*** Member Functions ***/
 
