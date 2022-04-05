@@ -1,18 +1,6 @@
-namespace smtrat::cadcells::representation {
+#include "../operators/properties.h"
 
-datastructures::CellDescription compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del) {
-    if (del.is_section()) {
-        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second));
-    } else if (del.lower_unbounded() && del.upper_unbounded()) {
-        return datastructures::CellDescription(datastructures::Bound::infty, datastructures::Bound::infty);
-    } else if (del.lower_unbounded() ) {
-        return datastructures::CellDescription(datastructures::Bound::infty, util::simplest_bound(proj, del.upper()->second));
-    } else if (del.upper_unbounded()) {
-        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second), datastructures::Bound::infty);
-    } else {
-        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second), util::simplest_bound(proj, del.upper()->second));
-    }
-}
+namespace smtrat::cadcells::representation {
 
 template<typename T>
 void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
@@ -31,12 +19,19 @@ void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der
     }
 }
 
+template<typename T>
+void maintain_connectedness(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
+    if (der->contains(operators::properties::cell_connected{der->level()}) && response.description.is_sector() && response.description.lower() && response.description.upper()) {
+        response.ordering.add_between(*response.description.lower(), *response.description.upper());
+    }
+}
+
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL> {
     template<typename T>
     static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(*der);
-        response.description = compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
@@ -67,6 +62,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
                 }
             }
         }
+        maintain_connectedness(der, response);
         return response;
     }
 };
@@ -76,7 +72,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
     template<typename T>
     static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(*der);
-        response.description = compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
@@ -129,6 +125,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                 }
             }
         }
+        maintain_connectedness(der, response);
         return response;
     }
 };
@@ -232,7 +229,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
     template<typename T>
     static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(*der);
-        response.description = compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
@@ -240,6 +237,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
             if (!der->delin().nullified().empty()) return std::nullopt;
             compute_barriers(der, response, false);
         }
+        maintain_connectedness(der, response);
         return response;
     }
 };
@@ -250,7 +248,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
     template<typename T>
     static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(*der);
-        response.description = compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             for (const auto& poly : der->delin().nullified()) {
@@ -265,6 +263,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
             if (!der->delin().nullified().empty()) return std::nullopt;
             compute_barriers(der, response, false);
         }
+        maintain_connectedness(der, response);
         return response;
     }
 };

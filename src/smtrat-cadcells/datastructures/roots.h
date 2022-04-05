@@ -158,10 +158,13 @@ std::ostream& operator<<(std::ostream& os, const CoveringDescription& data) {
 
 /**
  * Describes an ordering of IndexedRoots with respect to a CellDescription (which is given implicitly).
+ * 
+ * The ordering is stored as sets of elements: below, above and between the interval bounds. The latter is for maintaining connectedness. 
  */
 class IndexedRootOrdering {
     std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_below;
     std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_above;
+    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_between;
 
     void add(std::vector<std::pair<IndexedRoot, IndexedRoot>>& data, IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
@@ -188,12 +191,25 @@ public:
         return add(m_data_above, first, second);
     }
 
+    /**
+     * First is the root closer to the lower bound, second is closer to the upper bound.
+     * 
+     * Relations need to be added in ascending order of the first elements.
+     */
+    void add_between(IndexedRoot first, IndexedRoot second) {
+        return add(m_data_between, first, second);
+    }
+
     const auto& below() const {
         return m_data_below;
     }
 
     const auto& above() const {
         return m_data_above;
+    }
+
+    const auto& between() const {
+        return m_data_between;
     }
 
     bool poly_has_lower(PolyRef poly) const {
@@ -214,11 +230,15 @@ public:
             result.insert(pair.first.poly);
             result.insert(pair.second.poly);
         }
+        for (const auto& pair : m_data_between) {
+            result.insert(pair.first.poly);
+            result.insert(pair.second.poly);
+        }
         return result;
     }
 };
 std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
-    os << data.below() << " " << data.above();
+    os << data.below() << " | " << data.between() << " | " << data.above();
     return os;
 }
 
@@ -240,6 +260,28 @@ public:
 
     const auto& data() const {
         return m_data;
+    }
+
+    bool holds_transitive(IndexedRoot first, IndexedRoot second) const {
+        boost::flat_set<IndexedRoot> active({first});
+        boost::optional<IndexedRoot> current;
+
+        auto it = std::find_if(m_data.begin(), m_data.end(), [&first](const auto& e) { return e.first == first; });
+        while(it != m_data.end() && !active.empty()) {
+            if (current && it->first != *current) {
+                active.erase(*current);
+                current = std::nullopt;
+            }
+            if (!current) {
+                auto ac_it = active.find(it->first);
+                if (ac_it) current = *ac_it;
+            }
+            if (current) {
+                if (it->second == second) return true;
+                else active.insert(it->second);
+            }
+        }
+        return false;
     }
 };
 std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {

@@ -145,12 +145,13 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& de
 }
 
 template<typename P>
-void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
+void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "connected(" << deriv.level() << ")");
     if (cell.is_sector() && cell.lower() && cell.upper() && cell.lower()->poly != cell.upper()->poly) {
         assert(deriv.contains(properties::poly_pdel{ cell.lower()->poly }));
         assert(deriv.contains(properties::poly_pdel{ cell.upper()->poly }));
-        deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.lower()->poly, cell.upper()->poly) });
+        //deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.lower()->poly, cell.upper()->poly) });
+        assert(!ordering.between().empty());
         deriv.insert(properties::cell_connected{ deriv.level()-1 });
     }
 }
@@ -221,6 +222,13 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
         }
     }
     for (const auto& rel : ordering.above()) {
+        if (rel.first.poly != rel.second.poly) {
+            assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
+            assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
+            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
+        }
+    }
+    for (const auto& rel : ordering.between()) {
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));

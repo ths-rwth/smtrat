@@ -12,13 +12,16 @@ namespace smtrat::cadcells::representation {
     };
 
     enum CoveringHeuristic {
-        DEFAULT_COVERING
+        DEFAULT_COVERING, CHAIN_COVERING
     };
 
     enum DelineationHeuristic {
         CHAIN
     };
 
+    /**
+     * Note: If connected(i) holds, then the indexed root ordering must contain an ordering between the interval bounds. 
+     */
     template<CellHeuristic H>
     struct cell {
         template<typename T>
