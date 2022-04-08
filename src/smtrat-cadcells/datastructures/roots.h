@@ -169,12 +169,13 @@ class GeneralIndexedRootOrdering {
 public:
     void add_leq(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
-        assert(first != second);
-        m_data.push_back(std::make_pair(first, second));
-        if (!m_leq.contains(first)) m_leq.emplace(first, boost::container::flat_set<IndexedRoot>());
-        m_leq[first].insert(second);
-        if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<IndexedRoot>());
-        m_geq[first].insert(first);
+        if (first != second) {
+            m_data.push_back(std::make_pair(first, second));
+            if (!m_leq.contains(first)) m_leq.emplace(first, boost::container::flat_set<IndexedRoot>());
+            m_leq[first].insert(second);
+            if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<IndexedRoot>());
+            m_geq[first].insert(first);
+        }
     }
 
     void add_eq(IndexedRoot first, IndexedRoot second) {
