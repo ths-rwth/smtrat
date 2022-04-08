@@ -37,7 +37,7 @@ namespace smtrat::cadcells::representation {
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
             datastructures::CoveringRepresentation<T> result;
             auto min_ders = compute_min_ders(ders);
-            for (const auto& iter : min_ders) {
+            for (auto& iter : min_ders) {
                 std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
                 if (!cell_result) return std::nullopt;
                 result.cells.emplace_back(*cell_result);
