@@ -22,6 +22,15 @@ namespace smtrat::cadcells::representation {
         return min_ders;
     }
 
+    template<typename T>
+    datastructures::GeneralIndexedRootOrdering compute_default_ordering(const std::vector<datastructures::CellRepresentation<T>>& cells) {
+        datastructures::GeneralIndexedRootOrdering ordering;
+        for (auto it = cells.begin(); it != cells.end()-1; it++) {
+            ordering.add_leq(std::next(it)->lower_defining(), it->upper_defining());
+        }
+        return ordering;
+    }
+
     template <>
     struct covering<CoveringHeuristic::DEFAULT_COVERING> {
         template<typename T>
@@ -33,6 +42,7 @@ namespace smtrat::cadcells::representation {
                 if (!cell_result) return std::nullopt;
                 result.cells.emplace_back(*cell_result);
             }
+            result.ordering = compute_default_ordering(result.cells);
             return result;
         }
     };
@@ -45,12 +55,10 @@ namespace smtrat::cadcells::representation {
             
             auto min_ders = compute_min_ders(ders);
 
-            std::cout << "min_ders " << min_ders << std::endl;
-
             datastructures::Delineation delineation;
             std::vector<std::size_t> ord_idx;
             for (auto& iter : min_ders) {
-                result.cells.emplace_back(*iter);
+                result.cells.emplace_back(iter);
                 auto& cell_result = result.cells.back();   
                 cell_result.description = util::compute_simplest_cell((iter)->proj(), (iter)->cell());
 
@@ -91,15 +99,13 @@ namespace smtrat::cadcells::representation {
                 }
             }
 
-            std::cout << "delineation " << delineation << std::endl;
-
             assert (ord_idx.size() > 0); 
             auto& proj = (*min_ders.begin())->proj();
             auto ordering = *util::simplest_delineation_ordering(proj, delineation);
             for (std::size_t idx : ord_idx) {
-                result.cells[idx].ordering = util::cell_ordering_from_general(ordering, result.cells[idx].description);
+                result.cells[idx].ordering = ordering;
             }
-            
+            result.ordering = ordering;
             return result;
         }
     };

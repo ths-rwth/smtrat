@@ -69,7 +69,7 @@ inline void project_delineated_cell_properties<op::mccallum>(datastructures::Cel
         rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering);
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
@@ -98,7 +98,8 @@ inline void project_covering_properties<op::mccallum>(datastructures::CoveringRe
         project_delineated_cell_properties<op::mccallum>(cell_repr, false);
     }
     auto cov = repr.get_covering();
-    rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov);
+    rules::root_ordering_holds(repr.cells.front().derivation->underlying().sampled(), repr.ordering);
+    rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov, repr.ordering);
 }
 
 template <>

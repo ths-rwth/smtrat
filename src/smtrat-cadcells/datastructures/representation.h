@@ -13,8 +13,8 @@ template<typename P>
 struct CellRepresentation {
     /// Description of a cell.
     CellDescription description;
-    /// An ordering of the roots that protects the cell.
-    IndexedRootOrdering ordering;
+    /// An ordering on the roots that protects the cell.
+    GeneralIndexedRootOrdering ordering;
     /// Polynomials that should be projected using the equational constraints projection.
     boost::container::flat_set<PolyRef> equational;
     /// Derivation
@@ -38,6 +38,8 @@ template<typename P>
 struct CoveringRepresentation {
     /// Cells of the covering in increasing order and no cell is contained in another cell.
     std::vector<CellRepresentation<P>> cells;
+    /// An ordering on the roots for the cell boundaries mainting the covering.
+    GeneralIndexedRootOrdering ordering;
     /// Returns a descriptions of the covering.
     CoveringDescription get_covering() const {
         assert(is_valid());

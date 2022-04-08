@@ -2,6 +2,8 @@
 
 namespace smtrat::cadcells::representation {
 
+// TODO how to deal with trivial relations (indexed root expressions of the same polynomial?) and already ; part of heuristics? do not consider at all?
+
 template<typename T>
 inline void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
     for (const auto& poly : der->delin().nullified()) {
@@ -22,7 +24,7 @@ inline void compute_section_all_equational(datastructures::SampledDerivationRef<
 template<typename T>
 void maintain_connectedness(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
     if (der->contains(operators::properties::cell_connected{der->level()}) && response.description.is_sector() && response.description.lower() && response.description.upper()) {
-        response.ordering.add_between(*response.description.lower(), *response.description.upper());
+        response.ordering.add_leq(*response.description.lower(), *response.description.upper());
     }
 }
 
@@ -43,7 +45,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
                 while(true) {
                     for (const auto& ir : it->second) {
                         if (ir != *response.description.lower()) {
-                            response.ordering.add_below(*response.description.lower(), ir);
+                            response.ordering.add_leq(ir, *response.description.lower());
                         } 
                     }
                     if (it != der->delin().roots().begin()) it--;
@@ -55,7 +57,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
                 while(it != der->delin().roots().end()) {
                     for (const auto& ir : it->second) {
                         if (ir != *response.description.upper()) {
-                            response.ordering.add_above(*response.description.upper(), ir);
+                            response.ordering.add_leq(*response.description.upper(), ir);
                         }
                     }
                     it++;
@@ -87,12 +89,12 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                     auto simplest = util::simplest_bound(der->proj(), it->second, ignoring);
                     if (simplest) {
                         if (*simplest != *response.description.lower()) {
-                            response.ordering.add_below(barrier, *simplest);
+                            response.ordering.add_leq(*simplest, barrier);
                         }
                         for (const auto& ir : it->second) {
                             if (ignoring.contains(ir.poly)) continue;
                             if (ir != *simplest) {
-                                response.ordering.add_below(*simplest, ir);
+                                response.ordering.add_leq(ir, *simplest);
                             } 
                             ignoring.insert(ir.poly);
                         }
@@ -110,12 +112,12 @@ struct cell<CellHeuristic::CHAIN_EQ> {
                     auto simplest = util::simplest_bound(der->proj(), it->second, ignoring);
                     if (simplest) {
                         if (*simplest != *response.description.upper()) {
-                            response.ordering.add_above(barrier, *simplest);
+                            response.ordering.add_leq(barrier, *simplest);
                         }
                         for (const auto& ir : it->second) {
                             if (ignoring.contains(ir.poly)) continue;
                             if (ir != *simplest) {
-                                response.ordering.add_above(*simplest, ir);
+                                response.ordering.add_leq(*simplest, ir);
                             } 
                             ignoring.insert(ir.poly);
                         }
@@ -180,13 +182,13 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             }
             assert(it != der->cell().lower() || barrier == *response.description.lower_defining());
             if (barrier != old_barrier) {
-                response.ordering.add_below(old_barrier, barrier);
+                response.ordering.add_leq(barrier, old_barrier);
             }
             for (const auto& ir : it->second) {
                 if (ignoring.contains(ir.poly)) continue;
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
-                    response.ordering.add_below(barrier, ir);
+                    response.ordering.add_leq(ir, barrier);
                 } 
                 ignoring.insert(ir.poly);
             }
@@ -209,13 +211,13 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             }
             assert(it != der->cell().upper() || barrier == *response.description.upper_defining());
             if (barrier != old_barrier) {
-                response.ordering.add_above(old_barrier, barrier);
+                response.ordering.add_leq(old_barrier, barrier);
             }
             for (const auto& ir : it->second) {
                 if (ignoring.contains(ir.poly)) continue;
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
-                    response.ordering.add_above(barrier, ir);
+                    response.ordering.add_leq(barrier, ir);
                 } 
                 ignoring.insert(ir.poly);
             }

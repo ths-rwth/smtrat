@@ -52,6 +52,7 @@ namespace smtrat::cadcells::representation {
     inline std::string get_name(CoveringHeuristic heuristic){
         switch (heuristic) {
             case CoveringHeuristic::DEFAULT_COVERING: return "DEFAULT_COVERING";
+            case CoveringHeuristic::CHAIN_COVERING: return "CHAIN_COVERING";
         }
     }
 
