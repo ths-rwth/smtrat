@@ -2,7 +2,7 @@
 
 namespace smtrat::cadcells::representation {
 
-// TODO how to deal with trivial relations (indexed root expressions of the same polynomial?) and already ; part of heuristics? do not consider at all?
+// TODO how to deal with trivial relations (indexed root expressions of the same polynomial) and implicitly guaranteed relations as we add resultants of polynomials? part of heuristics?
 
 template<typename T>
 inline void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
