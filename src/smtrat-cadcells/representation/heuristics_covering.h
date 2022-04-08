@@ -22,10 +22,11 @@ namespace smtrat::cadcells::representation {
         return min_ders;
     }
 
-    datastructures::GeneralIndexedRootOrdering compute_default_ordering(const std::vector<datastructures::CellDescription>& cells) {
+    template<typename T>
+    datastructures::GeneralIndexedRootOrdering compute_default_ordering(const std::vector<datastructures::CellRepresentation<T>>& cells) {
         datastructures::GeneralIndexedRootOrdering ordering;
         for (auto it = cells.begin(); it != cells.end()-1; it++) {
-            ordering.add_leq(*(std::next(it)->lower_defining()), *(it->upper_defining()));
+            ordering.add_leq(*(std::next(it)->description.lower_defining()), *(it->description.upper_defining()));
         }
         return ordering;
     }
