@@ -1,7 +1,8 @@
 namespace smtrat::cadcells::representation {
 
-enum ApproximationStrategy {ONLY_BOUNDS, BETWEEN};
-enum BoundsType {LOWER, UPPER};
+using IR = datastructures::IndexedRoot;
+
+enum ApproximationStrategy {ONLY_BOUNDS, BETWEEN}; // For CHAIN, only BETWEEN makes sense, for LDB we might need another option
 enum PolynomialApproximation {SIMPLE, LINEAR_GRADIENT, LINEAR_GRADIENT_MULTI};
 enum ApproximationRoot {MEAN, WEIGHTED_MEAN, MAXIMIZE};
 
@@ -24,11 +25,11 @@ struct ApproximationSettings {
             return true;
         }
 
-        bool single(datastructures::Projections& proj, const datastructures::IndexedRoot& ir) {
+        bool single(datastructures::Projections& proj, const IR& ir) {
             return proj.degree(ir.poly) > ApproximationSettings::critical_degree;
         }
 
-        bool pair(datastructures::Projections& proj, const datastructures::IndexedRoot& ir_l, const datastructures::IndexedRoot& ir_u) {
+        bool pair(datastructures::Projections& proj, const IR& ir_l, const IR& ir_u) {
             return proj.degree(ir_l.poly) + proj.degree(ir_u.poly) > ApproximationSettings::critical_degree;
         }
         template <typename T>
@@ -46,14 +47,20 @@ Rational approximate_root<ApproximationRoot::MEAN>(const RAN& l, const RAN& u) {
     return carl::sample_between(l,u);
 }
 
-datastructures::IndexedRoot approximate_bound(datastructures::Projections& proj, const datastructures::IndexedRoot& p, const RAN& l, const RAN& u, const carl::Variable var) {
-    Rational approximation_point = approximate_root<ApproximationSettings::root>(l,u);
-    return datastructures::IndexedRoot(proj.polys()(Poly(var) - approximation_point), 1);
+template<PolynomialApproximation PA>
+IR approximate_bound(datastructures::Projections& proj, const IR& p, const RAN& l, const RAN& u, const carl::Variable var);
+
+template<>
+IR approximate_bound<PolynomialApproximation::SIMPLE>(datastructures::Projections& proj, const IR& p, const RAN& l, const RAN& u, const carl::Variable var) {
+    return IR(proj.polys()(Poly(var) - approximate_root<ApproximationSettings::root>(l,u)), 1);
 }
 
-datastructures::IndexedRoot approximate_between(datastructures::Projections& proj, const datastructures::IndexedRoot& p_l, const datastructures::IndexedRoot& p_u, const RAN& l, const RAN& u, const carl::Variable var) {
-    Rational approximation_point = approximate_root<ApproximationSettings::root>(l,u);
-    return datastructures::IndexedRoot(proj.polys()(Poly(var) - approximation_point), 1);
+template<PolynomialApproximation PA>
+IR approximate_between(datastructures::Projections& proj, const IR& p_l, const IR& p_u, const RAN& l, const RAN& u, const carl::Variable var);
+
+template<>
+IR approximate_between<PolynomialApproximation::SIMPLE>(datastructures::Projections& proj, const IR& p_l, const IR& p_u, const RAN& l, const RAN& u, const carl::Variable var) {
+    return IR(proj.polys()(Poly(var) - approximate_root<ApproximationSettings::root>(l,u)), 1);
 }
 
 datastructures::CellDescription compute_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del, const carl::Variable var, const RAN& sample) {
@@ -62,22 +69,22 @@ datastructures::CellDescription compute_cell(datastructures::Projections& proj, 
     } else if (del.lower_unbounded() && del.upper_unbounded()) {
         return datastructures::CellDescription(datastructures::Bound::infty, datastructures::Bound::infty);
     } else if (del.lower_unbounded() ) {
-        datastructures::IndexedRoot bound = util::simplest_bound(proj, del.upper()->second);
+        IR bound = util::simplest_bound(proj, del.upper()->second);
         if (approximation_criteria::single(proj, bound))
-            return datastructures::CellDescription(datastructures::Bound::infty, approximate_bound(proj, bound, sample, del.upper()->first, var));
+            return datastructures::CellDescription(datastructures::Bound::infty, approximate_bound<ApproximationSettings::poly>(proj, bound, sample, del.upper()->first, var));
         else return datastructures::CellDescription(datastructures::Bound::infty, bound);
     } else if (del.upper_unbounded()) {
-        datastructures::IndexedRoot bound = util::simplest_bound(proj, del.lower()->second);
+        IR bound = util::simplest_bound(proj, del.lower()->second);
         if (approximation_criteria::single(proj, bound))
-            return datastructures::CellDescription(approximate_bound(proj, bound, del.lower()->first, sample, var), datastructures::Bound::infty);
+            return datastructures::CellDescription(approximate_bound<ApproximationSettings::poly>(proj, bound, del.lower()->first, sample, var), datastructures::Bound::infty);
         else return datastructures::CellDescription(bound, datastructures::Bound::infty);
     } else {
-        datastructures::IndexedRoot ir_lower = util::simplest_bound(proj, del.lower()->second);
-        datastructures::IndexedRoot ir_upper = util::simplest_bound(proj, del.upper()->second);
+        IR ir_lower = util::simplest_bound(proj, del.lower()->second);
+        IR ir_upper = util::simplest_bound(proj, del.upper()->second);
         if (approximation_criteria::single(proj, ir_upper))
-            ir_upper = approximate_bound(proj, ir_upper, sample, del.upper()->first, var);
+            ir_upper = approximate_bound<ApproximationSettings::poly>(proj, ir_upper, sample, del.upper()->first, var);
         if (approximation_criteria::single(proj, ir_lower))
-            ir_lower = approximate_bound(proj, ir_lower, del.lower()->first, sample, var);
+            ir_lower = approximate_bound<ApproximationSettings::poly>(proj, ir_lower, del.lower()->first, sample, var);
         return datastructures::CellDescription(ir_lower, ir_upper);
     }
 }
@@ -109,7 +116,8 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                         if (ir != *response.description.lower()) {
                             if (ApproximationSettings::strategy == ApproximationStrategy::BETWEEN) {
                                 if (approximation_criteria::pair(der->proj(), ir, *response.description.lower())) {
-                                    datastructures::IndexedRoot ir_between = approximate_between(der->proj(), ir, *response.description.lower(), it->first, der->cell().lower()->first, der->main_var());
+                                    // TODO: what if the two root expressions correspond to the same root?
+                                    IR ir_between = approximate_between<ApproximationSettings::poly>(der->proj(), ir, *response.description.lower(), it->first, der->cell().lower()->first, der->main_var());
                                     response.ordering.add_below(*response.description.lower(), ir_between);
                                     response.ordering.add_below(ir_between, ir); // from here on, this is technically no longer in the biggest-cell-structure
                                 } else response.ordering.add_below(*response.description.lower(), ir);
@@ -127,7 +135,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                         if (ir != *response.description.upper()) {
                             if (ApproximationSettings::strategy == ApproximationStrategy::BETWEEN) {
                                 if (approximation_criteria::pair(der->proj(), *response.description.upper(), ir)) {
-                                    datastructures::IndexedRoot ir_between = approximate_between(der->proj(), *response.description.upper(), ir, der->cell().upper()->first, it->first, der->main_var());
+                                    IR ir_between = approximate_between<ApproximationSettings::poly>(der->proj(), *response.description.upper(), ir, der->cell().upper()->first, it->first, der->main_var());
                                     response.ordering.add_above(*response.description.upper(), ir_between);
                                     response.ordering.add_above(ir_between, ir); // from here on, this is technically no longer in the biggest-cell-structure
                                 } else response.ordering.add_above(*response.description.upper(), ir);
