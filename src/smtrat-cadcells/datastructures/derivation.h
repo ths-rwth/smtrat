@@ -142,7 +142,7 @@ public:
 template<typename Properties>
 class BaseDerivation {
     template<typename P>
-    friend void merge_underlying(std::vector<std::reference_wrapper<SampledDerivation<P>>>& derivations);
+    friend void merge_underlying(std::vector<SampledDerivationRef<P>>& derivations);
 
     DerivationRef<Properties> m_underlying;
     Projections& m_projections;
@@ -374,10 +374,10 @@ SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef
  * Merges the underlying derivations of a set of sampled derivations. After the operation, all sampled derivations point to the same underlying derivation.
  */
 template<typename Properties>
-void merge_underlying(std::vector<std::reference_wrapper<SampledDerivation<Properties>>>& derivations) {
+void merge_underlying(std::vector<SampledDerivationRef<Properties>>& derivations) {
     std::set<DerivationRef<Properties>> underlying;
     for (auto& deriv : derivations) {
-        underlying.insert(deriv.get().underlying());
+        underlying.insert(deriv->underlying());
     }
     assert(!underlying.empty());
     auto first_underlying = *underlying.begin();
@@ -385,24 +385,9 @@ void merge_underlying(std::vector<std::reference_wrapper<SampledDerivation<Prope
         first_underlying.base().merge_with(iter->base());
     }
     for (auto& deriv : derivations) {
-        deriv.get().base()->m_underlying = first_underlying;
+        deriv->base()->m_underlying = first_underlying;
     }
 }
 
-template<typename Properties>
-void merge_underlying(std::vector<SampledDerivation<Properties>>& derivations) {
-    std::set<DerivationRef<Properties>> underlying;
-    for (auto& deriv : derivations) {
-        underlying.insert(deriv.underlying());
-    }
-    assert(!underlying.empty());
-    auto first_underlying = *underlying.begin();
-    for (auto iter = std::next(underlying.begin()); iter != underlying.end(); iter++) {
-        first_underlying.base().merge_with(iter->base());
-    }
-    for (auto& deriv : derivations) {
-        deriv.base()->m_underlying = first_underlying;
-    }
-}
 
 } // namespace smtrat::cadcells::datastructures

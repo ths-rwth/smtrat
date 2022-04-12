@@ -50,15 +50,7 @@ struct CoveringRepresentation {
         return cov;
     }
     /// Returns the derivations.
-    std::vector<std::reference_wrapper<SampledDerivation<P>>> sampled_derivations() {
-        std::vector<std::reference_wrapper<SampledDerivation<P>>> cov;
-        for (const auto& cell : cells) {
-            cov.push_back(*cell.derivation);
-        }
-        return cov;
-    }
-
-    std::vector<SampledDerivationRef<P>> sampled_derivation_refs() {
+    std::vector<SampledDerivationRef<P>> sampled_derivations() {
         std::vector<SampledDerivationRef<P>> cov;
         for (const auto& cell : cells) {
             cov.push_back(cell.derivation);
@@ -109,9 +101,9 @@ struct DelineationRepresentation {
     /// An ordering of the roots that represents the delineation.
     GeneralIndexedRootOrdering ordering;
     /// Derivation.
-    DelineatedDerivation<P>& derivation;
+    DelineatedDerivationRef<P> derivation;
 
-    DelineationRepresentation(DelineatedDerivation<P>& deriv)
+    DelineationRepresentation(DelineatedDerivationRef<P> deriv)
         : derivation(deriv) {}
 };
 

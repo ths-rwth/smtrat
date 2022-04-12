@@ -104,7 +104,7 @@ inline void project_covering_properties<op::mccallum>(datastructures::CoveringRe
 
 template <>
 inline void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
-    auto& deriv = repr.derivation;
+    auto& deriv = *repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         deriv.insert(properties::poly_pdel{ prop.poly });
