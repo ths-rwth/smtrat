@@ -2,6 +2,8 @@
 
 #include "../common.h"
 #include "polynomials.h"
+#include "boost/container/flat_set.hpp"
+#include "boost/container/flat_map.hpp"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -18,16 +20,16 @@ struct IndexedRoot {
     IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { assert(i>0); }
     IndexedRoot() : IndexedRoot( PolyRef{0,0}, 1) {}
 };
-bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
+inline bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
 }
-bool operator<(const IndexedRoot& lhs, const IndexedRoot& rhs) {
+inline bool operator<(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly < rhs.poly || (lhs.poly == rhs.poly &&  lhs.index < rhs.index);
 }
-bool operator!=(const IndexedRoot& lhs, const IndexedRoot& rhs) {
+inline bool operator!=(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return !(lhs == rhs);
 }
-std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
+inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     os << "root(" << data.poly << ", " << data.index << ")";
     return os;
 }
@@ -99,8 +101,15 @@ public:
         if (is_sector()) return upper();
         else return section_defining();
     }
+
+    boost::container::flat_set<PolyRef> polys() const {
+        boost::container::flat_set<PolyRef> result;
+        if (m_lower) result.insert(m_lower->poly);
+        if (m_upper) result.insert(m_upper->poly);
+        return result;
+    }
 };
-std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
+inline std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
     if (data.is_section()) {
         os << "[" << data.section_defining() << ", " << data.section_defining() << "]";
     } else if (data.lower() && data.upper()) {
@@ -144,61 +153,8 @@ public:
         return m_data;
     }
 };
-std::ostream& operator<<(std::ostream& os, const CoveringDescription& data) {
+inline std::ostream& operator<<(std::ostream& os, const CoveringDescription& data) {
     os << data.cells();
-    return os;
-}
-
-/**
- * Describes an ordering of IndexedRoots with respect to a CellDescription (which is given implicitly).
- */
-class IndexedRootOrdering {
-    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_below;
-    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data_above;
-
-    void add(std::vector<std::pair<IndexedRoot, IndexedRoot>>& data, IndexedRoot first, IndexedRoot second) {
-        assert(first.poly.level == second.poly.level);
-        assert(first != second);
-        data.push_back(std::make_pair(first, second));
-    }
-
-public:
-    /**
-     * First is the root closer to the lower bound.
-     * 
-     * Relations need to be added in descending order of the first elements.
-     */
-    void add_below(IndexedRoot first, IndexedRoot second) {
-        return add(m_data_below, first, second);
-    }
-
-    /**
-     * First is the root closer to the upper bound.
-     * 
-     * Relations need to be added in ascending order of the first elements.
-     */
-    void add_above(IndexedRoot first, IndexedRoot second) {
-        return add(m_data_above, first, second);
-    }
-
-    const auto& below() const {
-        return m_data_below;
-    }
-
-    const auto& above() const {
-        return m_data_above;
-    }
-
-    bool poly_has_lower(PolyRef poly) const {
-        return std::find_if(below().begin(), below().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != below().end();
-    }
-
-    bool poly_has_upper(PolyRef poly) const {
-        return std::find_if(above().begin(), above().end(), [&poly](const auto& rel) { return rel.second.poly == poly; }) != above().end();
-    }
-};
-std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
-    os << data.below() << " " << data.above();
     return os;
 }
 
@@ -206,23 +162,113 @@ std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
  * Describes an ordering of IndexedRoots.
  */
 class GeneralIndexedRootOrdering {
+    boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_leq;
+    boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_geq;
     std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data;
 
 public:
-    /**
-     * Relations need to be added in ascending order of the first elements.
-     */
-    void add(IndexedRoot first, IndexedRoot second) {
+    void add_leq(IndexedRoot first, IndexedRoot second) {
+        assert(first.poly.level == second.poly.level);
+        if (first != second) {
+            m_data.push_back(std::make_pair(first, second));
+            if (!m_leq.contains(first)) m_leq.emplace(first, boost::container::flat_set<IndexedRoot>());
+            m_leq[first].insert(second);
+            if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<IndexedRoot>());
+            m_geq[first].insert(first);
+        }
+    }
+
+    void add_eq(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
         assert(first != second);
-        m_data.push_back(std::make_pair(first, second));
+        add_leq(first, second);
+        add_leq(second, first);
     }
 
     const auto& data() const {
         return m_data;
     }
+
+    const auto& leq() const {
+        return m_leq;
+    }
+
+    const auto& geq() const {
+        return m_leq;
+    }
+
+    bool leq_transitive(IndexedRoot first, IndexedRoot second) const {
+        boost::container::flat_set<IndexedRoot> reached({first});
+        std::vector<IndexedRoot> active({first});
+        if (first == second) return true;
+        while(!active.empty()) {
+            auto current = active.back();
+            active.pop_back();
+            if (m_leq.contains(current)) {
+                for (const auto& e : m_leq.at(current)) {
+                    if (!reached.contains(e)) {
+                        if (e == second) return true;
+                        reached.insert(e);
+                        active.push_back(e);
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    std::optional<IndexedRoot> leq_transitive(IndexedRoot first, PolyRef poly) const {
+        boost::container::flat_set<IndexedRoot> reached({first});
+        std::vector<IndexedRoot> active({first});
+        std::optional<IndexedRoot> result;
+        if (first.poly==poly) return first;
+        while(!active.empty()) {
+            auto current = active.back();
+            active.pop_back();
+            if (m_leq.contains(current)) {
+                for (const auto& e : m_leq.at(current)) {
+                    if (!reached.contains(e)) {
+                        if (e.poly == poly && (!result || result->index > e.index)) result = e; 
+                        reached.insert(e);
+                        active.push_back(e);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    std::optional<IndexedRoot> leq_transitive(PolyRef poly, IndexedRoot second) const {
+        boost::container::flat_set<IndexedRoot> reached({second});
+        std::vector<IndexedRoot> active({second});
+        std::optional<IndexedRoot> result;
+        if (second.poly==poly) return second;
+        while(!active.empty()) {
+            auto current = active.back();
+            active.pop_back();
+            if (m_geq.contains(current)) {
+                for (const auto& e : m_geq.at(current)) {
+                    if (!reached.contains(e)) {
+                        if (e.poly == poly && (!result || result->index < e.index)) result = e; 
+                        reached.insert(e);
+                        active.push_back(e);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    boost::container::flat_set<PolyRef> polys() const {
+        boost::container::flat_set<PolyRef> result;
+        for (const auto& pair : m_data) {
+            result.insert(pair.first.poly);
+            result.insert(pair.second.poly);
+        }
+        return result;
+    }
 };
-std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
+inline std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
     os << data.data();
     return os;
 }

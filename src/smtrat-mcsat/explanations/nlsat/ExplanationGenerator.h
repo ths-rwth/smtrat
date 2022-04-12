@@ -66,11 +66,12 @@ namespace helper {
 				// Note that we only add the polynomials here and don't really care about the relation
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
-				// -> var - poly to ensure that the relation still holds
 				carl::Relation rel = cAtom.variableComparison().negated() ? inverse(cAtom.variableComparison().relation()) : cAtom.variableComparison().relation();
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variableComparison().definingPolynomial());
 				cons.emplace(cAtom.variableComparison().definingPolynomial(), carl::Relation::NEQ);
-				cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().definingPolynomial(), rel);
+				// removed (makes no sense):
+				// -> var - poly to ensure that the relation still holds
+				//cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().definingPolynomial(), rel);
 			} else if (cAtom.getType() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
 				assert(false);

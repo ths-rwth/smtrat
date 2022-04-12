@@ -1,11 +1,12 @@
 #pragma once
 
-#include "../datastructures/roots.h"
+#include "operator.h"
 
+
+#include "../datastructures/roots.h"
 #include "properties.h"
 #include "rules.h"
 #include "delineation.h"
-#include "operator.h"
 
 
 namespace smtrat::cadcells::operators {
@@ -16,27 +17,33 @@ struct PropertiesSet<op::mccallum> {
 };
 
 template <>
-void project_basic_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+inline void project_basic_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
     }
 }
 
 template <>
-void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+inline void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         delineation::delineate(deriv, prop);
     }
 }
 
 template <>
-void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
-    auto& deriv = repr.derivation;
+inline void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr, bool cell_represents) {
+    auto& deriv = *repr.derivation;
 
-    for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-        if (repr.equational.find(prop.poly) == repr.equational.end()) {
-            deriv.insert(properties::poly_pdel{ prop.poly });
-        }
+    // for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
+    //     if (repr.equational.find(prop.poly) == repr.equational.end()) {
+    //         deriv.insert(properties::poly_pdel{ prop.poly });
+    //     }
+    // }
+    for(const auto& poly : repr.description.polys()) {
+        deriv.insert(properties::poly_pdel{ poly });
+    }
+    for(const auto& poly : repr.ordering.polys()) {
+        deriv.insert(properties::poly_pdel{ poly });
     }
 
     for (const auto& poly : deriv.delin().nonzero()) {
@@ -46,7 +53,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
     }
 
     if (deriv.contains(properties::cell_connected{deriv.level()})) {
-        rules::cell_connected(deriv, repr.description);
+        rules::cell_connected(deriv, repr.description, repr.ordering);
     }
     rules::cell_analytic_submanifold(deriv, repr.description);
     if (cell_represents) {
@@ -62,7 +69,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
         rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
     }
 
-    rules::root_ordering_holds(deriv.underlying().sampled(), repr.description, repr.ordering);
+    rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
@@ -72,7 +79,7 @@ void project_delineated_cell_properties<op::mccallum>(datastructures::CellRepres
 }
 
 template <>
-bool project_cell_properties<op::mccallum>(datastructures::SampledDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+inline bool project_cell_properties<op::mccallum>(datastructures::SampledDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     for(const auto& prop : deriv.properties<properties::root_well_def>()) {
         rules::root_well_def(deriv, prop.root);
     }
@@ -86,16 +93,17 @@ bool project_cell_properties<op::mccallum>(datastructures::SampledDerivation<Pro
 }
 
 template <>
-void project_covering_properties<op::mccallum>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+inline void project_covering_properties<op::mccallum>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
     for (auto& cell_repr : repr.cells) {
         project_delineated_cell_properties<op::mccallum>(cell_repr, false);
     }
     auto cov = repr.get_covering();
-    rules::covering_holds(repr.cells.front().derivation.underlying().delineated(), cov);
+    rules::root_ordering_holds(repr.cells.front().derivation->underlying().sampled(), repr.ordering);
+    rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov, repr.ordering);
 }
 
 template <>
-void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+inline void project_delineation_properties<op::mccallum>(datastructures::DelineationRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
     auto& deriv = repr.derivation;
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
