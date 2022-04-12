@@ -161,7 +161,7 @@ inline std::ostream& operator<<(std::ostream& os, const CoveringDescription& dat
 /**
  * Describes an ordering of IndexedRoots.
  */
-class GeneralIndexedRootOrdering {
+class IndexedRootOrdering {
     boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_leq;
     boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_geq;
     std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data;
@@ -268,7 +268,7 @@ public:
         return result;
     }
 };
-inline std::ostream& operator<<(std::ostream& os, const GeneralIndexedRootOrdering& data) {
+inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
     os << data.data();
     return os;
 }

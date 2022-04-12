@@ -39,7 +39,7 @@ namespace cadcells {
  * 
  * ## Basic datastructures
  * 
- * The basic datastructures for representing mathematical objects are @ref datastructures::IndexedRoot, @ref datastructures::CellDescription, @ref datastructures::CoveringDescription, and @ref datastructures::GeneralIndexedRootOrdering.
+ * The basic datastructures for representing mathematical objects are @ref datastructures::IndexedRoot, @ref datastructures::CellDescription, @ref datastructures::CoveringDescription, and @ref datastructures::IndexedRootOrdering.
  * 
  * ## Properties
  * 
