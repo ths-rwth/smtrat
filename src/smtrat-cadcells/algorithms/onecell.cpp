@@ -1,4 +1,6 @@
 #include "onecell.h"
+
+#include "../OCApproximationStatistics.h"
 #include "helper.h"
 
 #include "../operators/operator_mccallum.h"
@@ -9,13 +11,14 @@
 
 namespace smtrat::cadcells::algorithms {
 
+constexpr auto cell_heuristic = representation::BIGGEST_CELL_APPROXIMATION;
 // constexpr auto cell_heuristic = representation::BIGGEST_CELL;
 // constexpr auto cell_heuristic = representation::CHAIN_EQ;
 // constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS_EQ;
-constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
+// constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
 constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
 constexpr auto op = operators::op::mccallum;
-constexpr bool use_delineation = false; 
+constexpr bool use_delineation = true;
 
 using PropSet = operators::PropertiesSet<op>::type;
 
@@ -59,13 +62,15 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
         operators::project_delineated_cell_properties<op>(*cell_repr);
 
-        description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));
+        description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(), cell_repr->description));
         proj.clear_assignment_cache(cell_deriv->sample());
         cell_deriv = cell_deriv->underlying().sampled_ref();
         proj.clear_cache(cell_deriv->level()+2);
     }
     proj.clear_assignment_cache(empty_assignment);
-
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        approximation_statistics().success();
+    #endif
     return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
 }
 

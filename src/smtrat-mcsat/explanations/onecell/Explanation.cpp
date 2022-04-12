@@ -31,7 +31,13 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
     }
 
     SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << reason << " with " << vars << " and " << ass);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        auto start = SMTRAT_TIME_START();
+    #endif
     auto result = cadcells::algorithms::onecell(reason, vars, ass);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        SMTRAT_TIME_FINISH(mStatistics.timer(), start);
+    #endif
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");

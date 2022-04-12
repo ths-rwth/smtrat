@@ -4,6 +4,7 @@
 #include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
 #include <carl/util/IDPool.h>
+#include "PolyPoolStatistics.h"
 
 
 namespace smtrat::cadcells::datastructures {
@@ -65,7 +66,7 @@ public:
             // m_id_pools.emplace_back();
             m_polys.emplace_back();
             m_poly_ids.emplace_back();
-        }
+        } // why not use resize?
     }
 
     const VariableOrdering& var_order() const { return m_var_order; }
@@ -86,6 +87,9 @@ public:
             ref.id = m_polys[ref.level-1].size(); // = m_id_pools[ref.level-1].get();
             m_poly_ids[ref.level-1].emplace(npoly, ref.id);
             m_polys[ref.level-1].push_back(npoly); // [ref.id] = npoly;
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                poly_statistics().degree(poly.degree(m_var_order[ref.level-1]));
+            #endif
         } else {
             ref.id = res->second;
         }
