@@ -42,7 +42,7 @@ elif [[ ${TASK} == "documentation" ]]; then
 	cp ../doc/manual_smtrat-*.pdf manual_smtrat-latest.pdf || return 1
 	
 	# Check if something has changed
-	git diff --summary --exit-code && return 0
+	# git diff --summary --exit-code && return 0
 	git add . || return 1
 	
 	# Commit and push
