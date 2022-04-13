@@ -141,7 +141,8 @@ std::string generate_submit_file_chunked(const ChunkedSubmitfileProperties& p) {
 	out << "\techo \"# START ${i} #\"" << std::endl;
 	out << "\techo \"# START ${i} #\" >&2" << std::endl;
 	out << "\tstart=`date +\"%s%3N\"`" << std::endl;
-	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && eval /usr/bin/time -v $cmd ; rc=$?" << std::endl;
+	// out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && ulimit -S -t " << std::chrono::seconds(timeout).count() << " && eval /usr/bin/time -v $cmd ; rc=$?" << std::endl;
+	out << "\tulimit -c 0 && ulimit -S -v " << p.limit_memory.kibi() << " && eval /usr/bin/time -v timeout --signal=TERM " << std::chrono::seconds(timeout).count() << "s $cmd ; rc=$?" << std::endl;
 	out << "\tend=`date +\"%s%3N\"`" << std::endl;
 	out << "\techo \"# END ${i} #\"" << std::endl;
 	out << "\techo \"# END ${i} #\" 1>&2" << std::endl;
