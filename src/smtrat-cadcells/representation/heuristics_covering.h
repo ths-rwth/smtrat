@@ -26,7 +26,7 @@ namespace smtrat::cadcells::representation {
     datastructures::IndexedRootOrdering compute_default_ordering(const std::vector<datastructures::CellRepresentation<T>>& cells) {
         datastructures::IndexedRootOrdering ordering;
         for (auto it = cells.begin(); it != cells.end()-1; it++) {
-            ordering.add_leq(*(std::next(it)->description.lower_defining()), *(it->description.upper_defining()));
+            ordering.add_leq(std::next(it)->description.lower().value(), it->description.upper().value());
         }
         return ordering;
     }

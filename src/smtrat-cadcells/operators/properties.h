@@ -84,7 +84,6 @@ struct root_well_def {
         std::size_t seed = 0;
         seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
         seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        std::cout << root << " " << seed << std::endl;
         return seed;
     }
 };

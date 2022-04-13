@@ -181,7 +181,7 @@ inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInt
  */
 inline bool upper_lt_upper(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.upper_unbounded()) return false;
-    else if (del2.upper_unbounded()) return !del1.upper_unbounded();
+    else if (del2.upper_unbounded()) return true;
     else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
     else return del1.upper()->first < del2.upper()->first;
 }

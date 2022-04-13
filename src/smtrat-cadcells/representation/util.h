@@ -23,17 +23,17 @@ inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& p
     return *simplest_bound(proj, bounds, ignoring);
 }
 
-inline datastructures::CellDescription compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del) {
+inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del) {
     if (del.is_section()) {
-        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second));
+        return datastructures::SymbolicInterval(util::simplest_bound(proj, del.lower()->second));
     } else if (del.lower_unbounded() && del.upper_unbounded()) {
-        return datastructures::CellDescription(datastructures::Bound::infty, datastructures::Bound::infty);
-    } else if (del.lower_unbounded() ) {
-        return datastructures::CellDescription(datastructures::Bound::infty, util::simplest_bound(proj, del.upper()->second));
+        return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::infty());
+    } else if (del.lower_unbounded()) {
+        return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(util::simplest_bound(proj, del.upper()->second)));
     } else if (del.upper_unbounded()) {
-        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second), datastructures::Bound::infty);
+        return datastructures::SymbolicInterval(datastructures::Bound::strict(util::simplest_bound(proj, del.lower()->second)), datastructures::Bound::infty());
     } else {
-        return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second), util::simplest_bound(proj, del.upper()->second));
+        return datastructures::SymbolicInterval(datastructures::Bound::strict(util::simplest_bound(proj, del.lower()->second)), datastructures::Bound::strict(util::simplest_bound(proj, del.upper()->second)));
     }
 }
 

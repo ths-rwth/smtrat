@@ -12,7 +12,7 @@ namespace smtrat::cadcells::datastructures {
 template<typename P>
 struct CellRepresentation {
     /// Description of a cell.
-    CellDescription description;
+    SymbolicInterval description;
     /// An ordering on the roots that protects the cell.
     IndexedRootOrdering ordering;
     /// Polynomials that should be projected using the equational constraints projection.
