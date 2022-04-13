@@ -16,7 +16,7 @@ struct SampledDerivationRefCompare {
 	inline constexpr bool operator()(const cadcells::datastructures::SampledDerivationRef<T>& a, const cadcells::datastructures::SampledDerivationRef<T>& b) const {
 		auto cell_a = a->cell();
 		auto cell_b = b->cell();
-		return cadcells::datastructures::lower_less(cell_a, cell_b) || (cadcells::datastructures::lower_equal(cell_a, cell_b) && cadcells::datastructures::upper_less(cell_b, cell_a));
+		return cadcells::datastructures::lower_lt_lower(cell_a, cell_b) || (cadcells::datastructures::lower_eq_lower(cell_a, cell_b) && cadcells::datastructures::upper_lt_upper(cell_b, cell_a));
 	}
 };
 

@@ -156,27 +156,46 @@ inline std::ostream& operator<<(std::ostream& os, const Delineation& data) {
     return os;
 }
 
-inline bool lower_less(const DelineationInterval& del1, const DelineationInterval& del2) {
+/**
+ * Compares the lower bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool lower_lt_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();
     else if (del2.lower_unbounded()) return false;
     else if (del1.lower()->first == del2.lower()->first) return del1.is_section() && del2.is_sector();
     else return del1.lower()->first < del2.lower()->first;
 }
 
-inline bool lower_equal(const DelineationInterval& del1, const DelineationInterval& del2) {
+/**
+ * Compares the lower bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
     else if (del1.lower_unbounded() != del2.lower_unbounded()) return false;
     else if (del1.lower()->first == del2.lower()->first) return del1.is_section() == del2.is_section();
     else return false;
 }
 
-inline bool upper_less(const DelineationInterval& del1, const DelineationInterval& del2) {
+/**
+ * Compares the upper bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool upper_lt_upper(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.upper_unbounded()) return false;
     else if (del2.upper_unbounded()) return !del1.upper_unbounded();
     else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
     else return del1.upper()->first < del2.upper()->first;
 }
 
+/**
+ * Compares an upper bound with a lower bound of DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool upper_lt_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
+    if (del1.upper_unbounded()) return false;
+    if (del2.lower_unbounded()) return false;
+    if (del1.upper()->first < del2.lower()->first) return true;
+    if (del1.upper()->first == del2.lower()->first && del1.is_sector() && del2.is_sector()) return true;
+    return false;
+}
 
 
 } 

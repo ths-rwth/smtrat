@@ -79,7 +79,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 			derivationsVector.push_back(*iter);
 			auto& last_cell = (*iter)->cell();
 			iter++;
-			while (iter != derivationsSet.end() && !cadcells::datastructures::upper_less(last_cell, (*iter)->cell()))
+			while (iter != derivationsSet.end() && !cadcells::datastructures::upper_lt_upper(last_cell, (*iter)->cell()))
 				iter++;
 		}
 

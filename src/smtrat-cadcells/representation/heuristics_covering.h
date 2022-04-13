@@ -7,7 +7,7 @@ namespace smtrat::cadcells::representation {
         std::sort(sorted_ders.begin(), sorted_ders.end(), [](const datastructures::SampledDerivationRef<T>& p_cell1, const datastructures::SampledDerivationRef<T>& p_cell2) { // cell1 < cell2
             const auto& cell1 = p_cell1->cell();
             const auto& cell2 = p_cell2->cell();
-            return lower_less(cell1, cell2) || (lower_equal(cell1, cell2) && upper_less(cell2, cell1));
+            return lower_lt_lower(cell1, cell2) || (lower_eq_lower(cell1, cell2) && upper_lt_upper(cell2, cell1));
         });
 
         std::vector<datastructures::SampledDerivationRef<T>> min_ders;
@@ -16,7 +16,7 @@ namespace smtrat::cadcells::representation {
             min_ders.emplace_back(*iter);
             auto& last_cell = (*iter)->cell();
             iter++; 
-            while (iter != sorted_ders.end() && !upper_less(last_cell, (*iter)->cell())) iter++;
+            while (iter != sorted_ders.end() && !upper_lt_upper(last_cell, (*iter)->cell())) iter++;
         }
 
         return min_ders;

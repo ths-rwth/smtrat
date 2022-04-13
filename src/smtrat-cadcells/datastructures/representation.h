@@ -68,8 +68,7 @@ struct CoveringRepresentation {
             cell++;
             if (std::prev(cell)->derivation->cell().upper_unbounded()) return false;
             if (cell->derivation->cell().lower_unbounded()) return false;
-            if (std::prev(cell)->derivation->cell().upper()->first < cell->derivation->cell().lower()->first) return false;
-            if (std::prev(cell)->derivation->cell().upper()->first == cell->derivation->cell().lower()->first && std::prev(cell)->derivation->cell().is_sector() && cell->derivation->cell().is_sector()) return false;
+            if (upper_lt_lower(std::prev(cell)->derivation->cell(), cell->derivation->cell())) return false;
         }
         if (!cell->derivation->cell().upper_unbounded()) return false;
 
@@ -78,9 +77,9 @@ struct CoveringRepresentation {
         while (cell != std::prev(cells.end())) {
             cell++;
             if (std::prev(cell)->derivation->cell().upper_unbounded()) return false;
+            if (cell->derivation->cell().lower_unbounded()) return false;
             if (cell->derivation->cell().upper_unbounded()) continue;
-            if (std::prev(cell)->derivation->cell().upper()->first > cell->derivation->cell().upper()->first) return false;
-            if (std::prev(cell)->derivation->cell().upper()->first == cell->derivation->cell().upper()->first && std::prev(cell)->derivation->cell().is_sector() && cell->derivation->cell().is_sector()) return false;
+            if (upper_lt_upper(cell->derivation->cell(), std::prev(cell)->derivation->cell()))  return false;
         }
 
         return true;
