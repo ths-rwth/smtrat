@@ -145,7 +145,7 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& de
 }
 
 template<typename P>
-void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::GeneralIndexedRootOrdering& ordering) {
+void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "connected(" << deriv.level() << ")");
     if (cell.is_sector() && cell.lower() && cell.upper() && cell.lower()->poly != cell.upper()->poly) {
         assert(deriv.contains(properties::poly_pdel{ cell.lower()->poly }));
@@ -211,7 +211,7 @@ void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastruct
 }
 
 template<typename P>
-void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& ordering) {
+void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     deriv.insert(properties::cell_connected{ deriv.level() });
     for (const auto& rel : ordering.data()) {
@@ -224,7 +224,7 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
 }
 
 template<typename P>
-void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::GeneralIndexedRootOrdering& ordering, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     deriv.insert(properties::cell_connected{ poly.level-1 });
@@ -312,7 +312,7 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const
 }
 
 template<typename P>
-void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) }));
@@ -320,7 +320,7 @@ void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, co
 }
 
 template<typename P>
-void covering_holds(datastructures::DelineatedDerivation<P>& deriv, const datastructures::CoveringDescription& covering, const datastructures::GeneralIndexedRootOrdering& ordering) {
+void covering_holds(datastructures::DelineatedDerivation<P>& deriv, const datastructures::CoveringDescription& covering, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "holds(" << covering << ")");
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
         assert(deriv.contains(properties::root_well_def{ *it->upper_defining() }));

@@ -37,8 +37,8 @@ inline datastructures::CellDescription compute_simplest_cell(datastructures::Pro
     }
 }
 
-inline std::optional<datastructures::GeneralIndexedRootOrdering> simplest_delineation_ordering(datastructures::Projections& proj, datastructures::Delineation& delin) {
-    datastructures::GeneralIndexedRootOrdering ordering;
+inline std::optional<datastructures::IndexedRootOrdering> simplest_delineation_ordering(datastructures::Projections& proj, datastructures::Delineation& delin) {
+    datastructures::IndexedRootOrdering ordering;
 
     if (!delin.nullified().empty()) return std::nullopt;
     if (delin.roots().empty()) return ordering;
