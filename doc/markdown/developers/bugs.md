@@ -19,7 +19,7 @@ In any of the above cases, make sure that:
 
 If you are unable to solve issue yourself or you find the issue to be an actual bug in SMT-RAT, please do not hesitate to contact us.
 You can either contact us via email (if you suspect a configuration or usage issue on your side) or create a ticket in our bug tracker (if you suspect an error that is to be fixed by us).
-The bug tracker is available at https://github.com/smtrat/smtrat/issues.
+The bug tracker is available at https://github.com/ths-rwth/smtrat/issues.
 
 When sending us a mail or creating a ticket, please provide us with:
 - Your system specifications, including versions of compilers and libraries listed in the dependencies.
