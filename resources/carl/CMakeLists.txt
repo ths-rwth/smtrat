@@ -13,7 +13,7 @@ ExternalProject_Add(
 	CArL-EP-download
 	SOURCE_DIR ${TARGETDIR}/src/CArL-EP
 	BINARY_DIR ${TARGETDIR}/src/CArL-EP-build
-	GIT_REPOSITORY https://github.com/smtrat/carl
+	GIT_REPOSITORY https://github.com/ths-rwth/carl
 	CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=<INSTALL_DIR> -DCMAKE_PREFIX_PATH=<INSTALL_DIR> ${CMAKE_OPTIONS}
 	BUILD_COMMAND ""
 	INSTALL_COMMAND ""

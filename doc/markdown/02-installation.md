@@ -26,9 +26,9 @@ When installing the dependencies, make sure that you meet the following version 
 ## Download
 
 Here are archived versions of SMT-RAT for download:
-- [latest](https://github.com/smtrat/smtrat/releases)
+- [latest](https://github.com/ths-rwth/smtrat/releases)
 
-We mirror our master branch to github.com. If you want to use the newest bleeding edge version, you can checkout from https://github.com/smtrat/smtrat.
+We mirror our master branch to github.com. If you want to use the newest bleeding edge version, you can checkout from https://github.com/ths-rwth/smtrat.
 Although we try to keep the master branch stable, there is a chance that the current revision is broken.
 You can check [here](https://travis-ci.org/smtrat/smtrat/builds) if the current revision compiles.
 

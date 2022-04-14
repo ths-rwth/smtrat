@@ -20,13 +20,13 @@ struct poly_sgn_inv {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-bool operator==(const poly_sgn_inv& lhs, const poly_sgn_inv& rhs) {
+inline bool operator==(const poly_sgn_inv& lhs, const poly_sgn_inv& rhs) {
     return lhs.poly == rhs.poly;
 }
-bool operator<(const poly_sgn_inv& lhs, const poly_sgn_inv& rhs) {
+inline bool operator<(const poly_sgn_inv& lhs, const poly_sgn_inv& rhs) {
     return lhs.poly < rhs.poly;
 }
-std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_sgn_inv& data) {
     os << data.poly << " si";
     return os;
 }
@@ -41,13 +41,13 @@ struct poly_irreducible_sgn_inv {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-bool operator==(const poly_irreducible_sgn_inv& lhs, const poly_irreducible_sgn_inv& rhs) {
+inline bool operator==(const poly_irreducible_sgn_inv& lhs, const poly_irreducible_sgn_inv& rhs) {
     return lhs.poly == rhs.poly;
 }
-bool operator<(const poly_irreducible_sgn_inv& lhs, const poly_irreducible_sgn_inv& rhs) {
+inline bool operator<(const poly_irreducible_sgn_inv& lhs, const poly_irreducible_sgn_inv& rhs) {
     return lhs.poly < rhs.poly;
 }
-std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_irreducible_sgn_inv& data) {
     os << data.poly << " si and irreducible";
     return os;
 }
@@ -62,13 +62,13 @@ struct poly_ord_inv {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-bool operator==(const poly_ord_inv& lhs, const poly_ord_inv& rhs) {
+inline bool operator==(const poly_ord_inv& lhs, const poly_ord_inv& rhs) {
     return lhs.poly == rhs.poly;
 }
-bool operator<(const poly_ord_inv& lhs, const poly_ord_inv& rhs) {
+inline bool operator<(const poly_ord_inv& lhs, const poly_ord_inv& rhs) {
     return lhs.poly < rhs.poly;
 }
-std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
     os << data.poly << " oi";
     return os;
 }
@@ -84,17 +84,16 @@ struct root_well_def {
         std::size_t seed = 0;
         seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
         seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        std::cout << root << " " << seed << std::endl;
         return seed;
     }
 };
-bool operator==(const root_well_def& lhs, const root_well_def& rhs) {
+inline bool operator==(const root_well_def& lhs, const root_well_def& rhs) {
     return lhs.root == rhs.root;
 }
-bool operator<(const root_well_def& lhs, const root_well_def& rhs) {
+inline bool operator<(const root_well_def& lhs, const root_well_def& rhs) {
     return lhs.root < rhs.root;
 }
-std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
+inline std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
     os << data.root.poly << " " << data.root.index << " well-def";
     return os;
 }
@@ -109,13 +108,13 @@ struct poly_pdel {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-bool operator==(const poly_pdel& lhs, const poly_pdel& rhs) {
+inline bool operator==(const poly_pdel& lhs, const poly_pdel& rhs) {
     return lhs.poly == rhs.poly;
 }
-bool operator<(const poly_pdel& lhs, const poly_pdel& rhs) {
+inline bool operator<(const poly_pdel& lhs, const poly_pdel& rhs) {
     return lhs.poly < rhs.poly;
 }
-std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
     os << data.poly << " projectively delineable";
     return os;
 }
@@ -130,13 +129,13 @@ struct cell_connected {
         return 0;
     }
 };
-bool operator==(const cell_connected& lhs, const cell_connected& rhs) {
+inline bool operator==(const cell_connected& lhs, const cell_connected& rhs) {
     return lhs.lvl == rhs.lvl;
 }
-bool operator<(const cell_connected& lhs, const cell_connected& rhs) {
+inline bool operator<(const cell_connected& lhs, const cell_connected& rhs) {
     return lhs.lvl < rhs.lvl;
 }
-std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
+inline std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
     os << data.lvl << " connected";
     return os;
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "../helper.h"
 
 namespace smtrat::cadcells::algorithms {
 
@@ -39,7 +40,6 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
                 assert(results.back()->cell().is_section());
             }
         }
-        // TODO unify neighbouring intervals whenever the poly does not change its sign at a zero
 
         {
             auto current_sample = RAN(carl::sample_below(roots.begin()->first));

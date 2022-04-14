@@ -7,6 +7,7 @@
 #include "polynomials.h"
 
 #include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl/core/polynomialfunctions/Resultant.h>
 
 namespace smtrat::cadcells::datastructures {
 
