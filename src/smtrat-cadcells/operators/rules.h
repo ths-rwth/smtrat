@@ -196,7 +196,6 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
 
 template<typename P>
 void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell) {
-    // TODO obsolete as coverings are realized by orderings?
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "well_def(" << cell << ")");
     if (!cell.is_section()) {
         if (!cell.lower().is_infty()) {
