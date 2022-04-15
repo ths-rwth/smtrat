@@ -29,12 +29,12 @@ public:
 	}
 
 	void degree(std::size_t d) {++mDegrees[d];}
-};
 
-PolyPoolStatistics& poly_statistics() { // TODO: replace by real singleton
-    static PolyPoolStatistics& statistics = statistics_get<PolyPoolStatistics>("mcsat-polys-onecell");
-    return statistics;
-}
+	static PolyPoolStatistics& get_instance() { // TODO: replace by real singleton
+		static PolyPoolStatistics& statistics = statistics_get<PolyPoolStatistics>("mcsat-polys-onecell");
+		return statistics;
+	}
+};
 
 }
 }

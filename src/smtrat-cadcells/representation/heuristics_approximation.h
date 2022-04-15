@@ -53,7 +53,7 @@ Rational mediant(Rational a, Rational b) {
     return Rational(a.get_num()+b.get_num(), a.get_den()+b.get_den());
 }
 
-Rational approximate_RAN_below(const RAN& r, Rational lb) {
+Rational approximate_RAN_below(const RAN& r, Rational lb) { // TODO: make this good
     Rational mid = carl::branching_point(r);
     if (mid < r) return mid;
     Rational floored = carl::floor(r);
@@ -65,7 +65,7 @@ Rational approximate_RAN_below(const RAN& r, Rational lb) {
     return res;
 }
 
-Rational approximate_RAN_above(const RAN& r, Rational ub) {
+Rational approximate_RAN_above(const RAN& r, Rational ub) { // TODO: make this good
     Rational mid = carl::branching_point(r);
     if (mid > r) return mid;
     Rational ceiled = carl::ceil(r);
@@ -88,7 +88,7 @@ Rational approximate_root<ApxRoot::SAMPLE_MID>(const RAN& inner, const RAN& oute
 
 template<>
 Rational approximate_root<ApxRoot::STERN_BROCOT>(const RAN& inner, const RAN& outer, bool below) {
-    Rational apx_inner = carl::branching_point(inner);
+    Rational apx_inner = carl::branching_point(inner); // TODO: this could be on the wrong side of the ran
     while(below ? (apx_inner < outer) : (apx_inner > outer)) {
         inner.refine();
         apx_inner = carl::branching_point(inner);
@@ -103,7 +103,7 @@ Rational approximate_root<ApxRoot::STERN_BROCOT>(const RAN& inner, const RAN& ou
 
 template<>
 Rational approximate_root<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer, bool below) {
-    Rational apx_inner = carl::branching_point(inner);
+    Rational apx_inner = carl::branching_point(inner); // TODO: this could be on the wrong side of the ran
     while(below ? (apx_inner < outer) : (apx_inner > outer)) {
         inner.refine();
         apx_inner = carl::branching_point(inner);
@@ -138,7 +138,7 @@ class CellApproximator {
 template<>
 IR CellApproximator::approximate_bound<ApxPoly::SIMPLE>(const IR& p, const RAN& bound, bool below) {
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().degreeReplaced(proj.degree(p.poly));
+        OCApproximationStatistics::get_instance().degreeReplaced(proj.degree(p.poly));
     #endif
     return IR(proj.polys()(Poly(var) - approximate_root<ApxSettings::root>(main_sample,bound,below)), 1);
 }
@@ -146,7 +146,7 @@ IR CellApproximator::approximate_bound<ApxPoly::SIMPLE>(const IR& p, const RAN& 
 template<>
 IR CellApproximator::approximate_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, const RAN& bound, bool below) {
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().degreeReplaced(proj.degree(p.poly));
+        OCApproximationStatistics::get_instance().degreeReplaced(proj.degree(p.poly));
     #endif
     Poly derivative = carl::derivative(proj.polys()(p.poly), var);
     auto apx_point = sample;
@@ -160,7 +160,7 @@ IR CellApproximator::approximate_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, co
 template<>
 IR CellApproximator::approximate_bound<ApxPoly::LINEAR_GRADIENT_MULTI>(const IR& p, const RAN& bound, bool below) {
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().degreeReplaced(proj.degree(p.poly));
+        OCApproximationStatistics::get_instance().degreeReplaced(proj.degree(p.poly));
     #endif
     Poly derivative = carl::derivative(proj.polys()(p.poly), var);
     Poly gradient = carl::substitute(derivative, var, Poly(carl::branching_point(bound)));
@@ -171,7 +171,7 @@ IR CellApproximator::approximate_bound<ApxPoly::LINEAR_GRADIENT_MULTI>(const IR&
 template<>
 IR CellApproximator::approximate_bound<ApxPoly::UNIVARIATE_TAYLOR>(const IR& p, const RAN& bound, bool below) {
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().degreeReplaced(proj.degree(p.poly));
+        OCApproximationStatistics::get_instance().degreeReplaced(proj.degree(p.poly));
     #endif
     // TODO
     assert(false);
@@ -181,7 +181,7 @@ IR CellApproximator::approximate_bound<ApxPoly::UNIVARIATE_TAYLOR>(const IR& p, 
 template<>
 IR CellApproximator::approximate_bound<ApxPoly::HYPERPLANE>(const IR& p, const RAN& bound, bool below) {
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().degreeReplaced(proj.degree(p.poly));
+        OCApproximationStatistics::get_instance().degreeReplaced(proj.degree(p.poly));
     #endif
     std::size_t dimensions = sample.size()-1;
     if (ApxSettings::hyperplane_dim != 0) dimensions = std::min(ApxSettings::hyperplane_dim, dimensions);
@@ -212,25 +212,32 @@ IR CellApproximator::approximate_bound<ApxPoly::HYPERPLANE>(const IR& p, const R
         if (roots.size() > 0) {
             std::size_t ub_index = 0;
             while (ub_index < roots.size() && roots[ub_index] < sample[v]) ub_index++;
+            if (ub_index < roots.size()) {
+                // if the discriminant has a root at the actual sample, we cannot find two good samples, so we skip this level
+                if (roots[ub_index] == sample[v]) continue;
+                sample_above = carl::sample_between(sample[v], roots[ub_index]);
+            }
             if (ub_index > 0) sample_below = carl::sample_between(roots[ub_index-1], sample[v]);
-            if (ub_index < roots.size()) sample_above = carl::sample_between(sample[v], roots[ub_index]);
 
             auto roots_ldcf = carl::real_roots(leading_coeff_u, restricted_sample, carl::Interval<Rational>(sample_below, sample_above));
             if (roots_ldcf.is_univariate()) {
                 roots = roots_ldcf.roots();
                 ub_index = 0;
                 while (ub_index < roots.size() && roots[ub_index] < sample[v]) ub_index++;
+                if (ub_index < roots.size()) {
+                    if (roots[ub_index] == sample[v]) continue; // TODO: does this even happen?
+                    sample_above = carl::sample_between(sample[v], roots[ub_index]);
+                }
                 if (ub_index > 0) sample_below = carl::sample_between(roots[ub_index-1], sample[v]);
-                if (ub_index < roots.size()) sample_above = carl::sample_between(sample[v], roots[ub_index]);
             }
         }
         // calculate roots corresponding to samples
         restricted_sample.erase(var);
         restricted_sample[v] = sample_below;
-        RAN root_at_sample_below = carl::real_roots(poly, restricted_sample).roots()[p.index];
+        RAN root_at_sample_below = carl::real_roots(poly, restricted_sample).roots()[p.index-1];
         Rational apx_root_below = carl::branching_point(root_at_sample_below);
         restricted_sample[v] = sample_above;
-        RAN root_at_sample_above = carl::real_roots(poly, restricted_sample).roots()[p.index];
+        RAN root_at_sample_above = carl::real_roots(poly, restricted_sample).roots()[p.index-1];
         Rational apx_root_above = carl::branching_point(root_at_sample_above);
         Rational direction_gradient = (apx_root_above - apx_root_below) / (sample_above - sample_below);
         result = result - direction_gradient*(Poly(v) - Poly(carl::branching_point(sample[v]))); // TODO: branching point only approximates ...
@@ -241,13 +248,13 @@ IR CellApproximator::approximate_bound<ApxPoly::HYPERPLANE>(const IR& p, const R
 template<>
 IR CellApproximator::approximate_between<ApxPoly::SIMPLE>(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u) {
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().degreeReplaced(std::max(proj.degree(p_l.poly), proj.degree(p_u.poly)));
+        OCApproximationStatistics::get_instance().degreeReplaced(std::max(proj.degree(p_l.poly), proj.degree(p_u.poly)));
     #endif
     return IR(proj.polys()(Poly(var) - approximate_root<ApxSettings::root>(l,u,false)), 1);
 }
 
 datastructures::CellDescription CellApproximator::compute_cell() {
-    if (del.is_section()) {
+    if (del.is_section()) { // Section case as before
         return datastructures::CellDescription(util::simplest_bound(proj, del.lower()->second));
     } else if (del.lower_unbounded() && del.upper_unbounded()) {
         return datastructures::CellDescription(datastructures::Bound::infty, datastructures::Bound::infty);
@@ -321,6 +328,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                         if (ir != *response.description.upper()) {
                             if (ApxSettings::strategy == ApxStrategy::BETWEEN) {
                                 if (approximation_criteria::pair(der->proj(), *response.description.upper(), ir)) {
+                                    // TODO: what if the two root expressions correspond to the same root?
                                     IR ir_between = apx.approximate_between<ApxSettings::poly>(*response.description.upper(), ir, der->cell().upper()->first, it->first);
                                     response.ordering.add_above(*response.description.upper(), ir_between);
                                     response.ordering.add_above(ir_between, ir); // from here on, this is technically no longer in the biggest-cell-structure

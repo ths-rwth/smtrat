@@ -88,7 +88,7 @@ public:
             m_poly_ids[ref.level-1].emplace(npoly, ref.id);
             m_polys[ref.level-1].push_back(npoly); // [ref.id] = npoly;
             #ifdef SMTRAT_DEVOPTION_Statistics
-                poly_statistics().degree(poly.degree(m_var_order[ref.level-1]));
+                PolyPoolStatistics::get_instance().degree(poly.degree(m_var_order[ref.level-1])); // TODO : replace by OCApproximationStatistics?
             #endif
         } else {
             ref.id = res->second;

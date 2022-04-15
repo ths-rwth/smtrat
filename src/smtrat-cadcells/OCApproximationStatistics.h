@@ -14,6 +14,8 @@ private:
 	std::size_t mApproximated = 0; // #calls in which the approximation changed the cell
 	std::size_t mApproximatedCellSuccess = 0; // #successful calls in which the approximation changed the cell
 	std::size_t mArtificialPolys = 0; // #Polys introduced by the approximation
+	std::size_t mUnboundedLevels = 0;
+	std::size_t mHalfUnboundedLevels = 0;
 
 	bool mCurrentlyApproximated = false;
 	std::map<std::size_t,std::size_t> mReplacedDegrees;
@@ -29,6 +31,8 @@ public:
 		Statistics::addKeyValuePair("approximation_considered", mApproximationConsidered);
 		Statistics::addKeyValuePair("approximated", mApproximated);
 		Statistics::addKeyValuePair("artificial_polys", mArtificialPolys);
+		Statistics::addKeyValuePair("unbounded_levels", mUnboundedLevels);
+		Statistics::addKeyValuePair("half_unbounded_levels", mHalfUnboundedLevels);
 
 		std::size_t maxDegree = 0; // mReplacedDegrees.rbegin(), relying on the order
 		double degSum = 0.0;
@@ -58,12 +62,14 @@ public:
 		}
 	}
 	void degreeReplaced(std::size_t d) {++mReplacedDegrees[d]; artificialPoly();}
-};
+	void unboundedLevel() {++mUnboundedLevels;}
+	void halfUnboundedLevel() {++mHalfUnboundedLevels;}
 
-OCApproximationStatistics& approximation_statistics() {
-	static OCApproximationStatistics& statistics = statistics_get<OCApproximationStatistics>("mcsat-approximation-onecell");
-	return statistics;
-}
+	static OCApproximationStatistics& get_instance() {
+		static OCApproximationStatistics& statistics = statistics_get<OCApproximationStatistics>("mcsat-approximation-onecell");
+		return statistics;
+	}
+};
 
 }
 }

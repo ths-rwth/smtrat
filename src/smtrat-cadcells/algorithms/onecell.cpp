@@ -23,6 +23,9 @@ constexpr bool use_delineation = true;
 using PropSet = operators::PropertiesSet<op>::type;
 
 std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const VariableOrdering& vars, const Assignment& sample) {
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        OCApproximationStatistics& stats = OCApproximationStatistics::get_instance();
+    #endif
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << vars << ", " << sample);
     datastructures::PolyPool pool(vars);
     datastructures::Projections proj(pool);
@@ -53,6 +56,12 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         cell_deriv->delineate_cell();
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
+        #ifdef SMTRAT_DEVOPTION_Statistics
+            if (cell_deriv->cell().lower_unbounded()) {
+                if (cell_deriv->cell().upper_unbounded()) stats.unboundedLevel();
+                else stats.halfUnboundedLevel();
+            } else if (cell_deriv->cell().upper_unbounded()) stats.halfUnboundedLevel();
+        #endif
         auto cell_repr = representation::cell<cell_heuristic>::compute(cell_deriv);
         if (!cell_repr) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
@@ -69,7 +78,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
     }
     proj.clear_assignment_cache(empty_assignment);
     #ifdef SMTRAT_DEVOPTION_Statistics
-        approximation_statistics().success();
+        stats.success();
     #endif
     return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
 }
