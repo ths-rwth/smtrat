@@ -61,13 +61,17 @@ namespace smtrat {
 
 				// Constructor for adding new constraints
 				ConstraintWithInfo(const std::shared_ptr<SimpleConstraint>& f, BranchIterator cl): constraint(*f), conflictLevel(cl){
+					constraint = *f;
 					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
 					derivationCoefficients[f] = Rational (1);
+					conflictLevel = cl;
 				}
 
 				// Constructor for combinations
 				ConstraintWithInfo(SimpleConstraint f, BranchIterator cl): constraint(f), conflictLevel(cl){
+					constraint = f;
 					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
+					conflictLevel = cl;
 				}
 
 				bool operator == (ConstraintWithInfo other) {
@@ -77,6 +81,7 @@ namespace smtrat {
 					res &= (this->constraint.rel() == other.constraint.rel());
 					return res;
 				}
+
 
 			};
 
@@ -185,6 +190,8 @@ namespace smtrat {
 			ConstraintList convertNewFormulas();
 
 			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, BranchIterator currentLvl);
+
+			void transferNonUsed(BranchIterator currentLvl, bool nextLvlIsNew);
 
 
 	};
