@@ -47,28 +47,76 @@ bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 
 template<typename Settings>
 void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
-	std::cout << "\nRemoving........\n";
-	std::cout << mAllConstraints.size() << "\n";
-	// Inconvenient search bc we need to compare the actual formulas, not their shared ptrs (as remove() would)
-	auto constrToRemove = SimpleConstraint(formula->formula().constraint().lhs(), formula->formula().constraint().relation());
-	bool found = false;
-	for (const auto& it : mAllConstraints){
-		if (it->lhs() == constrToRemove.lhs() && it->rel() == constrToRemove.rel()) {
-			mAllConstraints.remove(it);
-			found = true;
-			break;
+	if (formula->formula().constraint().relation() != carl::Relation::EQ) {
+		// Inconvenient search bc we need to compare the actual formulas, not their shared ptrs (as remove() would)
+		auto constrToRemove = SimpleConstraint(formula->formula().constraint().lhs(), formula->formula().constraint().relation());
+		bool found = false;
+		for (const auto& it : mAllConstraints) {
+			if (it->lhs() == constrToRemove.lhs() && it->rel() == constrToRemove.rel()) {
+				mAllConstraints.remove(it);
+				found = true;
+				break;
+			}
+		}
+		assert(found);
+		mModel.clear();
+		for (const auto& it : mNewConstraints) {
+			if (it->lhs() == constrToRemove.lhs() && it->rel() == constrToRemove.rel()) {
+				mNewConstraints.remove(it);
+				return;
+			}
+		}
+		mFMPlexBranch.clear();
+	} else {
+		// Special Treatment for equalities
+		auto constrToRemove1 = SimpleConstraint(formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		auto constrToRemove2 = SimpleConstraint(Rational (-1) * formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		std::shared_ptr<SimpleConstraint> toRemove1;
+		std::shared_ptr<SimpleConstraint> toRemove2;
+		bool found1 = false;
+		bool found2 = false;
+		for (const auto& it : mAllConstraints) {
+			if (it->rel() == carl::Relation::LEQ) {
+				if (it->lhs() == constrToRemove1.lhs()) {
+					toRemove1 = it;
+					found1 = true;
+				} else if (it->lhs() == constrToRemove2.lhs()) {
+					toRemove2 = it;
+					found2 = true;
+				}
+				if (found1 && found2) break;
+			}
+
+		}
+		assert(found1 && found2);
+		mAllConstraints.remove(toRemove1);
+		mAllConstraints.remove(toRemove2);
+
+		mModel.clear();
+
+		found1 = false;
+		found2 = false;
+		for (const auto& it : mNewConstraints) {
+			if (it->rel() == carl::Relation::LEQ) {
+				if (it->lhs() == constrToRemove1.lhs()) {
+					toRemove1 = it;
+					found1 = true;
+				} else if (it->lhs() == constrToRemove2.lhs()) {
+					toRemove2 = it;
+					found2 = true;
+				}
+				if (found1 && found2) break;
+			}
+
+		}
+		assert(found1 == found2);
+		if (found1){
+			mNewConstraints.remove(toRemove1);
+			mNewConstraints.remove(toRemove2);
+		} else {
+			mFMPlexBranch.clear();
 		}
 	}
-	std::cout << mAllConstraints.size() << "\n";
-	assert (found);
-	mModel.clear();
-	for (const auto& it : mNewConstraints){
-		if (it->lhs() == constrToRemove.lhs() && it->rel() == constrToRemove.rel()) {
-			mNewConstraints.remove(it);
-			return;
-		}
-	}
-	mFMPlexBranch.clear();
 }
 
 template<typename Settings>
@@ -352,7 +400,7 @@ void FMPlexModule<Settings>::updateModel() const {
 template<typename Settings>
 typename FMPlexModule<Settings>::ConstraintList FMPlexModule<Settings>::fmplexCombine(boost::optional<carl::Variable> var, boost::optional<ConstraintWithInfo> eliminator, ConstraintList sameBounds, ConstraintList oppositeBounds, BranchIterator currentLvl) {
 	if (!eliminator.has_value()){
-		std::cout << "Only bounds in one direction.\n";
+		//std::cout << "Only bounds in one direction.\n";
 		return ConstraintList();
 	}
 
@@ -360,13 +408,13 @@ typename FMPlexModule<Settings>::ConstraintList FMPlexModule<Settings>::fmplexCo
 
 	// Same-Bound Combinations
 	for (auto it : sameBounds) {
-		std::cout << "Same-Bound combination.\n";
+		//std::cout << "Same-Bound combination.\n";
 		res.push_back(combine(eliminator.get(), it, var.get(), true, currentLvl));
 	}
 
 	// Upper-Lower Combinations
 	for (auto it : oppositeBounds) {
-		std::cout << "Upper-Lower combination.\n";
+		//std::cout << "Upper-Lower combination.\n";
 		res.push_back(combine(eliminator.get(), it, var.get(), false, currentLvl));
 	}
 	return res;
