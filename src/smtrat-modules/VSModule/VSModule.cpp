@@ -839,7 +839,7 @@ namespace smtrat
             ConstraintsT sideConditions;
             if( Settings::elimination_with_factorization )
             {
-                auto& factorization = carl::factorization(constraint);
+                auto& factorization = constraint.lhs_factorization();
                 if (!carl::is_trivial(factorization)) {
                     for( auto iter = factorization.begin(); iter != factorization.end(); ++iter )
                     {

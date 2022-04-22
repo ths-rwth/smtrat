@@ -135,7 +135,7 @@ namespace vs
         std::vector<DisjunctionOfConstraintConjunctions> toCombine;
         for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
-            auto& factorization = carl::factorization(*constraint);
+            auto& factorization = (*constraint).lhs_factorization();
             if( !carl::is_trivial(factorization) )
             {
                 switch( constraint->relation() )
@@ -202,7 +202,7 @@ namespace vs
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT& _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result;
-        auto& factorization = carl::factorization(_constraint);
+        auto& factorization = _constraint.lhs_factorization();
         if( !carl::is_trivial(factorization) )
         {
             switch( _constraint.relation() )
@@ -395,7 +395,7 @@ namespace vs
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
-        auto& factorization = carl::factorization(_constraint);
+        auto& factorization = _constraint.lhs_factorization();
         if( !carl::is_trivial(factorization) && factorization.size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
             assert( _constraint.relation() == Relation::GREATER || _constraint.relation() == Relation::LESS
