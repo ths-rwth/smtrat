@@ -9,7 +9,7 @@
 #include "ESModule.h"
 #include <smtrat-solver/Manager.h>
 
-#include <carl/core/polynomialfunctions/Substitution_Constraint.h>
+#include <carl/constraint/Substitution.h>
 
 namespace smtrat
 {

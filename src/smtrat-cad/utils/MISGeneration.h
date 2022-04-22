@@ -85,7 +85,7 @@ namespace cad {
 			[](const ConstraintT& c){
 				constexpr double constant_weight   = 10.0;
 				constexpr double complexity_weight = 0.1;
-				return constant_weight + complexity_weight * complexity(c);
+				return constant_weight + complexity_weight * complexity(c.constr());
 			}, 12
 		);
 		SMTRAT_LOG_DEBUG("smtrat.mis", "After greedy: " << covering << std::endl << cov);
@@ -132,7 +132,7 @@ namespace cad {
 			[](const ConstraintT& c){
 				constexpr double constant_weight   = 5.0;
 				constexpr double complexity_weight = 0.1;
-				return constant_weight + complexity_weight * (double)complexity(c);
+				return constant_weight + complexity_weight * (double)complexity(c.constr());
 			}
 		);
 

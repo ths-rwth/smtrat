@@ -1,6 +1,6 @@
 #include "CADPreprocessor.h"
 
-#include <carl/core/polynomialfunctions/Substitution_Constraint.h>
+#include <carl/constraint/Substitution.h>
 
 namespace smtrat::cad {
 
