@@ -11,14 +11,15 @@
 
 namespace smtrat::cadcells::algorithms {
 
-constexpr auto cell_heuristic = representation::BIGGEST_CELL_APPROXIMATION;
-// constexpr auto cell_heuristic = representation::BIGGEST_CELL;
+constexpr auto cell_approximation_heuristic = representation::BIGGEST_CELL_APPROXIMATION;
+constexpr auto cell_heuristic = representation::BIGGEST_CELL;
 // constexpr auto cell_heuristic = representation::CHAIN_EQ;
 // constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS_EQ;
-// constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
+//  auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
 constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
 constexpr auto op = operators::op::mccallum;
 constexpr bool use_delineation = true;
+constexpr bool use_approximation = true;
 
 using PropSet = operators::PropertiesSet<op>::type;
 
@@ -26,6 +27,12 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
     #ifdef SMTRAT_DEVOPTION_Statistics
         OCApproximationStatistics& stats = OCApproximationStatistics::get_instance();
     #endif
+
+    bool consider_approximation = use_approximation && representation::approximation::criteria::cell(constraints);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        if (consider_approximation) stats.approximationConsidered();
+    #endif
+
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << vars << ", " << sample);
     datastructures::PolyPool pool(vars);
     datastructures::Projections proj(pool);
@@ -62,7 +69,11 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
                 else stats.halfUnboundedLevel();
             } else if (cell_deriv->cell().upper_unbounded()) stats.halfUnboundedLevel();
         #endif
-        auto cell_repr = representation::cell<cell_heuristic>::compute(cell_deriv);
+
+        auto cell_repr = (consider_approximation && representation::approximation::criteria::level())
+            ? representation::cell<cell_approximation_heuristic>::compute(cell_deriv)
+            : representation::cell<cell_heuristic>::compute(cell_deriv);
+
         if (!cell_repr) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
             return std::nullopt;
