@@ -4,7 +4,7 @@
 #include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
 #include <carl/util/IDPool.h>
-#include "PolyPoolStatistics.h"
+#include "../OCApproximationStatistics.h"
 
 
 namespace smtrat::cadcells::datastructures {
@@ -88,7 +88,7 @@ public:
             m_poly_ids[ref.level-1].emplace(npoly, ref.id);
             m_polys[ref.level-1].push_back(npoly); // [ref.id] = npoly;
             #ifdef SMTRAT_DEVOPTION_Statistics
-                PolyPoolStatistics::get_instance().degree(poly.degree(m_var_order[ref.level-1])); // TODO : replace by OCApproximationStatistics?
+                OCApproximationStatistics::get_instance().degree(poly.degree(m_var_order[ref.level-1]));
             #endif
         } else {
             ref.id = res->second;

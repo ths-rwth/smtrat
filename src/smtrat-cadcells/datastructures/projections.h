@@ -7,6 +7,8 @@
 #include "polynomials.h"
 
 #include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl/core/polynomialfunctions/Resultant.h>
+#include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -115,6 +117,9 @@ public:
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().resultant();
+            #endif
             auto upoly = carl::resultant(as_univariate(p), as_univariate(q));
             assert(carl::is_constant(upoly));
             auto result = m_pool(Poly(upoly));
@@ -136,6 +141,9 @@ public:
         if (cache(p).disc) {
             return *cache(p).disc;
         } else {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().discriminant();
+            #endif
             auto upoly = carl::discriminant(as_univariate(p));
             assert(carl::is_constant(upoly));
             auto result = m_pool(Poly(upoly));
@@ -149,6 +157,9 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().coefficient();
+            #endif
             auto result = m_pool(m_pool(p).lcoeff(main_var(p)));
             assert(!is_zero(result));
             cache(p).ldcf = result;
