@@ -201,7 +201,8 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
+ 
+    if (carl::ran::real_roots(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model)).is_nullified()) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }
@@ -271,7 +272,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
+    if (carl::ran::real_roots(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model)).is_nullified()) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }

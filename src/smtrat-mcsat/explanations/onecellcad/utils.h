@@ -507,9 +507,7 @@ public:
 
         const carl::Variable mainVariable = variableOrder[polyLevel];
 
-        return carl::ran::interval::vanishes(
-                carl::to_univariate_polynomial(poly, mainVariable),
-                prefixPointToStdMap(polyLevel));
+        return carl::ran::real_roots(carl::to_univariate_polynomial(poly, mainVariable), prefixPointToStdMap(polyLevel)).is_nullified();
     }
 
     bool isPointRootOfPoly(
