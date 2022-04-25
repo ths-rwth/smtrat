@@ -8,35 +8,56 @@ static constexpr std::size_t critical_degree = 5;
 
 class ApxCriteria_Detail {
     private:
-        std::size_t m_count;
+        std::size_t m_count = 0;
+        bool m_cell_apx = false;
         std::unordered_map<FormulaT, std::size_t> m_involved;
     public:
         ApxCriteria_Detail () {}
 
-        static ApxCriteria_Detail get_instance() {
+        static ApxCriteria_Detail& get_instance() {
             static ApxCriteria_Detail instance = ApxCriteria_Detail();
             return instance;
         }
 
+        void inform_apx() {
+            m_cell_apx = true;
+        }
+
+        void new_cell() {
+            m_cell_apx = false;
+        }
+
         bool count_ok() {
             if (m_count < max_count) {
-                ++m_count;
+                if (m_cell_apx) ++m_count;
                 return true;
-            } else return false;
+            } else {
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                    OCApproximationStatistics::get_instance().maxIterationsReached();
+                #endif
+                return false;
+            }
         }
 
         bool involved_ok(const FormulasT& constraints) {
+            return true;
             bool result = true;
             for (const FormulaT c : constraints) {
                 ++m_involved[c];
-                if (m_involved[c] > max_involved) result = false;
+                #ifdef SMTRAT_DEVOPTION_Statistics
+                    if (m_involved[c] == max_involved)
+                        OCApproximationStatistics::get_instance().involvedTooOften();
+                #endif
+                if (m_involved[c] >= max_involved) result = false;
             }
             return result;
         }
 };
 
 bool cell(const FormulasT& constraints) {
-    return ApxCriteria_Detail::get_instance().count_ok() && ApxCriteria_Detail::get_instance().involved_ok(constraints);
+    ApxCriteria_Detail& ad = ApxCriteria_Detail::get_instance();
+    ad.new_cell();
+    return ad.count_ok() && ad.involved_ok(constraints);
 }
 
 bool level() {
