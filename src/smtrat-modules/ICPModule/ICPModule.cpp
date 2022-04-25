@@ -1563,7 +1563,7 @@ namespace smtrat
             {
                 EvalDoubleIntervalMap tmpIntervals = mIntervals;
                 tmpIntervals.insert(std::make_pair(_varIcpVarMapIter->first,DoubleInterval(1)));
-                DoubleInterval derivedEvalInterval = carl::IntervalEvaluation::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
+                DoubleInterval derivedEvalInterval = carl::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
                 if( derivedEvalInterval.lowerBoundType() == carl::BoundType::INFTY || derivedEvalInterval.upperBoundType() == carl::BoundType::INFTY )
                     return std::numeric_limits<double>::infinity();
                 impact = derivedEvalInterval.diameter() * originalDiameter;
@@ -1573,7 +1573,7 @@ namespace smtrat
             {
                 EvalDoubleIntervalMap tmpIntervals = mIntervals;
                 tmpIntervals.insert(std::make_pair(_varIcpVarMapIter->first,DoubleInterval(1)));
-                DoubleInterval derivedEvalInterval = carl::IntervalEvaluation::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
+                DoubleInterval derivedEvalInterval = carl::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
                 DoubleInterval negCenter = varInterval.inverse();
                 negCenter = negCenter.add(varInterval);
                 derivedEvalInterval = derivedEvalInterval.mul(negCenter);
@@ -1937,7 +1937,7 @@ namespace smtrat
             #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
             std::cout << constraint << std::endl;
             #endif
-            DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( constraint.lhs(), _intervals );
+            DoubleInterval solutionSpace = carl::evaluate( constraint.lhs(), _intervals );
             #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
             std::cout << solutionSpace << std::endl;
             #endif

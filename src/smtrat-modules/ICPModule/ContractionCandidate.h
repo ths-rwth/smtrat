@@ -10,7 +10,7 @@
 //#define CCPRINTORIGINS
 
 //#include "ContractionCandidateManager.h"
-#include <carl/interval/Contraction.h>
+#include <carl/intervalcontraction/Contraction.h>
 #include <smtrat-common/model.h>
 
 namespace smtrat

@@ -3,7 +3,7 @@
 #include <functional>
 #include <vector>
 
-#include <carl/interval/IntervalEvaluation.h>
+#include <carl/core/polynomialfunctions/IntervalEvaluation.h>
 
 #include "../common.h"
 #include "../utils/CADConstraints.h"
@@ -61,9 +61,9 @@ namespace cad {
 				carl::Interval<Rational> res;
 				const auto& map = mConstraints.bounds().getEvalIntervalMap();
 				if (map.count(p.mainVar()) > 0) {
-					res = carl::IntervalEvaluation::evaluate(p, map);
+					res = carl::evaluate(p, map);
 				} else {
-					res = carl::IntervalEvaluation::evaluate(Poly(p), map);
+					res = carl::evaluate(Poly(p), map);
 				}
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Bounds:" << std::endl << mConstraints.bounds().getEvalIntervalMap());
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking polynomial " << p << " against bounds, results in " << res);

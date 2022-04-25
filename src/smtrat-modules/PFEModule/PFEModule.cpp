@@ -116,7 +116,7 @@ namespace smtrat
 			std::vector<Factorization::const_iterator> Pr;
 			carl::Relation qrel = carl::Relation::GREATER;
 			for (auto it = factors.begin(); it != factors.end(); it++) {
-				auto i = carl::IntervalEvaluation::evaluate(it->first, completeBounds(it->first));
+				auto i = carl::evaluate(it->first, completeBounds(it->first));
 				SMTRAT_LOG_TRACE("smtrat.pfe", "Considering factor " << it->first << " with bounds " << i);
 				if (i.isPositive()) {
 					qrel = combine(qrel, carl::Relation::GREATER, it->second);

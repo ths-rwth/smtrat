@@ -828,9 +828,9 @@ namespace smtrat
 //                            std::cout << (*bcons) << std::endl;
                         Poly varCoeff = cons->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
-                        RationalInterval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
+                        RationalInterval varCoeffEvaluated = carl::evaluate( varCoeff, bounds );
                         Poly remainder = carl::substitute(cons->lhs(), var, Poly(0) );
-                        RationalInterval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
+                        RationalInterval remainderEvaluated = carl::evaluate( remainder, bounds ).inverse();
                         
                         RationalInterval newBoundsA;
                         RationalInterval newBoundsB;

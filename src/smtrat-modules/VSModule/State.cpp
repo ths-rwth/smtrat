@@ -2350,11 +2350,11 @@ namespace vs
         else
         {
             smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
-            smtrat::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
-            smtrat::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
-            smtrat::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
+            smtrat::DoubleInterval solutionSpaceConst = carl::evaluate( substitution().term().constantPart(), intervals );
+            smtrat::DoubleInterval solutionSpaceFactor = carl::evaluate( substitution().term().factor(), intervals );
+            smtrat::DoubleInterval solutionSpaceRadicand = carl::evaluate( substitution().term().radicand(), intervals );
             smtrat::DoubleInterval solutionSpaceSqrt = carl::sqrt(solutionSpaceRadicand);
-            smtrat::DoubleInterval solutionSpaceDenom = carl::IntervalEvaluation::evaluate( substitution().term().denominator(), intervals );
+            smtrat::DoubleInterval solutionSpaceDenom = carl::evaluate( substitution().term().denominator(), intervals );
             smtrat::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
@@ -2450,7 +2450,7 @@ namespace vs
             if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
                 indexDomain->second.setLowerBoundType( carl::BoundType::WEAK );
         }
-        smtrat::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
+        smtrat::DoubleInterval solutionSpace = carl::evaluate( cons.lhs(), intervals );
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK
