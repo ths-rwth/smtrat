@@ -14,6 +14,7 @@
 #include <numeric>
 #include <carl/core/polynomialfunctions/RootBounds.h>
 #include <carl/core/polynomialfunctions/RootCounting.h>
+#include <carl/constraint/IntervalEvaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -593,7 +594,7 @@ namespace vs
                 if( !constr.isBound() )
                 {
                     carl::Relation stricterRelation = constr.relation();
-                    switch( constr.consistentWith( varIntervals, stricterRelation ) )
+                    switch( consistentWith(constr.constr(), varIntervals, stricterRelation ) )
                     {
                         case 0:
                         {
