@@ -19,13 +19,14 @@ constexpr auto cell_heuristic = representation::BIGGEST_CELL;
 constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
 constexpr auto op = operators::op::mccallum;
 constexpr bool use_delineation = true;
-constexpr bool use_approximation = true;
+constexpr bool use_approximation = false;
 
 using PropSet = operators::PropertiesSet<op>::type;
 
 std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const VariableOrdering& vars, const Assignment& sample) {
     #ifdef SMTRAT_DEVOPTION_Statistics
         OCApproximationStatistics& stats = OCApproximationStatistics::get_instance();
+        stats.newCell();
     #endif
 
     bool consider_approximation = use_approximation && representation::approximation::criteria::cell(constraints);

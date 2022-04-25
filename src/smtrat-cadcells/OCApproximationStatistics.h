@@ -19,6 +19,9 @@ private:
 	std::size_t mResultants = 0;
 	std::size_t mDiscriminants = 0;
 	std::size_t mCoefficients = 0;
+	std::size_t mInvolvedTooOften = 0;
+	std::vector<std::size_t> mLeftOutVarsTaylor;
+	bool mMaxIterationsReached = false;
 
 	bool mCurrentlyApproximated = false;
 	std::map<std::size_t,std::size_t> mReplacedDegrees;
@@ -40,6 +43,8 @@ public:
 		Statistics::addKeyValuePair("resultants", mResultants);
 		Statistics::addKeyValuePair("discriminants", mDiscriminants);
 		Statistics::addKeyValuePair("leading_coefficients", mCoefficients);
+		Statistics::addKeyValuePair("involved_to_often", mInvolvedTooOften);
+		Statistics::addKeyValuePair("max_iterations_reached", mMaxIterationsReached);
 
 		std::size_t maxDegree = 0; // mReplacedDegrees.rbegin(), relying on the order
 		double degSum = 0.0;
@@ -61,14 +66,20 @@ public:
 		}
 		Statistics::addKeyValuePair("max_degree_construction", maxDegree);
 		Statistics::addKeyValuePair("mean_degree_construction", (degSum/nDegs));
+
+		std::size_t maxLeftOut = 0; // mDegreesInConstruction.rbegin(), relying on the order
+		double sum = 0.0;
+		for (const auto& value : mLeftOutVarsTaylor) {
+			sum += value;
+			if (value > maxLeftOut) maxLeftOut = value;
+		}
+		Statistics::addKeyValuePair("max_n_leftout_vars_taylor", maxLeftOut);
+		Statistics::addKeyValuePair("mean_n_leftout_vars_taylor", (sum/double(mLeftOutVarsTaylor.size())));
 	}
 
 	void success() {
 		++mOneCellSuccess;
-		if (mCurrentlyApproximated) {
-			++mApproximatedCellSuccess;
-			mCurrentlyApproximated = false;
-		}
+		if (mCurrentlyApproximated) ++mApproximatedCellSuccess;
 	}
 	void approximationConsidered() {++mApproximationConsidered;}
 	void artificialPoly() {
@@ -85,6 +96,10 @@ public:
 	void resultant() {++mResultants;}
 	void discriminant() {++mDiscriminants;}
 	void coefficient() {++mCoefficients;}
+	void involvedTooOften() {++mInvolvedTooOften;}
+	void maxIterationsReached() {mMaxIterationsReached = true;}
+	void leftOutVarsTaylor(std::size_t n) {mLeftOutVarsTaylor.push_back(n);}
+	void newCell() {mCurrentlyApproximated = false;}
 
 	static OCApproximationStatistics& get_instance() {
 		static OCApproximationStatistics& statistics = statistics_get<OCApproximationStatistics>("mcsat-approximation-onecell");
