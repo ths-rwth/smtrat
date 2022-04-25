@@ -213,7 +213,7 @@ namespace smtrat
 					continue;
 				}
 						
-				bool constraintContainsCurrentVariable = constraint.hasVariable(var);
+				bool constraintContainsCurrentVariable = constraint.variables().has(var);
 				bool constraintContainsSubstitutedVariable = variableSubstitutions.find(var) != variableSubstitutions.end();
 
 				if (!isTrivial(constraint) && (constraintContainsCurrentVariable || constraintContainsSubstitutedVariable)) {
@@ -404,7 +404,7 @@ namespace smtrat
 		bool trivial = false;
 
 		trivial = trivial || constraint.variables().size() <= 1;
-		trivial = trivial || (constraint.constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
+		trivial = trivial || (constraint.lhs().constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
 
 		return trivial;
 	}

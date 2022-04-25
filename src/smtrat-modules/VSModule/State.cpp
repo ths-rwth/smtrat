@@ -275,7 +275,7 @@ namespace vs
     bool State::occursInEquation( const carl::Variable& _variable ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
+            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().variables().has( _variable ) )
                 return true;
         return false;
     }
@@ -1182,7 +1182,7 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() );//  || (**cond).constraint().isUpperBound();
+            (**cond).rFlag() = !(**cond).constraint().variables().has( index() );//  || (**cond).constraint().isUpperBound();
         }
     }
 
@@ -1557,7 +1557,7 @@ namespace vs
                                     (*condB)->rRecentlyAdded() = true;
                                     recentlyAddedConditionLeft = true;
                                     if( index() != carl::Variable::NO_VARIABLE )
-                                        (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                        (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                                 }
                             }
                             delete changedVar;
@@ -1638,7 +1638,7 @@ namespace vs
                                 (*condB)->rRecentlyAdded() = true;
                                 recentlyAddedConditionLeft = true;
                                 if( index() != carl::Variable::NO_VARIABLE )
-                                    (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                    (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                             }
                         }
                         delete changedVar;
@@ -2119,7 +2119,7 @@ namespace vs
                     while( oCond != (**cond).originalConditions().end() )
                     {
                         assert( father().index() != carl::Variable::NO_VARIABLE );
-                        if( (**oCond).constraint().hasVariable( father().index() ) )
+                        if( (**oCond).constraint().variables().has( father().index() ) )
                             coverSetOCondsContainIndexOfFather = true;
                         coverSetOConds.insert( *oCond );
                         oCond++;

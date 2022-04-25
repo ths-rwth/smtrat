@@ -815,7 +815,7 @@ namespace smtrat
     {
         // Get the constraint of this condition.
         const ConstraintT& constraint = (*_condition).constraint();
-        assert( _condition->constraint().hasVariable( _eliminationVar ) );
+        assert( _condition->constraint().variables().has( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
         carl::PointerSet<vs::Condition> oConditions;
@@ -1350,7 +1350,7 @@ namespace smtrat
                      */
                     for( auto cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
-                        if( _currentState->index() != carl::Variable::NO_VARIABLE && (**cond).constraint().hasVariable( _currentState->index() ) )
+                        if( _currentState->index() != carl::Variable::NO_VARIABLE && (**cond).constraint().variables().has( _currentState->index() ) )
                         {
                             bool worseConditionFound = false;
                             auto child = _currentState->rChildren().begin();

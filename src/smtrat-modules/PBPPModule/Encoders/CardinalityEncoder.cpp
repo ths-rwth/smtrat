@@ -23,7 +23,7 @@ namespace smtrat {
 		assert(!allCoeffNegative || !allCoeffPositive);
 
 		bool mixedCoeff = !allCoeffNegative && !allCoeffPositive;
-		Rational constant = -constraint.constantPart();
+		Rational constant = -constraint.lhs().constantPart();
 
 		if (constraint.relation() == carl::Relation::EQ && !mixedCoeff) {
 			// For equality -x1 - x2 - x3 ~ -2 and x1 + x2 + x3 ~ 2 are the same
@@ -73,7 +73,7 @@ namespace smtrat {
 	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
 		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
 
-		return encodeExactly(constraint.variables().as_vector(), -constraint.constantPart());
+		return encodeExactly(constraint.variables().as_vector(), -constraint.lhs().constantPart());
 	}
 
 	FormulaT CardinalityEncoder::encodeExactly(const std::vector<carl::Variable>& variables, const Rational constant) {
@@ -110,7 +110,7 @@ namespace smtrat {
 
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
 		FormulasT result;
-		Rational constant = constraint.constantPart();
+		Rational constant = constraint.lhs().constantPart();
 		assert(constant > 0);
 		if (constant <= constraint.variables().size()/2) {
 			for (Rational i = constant - 1; i > 0; i--) {
@@ -137,7 +137,7 @@ namespace smtrat {
 	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
 		FormulasT result;
 
-		Rational constant = -constraint.constantPart();
+		Rational constant = -constraint.lhs().constantPart();
 		if (constant < constraint.variables().size()/2) {
 			for (unsigned i = 0 ; i <= constant; i++) {
 				result.push_back(FormulaT(encodeExactly(constraint.variables().as_vector(), i)));
@@ -180,7 +180,7 @@ namespace smtrat {
 		SMTRAT_LOG_DEBUG("smtrat.pbc", "Calculating encodingSize for Cardinality.");
 
 		std::size_t nVars = constraint.variables().size();
-		Rational constantPart = carl::abs(constraint.constantPart());
+		Rational constantPart = carl::abs(constraint.lhs().constantPart());
 
 		Rational binomPositiveFormulation = factorial(nVars)/(factorial(constantPart) * factorial(nVars - constantPart));
 		Rational binomNegativeFormulation = factorial(nVars)/(factorial(nVars - constantPart - 1) * factorial(constantPart - 1));

@@ -104,7 +104,7 @@ double num_occurrences(const Constraints& constraints, carl::Variable v) {
 	return abstract_feature(constraints, 0.0,
 		[](double a, double b){ return a+b; },
 		[v](const auto& c){ 
-			if (c.hasVariable(v)) {
+			if (c.variables().has(v)) {
 				return 1;
 			} else {
 				return 0;

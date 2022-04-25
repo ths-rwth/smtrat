@@ -2786,7 +2786,7 @@ namespace smtrat
                     // TODO: store original variables as member, updating them efficiently with assert and remove
                     for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
                     {
-                        if(*varIt != (*variableIt)->var() && formulaIt->constraint().hasVariable(*varIt))
+                        if(*varIt != (*variableIt)->var() && formulaIt->constraint().variables().has(*varIt))
                         {
                             hasAdditionalVariables = true;
                             break;
@@ -2797,7 +2797,7 @@ namespace smtrat
                         // std::cout << "Addidional variables." << std::endl;
                         for( auto receivedFormulaIt = rReceivedFormula().begin(); receivedFormulaIt != rReceivedFormula().end(); ++receivedFormulaIt )
                         {
-                            if( receivedFormulaIt->formula().constraint().hasVariable((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
+                            if( receivedFormulaIt->formula().constraint().variables().has((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
                             {
                                 reasons.push_back( receivedFormulaIt->formula() );
                                 // std::cout << "Also add: " << **receivedFormulaIt << std::endl;

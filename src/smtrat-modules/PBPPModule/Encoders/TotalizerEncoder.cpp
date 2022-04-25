@@ -15,7 +15,7 @@ namespace smtrat {
 
 		// traverse non-leaf nodes and construct formula
 		FormulaT sumPropagation = mSumPropagationFormulaCache[constraint.variables().as_set()];
-		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.constantPart()));
+		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.lhs().constantPart()));
 
 		return FormulaT(carl::FormulaType::AND, sumPropagation, cardinalityRestriction);
 	}

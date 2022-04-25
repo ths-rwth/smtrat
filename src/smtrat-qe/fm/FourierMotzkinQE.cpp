@@ -41,7 +41,7 @@ namespace smtrat::qe::fm {
 
         // if the formula only contains one constraint, check for occurence of the variable.
         if(mFormula.getType() == carl::FormulaType::CONSTRAINT) {
-            if(!mFormula.constraint().hasVariable(variable)) {
+            if(!mFormula.constraint().variables().has(variable)) {
                 res[3].push_back(mFormula);
             } else {
                 if(mFormula.constraint().relation() == carl::Relation::EQ){
@@ -58,7 +58,7 @@ namespace smtrat::qe::fm {
         // More than one constaint: search formula to find bounds
         for(auto formulaIt = mFormula.begin(); formulaIt != mFormula.end(); ++formulaIt) {
             assert((*formulaIt).getType() == carl::FormulaType::CONSTRAINT);
-            if((*formulaIt).constraint().hasVariable(variable)) {
+            if((*formulaIt).constraint().variables().has(variable)) {
                 if((*formulaIt).constraint().relation() == carl::Relation::EQ) {
                     res[2].push_back(*formulaIt);
                 } else if(isLinearLowerBound((*formulaIt).constraint(), variable)) {
@@ -149,7 +149,7 @@ namespace smtrat::qe::fm {
     }
 
     bool FourierMotzkinQE::isLinearLowerBound(const ConstraintT& c, carl::Variable v) {
-        assert(c.hasVariable(v));
+        assert(c.variables().has(v));
         assert(c.coefficient(v,1).isNumber());
 
         // is linear lower bound when the coefficient is > 0 and the relation is LEQ or LESS, or if the coefficient is < 0 and the relation is GEQ or GREATER.

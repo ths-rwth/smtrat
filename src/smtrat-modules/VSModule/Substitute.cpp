@@ -612,7 +612,7 @@ namespace vs
     {
         
         bool result = true;
-        if( _cons.hasVariable( _subs.variable() ) )
+        if( _cons.variables().has( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
             if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constantPart().size()) + smtrat::Rational(_subs.term().factor().size()) * smtrat::Rational(_subs.term().radicand().size())), _cons.maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
@@ -994,7 +994,7 @@ namespace vs
                                  Variables& _conflictingVariables,
                                  const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
-        assert( _cons.hasVariable( _subs.variable() ) );
+        assert( _cons.variables().has( _subs.variable() ) );
         // Create a substitution formed by the given one without an addition of epsilon.
         Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, carl::PointerSet<Condition>(_subs.originalConditions()) );
         // Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],  where the parameter relation is ~.

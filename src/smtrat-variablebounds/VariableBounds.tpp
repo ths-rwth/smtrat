@@ -186,7 +186,7 @@ namespace smtrat
             {
                 const Rational coeff = _constraint.lhs().lterm().coeff();
                 carl::Relation rel = _constraint.relation();
-                Rational* limit = new Rational( -_constraint.constantPart()/coeff );
+                Rational* limit = new Rational( -_constraint.lhs().constantPart()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
                 if( rel == carl::Relation::EQ )
                 {
