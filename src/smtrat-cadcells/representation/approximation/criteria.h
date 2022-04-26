@@ -20,7 +20,8 @@ class ApxCriteria_Detail {
         }
 
         void inform_apx() {
-            m_cell_apx = true;
+            if (m_cell_apx) ++m_count;
+            else m_cell_apx = true;
         }
 
         void new_cell() {
@@ -29,7 +30,6 @@ class ApxCriteria_Detail {
 
         bool count_ok() {
             if (m_count < max_count) {
-                if (m_cell_apx) ++m_count;
                 return true;
             } else {
                 #ifdef SMTRAT_DEVOPTION_Statistics
