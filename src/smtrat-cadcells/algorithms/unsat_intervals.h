@@ -26,7 +26,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
     if (roots.empty()) {
         tmp_sample.insert_or_assign(current_var, RAN(0));
-        if (!carl::evaluate(c, tmp_sample)) {
+        if (!carl::evaluate(c.constr(), tmp_sample)) {
             results.emplace_back(datastructures::make_sampled_derivation<typename operators::PropertiesSet<op>::type>(deriv,RAN(0)));
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
             assert(results.back()->cell().lower_unbounded());
@@ -44,7 +44,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         {
             auto current_sample = RAN(carl::sample_below(roots.begin()->first));
             tmp_sample.insert_or_assign(current_var, current_sample);
-            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
+            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c.constr(), tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
@@ -55,7 +55,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         for (auto root = roots.begin(); root != std::prev(roots.end()); root++) {
             auto current_sample = carl::sample_between(root->first, std::next(root)->first);
             tmp_sample.insert_or_assign(current_var, current_sample);
-            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
+            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c.constr(), tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
@@ -67,7 +67,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         {
             auto current_sample = RAN(carl::sample_above((--roots.end())->first));
             tmp_sample.insert_or_assign(current_var, current_sample);
-            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
+            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c.constr(), tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());

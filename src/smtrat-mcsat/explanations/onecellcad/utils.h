@@ -20,7 +20,6 @@
 
 #include <carl/ran/ran.h>
 #include <carl/ran/RealAlgebraicPoint.h>
-#include <carl/ran/interval/ran_interval_extra.h>
 
 #include "OCStatistics.h"
 #include "Assertables.h"
@@ -517,7 +516,7 @@ public:
 
         //No fail-check here
         auto res = carl::evaluate(
-                ConstraintT(poly, carl::Relation::EQ),
+                carl::BasicConstraint<Poly>(poly, carl::Relation::EQ),
                 prefixPointToStdMap(componentCount));
         assert(!indeterminate(res));
         return (bool) res;
