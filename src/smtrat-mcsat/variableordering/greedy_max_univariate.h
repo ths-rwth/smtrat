@@ -3,7 +3,7 @@
 #include "helper.h"
 
 #include <carl/core/Variable.h>
-#include <carl/util/Bitset.h>
+#include <carl-common/datastructures/Bitset.h>
 #include <smtrat-common/smtrat-common.h>
 
 #include <algorithm>

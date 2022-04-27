@@ -48,7 +48,7 @@ namespace vs
      */
     double Condition::valuate( const carl::Variable& _consideredVariable, size_t _maxNumberOfVars, bool _preferEquation ) const
     {
-        if( !constraint().hasVariable( _consideredVariable ) )
+        if( !constraint().variables().has( _consideredVariable ) )
             return 0;
         const smtrat::VarPolyInfo& varInfo = constraint().varInfo( _consideredVariable );
         double maximum = 0;
@@ -127,7 +127,7 @@ namespace vs
 #else
 	typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
 #endif
-	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (!carl::isZero(constraint().constantPart()) && polyExpanded.nrTerms() > 1) ) )
+	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (!carl::isZero(constraint().lhs().constantPart()) && polyExpanded.nrTerms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;

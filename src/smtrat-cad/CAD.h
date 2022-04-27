@@ -117,7 +117,7 @@ namespace cad {
 			if (sample.evaluatedWith().test(cid)) {
 				return sample.evaluationResult().test(cid);
 			}
-			auto evalResult = carl::evaluate(constraint.first, assignment);
+			auto evalResult = carl::evaluate(constraint.first.constr(), assignment);
 			assert(!indeterminate(evalResult));
 			SMTRAT_LOG_TRACE("smtrat.cad.lifting", "Evaluating " << constraint.first << " on " << assignment << " -> " << (bool)evalResult);
 			sample.evaluatedWith().set(cid, true);

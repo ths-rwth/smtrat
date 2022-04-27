@@ -55,7 +55,7 @@ namespace smtrat
                 {
                     assert(_lhs.getType() == carl::FormulaType::CONSTRAINT);
                     assert(_rhs.getType() == carl::FormulaType::CONSTRAINT);
-                    return _lhs.constraint().id() < _rhs.constraint().id();
+                    return _lhs.constraint() < _rhs.constraint();
                 }
             };
             

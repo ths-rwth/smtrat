@@ -26,7 +26,7 @@ namespace smtrat {
 			}
 		}
 
-		return constraint.constantPart() == Rational(-1);
+		return constraint.lhs().constantPart() == Rational(-1);
 	}
 
 	boost::optional<FormulaT> ExactlyOneCommanderEncoder::doEncode(const ConstraintT& constraint) {

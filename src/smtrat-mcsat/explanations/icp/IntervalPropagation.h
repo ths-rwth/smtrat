@@ -3,7 +3,7 @@
 #include "Dependencies.h"
 
 #include <carl/interval/Interval.h>
-#include <carl/interval/Contractor.h>
+#include <carl/intervalcontraction/Contractor.h>
 #include <carl/interval/sampling.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/utils/Bookkeeping.h>

@@ -474,7 +474,7 @@ namespace smtrat
                 {
                     assert( mVariables.find(var) == mVariables.end() );
                     assert( mIntervals.find(var) == mIntervals.end() );
-                    mSubstitutions.insert( std::make_pair( var, carl::makePolynomial<Poly>(var) ) );
+                    mSubstitutions.insert( std::make_pair( var, Poly(var) ) );
                     getIcpVariable( var, true, nullptr ); // note that we have to set the lra variable later
                     mHistoryRoot->addInterval( var, DoubleInterval::unboundedInterval() );
                 }
@@ -828,7 +828,7 @@ namespace smtrat
                     std::cout << "New replacement: " << monom << " -> " << mVariableLinearizations.at(monom) << std::endl;
                     #endif
                     // Create equation m_i - v_i = 0, where m_i is the nonlinear monomial x_{i,1}^e_{i,1}*..*x_{i,n}^e_{i,n} being replaced by the freshly introduced variable v_i
-                    Poly rhs = monom - carl::makePolynomial<Poly>(newVar);
+                    Poly rhs = monom - Poly(newVar);
                     if( mContractors.find(rhs) == mContractors.end() )
                     {
                         mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs)) );
@@ -879,11 +879,11 @@ namespace smtrat
         for( auto monomialIt = _constraint.lhs().polynomial().begin(); monomialIt != _constraint.lhs().polynomial().end(); ++monomialIt )
         {
             if( (monomialIt)->monomial() == nullptr || (monomialIt)->monomial()->isAtMostLinear() )
-                linearizedConstraint += carl::makePolynomial<Poly>(typename Poly::PolyType(*monomialIt));
+                linearizedConstraint += Poly(typename Poly::PolyType(*monomialIt));
             else
             {
-                assert( mVariableLinearizations.find(carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial()))) != mVariableLinearizations.end() );
-                linearizedConstraint += (monomialIt)->coeff() * carl::makePolynomial<Poly>((*mVariableLinearizations.find( carl::makePolynomial<Poly>(typename Poly::PolyType((monomialIt)->monomial())) )).second);
+                assert( mVariableLinearizations.find(Poly(typename Poly::PolyType((monomialIt)->monomial()))) != mVariableLinearizations.end() );
+                linearizedConstraint += (monomialIt)->coeff() * Poly((*mVariableLinearizations.find( Poly(typename Poly::PolyType((monomialIt)->monomial())) )).second);
             }
         }
         mNonlinearConstraints.emplace( _constraint, std::move(ccs) );
@@ -917,12 +917,12 @@ namespace smtrat
             }
             carl::Variable newVar = hasRealVar ? carl::freshRealVariable() : carl::freshIntegerVariable();
             variables.insert( variables.end(), newVar );
-            mSubstitutions.insert( std::make_pair( newVar, carl::makePolynomial<Poly>( newVar ) ) );
+            mSubstitutions.insert( std::make_pair( newVar, Poly( newVar ) ) );
             assert( mVariables.find( newVar ) == mVariables.end() );
             icp::IcpVariable* icpVar = getIcpVariable( newVar, false, slackvariable );
             mHistoryRoot->addInterval( newVar, DoubleInterval::unboundedInterval() );
             // Create equation a_1'*x_1 + .. + a_k'*x_k = 0, with a_i' = a_i/gcd(a_1,..,a_k)*sgn(a_1)
-            Poly rhs = carl::makePolynomial<Poly>(slackvariable->expression()) - carl::makePolynomial<Poly>(newVar);
+            Poly rhs = Poly(slackvariable->expression()) - Poly(newVar);
             ConstraintT tmpConstr = ConstraintT( rhs, carl::Relation::EQ );
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
@@ -1563,7 +1563,7 @@ namespace smtrat
             {
                 EvalDoubleIntervalMap tmpIntervals = mIntervals;
                 tmpIntervals.insert(std::make_pair(_varIcpVarMapIter->first,DoubleInterval(1)));
-                DoubleInterval derivedEvalInterval = carl::IntervalEvaluation::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
+                DoubleInterval derivedEvalInterval = carl::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
                 if( derivedEvalInterval.lowerBoundType() == carl::BoundType::INFTY || derivedEvalInterval.upperBoundType() == carl::BoundType::INFTY )
                     return std::numeric_limits<double>::infinity();
                 impact = derivedEvalInterval.diameter() * originalDiameter;
@@ -1573,7 +1573,7 @@ namespace smtrat
             {
                 EvalDoubleIntervalMap tmpIntervals = mIntervals;
                 tmpIntervals.insert(std::make_pair(_varIcpVarMapIter->first,DoubleInterval(1)));
-                DoubleInterval derivedEvalInterval = carl::IntervalEvaluation::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
+                DoubleInterval derivedEvalInterval = carl::evaluate((*_varIcpVarMapIter->second->candidates().begin())->derivative(), tmpIntervals); // TODO: WHY ANY DERIVATIVE??
                 DoubleInterval negCenter = varInterval.inverse();
                 negCenter = negCenter.add(varInterval);
                 derivedEvalInterval = derivedEvalInterval.mul(negCenter);
@@ -1644,7 +1644,7 @@ namespace smtrat
         {
             if( !_onlyOriginalVariables || originalRealVariables.has( (*intervalIt).first ) )
             {
-                std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>((*intervalIt).first), (*intervalIt).second);
+                std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(Poly((*intervalIt).first), (*intervalIt).second);
                 if( boundaries.first != ConstraintT() )
                     subformulas.emplace_back( boundaries.first );
                 if( boundaries.second != ConstraintT() )
@@ -1937,7 +1937,7 @@ namespace smtrat
             #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
             std::cout << constraint << std::endl;
             #endif
-            DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( constraint.lhs(), _intervals );
+            DoubleInterval solutionSpace = carl::evaluate( constraint.lhs(), _intervals );
             #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
             std::cout << solutionSpace << std::endl;
             #endif
@@ -2350,8 +2350,8 @@ namespace smtrat
             {
                 assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
                 const ConstraintT& cons = rf.formula().constraint();
-                assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || cons.satisfiedBy( sol ) == 1 );
-                if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && cons.satisfiedBy( sol ) != 1 )
+                assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || satisfiedBy( cons,sol ) == 1 );
+                if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && satisfiedBy( cons,sol ) != 1 )
                 {
                     solutionFound = false;
                     break;
@@ -2460,7 +2460,7 @@ namespace smtrat
                         if( !formulaIt->constraint().isBound() )
                         {
                             mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
-                            for( auto variable: formulaIt->constraint().variables() )
+                            for( auto variable: formulaIt->variables() )
                             {
                                 assert( mVariables.find(variable) != mVariables.end() );
                                 mHistoryActual->addInfeasibleVariable(mVariables.at(variable));
@@ -2468,8 +2468,8 @@ namespace smtrat
                         }
                         else
                         {
-                            assert( mVariables.find( *formulaIt->constraint().variables().begin() ) != mVariables.end() );
-                            mHistoryActual->addInfeasibleVariable( mVariables.at( formulaIt->constraint().variables().as_vector().front() ) );
+                            assert( mVariables.find( *formulaIt->variables().begin() ) != mVariables.end() );
+                            mHistoryActual->addInfeasibleVariable( mVariables.at( *formulaIt->variables().begin() ) );
                         }
                     }
                 }
@@ -2746,7 +2746,7 @@ namespace smtrat
                 
             }
         }
-        Poly p = carl::makePolynomial<Poly>( _var ) - Poly(bound);
+        Poly p = Poly( _var ) - Poly(bound);
         FormulaT result( carl::FormulaType::TRUE );
         switch( boundType )
         {
@@ -2786,7 +2786,7 @@ namespace smtrat
                     // TODO: store original variables as member, updating them efficiently with assert and remove
                     for( auto varIt = realValuedVars.begin(); varIt != realValuedVars.end(); ++varIt )
                     {
-                        if(*varIt != (*variableIt)->var() && formulaIt->constraint().hasVariable(*varIt))
+                        if(*varIt != (*variableIt)->var() && formulaIt->constraint().variables().has(*varIt))
                         {
                             hasAdditionalVariables = true;
                             break;
@@ -2797,7 +2797,7 @@ namespace smtrat
                         // std::cout << "Addidional variables." << std::endl;
                         for( auto receivedFormulaIt = rReceivedFormula().begin(); receivedFormulaIt != rReceivedFormula().end(); ++receivedFormulaIt )
                         {
-                            if( receivedFormulaIt->formula().constraint().hasVariable((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
+                            if( receivedFormulaIt->formula().constraint().variables().has((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
                             {
                                 reasons.push_back( receivedFormulaIt->formula() );
                                 // std::cout << "Also add: " << **receivedFormulaIt << std::endl;
@@ -2830,7 +2830,7 @@ namespace smtrat
             {
                 if( variablesIt->second->lraVar() != nullptr )
                 {
-                    std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
+                    std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(Poly(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
                     if( boundaries.second != ConstraintT() )
                     {
                         assert( boundaries.second.isConsistent() == 2 );
@@ -2857,7 +2857,7 @@ namespace smtrat
 //                }
 //                else if( variablesIt->second->lraVar() != nullptr )
 //                {
-//                    std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(carl::makePolynomial<Poly>(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
+//                    std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(Poly(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
 //                    icp::Updated inBoundsSet = (*variablesIt).second->isInternalBoundsSet();
 //                    icp::Updated inBoundsUpdated = (*variablesIt).second->isInternalUpdated();
 //                    if( boundaries.second != ConstraintT() &&

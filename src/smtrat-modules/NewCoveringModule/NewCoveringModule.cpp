@@ -85,7 +85,7 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << levelConstraints.first);
 		if (foundUnsatisfiedConstraint) break;
 		for (const auto& constraint : levelConstraints.second) {
-			if (carl::evaluate(constraint, mLastAssignment) != true) {
+			if (carl::evaluate(constraint.constr(), mLastAssignment) != true) {
 				// This constraint is unsat with the last assignment
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsatisfied constraint on level:" << levelConstraints.first);
 				foundUnsatisfiedConstraint = true;

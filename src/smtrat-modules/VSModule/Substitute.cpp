@@ -11,6 +11,7 @@
 
 #include <carl/core/polynomialfunctions/Derivative.h>
 #include <carl/core/polynomialfunctions/SoSDecomposition.h>
+#include <carl/constraint/IntervalEvaluation.h>
 
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;
@@ -73,7 +74,7 @@ namespace vs
                     cons = (*conj).erase( cons );
                 else
                 {
-                    unsigned conflictingWithSolutionSpace = cons->consistentWith( _solutionSpace );
+                    unsigned conflictingWithSolutionSpace = consistentWith(cons->constr(), _solutionSpace );
                     
 //                    std::cout << "Is  " << cons << std::endl;
 //                    std::cout << std::endl;
@@ -84,7 +85,8 @@ namespace vs
                     
                     if( conflictingWithSolutionSpace == 0 )
                     {
-                        _conflictingVars.insert( cons->variables().begin(), cons->variables().end() );
+                        auto vars = carl::variables(*cons);
+                        _conflictingVars.insert( vars.begin(), vars.end() );
                         conjInconsistent = true;
                         break;
                     }
@@ -134,7 +136,8 @@ namespace vs
         std::vector<DisjunctionOfConstraintConjunctions> toCombine;
         for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
-            if( constraint->hasFactorization() )
+            auto& factorization = (*constraint).lhs_factorization();
+            if( !carl::is_trivial(factorization) )
             {
                 switch( constraint->relation() )
                 {
@@ -143,7 +146,6 @@ namespace vs
                         if( !_onlyNeq )
                         {
                             toCombine.emplace_back();
-                            const smtrat::Factorization& factorization = constraint->factorization();
                             for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 toCombine.back().emplace_back();
@@ -163,7 +165,6 @@ namespace vs
                     {
                         toCombine.emplace_back();
                         toCombine.back().emplace_back();
-                        const smtrat::Factorization& factorization = constraint->factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             toCombine.back().back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                         simplify( toCombine.back() );
@@ -202,7 +203,8 @@ namespace vs
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT& _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result;
-        if( _constraint.hasFactorization() )
+        auto& factorization = _constraint.lhs_factorization();
+        if( !carl::is_trivial(factorization) )
         {
             switch( _constraint.relation() )
             {
@@ -210,7 +212,6 @@ namespace vs
                 {
                     if( !_onlyNeq )
                     {
-                        const smtrat::Factorization& factorization = _constraint.factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             result.emplace_back();
@@ -228,7 +229,6 @@ namespace vs
                 case Relation::NEQ:
                 {
                     result.emplace_back();
-                    const smtrat::Factorization& factorization = _constraint.factorization();
                     for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         result.back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                     simplify( result );
@@ -396,7 +396,8 @@ namespace vs
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
-        if( _constraint.hasFactorization() && _constraint.factorization().size() <= MAX_PRODUCT_SPLIT_NUMBER )
+        auto& factorization = _constraint.lhs_factorization();
+        if( !carl::is_trivial(factorization) && factorization.size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
             assert( _constraint.relation() == Relation::GREATER || _constraint.relation() == Relation::LESS
                     || _constraint.relation() == Relation::GEQ || _constraint.relation() == Relation::LEQ );
@@ -413,8 +414,7 @@ namespace vs
             ConstraintVector negatives;
             ConstraintVector alwaysnegatives;
             unsigned numOfAlwaysNegatives = 0;
-            const smtrat::Factorization& product = _constraint.factorization();
-            for( auto factor = product.begin(); factor != product.end(); ++factor )
+            for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
             {
                 smtrat::ConstraintT consPos = smtrat::ConstraintT( factor->first, relPos );
                 unsigned posConsistent = consPos.isConsistent();
@@ -613,7 +613,7 @@ namespace vs
     {
         
         bool result = true;
-        if( _cons.hasVariable( _subs.variable() ) )
+        if( _cons.variables().has( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
             if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constantPart().size()) + smtrat::Rational(_subs.term().factor().size()) * smtrat::Rational(_subs.term().radicand().size())), _cons.maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
@@ -995,7 +995,7 @@ namespace vs
                                  Variables& _conflictingVariables,
                                  const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
-        assert( _cons.hasVariable( _subs.variable() ) );
+        assert( _cons.variables().has( _subs.variable() ) );
         // Create a substitution formed by the given one without an addition of epsilon.
         Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, carl::PointerSet<Condition>(_subs.originalConditions()) );
         // Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],  where the parameter relation is ~.

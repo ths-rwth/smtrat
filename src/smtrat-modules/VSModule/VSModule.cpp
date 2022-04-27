@@ -815,7 +815,7 @@ namespace smtrat
     {
         // Get the constraint of this condition.
         const ConstraintT& constraint = (*_condition).constraint();
-        assert( _condition->constraint().hasVariable( _eliminationVar ) );
+        assert( _condition->constraint().variables().has( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
         carl::PointerSet<vs::Condition> oConditions;
@@ -837,22 +837,26 @@ namespace smtrat
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
             std::vector< Poly > factors = std::vector< Poly >();
             ConstraintsT sideConditions;
-            if( Settings::elimination_with_factorization && constraint.hasFactorization() )
+            if( Settings::elimination_with_factorization )
             {
-                for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
-                {
-                    if( carl::variables(iter->first).has( _eliminationVar ) )
-                        factors.push_back( iter->first );
-                    else
+                auto& factorization = constraint.lhs_factorization();
+                if (!carl::is_trivial(factorization)) {
+                    for( auto iter = factorization.begin(); iter != factorization.end(); ++iter )
                     {
-                        ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
-                        if( cons != ConstraintT( true ) )
+                        if( carl::variables(iter->first).has( _eliminationVar ) )
+                            factors.push_back( iter->first );
+                        else
                         {
-                            assert( cons != ConstraintT( false ) );
-                            sideConditions.insert( cons );
+                            ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
+                            if( cons != ConstraintT( true ) )
+                            {
+                                assert( cons != ConstraintT( false ) );
+                                sideConditions.insert( cons );
+                            }
                         }
                     }
                 }
+                
             }
             else
                 factors.push_back( constraint.lhs() );
@@ -1346,7 +1350,7 @@ namespace smtrat
                      */
                     for( auto cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
-                        if( _currentState->index() != carl::Variable::NO_VARIABLE && (**cond).constraint().hasVariable( _currentState->index() ) )
+                        if( _currentState->index() != carl::Variable::NO_VARIABLE && (**cond).constraint().variables().has( _currentState->index() ) )
                         {
                             bool worseConditionFound = false;
                             auto child = _currentState->rChildren().begin();

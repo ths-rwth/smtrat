@@ -208,7 +208,7 @@ namespace smtrat
 	std::optional<FormulaT> LVEModule<Settings>::eliminate_from_factors(carl::Variable v, const ConstraintT& c) {
 		Poly with_v = Poly(1);
 		Poly without_v = Poly(1);
-		for (const auto& factor: carl::factorization(c.lhs())) {
+		for (const auto& factor: c.lhs_factorization()) {
 			carl::carlVariables vars = carl::variables(factor.first);
 			if (vars == carl::carlVariables({ v })) {
 				with_v *= carl::pow(factor.first, factor.second);

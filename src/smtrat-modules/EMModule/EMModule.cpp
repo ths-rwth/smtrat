@@ -53,7 +53,7 @@ namespace smtrat
 		switch (rel) {
 			case carl::Relation::EQ:
 			case carl::Relation::NEQ: {
-				auto factors = formula.constraint().factorization();
+				auto& factors = formula.constraint().lhs_factorization();
 				FormulasT res;
 				for (const auto& factor: factors) {
 					res.emplace_back(factor.first, rel);

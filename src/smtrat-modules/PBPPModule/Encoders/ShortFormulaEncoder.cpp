@@ -17,7 +17,7 @@ namespace smtrat {
 			lhsVar = FormulaT(term.getSingleVariable());
 		}
 
-		Rational cRHS = -constraint.constantPart();
+		Rational cRHS = -constraint.lhs().constantPart();
 		
 		if (cRel == carl::Relation::LEQ) {
 			if(lhsCoeff > 0){

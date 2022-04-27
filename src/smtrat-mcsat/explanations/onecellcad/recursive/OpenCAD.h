@@ -194,7 +194,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 		return std::optional<OpenCADCell>(cell);
 
 	auto result = carl::evaluate(
-			ConstraintT(poly, carl::Relation::EQ),
+			carl::BasicConstraint<Poly>(poly, carl::Relation::EQ),
 			toStdMap(point, level, variableOrder));
 	assert(result);
 	if (*result) {

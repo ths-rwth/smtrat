@@ -34,7 +34,8 @@ private:
 	std::pair<std::vector<carl::Variable>::const_iterator, std::vector<carl::Variable>::const_iterator> getUnassignedVariables() const {
 		std::unordered_set<carl::Variable> freeVariables;
 		for (const auto& constr : mConstraints) {
-			freeVariables.insert(constr.variables().begin(), constr.variables().end());
+			auto vars = carl::variables(constr);
+			freeVariables.insert(vars.begin(), vars.end());
 		}
 		
 		auto firstVar = std::find(mVariableOrdering.begin(), mVariableOrdering.end(), mTargetVar);

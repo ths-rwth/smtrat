@@ -270,8 +270,8 @@ namespace smtrat
         ConstrTree(const ConstraintT& _constraint) :
         mRelation(_constraint.relation()), mpLeftPoly(nullptr), mpRightPoly(nullptr), mConstraint(_constraint)
         {
-            Poly rightPoly(- _constraint.constantPart());
-            Poly leftPoly(_constraint.lhs() - _constraint.constantPart());
+            Poly rightPoly(- _constraint.lhs().constantPart());
+            Poly leftPoly(_constraint.lhs() - _constraint.lhs().constantPart());
 
             if(leftPoly.lcoeff() < 0) {
                 rightPoly *= Rational(-1);

@@ -217,7 +217,7 @@ namespace smtrat
                 if( vb.second.lowerBoundType() != carl::BoundType::INFTY )
                 {
                     // (a,b) -> (0,b-a)  or  (a,oo) -> (0,oo)
-                    mVariableShifts[vb.first] = carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.lower();
+                    mVariableShifts[vb.first] = smtrat::Poly( vb.first ) + vb.second.lower();
                     #ifdef DEBUG_INC_WIDTH_MODULE
                     std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
                     #endif
@@ -225,7 +225,7 @@ namespace smtrat
                 else if( vb.second.upperBoundType() != carl::BoundType::INFTY )
                 {
                     // (-oo,b) -> (0,oo)
-                    mVariableShifts[vb.first] = -carl::makePolynomial<smtrat::Poly>( vb.first ) + vb.second.upper();
+                    mVariableShifts[vb.first] = -smtrat::Poly( vb.first ) + vb.second.upper();
                     #ifdef DEBUG_INC_WIDTH_MODULE
                     std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
                     #endif

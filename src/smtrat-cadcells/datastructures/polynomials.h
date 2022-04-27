@@ -3,7 +3,7 @@
 #include "../common.h"
 #include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 
 
 namespace smtrat::cadcells::datastructures {

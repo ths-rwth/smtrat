@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/util/Bitset.h>
+#include <carl-common/datastructures/Bitset.h>
 #include <carl/util/Covering.h>
 #include <carl-covering/carl-covering.h>
 #include <smtrat-common/smtrat-common.h>

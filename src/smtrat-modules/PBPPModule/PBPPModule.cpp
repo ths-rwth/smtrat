@@ -404,7 +404,7 @@ namespace smtrat
 		bool trivial = false;
 
 		trivial = trivial || constraint.variables().size() <= 1;
-		trivial = trivial || (constraint.constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
+		trivial = trivial || (constraint.lhs().constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
 
 		return trivial;
 	}

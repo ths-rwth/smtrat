@@ -147,7 +147,7 @@ public:
 		for (const auto& b: mBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
 
-			if (!b.hasVariable(mVariable)) {
+			if (!b.variables().has(mVariable)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
 				continue;
 			}

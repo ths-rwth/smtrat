@@ -1,5 +1,7 @@
 #include "CADPreprocessor.h"
 
+#include <carl/constraint/Substitution.h>
+
 namespace smtrat::cad {
 
 const bool CADPreprocessorSettings::dummy = CADPreprocessorSettings::register_hook();
@@ -76,15 +78,14 @@ bool Origins::resolve(std::set<FormulaT>& conflict) const {
 }
 
 bool AssignmentCollector::extractValueAssignments(std::map<ConstraintT, ConstraintT>& constraints) {
-    carl::Variable v;
-    Rational r;
     bool foundAssignment = false;
     for (auto it = constraints.begin(); it != constraints.end(); ) {
-        if (it->second.getAssignment(v, r) && mModel.find(v) == mModel.end()) {
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
-            mModel.emplace(v, r);
-            mReasons.emplace(v, it->first);
-            mConstraints.emplace(it->first, v);
+        auto assignment = get_assignment(it->second);
+        if (assignment && mModel.find(assignment->first) == mModel.end()) {
+            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << assignment->first << " = " << assignment->second);
+            mModel.emplace(assignment->first, assignment->second);
+            mReasons.emplace(assignment->first, it->first);
+            mConstraints.emplace(it->first, assignment->first);
             it = constraints.erase(it);
             foundAssignment = true;
         } else {
@@ -95,15 +96,14 @@ bool AssignmentCollector::extractValueAssignments(std::map<ConstraintT, Constrai
     return foundAssignment;
 }
 bool AssignmentCollector::extractParametricAssignments(std::map<ConstraintT, ConstraintT>& constraints) {
-    carl::Variable v;
-    Poly r;
     bool foundAssignment = false;
     for (auto it = constraints.begin(); it != constraints.end(); ) {
-        if (it->second.getSubstitution(v, r) && mModel.find(v) == mModel.end()) {
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
-            mModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(r));
-            mReasons.emplace(v, it->first);
-            mConstraints.emplace(it->first, v);
+        auto substitution = carl::get_substitution(it->second);
+        if (substitution && mModel.find(substitution->first) == mModel.end()) {
+            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << substitution->first << " = " << substitution->second);
+            mModel.emplace(substitution->first, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(substitution->second));
+            mReasons.emplace(substitution->first, it->first);
+            mConstraints.emplace(it->first, substitution->first);
             it = constraints.erase(it);
             foundAssignment = true;
             break;

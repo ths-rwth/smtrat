@@ -116,8 +116,8 @@ namespace arithmetic {
 			// There are many ITEs, we keep the auxiliary variables.
 			for (const auto& v: vars) {
 				auto t = at.mITEs[v];
-				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
-				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
+				FormulaT consThen = FormulaT(std::move(Poly(v) - std::get<1>(t)), carl::Relation::EQ);
+				FormulaT consElse = FormulaT(std::move(Poly(v) - std::get<2>(t)), carl::Relation::EQ);
 
 				at.state->global_formulas.emplace_back(FormulaT(carl::FormulaType::ITE, {std::get<0>(t),consThen,consElse}));
 //				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
@@ -251,7 +251,7 @@ namespace arithmetic {
 		carl::Variable auxVar = thenpoly.integerValued() && elsepoly.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable();
 		state->artificialVariables.emplace_back(auxVar);
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
-		result = carl::makePolynomial<Poly>(auxVar);
+		result = Poly(auxVar);
 		return true;
 	}
 	bool ArithmeticTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {

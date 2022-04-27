@@ -810,16 +810,16 @@ template<class Settings>
 typename GBModule<Settings>::GBPolynomial GBModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
     GBPolynomial result( (typename Poly::PolyType)constraint->formula().constraint( ).lhs( ) );
-    size_t constrId = constraint->formula().constraint( ).id( );
-    std::map<size_t, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
+    const auto& constr = constraint->formula().constraint( );
+    std::map<ConstraintT, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constr );
     carl::Variable var = carl::Variable::NO_VARIABLE;
     if( mapentry == mAdditionalVarMap.end( ) )
     {
         std::stringstream stream;
-        stream << "AddVarGB" << constrId;
+        stream << "AddVarGB" << constr;
         
         var = carl::freshRealVariable( stream.str() );
-        mAdditionalVarMap.insert(std::pair<size_t, carl::Variable>(constrId, var));
+        mAdditionalVarMap.insert(std::pair<ConstraintT, carl::Variable>(constr, var));
     }
     else
     {
@@ -912,7 +912,7 @@ void GBModule<Settings>::passGB( )
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
         assert(!simplIt->isConstant());
-        auto res = addSubformulaToPassedFormula( FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
+        auto res = addSubformulaToPassedFormula( FormulaT( Poly(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
             mGbEqualities.push_back(res.first->formula());
     }

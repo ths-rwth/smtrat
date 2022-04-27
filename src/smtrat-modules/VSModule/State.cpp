@@ -14,6 +14,7 @@
 #include <numeric>
 #include <carl/core/polynomialfunctions/RootBounds.h>
 #include <carl/core/polynomialfunctions/RootCounting.h>
+#include <carl/constraint/IntervalEvaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -275,7 +276,7 @@ namespace vs
     bool State::occursInEquation( const carl::Variable& _variable ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
+            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().variables().has( _variable ) )
                 return true;
         return false;
     }
@@ -593,7 +594,7 @@ namespace vs
                 if( !constr.isBound() )
                 {
                     carl::Relation stricterRelation = constr.relation();
-                    switch( constr.consistentWith( varIntervals, stricterRelation ) )
+                    switch( consistentWith(constr.constr(), varIntervals, stricterRelation ) )
                     {
                         case 0:
                         {
@@ -1182,7 +1183,7 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() );//  || (**cond).constraint().isUpperBound();
+            (**cond).rFlag() = !(**cond).constraint().variables().has( index() );//  || (**cond).constraint().isUpperBound();
         }
     }
 
@@ -1557,7 +1558,7 @@ namespace vs
                                     (*condB)->rRecentlyAdded() = true;
                                     recentlyAddedConditionLeft = true;
                                     if( index() != carl::Variable::NO_VARIABLE )
-                                        (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                        (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                                 }
                             }
                             delete changedVar;
@@ -1638,7 +1639,7 @@ namespace vs
                                 (*condB)->rRecentlyAdded() = true;
                                 recentlyAddedConditionLeft = true;
                                 if( index() != carl::Variable::NO_VARIABLE )
-                                    (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                    (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                             }
                         }
                         delete changedVar;
@@ -2119,7 +2120,7 @@ namespace vs
                     while( oCond != (**cond).originalConditions().end() )
                     {
                         assert( father().index() != carl::Variable::NO_VARIABLE );
-                        if( (**oCond).constraint().hasVariable( father().index() ) )
+                        if( (**oCond).constraint().variables().has( father().index() ) )
                             coverSetOCondsContainIndexOfFather = true;
                         coverSetOConds.insert( *oCond );
                         oCond++;
@@ -2349,11 +2350,11 @@ namespace vs
         else
         {
             smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
-            smtrat::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
-            smtrat::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
-            smtrat::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
+            smtrat::DoubleInterval solutionSpaceConst = carl::evaluate( substitution().term().constantPart(), intervals );
+            smtrat::DoubleInterval solutionSpaceFactor = carl::evaluate( substitution().term().factor(), intervals );
+            smtrat::DoubleInterval solutionSpaceRadicand = carl::evaluate( substitution().term().radicand(), intervals );
             smtrat::DoubleInterval solutionSpaceSqrt = carl::sqrt(solutionSpaceRadicand);
-            smtrat::DoubleInterval solutionSpaceDenom = carl::IntervalEvaluation::evaluate( substitution().term().denominator(), intervals );
+            smtrat::DoubleInterval solutionSpaceDenom = carl::evaluate( substitution().term().denominator(), intervals );
             smtrat::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
@@ -2449,7 +2450,7 @@ namespace vs
             if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
                 indexDomain->second.setLowerBoundType( carl::BoundType::WEAK );
         }
-        smtrat::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
+        smtrat::DoubleInterval solutionSpace = carl::evaluate( cons.lhs(), intervals );
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK
