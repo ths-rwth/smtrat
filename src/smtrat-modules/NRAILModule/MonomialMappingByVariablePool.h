@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include "carl/util/Singleton.h"
+#include <carl-common/memory/Singleton.h>
 #include <string>
 #include "Util.h"
 

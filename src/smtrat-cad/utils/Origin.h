@@ -1,7 +1,7 @@
 #pragma once
 
 #include <carl/io/streamingOperators.h>
-#include <carl/util/Bitset.h>
+#include <carl-common/datastructures/Bitset.h>
 
 #include <algorithm>
 #include <iostream>
