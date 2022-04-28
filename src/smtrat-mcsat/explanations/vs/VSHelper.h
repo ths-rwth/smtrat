@@ -4,8 +4,8 @@
 #include <smtrat-common/model.h>
 #include <carl/util/Common.h>
 #include <carl-model/evaluation/ModelEvaluation.h>
-#include <carl/vs/substitute.h>
-#include <carl/vs/zeros.h>
+#include <carl-vs/substitute.h>
+#include <carl-vs/zeros.h>
 
 #include <variant>
 #include <vector>
