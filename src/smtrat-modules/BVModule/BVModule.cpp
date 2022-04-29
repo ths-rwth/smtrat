@@ -30,7 +30,7 @@
 #include "BVModule.h"
 #include <limits>
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 //#define DEBUG_BVMODULE
 

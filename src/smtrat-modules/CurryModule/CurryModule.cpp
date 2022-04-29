@@ -9,7 +9,7 @@
 
 #include "CurryModule.h"
 
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl-formula/uninterpreted/UFInstanceManager.h>
 
 namespace smtrat
 {

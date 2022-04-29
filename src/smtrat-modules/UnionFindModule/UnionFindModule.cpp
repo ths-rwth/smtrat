@@ -10,8 +10,8 @@
 #include "UnionFindModule.h"
 #include "UnionFind.h"
 
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
-#include <carl-model/uninterpreted/SortValueManager.h>
+#include <carl-formula/uninterpreted/UFInstanceManager.h>
+#include <carl-formula/uninterpreted/SortValueManager.h>
 
 namespace smtrat
 {

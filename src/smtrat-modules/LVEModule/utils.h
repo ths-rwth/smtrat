@@ -2,7 +2,7 @@
 
 #include <carl/ran/real_roots.h>
 #include <carl/core/polynomialfunctions/Substitution.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
 #include <smtrat-common/smtrat-common.h>
 

@@ -8,7 +8,7 @@
 
 #include "IntEqModule.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 //#define DEBUG_IntEqModule
 

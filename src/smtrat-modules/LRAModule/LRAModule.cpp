@@ -8,7 +8,7 @@
 #include "LRAModule.h"
 
 #include <smtrat-common/model.h>
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 #ifdef DEBUG_METHODS_TABLEAU
 //#define DEBUG_METHODS_LRA_MODULE

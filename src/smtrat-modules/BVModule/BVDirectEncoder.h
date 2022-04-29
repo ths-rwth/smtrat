@@ -33,8 +33,8 @@
 
 #include <boost/optional/optional.hpp>
 #include <smtrat-common/smtrat-common.h>
-#include <carl/formula/bitvector/BVConstraint.h>
-#include <carl/formula/bitvector/BVConstraintPool.h>
+#include <carl-formula/bitvector/BVConstraint.h>
+#include <carl-formula/bitvector/BVConstraintPool.h>
 
 namespace smtrat
 {

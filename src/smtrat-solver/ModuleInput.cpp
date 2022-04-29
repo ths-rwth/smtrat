@@ -7,7 +7,7 @@
 
 #include "ModuleInput.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 // Main smtrat namespace.
 namespace smtrat

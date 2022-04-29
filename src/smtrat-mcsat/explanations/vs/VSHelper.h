@@ -3,7 +3,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 #include <carl/util/Common.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <carl-vs/substitute.h>
 #include <carl-vs/zeros.h>
 
