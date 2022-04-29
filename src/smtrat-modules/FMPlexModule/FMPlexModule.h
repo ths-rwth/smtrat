@@ -169,6 +169,8 @@ namespace smtrat {
 			// Iterator indicating up to which constraint in mNewConstraints we successfully tested our model.
 			std::list<std::shared_ptr<SimpleConstraint>>::iterator mModelFitUntilHere;
 
+			uint_fast64_t checkCoreCounter;
+
 			/*** Member Functions ***/
 
 			/*!
@@ -193,6 +195,11 @@ namespace smtrat {
 
 			void transferNonUsed(BranchIterator currentLvl, bool nextLvlIsNew);
 
+			bool print = false;
+
+			void debugCoutPrint(std::string message);
+
+			void resetBranch();
 
 	};
 
