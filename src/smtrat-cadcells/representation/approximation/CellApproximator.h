@@ -19,7 +19,7 @@ struct ApxSettings {
     static constexpr ApxPoly between = ApxPoly::SIMPLE;
     static constexpr std::size_t taylor_deg = 2;
     static constexpr std::size_t hyperplane_dim = 0;
-    static constexpr ApxRoot root = ApxRoot::SAMPLE_MID;
+    static constexpr ApxRoot root = ApxRoot::SIMPLE_REPRESENTATION;
     static constexpr std::size_t n_sb_iterations = 1;
     static constexpr double root_ratio = 0.5;
 };
@@ -243,8 +243,9 @@ IR CellApproximator::approximate_bound(const IR& p, const RAN& bound, bool below
     #ifdef SMTRAT_DEVOPTION_Statistics
         OCApproximationStatistics::get_instance().degreeReplaced(proj().degree(p.poly));
     #endif
-    criteria::ApxCriteria_Detail::get_instance().inform_apx();
-    return apx_bound<ApxSettings::bound>(p, bound, below);
+    IR result = apx_bound<ApxSettings::bound>(p, bound, below);
+    criteria::ApxCriteria_Detail::get_instance().inform_apx(result.poly);
+    return result;
 }
 
 IR CellApproximator::approximate_between(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u) {

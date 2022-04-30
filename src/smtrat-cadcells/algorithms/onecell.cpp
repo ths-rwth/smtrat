@@ -19,7 +19,7 @@ constexpr auto cell_heuristic = representation::BIGGEST_CELL;
 constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
 constexpr auto op = operators::op::mccallum;
 constexpr bool use_delineation = true;
-constexpr bool use_approximation = false;
+constexpr bool use_approximation = true;
 
 using PropSet = operators::PropertiesSet<op>::type;
 
@@ -71,9 +71,12 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
             } else if (cell_deriv->cell().upper_unbounded()) stats.halfUnboundedLevel();
         #endif
 
-        auto cell_repr = (consider_approximation && representation::approximation::criteria::level())
-            ? representation::cell<cell_approximation_heuristic>::compute(cell_deriv)
-            : representation::cell<cell_heuristic>::compute(cell_deriv);
+        bool apx_lvl = false;
+        if (consider_approximation)
+            apx_lvl = representation::approximation::criteria::level(cell_deriv->level());
+            
+        auto cell_repr = apx_lvl ? representation::cell<cell_approximation_heuristic>::compute(cell_deriv)
+                                 : representation::cell<cell_heuristic>::compute(cell_deriv);
 
         if (!cell_repr) {
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
