@@ -150,7 +150,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		mFMPlexBranch.push_back(FmplexLvl(newConstr));
 		mFMPlexBranch.front().chooseVarAndDirection();
 	} else {
-		mFMPlexBranch.front().addNonUsed(newConstr);
+		mFMPlexBranch.front().connector.insert(mFMPlexBranch.front().connector.end(), newConstr.begin(), newConstr.end());
 	}
 
 	// Preparations for main loop
@@ -162,7 +162,8 @@ Answer FMPlexModule<Settings>::checkCore() {
 	bool redoCombinations = false;
 	while (!statusCheckResult.first) {
 		assert(!(statusCheckResult.first && !statusCheckResult.second.empty()));
-		//debugCoutPrint("\nOn level " + std::to_string(std::distance(mFMPlexBranch.begin(), currentIterator)) + ", var: " + currentIterator->varToEliminate.get().name() + "\n");
+		//std::cout << "\nOn level " <<std::distance(mFMPlexBranch.begin(), currentIterator) << ", var: " << currentIterator->varToEliminate.get().name() << "\n";
+		//std::cout << "connector size: " << currentIterator->connector.size() << "\n";
 		if(!statusCheckResult.second.empty()){
 			// Conflict
 			BranchIterator backtrackResult = currentIterator->analyzeConflict(statusCheckResult.second, &mFMPlexBranch, currentIterator);
@@ -196,8 +197,8 @@ Answer FMPlexModule<Settings>::checkCore() {
 					for (auto c : currentIterator->oppositeDirectionConstraints) {
 						std::cout << to_string(c.constraint, true) << "\n";
 					}
-					std::cout << "\nnotUsed:\n";
-					for (auto c : currentIterator->notUsed) {
+					std::cout << "\nnon-bounds:\n";
+					for (auto c : currentIterator->nonBoundConstraints) {
 						std::cout << to_string(c.constraint, true) << "\n";
 					}
 				}
@@ -208,10 +209,10 @@ Answer FMPlexModule<Settings>::checkCore() {
 		}
 
 		// We are now on the right level + want to apply the next elimination
-		// Sort constraints from notUsed into same + opposite combination lists + the level's lists as well
+		// Sort constraints from connector into same + opposite combination lists + the level's lists as well
 		auto sameBoundsToCombine = ConstraintList();
 		auto oppositeBoundsToCombine = ConstraintList();
-		currentIterator->sortNonUsedIntoSameAndOpposite(sameBoundsToCombine, oppositeBoundsToCombine);
+		currentIterator->sortConnectorIntoSameOppositeNone(sameBoundsToCombine, oppositeBoundsToCombine);
 
 		// If we have not chosen an eliminator yet but now have choices available
 		if (!currentIterator->currentEliminator.has_value() && !currentIterator->todoConstraints.empty()) {
@@ -223,25 +224,29 @@ Answer FMPlexModule<Settings>::checkCore() {
 		if(redoCombinations){
 			sameBoundsToCombine.clear();
 			oppositeBoundsToCombine.clear();
+			currentIterator->connector.clear();
+
 			sameBoundsToCombine.insert(sameBoundsToCombine.end(), currentIterator->doneConstraints.begin(), currentIterator->doneConstraints.end());
 			sameBoundsToCombine.insert(sameBoundsToCombine.end(), currentIterator->todoConstraints.begin(), currentIterator->todoConstraints.end());
 			oppositeBoundsToCombine.insert(oppositeBoundsToCombine.end(), currentIterator->oppositeDirectionConstraints.begin(), currentIterator->oppositeDirectionConstraints.end());
+			currentIterator->connector.insert(currentIterator->connector.end(), currentIterator->nonBoundConstraints.begin(), currentIterator->nonBoundConstraints.end());
+
 			redoCombinations = false;
 		}
 
 		assert(currentIterator->varToEliminate.is_initialized());
 		assert(currentIterator->varToEliminate.has_value());
 
-		ConstraintList newConstraints = fmplexCombine(currentIterator->varToEliminate, currentIterator->currentEliminator, std::move(sameBoundsToCombine), std::move(oppositeBoundsToCombine), currentIterator);
+		ConstraintList combinationResult = fmplexCombine(currentIterator->varToEliminate, currentIterator->currentEliminator, std::move(sameBoundsToCombine), std::move(oppositeBoundsToCombine), currentIterator);
 		if (std::next(currentIterator) == mFMPlexBranch.end()) {
-			mFMPlexBranch.push_back(FmplexLvl(newConstraints));
-			transferNonUsed(currentIterator, true);
+			mFMPlexBranch.push_back(FmplexLvl(combinationResult));
+			transferBetweenConnectors(currentIterator);
 			currentIterator++;
 			currentIterator->chooseVarAndDirection();
 		} else {
-			transferNonUsed(currentIterator, false);
+			transferBetweenConnectors(currentIterator);
 			currentIterator++;
-			currentIterator->addNonUsed(newConstraints);
+			currentIterator->connector.insert(currentIterator->connector.end(), combinationResult.begin(), combinationResult.end());
 			if (!currentIterator->varToEliminate.has_value()){
 				currentIterator->chooseVarAndDirection();
 			}
@@ -250,7 +255,6 @@ Answer FMPlexModule<Settings>::checkCore() {
 		statusCheckResult = currentIterator->trueFalseCheck();
 	}
 	SMTRAT_LOG_INFO("fmplex", "SAT on call " << checkCoreCounter);
-	//std::cout << checkCoreCounter << ": \nSAT\n";
 	checkCoreCounter++;
 	print = false;
 	return SAT;
@@ -523,14 +527,11 @@ typename FMPlexModule<Settings>::ConstraintList FMPlexModule<Settings>::convertN
 }
 
 template<typename Settings>
-void FMPlexModule<Settings>::transferNonUsed(BranchIterator currentLvl, bool nextLvlIsNew) {
+void FMPlexModule<Settings>::transferBetweenConnectors(BranchIterator currentLvl) {
 	auto nextLvl = BranchIterator(currentLvl);
 	nextLvl++;
-	for (auto c : currentLvl->notUsed) {
-		if (nextLvlIsNew || std::find(nextLvl->notUsed.begin(), nextLvl->notUsed.end(), c) == nextLvl->notUsed.end()){
-			nextLvl->notUsed.push_back(c);
-		}
-	}
+	nextLvl->connector.insert(nextLvl->connector.end(), currentLvl->connector.begin(), currentLvl->connector.end());
+	currentLvl->connector.clear();
 }
 
 template<typename Settings>
@@ -544,18 +545,21 @@ void FMPlexModule<Settings>::resetBranch() {
 
 /*** Nested Class FMPlexLvl Function Implementations ***/
 template<typename Settings>
-FMPlexModule<Settings>::FmplexLvl::FmplexLvl(ConstraintList notUsed) : notUsed(notUsed){
+FMPlexModule<Settings>::FmplexLvl::FmplexLvl(ConstraintList newConstraints) : connector(newConstraints){
 	eliminateViaLB = true;
 	varToEliminate = boost::none;
 	todoConstraints = ConstraintList();
 	doneConstraints = ConstraintList();
 	oppositeDirectionConstraints = ConstraintList();
+	nonBoundConstraints = ConstraintList();
 }
 
 template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::chooseVarAndDirection() {
 	// Other heuristics may be added here (+ create option in settings)
-	if (notUsed.empty()) return;
+	if (connector.empty()) {
+		return;
+	}
 	if (std::string("Simple").compare(Settings::variableDirectionHeuristic) == 0) {
 		simpleHeuristicVarDir();
 	} else {
@@ -567,7 +571,7 @@ void FMPlexModule<Settings>::FmplexLvl::chooseVarAndDirection() {
 template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::baseHeuristicVarDir() {
 	// Set varToEliminate to next best var we can find
-	carl::carlVariables occurringVars = carl::variables(notUsed.front().constraint.lhs());
+	carl::carlVariables occurringVars = carl::variables(connector.front().constraint.lhs());
 	varToEliminate = *occurringVars.begin();
 	eliminateViaLB = true;
 }
@@ -576,7 +580,7 @@ template<typename Settings>
 void FMPlexModule<Settings>::FmplexLvl::simpleHeuristicVarDir() {
 	// first integer: number of upper bounds. second integer: number of lower bounds.
 	auto varBoundCounter = std::map<carl::Variable, std::pair<uint_fast64_t, uint_fast64_t>>();
-	for (auto it : notUsed) {
+	for (auto it : connector) {
 		carl::carlVariables occurringVars = carl::variables(it.constraint.lhs());
 		for (auto var : occurringVars) {
 			if (varBoundCounter.find(var) == varBoundCounter.end()) {
@@ -590,6 +594,7 @@ void FMPlexModule<Settings>::FmplexLvl::simpleHeuristicVarDir() {
 			}
 		}
 	}
+	if (varBoundCounter.size() == 0) return;
 	std::pair<carl::Variable, std::pair<uint_fast64_t, uint_fast64_t>> bestVar = *varBoundCounter.begin();
 	bool bestOneDir = bestVar.second.first * bestVar.second.second == 0;
 	for (auto currentVar : varBoundCounter) {
@@ -646,23 +651,19 @@ void FMPlexModule<Settings>::FmplexLvl::simpleHeuristicNextConstraint() {
 }
 
 template<typename Settings>
-void FMPlexModule<Settings>::FmplexLvl::addNonUsed(ConstraintList additionalConstr) {
-	notUsed.splice(notUsed.end(), additionalConstr);
-}
-
-template<typename Settings>
 std::pair<bool, std::list<typename FMPlexModule<Settings>::ConstraintList::iterator>> FMPlexModule<Settings>::FmplexLvl::trueFalseCheck() {
 	auto res = std::list<typename ConstraintList::iterator>();
 	auto toRemove = std::list<ConstraintWithInfo>();
-	for (auto it = notUsed.begin(); it != notUsed.end(); it++) {
+	for (auto it = connector.begin(); it != connector.end(); it++) {
 		if (it->constraint.isTrivialTrue()){
 			toRemove.push_back(*it);
 		} else if (it->constraint.isTrivialFalse()){
 			res.push_back(it);
 		}
 	}
-	for (auto r : toRemove) notUsed.remove(r);
-	bool sat = notUsed.empty();
+	for (auto r : toRemove)
+		connector.remove(r);
+	bool sat = connector.empty();
 	assert(!sat || res.empty());
 	return std::make_pair(sat, std::move(res));
 }
@@ -720,11 +721,11 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 }
 
 template<typename Settings>
-void FMPlexModule<Settings>::FmplexLvl::sortNonUsedIntoSameAndOpposite(ConstraintList& sameBounds, ConstraintList& oppositeBounds) {
-	if (notUsed.empty()) return;
+void FMPlexModule<Settings>::FmplexLvl::sortConnectorIntoSameOppositeNone(ConstraintList& sameBounds, ConstraintList& oppositeBounds) {
+	if (connector.empty()) return;
 	assert(varToEliminate.has_value());
 	ConstraintList toRemove = ConstraintList();
-	for (typename ConstraintList::iterator c = notUsed.begin(); c != notUsed.end(); c++) {
+	for (typename ConstraintList::iterator c = connector.begin(); c != connector.end(); c++) {
 		auto vars = carl::variables(c->constraint.lhs());
 		if (std::find(vars.begin(), vars.end(), varToEliminate.get()) != vars.end()){
 			Rational coeff = c->constraint.lhs().lcoeff(varToEliminate.get()).constantPart();
@@ -738,10 +739,12 @@ void FMPlexModule<Settings>::FmplexLvl::sortNonUsedIntoSameAndOpposite(Constrain
 				oppositeDirectionConstraints.push_back(*c);
 			}
 			toRemove.push_back(*c);
+		} else {
+			nonBoundConstraints.push_back(*c);
 		}
 	}
 	for (auto c: toRemove){
-		notUsed.remove(c);
+		connector.remove(c);
 	}
 }
 

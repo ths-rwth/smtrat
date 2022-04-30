@@ -96,8 +96,8 @@ namespace smtrat {
 					// Function to call constraint choice function based on Settings
 					void chooseNextConstraint();
 
-					// Adds a list of constraints to the notUsed list
-					void addNonUsed(ConstraintList additionalConstr);
+					// Adds a list of constraints to the connector list
+					void spliceToConnector(ConstraintList additionalConstr);
 
 					/*!
 					 * Checks for trivially true and trivially false constraints,
@@ -116,10 +116,13 @@ namespace smtrat {
 					 */
 					BranchIterator analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl);
 
-					void sortNonUsedIntoSameAndOpposite(ConstraintList& sameBounds, ConstraintList& oppositeBounds);
+					void sortConnectorIntoSameOppositeNone(ConstraintList& sameBounds, ConstraintList& oppositeBounds);
 
-					// Not (yet) used / relevant constraints on the lvl
-					ConstraintList notUsed;
+					// List that receives new constraints and later passes on those that were not used on the level
+					ConstraintList connector;
+
+					// Non-bounds
+					ConstraintList nonBoundConstraints;
 
 					// The variable to be eliminated
 					boost::optional<carl::Variable> varToEliminate;
@@ -193,11 +196,9 @@ namespace smtrat {
 
 			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, BranchIterator currentLvl);
 
-			void transferNonUsed(BranchIterator currentLvl, bool nextLvlIsNew);
+			void transferBetweenConnectors(BranchIterator currentLvl);
 
 			bool print = false;
-
-			void debugCoutPrint(std::string message);
 
 			void resetBranch();
 
