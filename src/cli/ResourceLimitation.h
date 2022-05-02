@@ -4,7 +4,7 @@
 
 #include "ResourceLimitation.h"
 
-#include <carl/util/platform.h>
+#include <carl-common/meta/platform.h>
 #include <carl-common/memory/Singleton.h>
 
 #include <csignal>

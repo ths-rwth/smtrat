@@ -6,7 +6,7 @@
 #include <carl-formula/formula/Formula.h>
 #include <carl-formula/formula/Logic.h>
 #include <carl-common/datastructures/streamingOperators.h>
-#include <carl/util/enum_util.h>
+#include <carl-common/datastructures/enum_util.h>
 
 #include <atomic>
 

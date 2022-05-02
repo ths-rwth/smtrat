@@ -3,7 +3,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
-#include <carl/util/enum_util.h>
+#include <carl-common/datastructures/enum_util.h>
 
 #include <iostream>
 
