@@ -6,7 +6,7 @@
  * Created on 2014-10-19.
  */
 
-#include <carl-model/uninterpreted/SortValueManager.h>
+#include <carl-formula/uninterpreted/SortValueManager.h>
 
 #include <iostream>
 #include <iterator>

@@ -4,4 +4,4 @@ SMT-RAT and CArL use [GoogleTest](http://google.github.io/googletest/) for unit 
 
 ### Utilities
 
-For creating CArL data structure in unit tests, we refer to `carl/src/util/parser/Parser.h`.
+For creating CArL data structure in unit tests, we refer to `carl-io/parser/Parser.h`.

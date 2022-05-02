@@ -9,7 +9,7 @@
 #include "CubeLIAModule.h"
 //#define DEBUG_CUBELIAMODULE
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 namespace smtrat
 {

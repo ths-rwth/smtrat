@@ -2,7 +2,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-cad/projectionoperator/utils.h>
 #include <carl-covering/carl-covering.h>
 #include <carl/ran/interval/ran_interval_extra.h>

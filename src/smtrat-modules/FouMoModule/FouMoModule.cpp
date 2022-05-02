@@ -8,7 +8,7 @@
 
 #include "FouMoModule.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 //#define DEBUG_FouMoModule
 

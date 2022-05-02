@@ -4,7 +4,7 @@
 
 #include "SymmetryModule.h"
 
-#include <carl/formula/symmetry/symmetry.h>
+#include <carl-formula/symmetry/symmetry.h>
 
 namespace smtrat
 {
