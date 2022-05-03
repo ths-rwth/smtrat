@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/util/carlTree.h>
+#include <carl-common/datastructures/carlTree.h>
 
 #include <smtrat-common/smtrat-common.h>
 

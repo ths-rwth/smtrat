@@ -2,7 +2,7 @@
 
 #include "../utils/Bookkeeping.h"
 
-#include <carl-common/datastructures/tuple_util.h>
+#include <carl-common/util/tuple_util.h>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {

@@ -7,7 +7,7 @@
 
 #include <carl-logging/carl-logging.h>
 #include <carl-logging/logging-internals.h>
-#include <carl-common/datastructures/streamingOperators.h>
+#include <carl-common/util/streamingOperators.h>
 
 namespace benchmax {
 using carl::operator<<;
