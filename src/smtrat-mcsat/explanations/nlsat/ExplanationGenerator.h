@@ -5,7 +5,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
-#include <carl/util/Common.h>
+#include <carl/core/Common.h>
 
 namespace smtrat {
 namespace mcsat {
