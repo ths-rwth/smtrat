@@ -1,7 +1,7 @@
 #include <iostream>
 #include <stdio.h>
 #include "../lib/modules/ICPModule/ContractionCandidateManager.h"
-#include "carl/util/stringparser.h"
+#include <carl-io/StringParser.h>
 #include "carl/core/MultivariateHorner.h"
 #include "carl/core/MultivariatePolynomial.h"
 
