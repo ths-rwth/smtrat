@@ -430,11 +430,11 @@ namespace smtrat
 				{
 					Expansion& expansion{*expansionIter};
 					Rational direction;
-					if (constraint.isLowerBound()
+					if (carl::is_lower_bound(constraint)
 						&& (expansion.mMaximalDomain.lowerBoundType() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.lower() < expansion.mActiveDomain.lower()))
 						direction = -1;
-					else if (constraint.isUpperBound()
+					else if (carl::is_upper_bound(constraint)
 						&& (expansion.mMaximalDomain.upperBoundType() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.upper() > expansion.mActiveDomain.upper()))
 						direction  = 1;

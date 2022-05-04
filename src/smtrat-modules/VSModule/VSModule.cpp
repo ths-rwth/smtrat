@@ -17,6 +17,7 @@
 
 namespace smtrat
 {
+
 	using namespace vs;
     template<class Settings>
     VSModule<Settings>::VSModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager ):
@@ -1297,6 +1298,24 @@ namespace smtrat
         return !anySubstitutionFailed;
     }
 
+    namespace vsmodulehelper {
+        /**
+         * @param _var The variable to check the size of its solution set for.
+         * @return true, if it is easy to decide whether this constraint has a finite solution set
+         *                in the given variable;
+         *          false, otherwise.
+         */
+        bool hasFinitelyManySolutionsIn(const ConstraintT& constr, const carl::Variable& _var) {
+            if (constr.variables().has(_var))
+                return true;
+            if (constr.relation() == carl::Relation::EQ) {
+                if (constr.variables().size() == 1)
+                    return true;
+            }
+            return false;
+        }
+    }
+
     template<class Settings>
     void VSModule<Settings>::propagateNewConditions( State* _currentState )
     {
@@ -1315,7 +1334,7 @@ namespace smtrat
                 {
                     bool onlyTestCandidateToConsider = false;
                     if( _currentState->index() != carl::Variable::NO_VARIABLE ) // TODO: Maybe only if the degree is not to high
-                        onlyTestCandidateToConsider = (**cond).constraint().hasFinitelyManySolutionsIn( _currentState->index() );
+                        onlyTestCandidateToConsider = vsmodulehelper::hasFinitelyManySolutionsIn((**cond).constraint(), _currentState->index() );
                     if( onlyTestCandidateToConsider )
                         deleteExistingTestCandidates = true;
                 }

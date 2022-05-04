@@ -46,7 +46,7 @@ namespace smtrat
 		switch (f.getType()) {
 			case carl::FormulaType::CONSTRAINT:
 				mBounds.addBound(f.constraint(), f);
-				if (!f.constraint().isBound()) {
+				if (!carl::is_bound(f.constraint())) {
 					mConstraints.emplace(f, f.constraint());
 				}
 				break;
@@ -55,7 +55,7 @@ namespace smtrat
 					const ConstraintT& c = f.subformula().constraint();
 					ConstraintT newC(c.lhs(), inverse(c.relation()));
 					mBounds.addBound(newC, f);
-					if (!newC.isBound()) {
+					if (!carl::is_bound(newC)) {
 						mConstraints.emplace(f, newC);
 					}
 				}
@@ -71,7 +71,7 @@ namespace smtrat
 		switch (f.getType()) {
 			case carl::FormulaType::CONSTRAINT:
 				mBounds.removeBound(f.constraint(), f);
-				if (!f.constraint().isBound()) {
+				if (!carl::is_bound(f.constraint())) {
 					mConstraints.erase(f);
 				}
 				break;
@@ -80,7 +80,7 @@ namespace smtrat
 					const ConstraintT& c = f.subformula().constraint();
 					ConstraintT newC(c.lhs(), inverse(c.relation()));
 					mBounds.removeBound(newC, f);
-					if (!newC.isBound()) {
+					if (!carl::is_bound(newC)) {
 						mConstraints.erase(f);
 					}
 				}

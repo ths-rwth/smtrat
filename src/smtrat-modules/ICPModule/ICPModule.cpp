@@ -169,7 +169,7 @@ namespace smtrat
                 #ifdef ICP_MODULE_DEBUG_1
                 std::cout << "[ICP] Assertion: " << constr << std::endl;
                 #endif
-                if( !_formula->formula().constraint().isBound() )
+                if( !carl::is_bound(_formula->formula().constraint()) )
                 {
                     // TODO: here or somewhere later in isConsistent: remove constraints from passed formula which are implied by the current box
                     addSubformulaToPassedFormula( _formula->formula(), _formula->formula() );
@@ -189,7 +189,7 @@ namespace smtrat
                 assert( replacementIt != mLinearizations.end() );
                 const FormulaT& replacementPtr = (*replacementIt).second;
                 assert( replacementPtr.getType() == carl::FormulaType::CONSTRAINT );
-                if( replacementPtr.constraint().isBound() )
+                if( carl::is_bound(replacementPtr.constraint()) )
                 {
                     // considered constraint is activated but has no slack variable -> it is a boundary constraint
                     auto res = mValidationFormula->add( replacementPtr );
@@ -231,7 +231,7 @@ namespace smtrat
             mNotEqualConstraints.erase(_formula->formula());
             return;
         }
-        if( !constr.isBound() )
+        if( !carl::is_bound(constr) )
         {
             for( auto var : constr.variables() )
                 mVariables.at(var)->addOriginalConstraint( _formula->formula() );
@@ -507,7 +507,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "[mLRA] inform: " << linearizedConstraint << std::endl;
             #endif
-            if( !linearizedConstraint.isBound() || (Settings::original_polynomial_contraction && !_formula.constraint().lhs().isLinear()) )
+            if( !carl::is_bound(linearizedConstraint) || (Settings::original_polynomial_contraction && !_formula.constraint().lhs().isLinear()) )
                 createLinearCCs( linearFormula, _formula );
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
             // TODO: Refactor this last part - it seems to be too complicated
@@ -764,7 +764,7 @@ namespace smtrat
                     FormulaSetT newInfSubset;
                     for( auto subformula = infsubset->begin(); subformula != infsubset->end(); ++subformula )
                     {
-                        if( !subformula->constraint().isBound() )
+                        if( !carl::is_bound(subformula->constraint()) )
                             newInfSubset.insert( *subformula );
                     }
                     newInfSubset.insert( contractionConstraints.begin(), contractionConstraints.end() );
@@ -2184,7 +2184,7 @@ namespace smtrat
         #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
         std::cout << "Result: -1" << std::endl;
         #endif
-        assert( !_violatedConstraint.constraint().isBound() );
+        assert( !carl::is_bound(_violatedConstraint.constraint()) );
         assert( _violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
         bool constraintContainsSplittingVar = _violatedConstraint.constraint().variables().has( _icpVar.var() );
         setContraction( _violatedConstraint, _icpVar, (constraintContainsSplittingVar ? DoubleInterval::emptyInterval() : _contractedInterval), constraintContainsSplittingVar );
@@ -2457,7 +2457,7 @@ namespace smtrat
                 {
                     for ( auto formulaIt = (*infSetIt).begin(); formulaIt != (*infSetIt).end(); ++formulaIt )
                     {
-                        if( !formulaIt->constraint().isBound() )
+                        if( !carl::is_bound(formulaIt->constraint()) )
                         {
                             mHistoryActual->addInfeasibleConstraint(formulaIt->constraint());
                             for( auto variable: formulaIt->variables() )
@@ -2797,7 +2797,7 @@ namespace smtrat
                         // std::cout << "Addidional variables." << std::endl;
                         for( auto receivedFormulaIt = rReceivedFormula().begin(); receivedFormulaIt != rReceivedFormula().end(); ++receivedFormulaIt )
                         {
-                            if( receivedFormulaIt->formula().constraint().variables().has((*variableIt)->var()) && receivedFormulaIt->formula().constraint().isBound() )
+                            if( receivedFormulaIt->formula().constraint().variables().has((*variableIt)->var()) && carl::is_bound(receivedFormulaIt->formula().constraint()) )
                             {
                                 reasons.push_back( receivedFormulaIt->formula() );
                                 // std::cout << "Also add: " << **receivedFormulaIt << std::endl;

@@ -591,7 +591,7 @@ namespace vs
             for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
             {
                 const smtrat::ConstraintT& constr = (*iter)->constraint();
-                if( !constr.isBound() )
+                if( !carl::is_bound(constr) )
                 {
                     carl::Relation stricterRelation = constr.relation();
                     switch( consistentWith(constr.constr(), varIntervals, stricterRelation ) )
