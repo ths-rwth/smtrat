@@ -47,7 +47,7 @@ public:
 		#ifndef VALIDATION_STORE_STRINGS
 		m_formulas.emplace_back(f, consistent);
 		#else
-		carl::SMTLIBStream sls;
+		carl::io::SMTLIBStream sls;
 		sls.declare(f.logic());
 		sls.declare(carl::variables(f));
 		sls.assertFormula(f);

@@ -23,7 +23,7 @@ std::ostream& operator<<(std::ostream& os, ValidationPrinter<SOF>);
 
 template<>
 std::ostream& operator<<(std::ostream& os, ValidationPrinter<ValidationOutputFormat::SMTLIB>) {
-	carl::SMTLIBStream sls;
+	carl::io::SMTLIBStream sls;
 	sls.setInfo("smt-lib-version", "2.0");
 	for (const auto& s: ValidationCollector::getInstance().points()) {
 		if (s->formulas().empty()) continue;

@@ -207,7 +207,7 @@ public:
 	void getAllModels() { // non-standard
 		if (state.is_mode(execution::Mode::SAT)) {
 			for (const auto& m: this->solver.allModels()) {
-				regular() << carl::asSMTLIB(m) << std::endl;
+				regular() << carl::io::asSMTLIB(m) << std::endl;
 			}
 		} else {
 			error() << "Can only be called after a call that returned sat.";
@@ -221,7 +221,7 @@ public:
 	}
 	void getModel() {
 		if (state.is_mode(execution::Mode::SAT)) {
-			regular() << carl::asSMTLIB(state.model()) << std::endl;
+			regular() << carl::io::asSMTLIB(state.model()) << std::endl;
 		} else {
 			error() << "Can only be called after a call that returned sat.";
 		}

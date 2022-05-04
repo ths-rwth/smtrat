@@ -27,7 +27,7 @@ public:
 class Preprocessor : public smtrat::parser::InstructionHandler {
 public:
 	PPStrategy solver;
-	carl::SMTLIBStream mOutput;
+	carl::io::SMTLIBStream mOutput;
 	void add(const smtrat::FormulaT& f) {
 		solver.add(f);
 	}

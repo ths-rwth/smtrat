@@ -10,7 +10,7 @@ namespace smtrat {
 
 template<typename Strategy>
 int run_dimacs_file(Strategy& strategy, const std::string& filename) {
-	carl::DIMACSImporter<Poly> dimacs(filename);
+	carl::io::DIMACSImporter<Poly> dimacs(filename);
 	int exitCode = 0;
 	while (dimacs.hasNext()) {
 		strategy.add(dimacs.next());
