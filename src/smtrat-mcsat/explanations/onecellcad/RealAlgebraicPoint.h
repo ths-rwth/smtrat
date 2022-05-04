@@ -71,15 +71,6 @@ public:
     return RealAlgebraicPoint(std::move(copy));
   }
 
-	/**
-   * Make a (lower dimensional) copy that contains only the first
-   * 'componentCount'-many components.
-   */
-   [[deprecated("Use prefixPoint instead")]]
-	RealAlgebraicPoint subpoint(size_t componentCount) const {
-     return prefixPoint(componentCount);
-	}
-
   /**
    * Create a new point with another given component added at the end of this
    * point, thereby increasing its dimension by 1. The original point remains
