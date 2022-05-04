@@ -10,6 +10,7 @@
 
 #include <smtrat-solver/Module.h>
 #include <utility>
+#include <smtrat-common/statistics/Statistics.h>
 #include <carl/core/SimpleConstraint.h>
 #include "FMPlexSettings.h"
 
@@ -24,7 +25,43 @@ namespace smtrat {
 		typedef std::list<ConstraintWithInfo> ConstraintList;
 		typedef std::list<FmplexLvl> FMPlexBranch;
 		typedef typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator BranchIterator;
-		
+
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		class FMPlexStatistics : public Statistics {
+		private:
+			uint_fast64_t mGlobalConflicts = 0;
+			uint_fast64_t mLocalConflicts = 0;
+			uint_fast64_t mGeneratedConstraints = 0;
+			uint_fast64_t mCheckSatCalls = 0;
+			bool mUnsupportedRelation = false;
+
+		public:
+			void collect() { // called after the solving process to collect statistics
+				Statistics::addKeyValuePair("gConflicts", mGlobalConflicts);
+				Statistics::addKeyValuePair("lConflicts", mLocalConflicts);
+				Statistics::addKeyValuePair("tConflicts", mGlobalConflicts + mLocalConflicts);
+				Statistics::addKeyValuePair("generatedConstraints", mGeneratedConstraints);
+				Statistics::addKeyValuePair("checkSatCalls", mCheckSatCalls);
+				Statistics::addKeyValuePair("unsupportedRelation", mUnsupportedRelation);
+			}
+			void countGConflicts() { // user defined
+				++mGlobalConflicts;
+			}
+			void countLConflicts() { // user defined
+				++mLocalConflicts;
+			}
+			void countGeneratedConstraints(uint_fast64_t n) { // user defined
+				mGeneratedConstraints += n;
+			}
+			void countCheckSatCalls() { // user defined
+				++mCheckSatCalls;
+			}
+			void unsuppRel() { // user defined
+				mUnsupportedRelation = true;
+			}
+		};
+		#endif
+
 		public:
 			/*!
 			 * Constructor.
@@ -36,6 +73,10 @@ namespace smtrat {
 			 */
 			FMPlexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL);
 			~FMPlexModule() override = default;
+
+			#ifdef SMTRAT_DEVOPTION_Statistics
+				FMPlexStatistics& stats = statistics_get<FMPlexModule::FMPlexStatistics>("FMPlexModule");
+			#endif
 
 			typedef Settings SettingsType;
 			std::string moduleName() const override {
@@ -172,8 +213,6 @@ namespace smtrat {
 			// Iterator indicating up to which constraint in mNewConstraints we successfully tested our model.
 			std::list<std::shared_ptr<SimpleConstraint>>::iterator mModelFitUntilHere;
 
-			uint_fast64_t checkCoreCounter;
-
 			/*** Member Functions ***/
 
 			/*!
@@ -197,8 +236,6 @@ namespace smtrat {
 			ConstraintWithInfo combine(ConstraintWithInfo eliminator, ConstraintWithInfo eliminee, carl::Variable, bool sameBound, BranchIterator currentLvl);
 
 			void transferBetweenConnectors(BranchIterator currentLvl);
-
-			bool print = false;
 
 			void resetBranch();
 

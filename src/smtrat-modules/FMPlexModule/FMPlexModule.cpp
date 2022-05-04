@@ -17,7 +17,6 @@ FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& 
 	mNewConstraints = std::list<std::shared_ptr<SimpleConstraint>>();
 	mModelFit = false;
 	mModelFitUntilHere = mNewConstraints.end();
-	checkCoreCounter = 0;
 }
 
 template<typename Settings>
@@ -40,8 +39,10 @@ bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 		mAllConstraints.push_back(formulaPtr2);
 		mNewConstraints.push_back(formulaPtr2);
 	} else {
-		std::cout << "RELATION NOT SUPPORTED: " << formula->formula().constraint().relation() << std::endl;
+		//std::cout << "RELATION NOT SUPPORTED: " << formula->formula().constraint().relation() << std::endl;
 		assert(false);
+		SMTRAT_STATISTICS_CALL(stats.unsuppRel());
+		std::exit(44);
 	}
 	return true;
 }
@@ -113,7 +114,8 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 
 template<typename Settings>
 Answer FMPlexModule<Settings>::checkCore() {
-	SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
+	SMTRAT_STATISTICS_CALL(stats.countCheckSatCalls());
+	// SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
 	if (!Settings::incremental) {
 		mModel.clear();
 		resetBranch();
@@ -133,10 +135,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		if (mModelFit) {
 			mModelFitUntilHere = mNewConstraints.end();
 			mModelFitUntilHere--;
-			SMTRAT_LOG_INFO("fmplex", "Model Fits SAT on call " << checkCoreCounter);
-			//std::cout << checkCoreCounter << ": \n(M)SAT\n";
-			checkCoreCounter++;
-			print = false;
+			SMTRAT_LOG_INFO("fmplex", "Model Fits SAT");
 			return SAT;
 		} else {
 			mModelFitUntilHere = mNewConstraints.end();
@@ -162,25 +161,21 @@ Answer FMPlexModule<Settings>::checkCore() {
 	bool redoCombinations = false;
 	while (!statusCheckResult.first) {
 		assert(!(statusCheckResult.first && !statusCheckResult.second.empty()));
-		//std::cout << "\nOn level " <<std::distance(mFMPlexBranch.begin(), currentIterator) << ", var: " << currentIterator->varToEliminate.get().name() << "\n";
-		//std::cout << "connector size: " << currentIterator->connector.size() << "\n";
 		if(!statusCheckResult.second.empty()){
 			// Conflict
 			BranchIterator backtrackResult = currentIterator->analyzeConflict(statusCheckResult.second, &mFMPlexBranch, currentIterator);
 			if (backtrackResult == mFMPlexBranch.end()) {
 				// Global Conflict, we are done
+				SMTRAT_STATISTICS_CALL(stats.countGConflicts());
 				generateTrivialInfeasibleSubset();
 				resetBranch();
 				mModel.clear();
 				mModelFit = false;
 				mModelFitUntilHere = mNewConstraints.end();
-				//std::cout << checkCoreCounter << ": \nUNSAT!\n";
-				checkCoreCounter++;
-				print = false;
-				print = false;
 				return UNSAT;
 			} else {
 				// Local Conflict
+				SMTRAT_STATISTICS_CALL(stats.countLConflicts());
 				currentIterator = backtrackResult;
 				resetBelow(currentIterator);
 				if (currentIterator->todoConstraints.empty()) {
@@ -238,6 +233,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		assert(currentIterator->varToEliminate.has_value());
 
 		ConstraintList combinationResult = fmplexCombine(currentIterator->varToEliminate, currentIterator->currentEliminator, std::move(sameBoundsToCombine), std::move(oppositeBoundsToCombine), currentIterator);
+		SMTRAT_STATISTICS_CALL(stats.countGeneratedConstraints(combinationResult.size()));
 		if (std::next(currentIterator) == mFMPlexBranch.end()) {
 			mFMPlexBranch.push_back(FmplexLvl(combinationResult));
 			transferBetweenConnectors(currentIterator);
@@ -254,9 +250,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 
 		statusCheckResult = currentIterator->trueFalseCheck();
 	}
-	SMTRAT_LOG_INFO("fmplex", "SAT on call " << checkCoreCounter);
-	checkCoreCounter++;
-	print = false;
+	SMTRAT_LOG_INFO("fmplex", "SAT");
 	return SAT;
 
 }
@@ -475,13 +469,6 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 	SimpleConstraint newConstraint = SimpleConstraint((eliminatorPolynomial * factor + elimineePolynomial), rel);
 	ConstraintWithInfo res = ConstraintWithInfo(newConstraint, cl);
 
-	/*if (print) {
-		std::cout << "Variable \t" << var.name() << std::endl;
-		std::cout << "Eliminator \t" << to_string(eliminator.constraint, true) << std::endl;
-		std::cout << "Eliminee \t" << to_string(eliminee.constraint, true) << std::endl;
-		std::cout << "Result " << to_string(newConstraint, true) << std::endl;
-	}*/
-
 	// Update Derivation coefficients: Coeffs in both or only eliminator
 	for (auto it : eliminator.derivationCoefficients) {
 		if (eliminee.derivationCoefficients.find(it.first) != eliminee.derivationCoefficients.end()) {
@@ -496,15 +483,6 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 			res.derivationCoefficients[it.first] = eliminee.derivationCoefficients[it.first];
 		}
 	}
-
-	/*if (print) {
-		std::cout << "\nresult\n";
-		for (auto it : res.derivationCoefficients) {
-			std::cout << "og constr" << std::distance(mAllConstraints.begin(), std::find(mAllConstraints.begin(), mAllConstraints.end(), it.first)) << ": " << it.second << ", ";
-		}
-		std::cout << "\n\n";
-	}*/
-
 	return res;
 }
 
@@ -671,29 +649,25 @@ template<typename Settings>
 typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLvl::analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl) {
 	BranchIterator backtrackIt = branch->end();
 	for (auto cConstr : conflictConstraints) {
-		//std::cout << "\nConflict: " << to_string(cConstr->constraint, true) << "\n";
-		Poly sum = Poly(Rational(0));
+		//The following is for debugging purposes
+		/*Poly sum = Poly(Rational(0));
 		for (auto devCoeff : cConstr->derivationCoefficients) {
 			sum = sum + Rational(devCoeff.second) * devCoeff.first.get()->lhs();
 			//std::cout << "og constraint (" << devCoeff.first.get()->lhs()  << devCoeff.first.get()->rel() << "0 ) * " << Rational(devCoeff.second) << "\n";
 		}
-
-		assert(cConstr->constraint.lhs().constantPart() == sum.constantPart());
+		assert(cConstr->constraint.lhs().constantPart() == sum.constantPart());*/
 
 		bool posFound = false;
 		bool negFound = false;
 		for (auto devCoeff = cConstr->derivationCoefficients.begin(); devCoeff != cConstr->derivationCoefficients.end(); devCoeff++) {
-			//std::cout << devCoeff->second << ", ";
 			if (devCoeff->second > Rational(0)){
 				posFound = true;
 			} else if (devCoeff->second < Rational(0)) {
 				negFound = true;
 			}
 		}
-		//std::cout << "\n";
 		if (negFound && posFound) {
 			// Local Conflict, apply chosen backtracking mode
-			//std::cout << "Local Conflict!\n";
 			assert (cConstr->conflictLevel != branch->end());
 			if (std::string("oneStep").compare(Settings::backtrackingMode) == 0) {
 				backtrackIt = currentLvl;
@@ -713,7 +687,6 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 			}
 		} else {
 			// Global Conflict
-			//std::cout << "Global Conflict: " << to_string(cConstr->constraint, true) << "\n";
 			return branch->end();
 		}
 	}
