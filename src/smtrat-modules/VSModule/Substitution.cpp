@@ -68,7 +68,7 @@ namespace vs
                     return 8;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 4;
                     else
                     {
@@ -85,7 +85,7 @@ namespace vs
                     return 7;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 1;
                     else
                     {
@@ -107,7 +107,7 @@ namespace vs
                     return 9;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 5;
                     else
                     {
@@ -124,7 +124,7 @@ namespace vs
                     return 8;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 2;
                     else
                     {

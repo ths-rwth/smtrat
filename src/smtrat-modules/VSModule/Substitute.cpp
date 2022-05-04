@@ -12,6 +12,7 @@
 #include <carl/core/polynomialfunctions/Derivative.h>
 #include <carl/core/polynomialfunctions/SoSDecomposition.h>
 #include <carl/constraint/IntervalEvaluation.h>
+#include <carl/vs/Substitution.h>
 
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;
@@ -620,12 +621,12 @@ namespace vs
             {
                 return false;
             }
-            smtrat::SqrtEx sub = smtrat::SqrtEx::subBySqrtEx( _cons.lhs(), _subs.variable(), _subs.term() );
+            smtrat::SqrtEx sub = carl::substitute( _cons.lhs(), _subs.variable(), _subs.term() );
             #ifdef VS_DEBUG_SUBSTITUTION
             std::cout << "Result of common substitution:" << sub << std::endl;
             #endif
             // The term then looks like:    q/s
-            if( !sub.hasSqrt() )
+            if( !sub.has_sqrt() )
             {
                 // Create the new decision tuples.
                 if( _cons.relation() == Relation::EQ || _cons.relation() == Relation::NEQ )

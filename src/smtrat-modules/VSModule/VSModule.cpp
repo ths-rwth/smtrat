@@ -8,6 +8,8 @@
 
 #include "VSModule.h"
 
+#include <carl/vs/Substitution.h>
+#include <carl/vs/Evaluation.h>
 
 #ifdef VS_STATE_DEBUG_METHODS
 //#define VS_DEBUG_METHODS
@@ -765,7 +767,7 @@ namespace smtrat
                 else
                 {
                     assert( sub.type() != Substitution::PLUS_INFINITY );
-                    SqrtEx substitutedTerm = sub.term().substitute( rationalAssignments );
+                    SqrtEx substitutedTerm = substitute(sub.term(), rationalAssignments );
                     if( sub.type() == Substitution::PLUS_EPSILON )
                     {
                         assert( state->substitution().variable().type() != carl::VariableType::VT_INT );
@@ -775,8 +777,8 @@ namespace smtrat
                     {
                         if( substitutedTerm.isRational() )
                             ass = substitutedTerm.asRational();
-                        if( substitutedTerm.isPolynomial() )
-                            ass = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( substitutedTerm.asPolynomial() );
+                        if( substitutedTerm.is_polynomial() )
+                            ass = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( substitutedTerm.as_polynomial() );
                         else
                             ass = substitutedTerm;
                     }
@@ -1760,7 +1762,6 @@ namespace smtrat
                         }
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
-                        Rational evaluatedSubTerm;
                         if( carl::isZero(carl::substitute(subTerm.denominator(), varSolutions )) )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Something is zero");
@@ -1768,7 +1769,9 @@ namespace smtrat
                                 splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
                             return false;
                         }
-                        bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
+                        auto result = evaluate( subTerm, varSolutions, -1 );
+                        Rational evaluatedSubTerm = result.first;
+                        bool assIsInteger = result.second;
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
