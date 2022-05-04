@@ -26,7 +26,7 @@ namespace {
   using carl::Variable;
   using MultiPoly = carl::MultivariatePolynomial<Rational>;
 	using RAN = carl::RealAlgebraicNumber<Rational>;
-	using RANPoint = carl::RealAlgebraicPoint<Rational>;
+	using RANPoint = RealAlgebraicPoint<Rational>;
 
 struct VariableFixture {
   Variable x = carl::freshRealVariable("x");

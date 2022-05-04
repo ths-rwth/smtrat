@@ -76,7 +76,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 											   << projectionLevels);
 
 	// Project higher level polys down to "normal" level
-    carl::RealAlgebraicPoint<Rational> point = asRANPoint(trail).prefixPoint(oneCellMaxLvl + 1);
+    RealAlgebraicPoint<Rational> point = asRANPoint(trail).prefixPoint(oneCellMaxLvl + 1);
 	auto maxLevel = fullProjectionVarOrder.size() - 1;
 	while (projectionLevels[maxLevel].empty() && maxLevel > 0){
         projectionLevels.erase(projectionLevels.begin() + maxLevel);

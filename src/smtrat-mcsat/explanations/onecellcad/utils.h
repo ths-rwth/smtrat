@@ -19,7 +19,7 @@
 #include <vector>
 
 #include <carl/ran/ran.h>
-#include <carl/ran/RealAlgebraicPoint.h>
+#include "RealAlgebraicPoint.h"
 
 #include "OCStatistics.h"
 #include "Assertables.h"
@@ -334,7 +334,7 @@ inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std:
                              rootIdx);
 }
 
-inline carl::RealAlgebraicPoint<smtrat::Rational> asRANPoint(
+inline RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         const mcsat::Bookkeeping& data) {
     std::vector<carl::RealAlgebraicNumber<smtrat::Rational>> point;
     for (const auto variable : data.assignedVariables()) {
@@ -342,7 +342,7 @@ inline carl::RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         assert(modelValue.isRational() || modelValue.isRAN());
         modelValue.isRational() ? point.emplace_back(modelValue.asRational()) : point.emplace_back(modelValue.asRAN());
     }
-    return carl::RealAlgebraicPoint<smtrat::Rational>(std::move(point));
+    return RealAlgebraicPoint<smtrat::Rational>(std::move(point));
 }
 
 
@@ -454,10 +454,10 @@ public:
      * Variables can also be indexed by level. Polys with mathematical level 1 contain the variable in variableOrder[0]
      */
     const std::vector<carl::Variable>& variableOrder;
-    const carl::RealAlgebraicPoint<Rational>& point;
+    const RealAlgebraicPoint<Rational>& point;
 
 
-    OneCellCAD(const std::vector<carl::Variable>& variableOrder, const carl::RealAlgebraicPoint<Rational>& point)
+    OneCellCAD(const std::vector<carl::Variable>& variableOrder, const RealAlgebraicPoint<Rational>& point)
             : variableOrder(variableOrder),
               point(point) {
         // precondition:
