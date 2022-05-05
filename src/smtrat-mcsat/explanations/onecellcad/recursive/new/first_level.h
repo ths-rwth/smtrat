@@ -195,8 +195,7 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Does not have variable");
         return false;
     }
-    carl::carlVariables vars;
-    constr.gatherVariables(vars);
+    carl::carlVariables vars = carl::variables(constr);
     if (!var_subset(vars, model, variable)) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;

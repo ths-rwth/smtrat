@@ -43,7 +43,7 @@ void Preprocessor::resolve_conflict() {
 
 carl::Variable Preprocessor::main_variable_of(const ConstraintT& c) const {
 	carl::carlVariables vars;
-	c.gatherVariables(vars);
+	variables(c, vars);
 	for (auto v: mVars) {
 		if (vars.has(v)) return v;
 	}
