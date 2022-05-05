@@ -20,7 +20,7 @@ namespace helper {
 		auto constraint = vc.as_constraint();
 		if (constraint) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Simplified " << vc << " to " << *constraint);
-			return FormulaT(*constraint);
+			return FormulaT(ConstraintT(*constraint));
 		}
 		return FormulaT(std::move(vc));
 	}
