@@ -202,7 +202,7 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         return false;
     }
  
-    if (carl::ran::real_roots(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model)).is_nullified()) {
+    if (carl::ran::real_roots(carl::to_univariate_polynomial(constr.defining_polynomial(), variable), as_ran_map(model)).is_nullified()) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }
@@ -212,19 +212,19 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         return false;
     }
 
-    assert(carl::irreducibleFactors(constr.definingPolynomial(), false).size() == 1);
+    assert(carl::irreducibleFactors(constr.defining_polynomial(), false).size() == 1);
 
     RAN ran;
     indexed_root ir;
     if (std::holds_alternative<RAN>(constr.value())) {
         ran = std::get<RAN>(constr.value());
         size_t index = 1; // TODO determine index, not relevant for covering
-        ir = indexed_root({ constr.definingPolynomial(), index });
+        ir = indexed_root({ constr.defining_polynomial(), index });
     } else {
         assert(std::holds_alternative<MultivariateRootT>(constr.value()));
-        ir = indexed_root({ constr.definingPolynomial(), std::get<MultivariateRootT>(constr.value()).k() });
+        ir = indexed_root({ constr.defining_polynomial(), std::get<MultivariateRootT>(constr.value()).k() });
 
-        auto res = std::get<MultivariateRootT>(constr.value()).evaluate(as_ran_map(model));
+        auto res = evaluate(std::get<MultivariateRootT>(constr.value()),as_ran_map(model));
         assert(res);
         ran = *res;
     }
