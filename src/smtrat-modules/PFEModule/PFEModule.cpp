@@ -232,7 +232,7 @@ namespace smtrat
 	FormulaT PFEModule<Settings>::implyDefinitenessFromStrict(const FormulaT& formula) {
 		FormulasT res;
 		res.emplace_back(formula);
-		for (const auto f: formula.constraint().lhs_factorization()) {
+		for (const auto& f: formula.constraint().lhs_factorization()) {
 			res.emplace_back(ConstraintT(f.first, carl::Relation::NEQ));
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(res));
