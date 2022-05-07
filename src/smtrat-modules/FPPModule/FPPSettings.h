@@ -22,7 +22,7 @@ namespace smtrat
          * The maximum number of iterations in order to reach a fix point during the repeated application of preprocessing.
          * If this number is negative, this procedure stops only if it indeed reached a fix point.
          */
-        static const int max_iterations = 5;
+        static const int max_iterations = 0;
         
         typedef PreprocessingOne Preprocessor;
     };
