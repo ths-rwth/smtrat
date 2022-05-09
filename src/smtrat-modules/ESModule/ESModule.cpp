@@ -10,6 +10,8 @@
 #include <smtrat-solver/Manager.h>
 
 #include <carl/constraint/Substitution.h>
+#include <carl-formula/formula/functions/Substitution.h>
+
 
 namespace smtrat
 {
@@ -338,7 +340,7 @@ namespace smtrat
             }
             case carl::FormulaType::CONSTRAINT: {
                 FormulaT tmp = result;
-                while( result != (tmp = tmp.substitute( mArithSubs )) )
+                while( result != (tmp = carl::substitute(tmp, mArithSubs)) )
                     result = tmp;
                 break;
             }

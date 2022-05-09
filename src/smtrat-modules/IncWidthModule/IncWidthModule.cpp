@@ -7,6 +7,7 @@
  */
 
 #include "IncWidthModule.h"
+#include <carl-formula/formula/functions/Substitution.h>
 
 //#define DEBUG_INC_WIDTH_MODULE
 
@@ -237,7 +238,7 @@ namespace smtrat
             clearICP();
         for( ; rf != rReceivedFormula().end(); ++rf )
         {
-            FormulaT subResult = rf->formula().substitute( mVariableShifts );
+            FormulaT subResult = carl::substitute(rf->formula(), mVariableShifts );
             addSubformulaToPassedFormula( subResult, rf->formula() );
             if( Settings::use_icp && subResult.getType() == carl::FormulaType::CONSTRAINT )
                 addToICP( subResult );
