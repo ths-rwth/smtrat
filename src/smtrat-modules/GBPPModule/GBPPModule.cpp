@@ -60,10 +60,9 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.gbpp", "Constructed Gröbner Basis:" << std::endl << mBasis.getIdeal());
 		
 		// Simplify all inequalities w.r.t. GBasis and forward to backend
-		carl::FormulaVisitor<FormulaT> visitor;
 		for (const auto& f: rReceivedFormula()) {
 			if (mEqualities.find(f.formula()) != mEqualities.end()) continue;
-			auto res = visitor.visitResult(f.formula(), simplifyInequalityFunction);
+			auto res = carl::visit_result(f.formula(), simplifyInequalityFunction);
 			
 			if (res != f.formula()) {
 				SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << f.formula() << " to " << res);

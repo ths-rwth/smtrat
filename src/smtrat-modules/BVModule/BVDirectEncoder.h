@@ -973,9 +973,8 @@ namespace smtrat
             const FormulaSetT& encode(const FormulaT& _inputFormula)
             {
                 mCurrentEncodings.clear();
-                carl::FormulaVisitor<FormulaT> visitor;
                 std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&BVDirectEncoder::encodeBVConstraints, this, std::placeholders::_1);
-                FormulaT passedFormula = visitor.visitResult(_inputFormula, encodeConstraints);
+                FormulaT passedFormula = carl::visit_result(_inputFormula, encodeConstraints);
 
                 #ifdef SMTRAT_BV_ENCODER_DEBUG
                 std::cerr << "Formula encoded into: " << passedFormula << std::endl;

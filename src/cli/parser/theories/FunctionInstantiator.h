@@ -59,8 +59,7 @@ public:
 		return true;
 	}
 	bool operator()(const FormulaT& f) {
-		carl::FormulaSubstitutor<FormulaT> subs;
-		result = subs.substitute(f, var, replacement);
+		result = carl::substitute(f, var, replacement);
 		return true;
 	}
 	template<typename VAR = V>

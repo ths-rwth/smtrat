@@ -28,9 +28,8 @@ namespace smtrat
 	template<class Settings>
 	std::map<carl::Variable, std::size_t> LVEModule<Settings>::get_variable_counts() const {
 		std::map<carl::Variable, std::size_t> counts;
-		carl::FormulaVisitor<FormulaT> v;
 		for (const auto& f: rReceivedFormula()) {
-			v.visit(f.formula(), [&counts,this](const auto& f){
+			carl::visit(f.formula(), [&counts,this](const auto& f){
 				if (f.getType() == carl::FormulaType::CONSTRAINT) {
 					count_variables(counts, f.constraint());
 				}

@@ -8,12 +8,13 @@
 
 #include "BEModule.h"
 
+#include <carl-formula/formula/functions/Substitution.h>
+
 namespace smtrat
 {
     template<class Settings>
     BEModule<Settings>::BEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _formula, _conditionals, _manager ),
-        mVisitor()
+        PModule( _formula, _conditionals, _manager )
     {
         extractBoundsFunction = std::bind(&BEModule<Settings>::extractBounds, this, std::placeholders::_1);
     }
@@ -33,7 +34,7 @@ namespace smtrat
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
         {
-            FormulaT formula = mVisitor.visitResult( receivedFormula->formula(), extractBoundsFunction );
+            FormulaT formula = carl::visit_result( receivedFormula->formula(), extractBoundsFunction );
             if( formula.isFalse() )
             {
                 receivedFormulasAsInfeasibleSubset( receivedFormula );
@@ -105,8 +106,7 @@ namespace smtrat
 			variables.push_back(v);
 			repl.emplace(form, FormulaT(r.second));
 		}
-		carl::FormulaSubstitutor<FormulaT> subs;
-		FormulaT res = subs.substitute(f, repl);
+		FormulaT res = carl::substitute(f, repl);
 		carl::carlVariables remainingVars;
 		res.gatherVariables(remainingVars);
 		FormulasT impl;

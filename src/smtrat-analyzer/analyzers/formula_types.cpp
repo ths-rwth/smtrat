@@ -16,8 +16,7 @@ void analyze_formula_types(const FormulaT& f, AnalyzerStatistics& stats) {
 	DegreeCollector dc;
 
 
-	carl::FormulaVisitor<FormulaT> fv;
-	fv.visit(f, [&](const FormulaT& f){
+	carl::visit(f, [&](const FormulaT& f){
 		++num_formulas;
 		if (f.getType() == carl::FormulaType::OR) {
 			++num_or;

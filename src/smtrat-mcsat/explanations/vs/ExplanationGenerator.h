@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VSHelper.h"
+#include <carl-formula/formula/functions/Substitution.h>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
@@ -94,8 +95,7 @@ private:
 						}
 
 						// substitute into formula
-						carl::FormulaSubstitutor<FormulaT> substitutor;
-						branchResult = substitutor.substitute(branchResult, constr, substitutionResult);
+						branchResult = carl::substitute(branchResult, constr, substitutionResult);
 					//}
 				}
 

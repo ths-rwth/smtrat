@@ -29,7 +29,7 @@ namespace smtrat
         while (receivedFormula != rReceivedFormula().end()) {
             FormulaT formula = receivedFormula->formula();
             if (receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
-                formula = mVisitor.visitResult(receivedFormula->formula(), eliminateEquationFunction);
+                formula = carl::visit_result(receivedFormula->formula(), eliminateEquationFunction);
             }
             if (formula.isFalse()) {
                 receivedFormulasAsInfeasibleSubset(receivedFormula);

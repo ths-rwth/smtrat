@@ -14,7 +14,6 @@ namespace smtrat
 	template<class Settings>
 	PFEModule<Settings>::PFEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
 		PModule( _formula, _conditionals, _manager, Settings::moduleName ),
-		visitor(),
 		varbounds()
 	{   
 		removeFactorsFunction = std::bind(&PFEModule<Settings>::removeFactors, this, std::placeholders::_1);
@@ -59,9 +58,9 @@ namespace smtrat
 				++receivedFormula;
 				continue;
 			}
-			FormulaT formula = visitor.visitResult(receivedFormula->formula(), removeFactorsFunction);
-			formula = visitor.visitResult(formula, removeSquaresFunction);
-			//formula = visitor.visitResult(formula, implyDefinitenessFunction);
+			FormulaT formula = carl::visit_result(receivedFormula->formula(), removeFactorsFunction);
+			formula = carl::visit_result(formula, removeSquaresFunction);
+			//formula = carl::visit(formula, implyDefinitenessFunction);
 			if (receivedFormula->formula() != formula) {
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula());
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << formula);

@@ -19,7 +19,6 @@ namespace smtrat
 	private:
 		// Members.
         ModuleInput* mLRAFormula;
-        carl::FormulaVisitor<FormulaT> mVisitor;
 		FormulaT linearizeSubformula(const FormulaT &formula);
         std::function<FormulaT(FormulaT)> linearizeSubformulaFunction;
 

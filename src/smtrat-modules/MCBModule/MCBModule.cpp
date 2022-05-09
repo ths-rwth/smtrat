@@ -9,6 +9,7 @@
 #include "MCBModule.h"
 
 #include <smtrat-common/model.h>
+#include <carl-formula/formula/functions/Substitution.h>
 
 namespace smtrat
 {
@@ -85,10 +86,9 @@ namespace smtrat
 	{
 		mRemaining.clear();
 		mChoices.clear();
-		carl::FormulaVisitor<FormulaT> visitor;
 		auto receivedFormula = firstUncheckedReceivedSubformula();
 		while (receivedFormula != rReceivedFormula().end()) {
-			visitor.visit(receivedFormula->formula(), collectChoicesFunction);
+			carl::visit(receivedFormula->formula(), collectChoicesFunction);
 			receivedFormula++;
 		}
 		FormulaT newFormula = applyReplacements(FormulaT(rReceivedFormula()));
@@ -161,9 +161,8 @@ namespace smtrat
 				repl.emplace(form, FormulaT(v));
 			}
 		}
-		carl::FormulaSubstitutor<FormulaT> subs;
 		SMTRAT_LOG_DEBUG("smtrat.mcb", "Applying " << repl << " on \n\t" << f);
-		FormulaT res = subs.substitute(f, repl);
+		FormulaT res = carl::substitute(f, repl);
 		SMTRAT_LOG_DEBUG("smtrat.mcb", "Resulting in\n\t" << res);
 		
 		mRemaining.clear();

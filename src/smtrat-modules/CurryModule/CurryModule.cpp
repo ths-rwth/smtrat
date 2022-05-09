@@ -149,16 +149,14 @@ namespace smtrat
     template<class Settings>
     bool CurryModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        carl::FormulaVisitor<FormulaT> visitor;
-
-        auto curryfied = visitor.visitResult( _subformula->formula(), [&] (const auto& formula) {
+        auto curryfied = carl::visit_result( _subformula->formula(), [&] (const auto& formula) {
             if (formula.getType() == carl::UEQ)
                 return curry(formula);
             else
                 return formula;
         } );
 
-        auto flattened = visitor.visitResult( curryfied, [&] (const auto& formula) {
+        auto flattened = carl::visit_result( curryfied, [&] (const auto& formula) {
             if (formula.getType() == carl::UEQ)
                 return FormulaT(carl::FormulaType::AND, flatten(formula));
             else

@@ -21,7 +21,6 @@ namespace smtrat
         private:
             // Members.
             ///
-			carl::FormulaVisitor<FormulaT> mVisitor;
 			
 			using Choice = std::tuple<carl::Variable,FormulaT>;
 			std::map<Choice, carl::Variable> mReplacements;

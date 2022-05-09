@@ -23,8 +23,7 @@ namespace smtrat
 {
     template<class Settings>
     NRAILModule<Settings>::NRAILModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager):
-            Module( _formula, _conditionals, _manager ),
-            mVisitor()
+            Module( _formula, _conditionals, _manager )
     {
         linearizeSubformulaFunction = std::bind(&NRAILModule<Settings>::linearizeSubformula, this, std::placeholders::_1);
     }
@@ -462,7 +461,7 @@ namespace smtrat
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << std::endl; }
 
-        FormulaT formulaFromVisitor = mVisitor.visitResult( formula, linearizeSubformulaFunction );
+        FormulaT formulaFromVisitor = carl::visit_result( formula, linearizeSubformulaFunction );
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Generated  linearized Formula FromVisitor: " << formulaFromVisitor << std::endl; }
         ////////////////////////////////////////////////

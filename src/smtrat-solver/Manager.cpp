@@ -87,8 +87,7 @@ namespace smtrat
     {
         if( _containsUnknownConstraints )
         {
-			carl::FormulaVisitor<FormulaT> visitor;
-			visitor.visit(_subformula, [this](const FormulaT& f){
+			carl::visit(_subformula, [this](const FormulaT& f){
 				switch (f.getType()) {
 					case carl::FormulaType::CONSTRAINT:
 					case carl::FormulaType::VARCOMPARE:
