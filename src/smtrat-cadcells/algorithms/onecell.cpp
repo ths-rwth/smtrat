@@ -57,8 +57,10 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
             return std::nullopt;
         }
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *cell_repr);
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
-        operators::project_delineated_cell_properties<op>(*cell_repr);
+        if (cell_deriv->level() > 1) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
+            operators::project_delineated_cell_properties<op>(*cell_repr);
+        }
 
         description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));
         proj.clear_assignment_cache(cell_deriv->sample());
