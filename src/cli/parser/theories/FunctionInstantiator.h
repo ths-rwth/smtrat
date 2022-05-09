@@ -3,6 +3,7 @@
 #include <type_traits>
 
 #include "Conversions.h"
+#include <carl-formula/formula/functions/Substitution.h>
 
 namespace smtrat {
 namespace parser {

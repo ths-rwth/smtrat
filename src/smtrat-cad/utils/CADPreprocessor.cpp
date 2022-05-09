@@ -1,6 +1,7 @@
 #include "CADPreprocessor.h"
 
 #include <carl/constraint/Substitution.h>
+#include <carl-formula/formula/functions/Complexity.h>
 
 namespace smtrat::cad {
 
@@ -10,7 +11,7 @@ namespace preprocessor {
 
 inline std::size_t complexity(const std::vector<FormulaT>& origin) {
     return std::accumulate(origin.begin(), origin.end(), static_cast<std::size_t>(0), 
-        [](std::size_t i, const auto& f){ return i + f.complexity(); }
+        [](std::size_t i, const auto& f){ return i + carl::complexity(f); }
     );
 }
 

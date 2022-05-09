@@ -27,6 +27,7 @@
 
 #include "SATModule.h"
 #include <iomanip>
+#include <carl-formula/formula/functions/Complexity.h>
 
 #ifdef LOGGING
 //#define DEBUG_SATMODULE
@@ -423,13 +424,13 @@ namespace smtrat
                 }
                 if( mBooleanConstraintMap[pos].first != nullptr )
                 {
-                    act /= (double)mBooleanConstraintMap[pos].first->reabstraction.complexity();
+                    act /= (double)carl::complexity(mBooleanConstraintMap[pos].first->reabstraction);
                 }
                 else
                 {
                     auto tvfIter = mTseitinVarFormulaMap.find( pos );
                     if( tvfIter != mTseitinVarFormulaMap.end() )
-                        act /= (double)tvfIter->second.complexity();
+                        act /= (double)carl::complexity(tvfIter->second);
                 }
                 if( act > highestActivity )
                     highestActivity = act;

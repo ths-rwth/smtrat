@@ -31,6 +31,7 @@
 #include <limits>
 
 #include <carl-formula/model/Assignment.h>
+#include <carl-formula/formula/functions/Complexity.h>
 
 //#define DEBUG_BVMODULE
 
@@ -299,8 +300,8 @@ namespace smtrat
     size_t BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
     {
         if( _formula.getType() == carl::FormulaType::CONSTRAINT && _formula.constraint().relation() == carl::Relation::EQ )
-            return _formula.complexity();
-        return Settings::equation_preference_weight * _formula.complexity();
+            return carl::complexity(_formula);
+        return Settings::equation_preference_weight * carl::complexity(_formula);
     }
 }
 
