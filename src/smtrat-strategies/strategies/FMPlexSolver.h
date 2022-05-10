@@ -25,13 +25,11 @@ public:
    {
 	   setStrategy(
 		   {
-			   addBackend<FPPModule<FPPSettings1>>(
+			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<SATModule<SATSettings1>>(
-						   {
-							   addBackend<FMPlexModule<FMPlexSettings1>>()
-						   })
+					   addBackend<FMPlexModule<FMPlexSettings1>>()
 				   })
+
 		   });
    }
 };

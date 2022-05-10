@@ -17,6 +17,7 @@ FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& 
 	mNewConstraints = std::list<std::shared_ptr<SimpleConstraint>>();
 	mModelFit = false;
 	mModelFitUntilHere = mNewConstraints.end();
+	counter = 1;
 }
 
 template<typename Settings>
@@ -115,7 +116,9 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 template<typename Settings>
 Answer FMPlexModule<Settings>::checkCore() {
 	SMTRAT_STATISTICS_CALL(stats.countCheckSatCalls());
-	// SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
+	SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
+	//std::cout << "Call " << counter << "\n";
+	counter++;
 	if (!Settings::incremental) {
 		mModel.clear();
 		resetBranch();
@@ -136,6 +139,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 			mModelFitUntilHere = mNewConstraints.end();
 			mModelFitUntilHere--;
 			SMTRAT_LOG_INFO("fmplex", "Model Fits SAT");
+			//std::cout << "SAT \n";
 			return SAT;
 		} else {
 			mModelFitUntilHere = mNewConstraints.end();
@@ -172,6 +176,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 				mModel.clear();
 				mModelFit = false;
 				mModelFitUntilHere = mNewConstraints.end();
+				//std::cout << "UNSAT \n";
 				return UNSAT;
 			} else {
 				// Local Conflict
@@ -251,6 +256,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		statusCheckResult = currentIterator->trueFalseCheck();
 	}
 	SMTRAT_LOG_INFO("fmplex", "SAT");
+	//std::cout << "SAT \n";
 	return SAT;
 
 }

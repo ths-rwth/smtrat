@@ -91,6 +91,8 @@ namespace smtrat {
 
 			void updateModel() const override;
 
+			uint_fast64_t counter;
+
 		private:
 
 			/*** Nested Classes and Structs ***/
