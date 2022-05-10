@@ -33,7 +33,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                     for (const auto& ir : it->second) {
                         if (ir != *response.description.lower()) {
                             if (approximation_strategy == ApxStrategy::BETWEEN) {
-                                if (approximation::criteria::pair(der->proj(), ir, *response.description.lower())) {
+                                if (approximation::ApxCriteria::poly_pair(der->proj(), ir, *response.description.lower())) {
                                     // TODO: what if the two root expressions correspond to the same root?
                                     IR ir_between = apx.approximate_between(ir, *response.description.lower(), it->first, der->cell().lower()->first);
                                     response.ordering.add_below(*response.description.lower(), ir_between);
@@ -53,7 +53,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                     for (const auto& ir : it->second) {
                         if (ir != *response.description.upper()) {
                             if (approximation_strategy == ApxStrategy::BETWEEN) {
-                                if (approximation::criteria::pair(der->proj(), *response.description.upper(), ir)) {
+                                if (approximation::ApxCriteria::poly_pair(der->proj(), *response.description.upper(), ir)) {
                                     // TODO: what if the two root expressions correspond to the same root?
                                     IR ir_between = apx.approximate_between(*response.description.upper(), ir, der->cell().upper()->first, it->first);
                                     response.ordering.add_above(*response.description.upper(), ir_between);

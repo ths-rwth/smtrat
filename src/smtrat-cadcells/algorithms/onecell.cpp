@@ -29,7 +29,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         stats.newCell();
     #endif
 
-    bool consider_approximation = use_approximation && representation::approximation::criteria::cell(constraints);
+    bool consider_approximation = use_approximation && representation::approximation::ApxCriteria::cell(constraints);
     #ifdef SMTRAT_DEVOPTION_Statistics
         if (consider_approximation) stats.approximationConsidered();
     #endif
@@ -73,7 +73,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
 
         bool apx_lvl = false;
         if (consider_approximation)
-            apx_lvl = representation::approximation::criteria::level(cell_deriv->level());
+            apx_lvl = representation::approximation::ApxCriteria::level(cell_deriv->level());
             
         auto cell_repr = apx_lvl ? representation::cell<cell_approximation_heuristic>::compute(cell_deriv)
                                  : representation::cell<cell_heuristic>::compute(cell_deriv);
