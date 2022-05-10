@@ -19,17 +19,17 @@ namespace smtrat {
 
 	struct FMPlexSettings3 {
 		static constexpr auto moduleName = "FMPlexModule<FMPlexSettings3>";
-		static constexpr auto constraintHeuristic = "Simple";
-		static constexpr auto variableDirectionHeuristic = "Simple";
+		static constexpr auto constraintHeuristic = "None";
+		static constexpr auto variableDirectionHeuristic = "None";
 		static constexpr bool incremental = true;
-		static constexpr auto backtrackingMode = "oneStep";
+		static constexpr auto backtrackingMode = "furthest";
 	};
 
 	struct FMPlexSettings4 {
 		static constexpr auto moduleName = "FMPlexModule<FMPlexSettings4>";
 		static constexpr auto constraintHeuristic = "Simple";
 		static constexpr auto variableDirectionHeuristic = "Simple";
-		static constexpr bool incremental = false;
+		static constexpr bool incremental = true;
 		static constexpr auto backtrackingMode = "oneStep";
 	};
 }
