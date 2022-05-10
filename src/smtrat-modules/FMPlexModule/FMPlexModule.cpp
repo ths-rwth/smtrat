@@ -41,6 +41,7 @@ bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 		mNewConstraints.push_back(formulaPtr2);
 	} else {
 		//std::cout << "RELATION NOT SUPPORTED: " << formula->formula().constraint().relation() << std::endl;
+		//std::cout << "LHS: " << formula->formula().constraint().lhs();
 		assert(false);
 		SMTRAT_STATISTICS_CALL(stats.unsuppRel());
 		std::exit(44);
@@ -128,8 +129,14 @@ Answer FMPlexModule<Settings>::checkCore() {
 		mModelFit = true;
 		for (auto c = mModelFitUntilHere == mNewConstraints.end() ? mNewConstraints.begin() : mModelFitUntilHere; c != mNewConstraints.end() && mModelFit; c++) {
 			auto checkConstr = c->get()->lhs();
+			//std::cout << "replace in: " << checkConstr << "...\n";
 			for (auto modelValuation : mModel){
-				substitute_inplace(checkConstr, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
+				//std::cout << "var: " << modelValuation.first.asVariable().name() << ", value: " << modelValuation.second.asRational() << "\n";
+				// if statement is quickfix for now. there are terms in some multivariate polynomials that evaluate to 0 but have not been removed for some reason
+				if (checkConstr.lcoeff(modelValuation.first.asVariable()) != 0){
+					substitute_inplace(checkConstr, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
+				}
+
 			}
 			if (!SimpleConstraint(checkConstr, c->get()->rel()).isTrivialTrue()) {
 				mModelFit = false;
@@ -145,7 +152,6 @@ Answer FMPlexModule<Settings>::checkCore() {
 			mModelFitUntilHere = mNewConstraints.end();
 		}
 	}
-
 	// Convert mNewConstraints to ConstraintsWithInfo
 	ConstraintList newConstr = convertNewFormulas();
 	// Add to first lvl (create it if necessary)
@@ -155,7 +161,6 @@ Answer FMPlexModule<Settings>::checkCore() {
 	} else {
 		mFMPlexBranch.front().connector.insert(mFMPlexBranch.front().connector.end(), newConstr.begin(), newConstr.end());
 	}
-
 	// Preparations for main loop
 	BranchIterator currentIterator = mFMPlexBranch.begin();
 	auto statusCheckResult = currentIterator->trueFalseCheck();
