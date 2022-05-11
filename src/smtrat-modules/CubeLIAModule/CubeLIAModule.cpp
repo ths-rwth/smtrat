@@ -41,7 +41,7 @@ namespace smtrat
     template<class Settings>
     bool CubeLIAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT && !_subformula->formula().propertyHolds( carl::PROP_CONTAINS_REAL_VALUED_VARS ) )
+        if( _subformula->formula().type() == carl::FormulaType::CONSTRAINT && !_subformula->formula().propertyHolds( carl::PROP_CONTAINS_REAL_VALUED_VARS ) )
         {
             const ConstraintT& constraint = _subformula->formula().constraint();
             if( constraint.lhs().isLinear() && constraint.relation() != carl::Relation::NEQ && constraint.relation() != carl::Relation::EQ )

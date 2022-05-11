@@ -25,9 +25,9 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
     for (const auto& c: cs) {
         SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
         Poly p;
-        if (c.getType() == carl::FormulaType::CONSTRAINT) {
+        if (c.type() == carl::FormulaType::CONSTRAINT) {
             p = c.constraint().lhs();
-        } else if (c.getType() == carl::FormulaType::VARCOMPARE) {
+        } else if (c.type() == carl::FormulaType::VARCOMPARE) {
             p = c.variableComparison().defining_polynomial();
         } else {
             assert(false);

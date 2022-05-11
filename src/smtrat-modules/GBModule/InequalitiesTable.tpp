@@ -103,8 +103,8 @@ namespace smtrat
                             else
                             {
                                 FormulaT simplifiedConstraint = FormulaT( Poly(typename smtrat::Poly::PolyType(std::get<2>(it->second).back().second)), std::get<1>(it->second) );
-                                assert( simplifiedConstraint.getType() != carl::FormulaType::FALSE );
-                                if( simplifiedConstraint.getType() == carl::FormulaType::TRUE )
+                                assert( simplifiedConstraint.type() != carl::FormulaType::FALSE );
+                                if( simplifiedConstraint.type() == carl::FormulaType::TRUE )
                                 {
                                     std::get < 0 > (it->second) = mModule->passedFormulaEnd();
                                 }
@@ -375,7 +375,7 @@ namespace smtrat
                 if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                 {
                     FormulaT redResult = FormulaT( Poly(typename smtrat::Poly::PolyType(reduced)), relation );
-                    switch( redResult.getType() )
+                    switch( redResult.type() )
                     {
                         case carl::FormulaType::TRUE:
                         {
@@ -397,7 +397,7 @@ namespace smtrat
                         }
                         default:
                         {
-                            assert( redResult.getType() == carl::FormulaType::CONSTRAINT );
+                            assert( redResult.type() == carl::FormulaType::CONSTRAINT );
                             // get the reason set for the reduced polynomial
                             FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
                             originals.push_back( it->first->formula() );

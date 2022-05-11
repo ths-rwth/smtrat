@@ -43,7 +43,7 @@ namespace smtrat
 	
 	template<class Settings>
 	void ICEModule<Settings>::addFormula(const FormulaT& f) {
-		switch (f.getType()) {
+		switch (f.type()) {
 			case carl::FormulaType::CONSTRAINT:
 				mBounds.addBound(f.constraint(), f);
 				if (!carl::is_bound(f.constraint())) {
@@ -51,7 +51,7 @@ namespace smtrat
 				}
 				break;
 			case carl::FormulaType::NOT: {
-				if (f.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+				if (f.subformula().type() == carl::FormulaType::CONSTRAINT) {
 					const ConstraintT& c = f.subformula().constraint();
 					ConstraintT newC(c.lhs(), inverse(c.relation()));
 					mBounds.addBound(newC, f);
@@ -68,7 +68,7 @@ namespace smtrat
 	
 	template<class Settings>
 	void ICEModule<Settings>::removeFormula(const FormulaT& f) {
-		switch (f.getType()) {
+		switch (f.type()) {
 			case carl::FormulaType::CONSTRAINT:
 				mBounds.removeBound(f.constraint(), f);
 				if (!carl::is_bound(f.constraint())) {
@@ -76,7 +76,7 @@ namespace smtrat
 				}
 				break;
 			case carl::FormulaType::NOT: {
-				if (f.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+				if (f.subformula().type() == carl::FormulaType::CONSTRAINT) {
 					const ConstraintT& c = f.subformula().constraint();
 					ConstraintT newC(c.lhs(), inverse(c.relation()));
 					mBounds.removeBound(newC, f);

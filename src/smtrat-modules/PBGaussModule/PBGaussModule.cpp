@@ -55,7 +55,7 @@ namespace smtrat
 	{
 		for(const auto& subformula : rReceivedFormula()){
 			const FormulaT& f = subformula.formula();
-			if(f.getType() == carl::FormulaType::CONSTRAINT){
+			if(f.type() == carl::FormulaType::CONSTRAINT){
 				const ConstraintT& c = f.constraint();
 				for (const auto& var : c.variables()) {
 					mVariables.insert(var);

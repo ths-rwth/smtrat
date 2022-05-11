@@ -384,11 +384,11 @@ namespace smtrat
 		
 		template<typename T>
         bool VariableBounds<T>::addBound( const FormulaT& _formula, const T& _origin ) {
-			switch (_formula.getType()) {
+			switch (_formula.type()) {
 				case carl::FormulaType::CONSTRAINT:
 					return addBound(_formula.constraint(), _origin);
 				case carl::FormulaType::NOT: {
-	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+	                if (_formula.subformula().type() == carl::FormulaType::CONSTRAINT) {
 	                    const ConstraintT& c = _formula.subformula().constraint();
 	                    return addBound(ConstraintT(c.lhs(), carl::inverse(c.relation())), _origin);
 	                }
@@ -467,11 +467,11 @@ namespace smtrat
 
 		template<typename T>
 		unsigned VariableBounds<T>::removeBound(const FormulaT& _formula, const T& _origin) {
-			switch (_formula.getType()) {
+			switch (_formula.type()) {
 				case carl::FormulaType::CONSTRAINT:
 					return removeBound(_formula.constraint(), _origin);
 				case carl::FormulaType::NOT: {
-	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+	                if (_formula.subformula().type() == carl::FormulaType::CONSTRAINT) {
 	                    const ConstraintT& c = _formula.subformula().constraint();
 	                    return removeBound(ConstraintT(c.lhs(), carl::inverse(c.relation())), _origin);
 	                }

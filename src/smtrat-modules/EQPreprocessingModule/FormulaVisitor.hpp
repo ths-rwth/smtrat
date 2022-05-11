@@ -386,7 +386,7 @@ namespace smtrat {
 				constexpr std::size_t require_complete_type = sizeof(ConcreteType);
 				(void)require_complete_type;
 
-				switch(formula.getType()) {
+				switch(formula.type()) {
 					case carl::OR: {
 						P_enter_or(formula, SMTRAT_DISP_TAG(enter_or));
 
@@ -834,7 +834,7 @@ namespace smtrat {
 				constexpr std::size_t require_complete_type = sizeof(ConcreteType);
 				(void)require_complete_type;
 
-				switch(formula.getType()) {
+				switch(formula.type()) {
 					case carl::OR: {
 						P_enter_or(formula, SMTRAT_DISP_TAG(enter_or));
 
@@ -1095,7 +1095,7 @@ namespace smtrat {
 			}
 
 			template<typename = void> FormulaT P_visit_quantified(const FormulaT& formula, FormulaT&& subformula, std::false_type) {
-				return P_rewrite_default(formula, FormulaT(formula.getType(), formula.quantifiedVariables(), std::move(subformula)));
+				return P_rewrite_default(formula, FormulaT(formula.type(), formula.quantifiedVariables(), std::move(subformula)));
 			}
 
 			FormulaT P_visit_quantified(const FormulaT& formula, FormulaT&& subformula) {
@@ -1427,7 +1427,7 @@ namespace smtrat {
 			template<template<typename,typename,typename> class SetTemplate, typename C, typename A>
 				FormulaT P_rewrite_default(const FormulaT& formula, SetTemplate<FormulaT, C, A>&& subformulas)
 			{
-				return P_rewrite_default(formula, FormulaT(formula.getType(), std::move(subformulas)));
+				return P_rewrite_default(formula, FormulaT(formula.type(), std::move(subformulas)));
 			}
 
 			FormulaT P_rewrite_default(const FormulaT& formula, const FormulaT& default_result) {

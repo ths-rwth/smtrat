@@ -210,7 +210,7 @@ std::size_t MCSATMixin<Settings>::addBooleanVariable(Minisat::Var variable) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Ignoring " << variable << " as it is not a theory abstraction");
 		return level;
 	}
-	assert(mGetter.reabstractVariable(variable).getType() != carl::FormulaType::VARASSIGN);
+	assert(mGetter.reabstractVariable(variable).type() != carl::FormulaType::VARASSIGN);
 	if (level == std::numeric_limits<std::size_t>::max()) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << variable << " to undecided");
 		mUndecidedVariables.push_back(variable);

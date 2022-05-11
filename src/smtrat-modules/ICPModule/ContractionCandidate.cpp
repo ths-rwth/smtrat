@@ -16,7 +16,7 @@ namespace smtrat
                 for( IcpVariable* icpVar : mIcpVariables )
                     icpVar->incrementActivity();
             }
-            assert(_origin.getType() == carl::FormulaType::CONSTRAINT);
+            assert(_origin.type() == carl::FormulaType::CONSTRAINT);
             mOrigin.insert(_origin);
         }
 

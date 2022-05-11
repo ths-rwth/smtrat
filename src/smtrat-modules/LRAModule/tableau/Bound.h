@@ -343,7 +343,7 @@ namespace smtrat
                  */
                 void setNeqRepresentation( const FormulaT& _constraint ) const
                 {
-                    assert( _constraint.getType() == carl::FormulaType::CONSTRAINT && _constraint.constraint().relation() == carl::Relation::NEQ );
+                    assert( _constraint.type() == carl::FormulaType::CONSTRAINT && _constraint.constraint().relation() == carl::Relation::NEQ );
                     if( mpInfo->neqRepresentation.isTrue() )
                     {
                         mpInfo->neqRepresentation = _constraint;

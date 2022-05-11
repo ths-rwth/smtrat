@@ -57,11 +57,11 @@ std::variant<VariablePos,bool> AssignmentFinder_SMT::level(const FormulaT& const
 }
 
 boost::tribool AssignmentFinder_SMT::addConstraint(const FormulaT& f) {
-	assert(f.getType() == carl::FormulaType::CONSTRAINT);
+	assert(f.type() == carl::FormulaType::CONSTRAINT);
 
 	FormulaT fnew(carl::model::substitute(f, mModel));
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Constraint " << f << " evaluated to " << fnew);
-	if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
+	if (fnew.type() == carl::FormulaType::CONSTRAINT) {
 		assert(fnew.variables().size() > 0);
 		auto lvl = level(fnew);
 		if (std::holds_alternative<VariablePos>(lvl)) {
@@ -90,7 +90,7 @@ boost::tribool AssignmentFinder_SMT::addConstraint(const FormulaT& f) {
 }
 
 boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
-	assert(f.getType() == carl::FormulaType::VARCOMPARE);
+	assert(f.type() == carl::FormulaType::VARCOMPARE);
 
 	// A VariableComparison is of the form y ~ RAN or y ~ MVRoot(i,p) where p is in variables x_1,...,x_n
 	// and x_1,...,x_n are of lower level according to the current variable ordering.
@@ -132,7 +132,7 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		} else {
-			assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
+			assert(fnew.type() == carl::FormulaType::VARCOMPARE);
 
 			ModelValue value = fnew.variableComparison().value();
 			if (value.isSubstitution()) {

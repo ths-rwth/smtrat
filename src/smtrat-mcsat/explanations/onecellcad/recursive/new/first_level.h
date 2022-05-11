@@ -388,9 +388,9 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
 }
 
 bool compute_unsat_intervals(const FormulaT& constr, const Model& model, carl::Variable variable, std::vector<cell_at_level>& results) {
-    if (constr.getType() == carl::FormulaType::CONSTRAINT) {
+    if (constr.type() == carl::FormulaType::CONSTRAINT) {
         return compute_unsat_intervals(constr.constraint(), model, variable, results);
-    } else if (constr.getType() == carl::FormulaType::VARCOMPARE) {
+    } else if (constr.type() == carl::FormulaType::VARCOMPARE) {
         return compute_unsat_intervals(constr.variableComparison(), model, variable, results);
     } else {
         assert(false);

@@ -53,8 +53,8 @@ namespace smtrat
             {
                 bool operator ()(const FormulaT& _lhs, const FormulaT& _rhs ) const
                 {
-                    assert(_lhs.getType() == carl::FormulaType::CONSTRAINT);
-                    assert(_rhs.getType() == carl::FormulaType::CONSTRAINT);
+                    assert(_lhs.type() == carl::FormulaType::CONSTRAINT);
+                    assert(_rhs.type() == carl::FormulaType::CONSTRAINT);
                     return _lhs.constraint() < _rhs.constraint();
                 }
             };

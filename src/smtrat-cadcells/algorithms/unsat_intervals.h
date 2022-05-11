@@ -169,9 +169,9 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
 template <cadcells::operators::op op>
 std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const FormulaT& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
-    if (c.getType() == carl::FormulaType::CONSTRAINT) {
+    if (c.type() == carl::FormulaType::CONSTRAINT) {
         return get_unsat_intervals<op>(c.constraint(), proj, sample);
-    } else if (c.getType() == carl::FormulaType::VARCOMPARE) {
+    } else if (c.type() == carl::FormulaType::VARCOMPARE) {
         return get_unsat_intervals<op>(c.variableComparison(), proj, sample);
     } else {
         assert(false);

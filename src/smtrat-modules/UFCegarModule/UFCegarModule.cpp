@@ -92,7 +92,7 @@ namespace smtrat
     bool UFCegarModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         auto flattened = carl::visit_result( _subformula->formula(), [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ) {
+            if (formula.type() == carl::UEQ) {
                 return flatten(formula);
             } else {
                 return formula;

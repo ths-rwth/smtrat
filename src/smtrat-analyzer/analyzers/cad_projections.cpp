@@ -90,7 +90,7 @@ void analyze_cad_projections(const FormulaT& f, AnalyzerStatistics& stats) {
 	std::set<ConstraintT> constraints;
 
 	carl::visit(f, [&](const FormulaT& f){
-		if (f.getType() == carl::FormulaType::CONSTRAINT) {
+		if (f.type() == carl::FormulaType::CONSTRAINT) {
 			constraints.insert(f.constraint());
 		}
 	});

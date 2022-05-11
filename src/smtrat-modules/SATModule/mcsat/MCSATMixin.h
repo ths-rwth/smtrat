@@ -247,7 +247,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
-		if (f.getType() == carl::FormulaType::VARASSIGN) {
+		if (f.type() == carl::FormulaType::VARASSIGN) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
@@ -274,7 +274,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
-		if (f.getType() == carl::FormulaType::VARASSIGN) {
+		if (f.type() == carl::FormulaType::VARASSIGN) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
@@ -582,7 +582,7 @@ public:
 				mVarPropertyCache[v].maxDegree = 0;
 			} else {
 				const auto& reabstraction = mGetter.reabstractVariable(var);
-				if (reabstraction.getType() == carl::FormulaType::CONSTRAINT) {
+				if (reabstraction.type() == carl::FormulaType::CONSTRAINT) {
 					const auto& constr = reabstraction.constraint();
 					auto vars = carl::arithmetic_variables(reabstraction);
 					std::size_t maxDeg = 0;
@@ -591,7 +591,7 @@ public:
 						if (deg > maxDeg) maxDeg = deg;
 					}
 					mVarPropertyCache[v].maxDegree = maxDeg;
-				} else if (reabstraction.getType() == carl::FormulaType::VARCOMPARE) {
+				} else if (reabstraction.type() == carl::FormulaType::VARCOMPARE) {
 					mVarPropertyCache[v].maxDegree = std::numeric_limits<std::size_t>::max();
 				} else {
 					assert(false);

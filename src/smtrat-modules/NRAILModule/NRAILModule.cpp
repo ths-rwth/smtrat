@@ -429,9 +429,9 @@ namespace smtrat
     template<typename Settings>
     FormulaT NRAILModule<Settings>::linearizeSubformula(const FormulaT &formula)
     {
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula from linearizeSubformula: " <<  formula << " Formula Type: " <<  formula.getType() << std::endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula from linearizeSubformula: " <<  formula << " Formula Type: " <<  formula.type() << std::endl; }
 
-        if (formula.getType() == carl::FormulaType::CONSTRAINT) {
+        if (formula.type() == carl::FormulaType::CONSTRAINT) {
             FormulaT linearizedFormula = linearization(formula);
             return linearizedFormula;
         }
@@ -445,7 +445,7 @@ namespace smtrat
     {
         const FormulaT& formula{_subformula->formula()};
 
-        if (formula.getType() == carl::FormulaType::FALSE){
+        if (formula.type() == carl::FormulaType::FALSE){
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula type is false and UNSAT! "; }
 
@@ -454,12 +454,12 @@ namespace smtrat
             return false;
         }
 
-        if (formula.getType() == carl::FormulaType::TRUE){
+        if (formula.type() == carl::FormulaType::TRUE){
             if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Formula type is true! "; }
             return true;
         }
 
-        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.getType() << std::endl; }
+        if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "Sub Formula: " <<  formula << " Sub Formula type: " <<  formula.type() << std::endl; }
 
         FormulaT formulaFromVisitor = carl::visit_result( formula, linearizeSubformulaFunction );
 

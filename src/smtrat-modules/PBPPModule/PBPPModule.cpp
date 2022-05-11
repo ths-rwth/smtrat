@@ -82,7 +82,7 @@ namespace smtrat
 			return;
 		}
 
-		if (formula.getType() == carl::FormulaType::CONSTRAINT && formula.constraint().isPseudoBoolean()) {
+		if (formula.type() == carl::FormulaType::CONSTRAINT && formula.constraint().isPseudoBoolean()) {
 			ConstraintT constraint = formula.constraint();
 			if (!constraint.isPseudoBoolean()) { 
 				// eg an objective function - just forward it
@@ -120,14 +120,14 @@ namespace smtrat
 	template<class Settings>
 	void PBPPModule<Settings>::extractConstraints(const FormulaT& formula) {
 		if (formula.isBooleanCombination()) {
-			assert(formula.getType() == carl::FormulaType::AND);
+			assert(formula.type() == carl::FormulaType::AND);
 			for (const auto& subformula: formula.subformulas()) {
 				extractConstraints(subformula);
 			}
-		} else if (formula.getType() == carl::FormulaType::CONSTRAINT) {
+		} else if (formula.type() == carl::FormulaType::CONSTRAINT) {
 			mConstraints.push_back(formula.constraint());
 			formulaByConstraint[formula.constraint()] = formula;
-		} else if (formula.getType() == carl::FormulaType::TRUE) {
+		} else if (formula.type() == carl::FormulaType::TRUE) {
 			return;
 		} else {
 			// we only expect a boolean combination of constraints
@@ -281,7 +281,7 @@ namespace smtrat
 
 	template<typename Settings>
 	FormulaT PBPPModule<Settings>::restoreFormula(const FormulaT& formula) {
-		if (formula.getType() == carl::FormulaType::CONSTRAINT) {
+		if (formula.type() == carl::FormulaType::CONSTRAINT) {
 			// this one we may have to substitute
 			const ConstraintT& constraint = formula.constraint();
 			if (boolEncodings.find(constraint) != boolEncodings.end()) return boolEncodings[constraint];
@@ -294,7 +294,7 @@ namespace smtrat
 				subforms.push_back(restoreFormula(subformula));
 			}
 
-			return FormulaT(formula.getType(), subforms);
+			return FormulaT(formula.type(), subforms);
 		} else {
 			// we don't care and return the formula - for example boolean literals. That's totally fine.
 			return formula;
@@ -415,7 +415,7 @@ namespace smtrat
 		// remove the constraint according to the given input again
 		const FormulaT& formula = _subformula->formula();
 
-		if (formula.getType() != carl::FormulaType::CONSTRAINT){
+		if (formula.type() != carl::FormulaType::CONSTRAINT){
 			return;
 		}
 		

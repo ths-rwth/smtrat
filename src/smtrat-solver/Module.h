@@ -860,7 +860,7 @@ namespace smtrat
              */
             std::pair<ModuleInput::iterator,bool> addReceivedSubformulaToPassedFormula( ModuleInput::const_iterator _subformula )
             {
-                assert( _subformula->formula().getType() != carl::FormulaType::AND );
+                assert( _subformula->formula().type() != carl::FormulaType::AND );
                 return addSubformulaToPassedFormula( _subformula->formula(), true, _subformula->formula(), nullptr, false );
             }
             

@@ -210,7 +210,7 @@ namespace arithmetic {
                     result = thenpoly;
                     return true;
                 }
-                if( ifterm.getType() == carl::FormulaType::CONSTRAINT )
+                if( ifterm.type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( ifterm.constraint().relation() == carl::Relation::EQ )
                     {
@@ -229,7 +229,7 @@ namespace arithmetic {
                         }
                     }
                 }
-                else if( ifterm.getType() == carl::FormulaType::NOT && ifterm.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                else if( ifterm.type() == carl::FormulaType::NOT && ifterm.subformula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( ifterm.subformula().constraint().relation() == carl::Relation::EQ )
                     {

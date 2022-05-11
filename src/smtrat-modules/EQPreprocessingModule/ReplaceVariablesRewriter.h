@@ -74,7 +74,7 @@ namespace smtrat {
 //				mAssertions.emplace_back();
 //
 //				for(const FormulaT& subformula : formula.subformulas()) {
-//					if(subformula.getType() == carl::UEQ) {
+//					if(subformula.type() == carl::UEQ) {
 //						if(!mEQHelper.isAsserted(subformula)) {
 //							mEQHelper.assertSubformula(subformula);
 //							mAssertions.back().push_back(subformula);

@@ -182,7 +182,7 @@ namespace vs
 //        std::cout << "univariateWeight = " << (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) << std::endl;
 //        std::cout << "degreeWeight = " << degreeWeight << std::endl;
 //        std::cout << "lCoeffWeight = " << lCoeffWeight << std::endl;
-//        if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+//        if( _consideredVariable.type() == carl::VariableType::VT_INT )
 //        {
 //            std::cout << "lCoeffWeightB = " << lCoeffWeightB << std::endl;
 //        }
@@ -227,7 +227,7 @@ namespace vs
      */
     bool Condition::operator==( const Condition& _condition ) const
     {
-        return mId == _condition.getId();
+        return mId == _condition.id();
     }
 
     /**
@@ -240,7 +240,7 @@ namespace vs
      */
     bool Condition::operator<( const Condition& _condition ) const
     {
-        return mId < _condition.getId();
+        return mId < _condition.id();
     }
     
     std::ostream& operator<<( std::ostream& _out, const Condition& _condition )
@@ -276,7 +276,7 @@ namespace vs
             {
                 if( oCond != originalConditions().begin() )
                     _out << ", ";
-                _out << "[" << (*oCond)->getId() << "]";
+                _out << "[" << (*oCond)->id() << "]";
             }
             _out << " }";
         }

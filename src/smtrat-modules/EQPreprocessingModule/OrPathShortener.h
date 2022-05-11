@@ -59,7 +59,7 @@ namespace smtrat {
 			typedef pmatrix<eqentry> pair_map;
 
 			void handleEQ(const FormulaT& formula, var_index& vars, std::size_t& size) {
-				assert(formula.getType() == carl::UEQ && !formula.uequality().negated());
+				assert(formula.type() == carl::UEQ && !formula.uequality().negated());
 
 				const UArg &lhs(formula.uequality().lhs()), &rhs(formula.uequality().rhs());
 				if(!(lhs == rhs)) {
@@ -90,8 +90,8 @@ namespace smtrat {
 				mStack.pop_back();
 
 				for(const FormulaT& f : subformulas) {
-					if(f.getType() != carl::AND && f.getType() != carl::UEQ) {
-						return FormulaT(origFormula.getType(), std::move(subformulas));
+					if(f.type() != carl::AND && f.type() != carl::UEQ) {
+						return FormulaT(origFormula.type(), std::move(subformulas));
 					}
 				}
 
@@ -100,9 +100,9 @@ namespace smtrat {
 				pair_map pairMap;
 
 				for(const FormulaT& f : subformulas) {
-					if(f.getType() == carl::AND) {
+					if(f.type() == carl::AND) {
 						for(const FormulaT& sf : f.subformulas()) {
-							if(sf.getType() == carl::UEQ) {
+							if(sf.type() == carl::UEQ) {
 								handleEQ(sf, varIndex, size);
 							}
 						}
@@ -134,7 +134,7 @@ namespace smtrat {
 						if(pairMap.at(std::min(i->second, j->second), std::max(i->second, j->second)).cnt == subformulas.size()) {
 							FormulaT eq(i->first, j->first, false);
 							const FormulasT& sub = mStack.back().subformulas();
-							if(mStack.empty() || mStack.back().getType() != carl::AND || !std::count(sub.begin(), sub.end(), eq)) {
+							if(mStack.empty() || mStack.back().type() != carl::AND || !std::count(sub.begin(), sub.end(), eq)) {
 								addFormulas.insert(eq);
 							}
 						}
@@ -142,9 +142,9 @@ namespace smtrat {
 				}
 
 				if(addFormulas.empty()) {
-					return FormulaT(origFormula.getType(), std::move(subformulas));
+					return FormulaT(origFormula.type(), std::move(subformulas));
 				} else {
-					addFormulas.insert(FormulaT(origFormula.getType(), std::move(subformulas)));
+					addFormulas.insert(FormulaT(origFormula.type(), std::move(subformulas)));
 					return FormulaT(carl::AND, std::move(addFormulas));
 				}
 			}

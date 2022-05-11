@@ -105,7 +105,7 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_1
         std::cout << "[ICP] inform: " << _constraint << std::endl;
         #endif
-        if( _constraint.getType() == carl::FormulaType::CONSTRAINT )
+        if( _constraint.type() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
             if( !constraint.integerValued() )
@@ -121,7 +121,7 @@ namespace smtrat
     template<class Settings>
     bool ICPModule<Settings>::addCore( ModuleInput::const_iterator _formula )
     {
-        switch( _formula->formula().getType() )
+        switch( _formula->formula().type() )
         {
             case carl::FormulaType::FALSE:
             {
@@ -188,7 +188,7 @@ namespace smtrat
                 auto replacementIt = mLinearizations.find( _formula->formula() );
                 assert( replacementIt != mLinearizations.end() );
                 const FormulaT& replacementPtr = (*replacementIt).second;
-                assert( replacementPtr.getType() == carl::FormulaType::CONSTRAINT );
+                assert( replacementPtr.type() == carl::FormulaType::CONSTRAINT );
                 if( carl::is_bound(replacementPtr.constraint()) )
                 {
                     // considered constraint is activated but has no slack variable -> it is a boundary constraint
@@ -220,7 +220,7 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::removeCore( ModuleInput::const_iterator _formula )
     {
-        if( _formula->formula().getType() != carl::FormulaType::CONSTRAINT )
+        if( _formula->formula().type() != carl::FormulaType::CONSTRAINT )
             return;
         const ConstraintT& constr = _formula->formula().constraint();
         #ifdef ICP_MODULE_DEBUG_1
@@ -460,7 +460,7 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::addConstraint( const FormulaT& _formula )
     {
-        assert( _formula.getType() == carl::FormulaType::CONSTRAINT );
+        assert( _formula.type() == carl::FormulaType::CONSTRAINT );
         assert( _formula.constraint().isConsistent() == 2 );
         const ConstraintT& constraint = _formula.constraint();
         auto linearization = mLinearizations.find( _formula );
@@ -543,7 +543,7 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::activateNonlinearConstraint( const FormulaT& _formula )
     {
-        assert( _formula.getType() == carl::FormulaType::CONSTRAINT );
+        assert( _formula.type() == carl::FormulaType::CONSTRAINT );
         auto iter = mNonlinearConstraints.find( _formula.constraint() );
         #ifdef ICP_MODULE_DEBUG_1
         std::cout << "[ICP] Assertion (nonlinear)" << _formula.constraint() <<  std::endl;
@@ -571,7 +571,7 @@ namespace smtrat
     template<class Settings>
     void ICPModule<Settings>::activateLinearConstraint( const FormulaT& _formula, const FormulaT& _origin )
     {
-        assert( _formula.getType() == carl::FormulaType::CONSTRAINT );
+        assert( _formula.type() == carl::FormulaType::CONSTRAINT );
         const icp::LRAVariable* slackvariable = mLRA.getSlackVariable( _formula );
         assert( slackvariable != nullptr );
         // lookup if contraction candidates already exist - if so, add origins
@@ -899,7 +899,7 @@ namespace smtrat
          *
          *      a_1*x_1 + .. + a_k*x_k ~ b, with b and a_i being rationals and x_i being variables
          */
-        assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
+        assert( _constraint.type() == carl::FormulaType::CONSTRAINT );
         assert( _constraint.constraint().lhs().isLinear() );
         const icp::LRAVariable* slackvariable = mLRA.getSlackVariable( _constraint );
         assert( slackvariable != nullptr );
@@ -1184,7 +1184,7 @@ namespace smtrat
         }
         if( foundCC == nullptr )
         {
-            assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
+            assert( _constraint.type() == carl::FormulaType::CONSTRAINT );
             auto iter = mNonlinearConstraints.find( _constraint.constraint() );
             assert( iter != mNonlinearConstraints.end() );
             for( const auto& cc : iter->second )
@@ -1932,7 +1932,7 @@ namespace smtrat
         #endif
         for( const auto& rec : rReceivedFormula() )
         {
-            assert( rec.formula().getType() == carl::FormulaType::CONSTRAINT );
+            assert( rec.formula().type() == carl::FormulaType::CONSTRAINT );
             const ConstraintT& constraint = rec.formula().constraint();
             #ifdef ICP_SAT_BASED_SPLITTING_DEBUG
             std::cout << constraint << std::endl;
@@ -2185,7 +2185,7 @@ namespace smtrat
         std::cout << "Result: -1" << std::endl;
         #endif
         assert( !carl::is_bound(_violatedConstraint.constraint()) );
-        assert( _violatedConstraint.getType() == carl::FormulaType::CONSTRAINT );
+        assert( _violatedConstraint.type() == carl::FormulaType::CONSTRAINT );
         bool constraintContainsSplittingVar = _violatedConstraint.constraint().variables().has( _icpVar.var() );
         setContraction( _violatedConstraint, _icpVar, (constraintContainsSplittingVar ? DoubleInterval::emptyInterval() : _contractedInterval), constraintContainsSplittingVar );
         if( constraintContainsSplittingVar )
@@ -2279,7 +2279,7 @@ namespace smtrat
         }
         for( const auto& rf : rReceivedFormula() )
         {
-            assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
+            assert( rf.formula().type() == carl::FormulaType::CONSTRAINT );
             unsigned isSatisfied = carl::model::satisfiedBy(rf.formula().constraint(), mFoundSolution);
 			if (isSatisfied == 2) {
 				return false;
@@ -2348,7 +2348,7 @@ namespace smtrat
             EvalRationalMap sol = mLRA.getRationalModel();
             for( const auto& rf : rReceivedFormula() )
             {
-                assert( rf.formula().getType() == carl::FormulaType::CONSTRAINT );
+                assert( rf.formula().type() == carl::FormulaType::CONSTRAINT );
                 const ConstraintT& cons = rf.formula().constraint();
                 assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || satisfiedBy( cons,sol ) == 1 );
                 if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && satisfiedBy( cons,sol ) != 1 )
@@ -2891,7 +2891,7 @@ namespace smtrat
     template<class Settings>
     FormulaT ICPModule<Settings>::getReceivedFormulas( const FormulaT& _deduction )
     {
-        if( _deduction.getType() == carl::FormulaType::CONSTRAINT )
+        if( _deduction.type() == carl::FormulaType::CONSTRAINT )
         {
             auto iter = mDeLinearizations.find( _deduction );
             if( iter == mDeLinearizations.end() )
@@ -2904,7 +2904,7 @@ namespace smtrat
                 return iter->second;
             }
         }
-        else if( _deduction.getType() == carl::FormulaType::NOT )
+        else if( _deduction.type() == carl::FormulaType::NOT )
         {
             return FormulaT( carl::FormulaType::NOT, getReceivedFormulas( _deduction.subformula() ) );
         }
@@ -2915,9 +2915,9 @@ namespace smtrat
             {
                 subformulas.push_back( getReceivedFormulas( subformula ) );
             }
-            return FormulaT( _deduction.getType(), subformulas );
+            return FormulaT( _deduction.type(), subformulas );
         }
-        else if (_deduction.getType() == carl::FormulaType::BOOL) {
+        else if (_deduction.type() == carl::FormulaType::BOOL) {
             return _deduction;
         }
         else

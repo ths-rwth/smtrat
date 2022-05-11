@@ -68,7 +68,7 @@ FormulaT ClauseChain::to_formula() const {
 }
 
 FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& model, ClauseChain& chain, bool withEquivalences) {
-    switch(formula.getType()) {
+    switch(formula.type()) {
         case carl::FormulaType::TRUE:
         case carl::FormulaType::FALSE:
         case carl::FormulaType::CONSTRAINT:

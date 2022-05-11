@@ -111,7 +111,7 @@ namespace smtrat
         auto iter = origs.begin();
         while( iter != origs.end() )
         {
-            if( *iter == _origin || (iter->getType() == carl::FormulaType::AND && iter->contains( _origin )) )
+            if( *iter == _origin || (iter->type() == carl::FormulaType::AND && iter->contains( _origin )) )
             {
                 if (iter != --origs.end())
                 {
@@ -188,7 +188,7 @@ namespace smtrat
 
     std::pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        if( _mightBeConjunction && _formula.getType() == carl::FormulaType::AND )
+        if( _mightBeConjunction && _formula.type() == carl::FormulaType::AND )
         {
             std::pair<iterator,bool> res = std::pair<iterator,bool>(end(), false);
             auto formulaIter = _formula.subformulas().begin();

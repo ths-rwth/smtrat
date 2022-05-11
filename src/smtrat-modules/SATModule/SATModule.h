@@ -1168,7 +1168,7 @@ namespace smtrat
                     // Note: insertVarOrder should never be called with a VARASSIGN when it's created
                     if (mBooleanConstraintMap.size() > x && mBooleanConstraintMap[x].first != nullptr) {
                         const auto& reabstr = mBooleanConstraintMap[x].first->reabstraction;
-                        if (reabstr.getType() == carl::FormulaType::VARASSIGN) {
+                        if (reabstr.type() == carl::FormulaType::VARASSIGN) {
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Converting " << x << " (" << reabstr << ")...")
                             const carl::Variable tvar = reabstr.variableAssignment().var();
                             x = mMCSAT.minisatVar(tvar);
@@ -1720,11 +1720,11 @@ namespace smtrat
             bool supportedConstraintType( const FormulaT& _formula ) const
             {
                 return
-					_formula.getType() == carl::FormulaType::CONSTRAINT ||
-					_formula.getType() == carl::FormulaType::VARCOMPARE ||
-					_formula.getType() == carl::FormulaType::VARASSIGN ||
-					_formula.getType() == carl::FormulaType::UEQ ||
-					_formula.getType() == carl::FormulaType::BITVECTOR;
+					_formula.type() == carl::FormulaType::CONSTRAINT ||
+					_formula.type() == carl::FormulaType::VARCOMPARE ||
+					_formula.type() == carl::FormulaType::VARASSIGN ||
+					_formula.type() == carl::FormulaType::UEQ ||
+					_formula.type() == carl::FormulaType::BITVECTOR;
             }
             
             /**

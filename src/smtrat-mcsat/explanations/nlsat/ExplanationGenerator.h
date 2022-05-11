@@ -59,10 +59,10 @@ namespace helper {
 		std::set<ConstraintT> cons;
 		for (const auto& cAtom: constraintAtoms) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom << " to " << cons);
-			if (cAtom.getType() == carl::FormulaType::CONSTRAINT) {
+			if (cAtom.type() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom);
 				cons.emplace(cAtom.constraint());
-			} else if (cAtom.getType() == carl::FormulaType::VARCOMPARE) {
+			} else if (cAtom.type() == carl::FormulaType::VARCOMPARE) {
 				// Note that we only add the polynomials here and don't really care about the relation
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
@@ -72,7 +72,7 @@ namespace helper {
 				// removed (makes no sense):
 				// -> var - poly to ensure that the relation still holds
 				//cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().defining_polynomial(), rel);
-			} else if (cAtom.getType() == carl::FormulaType::VARASSIGN) {
+			} else if (cAtom.type() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
 				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << cAtom);

@@ -58,7 +58,7 @@ namespace smtrat
     template<class Settings>
     bool IncWidthModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
+        if( _subformula->formula().type() == carl::FormulaType::CONSTRAINT )
         {
             if( Settings::use_icp )
                 addToICP( _subformula->formula() );
@@ -76,7 +76,7 @@ namespace smtrat
     template<class Settings>
     void IncWidthModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT )
+        if( _subformula->formula().type() == carl::FormulaType::CONSTRAINT )
         {
             if( Settings::use_icp )
                 removeFromICP( _subformula->formula() );
@@ -240,7 +240,7 @@ namespace smtrat
         {
             FormulaT subResult = carl::substitute(rf->formula(), mVariableShifts );
             addSubformulaToPassedFormula( subResult, rf->formula() );
-            if( Settings::use_icp && subResult.getType() == carl::FormulaType::CONSTRAINT )
+            if( Settings::use_icp && subResult.type() == carl::FormulaType::CONSTRAINT )
                 addToICP( subResult );
         }
         std::vector<ModuleInput::iterator> addedBounds;

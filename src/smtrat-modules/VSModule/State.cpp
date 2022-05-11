@@ -134,7 +134,7 @@ namespace vs
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
                 mpVariableBounds->removeBound( pCond->constraint(), pCond );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -153,7 +153,7 @@ namespace vs
                     {
                         const Condition* rpCond = mpSubstitutionResults->back().back().first.back();
                         mpSubstitutionResults->back().back().first.pop_back();
-                        mpConditionIdAllocator->free( rpCond->getId() );
+                        mpConditionIdAllocator->free( rpCond->id() );
                         delete rpCond;
                         rpCond = NULL;
                     }
@@ -464,7 +464,7 @@ namespace vs
                             {
                                 const Condition* rpCond = condConjunction->first.back();
                                 condConjunction->first.pop_back();
-                                mpConditionIdAllocator->free( rpCond->getId() );
+                                mpConditionIdAllocator->free( rpCond->id() );
                                 delete rpCond;
                                 rpCond = NULL;
                             }
@@ -502,7 +502,7 @@ namespace vs
                             {
                                 const Condition* rpCond = subResult->back().first.back();
                                 subResult->back().first.pop_back();
-                                mpConditionIdAllocator->free( rpCond->getId() );
+                                mpConditionIdAllocator->free( rpCond->id() );
                                 delete rpCond;
                                 rpCond = NULL;
                             }
@@ -796,7 +796,7 @@ namespace vs
                         redundantConditionSet.erase( iter );
                         const Condition* toDel = *cond;
                         cond = _conditionVectorToSimplify.erase( cond );
-                        mpConditionIdAllocator->free( toDel->getId() );
+                        mpConditionIdAllocator->free( toDel->id() );
                         delete toDel;
                         toDel = NULL;
                     }
@@ -1131,7 +1131,7 @@ namespace vs
                             (**cond).pOriginalConditions()->insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
                         const Condition* pCond = *newCond;
                         newCond = newCombination.erase( newCond );
-                        mpConditionIdAllocator->free( pCond->getId() );
+                        mpConditionIdAllocator->free( pCond->id() );
                         delete pCond;
                         pCond = NULL;
                         condOccursInNewConds = true;
@@ -1162,7 +1162,7 @@ namespace vs
             {
                 const Condition* rpCond = newCombination.back();
                 newCombination.pop_back();
-                mpConditionIdAllocator->free( rpCond->getId() );
+                mpConditionIdAllocator->free( rpCond->id() );
                 delete rpCond; // TODO: this has to be done maybe in some situations or somewhere else
                 rpCond = NULL;
             }
@@ -1596,7 +1596,7 @@ namespace vs
         {
             const Condition* pCond = *deletedConditions.begin();
             deletedConditions.erase( deletedConditions.begin() );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -1669,7 +1669,7 @@ namespace vs
         {
             const Condition* condToDel = condsToDelete.back();
             condsToDelete.pop_back();
-            mpConditionIdAllocator->free( condToDel->getId() );
+            mpConditionIdAllocator->free( condToDel->id() );
             delete condToDel;
             condToDel = NULL;
         }
@@ -1883,7 +1883,7 @@ namespace vs
                             const Condition* rpCond = *cond;
                             cond             = condConj->first.erase( cond );
                             condConj->second = false;
-                            mpConditionIdAllocator->free( rpCond->getId() );
+                            mpConditionIdAllocator->free( rpCond->id() );
                             delete rpCond;
                             rpCond = NULL;
                             rSubResultsSimplified() = false;
@@ -2173,7 +2173,7 @@ namespace vs
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
                 mpVariableBounds->removeBound( pCond->constraint(), pCond );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }

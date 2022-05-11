@@ -28,18 +28,18 @@ namespace smtrat
              * to the passed formula.
              */
             FormulaT formulaToAssertInCnf = carl::to_cnf(receivedSubformula->formula());
-            if( formulaToAssertInCnf.getType() == carl::FormulaType::TRUE )
+            if( formulaToAssertInCnf.type() == carl::FormulaType::TRUE )
             {
                 // No need to add it.
             }
-            else if( formulaToAssertInCnf.getType() == carl::FormulaType::FALSE )
+            else if( formulaToAssertInCnf.type() == carl::FormulaType::FALSE )
             {
                 receivedFormulasAsInfeasibleSubset( receivedSubformula );
                 return UNSAT;
             }
             else
             {
-                if( formulaToAssertInCnf.getType() == carl::FormulaType::AND )
+                if( formulaToAssertInCnf.type() == carl::FormulaType::AND )
                 {
                     for( const FormulaT& subFormula : formulaToAssertInCnf.subformulas()  )
                     {

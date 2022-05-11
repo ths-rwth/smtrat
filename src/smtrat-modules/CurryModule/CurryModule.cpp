@@ -47,7 +47,7 @@ namespace smtrat
     template<class Settings>
     auto CurryModule<Settings>::curry(const FormulaT& formula) noexcept -> FormulaT
     {
-        assert(formula.getType() == carl::UEQ);
+        assert(formula.type() == carl::UEQ);
 
         if (auto res = formula_store.find(formula); res != formula_store.end()) {
             return res->second;
@@ -130,7 +130,7 @@ namespace smtrat
     template<class Settings>
     auto CurryModule<Settings>::flatten(const FormulaT& formula) noexcept -> const std::vector<FormulaT>&
     {
-        assert(formula.getType() == carl::UEQ);
+        assert(formula.type() == carl::UEQ);
         if (auto res = flattened_store.find(formula); res != flattened_store.end()) {
             return res->second;
         }
@@ -150,14 +150,14 @@ namespace smtrat
     bool CurryModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
         auto curryfied = carl::visit_result( _subformula->formula(), [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ)
+            if (formula.type() == carl::UEQ)
                 return curry(formula);
             else
                 return formula;
         } );
 
         auto flattened = carl::visit_result( curryfied, [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ)
+            if (formula.type() == carl::UEQ)
                 return FormulaT(carl::FormulaType::AND, flatten(formula));
             else
                 return formula;

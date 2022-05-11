@@ -23,7 +23,7 @@ namespace smtrat::qe::fm {
 
                 // add all constraints which are not containing var to newConstraints
                 for(const auto formulaIt : bounds[2]) {
-                    assert((formulaIt).getType() == carl::FormulaType::CONSTRAINT);
+                    assert((formulaIt).type() == carl::FormulaType::CONSTRAINT);
                     newConstraints.emplace_back(formulaIt);
                 }
 
@@ -40,7 +40,7 @@ namespace smtrat::qe::fm {
         typename FourierMotzkinQE::FormulaPartition res{4,std::vector<FormulaT>()};
 
         // if the formula only contains one constraint, check for occurence of the variable.
-        if(mFormula.getType() == carl::FormulaType::CONSTRAINT) {
+        if(mFormula.type() == carl::FormulaType::CONSTRAINT) {
             if(!mFormula.constraint().variables().has(variable)) {
                 res[3].push_back(mFormula);
             } else {
@@ -57,7 +57,7 @@ namespace smtrat::qe::fm {
 
         // More than one constaint: search formula to find bounds
         for(auto formulaIt = mFormula.begin(); formulaIt != mFormula.end(); ++formulaIt) {
-            assert((*formulaIt).getType() == carl::FormulaType::CONSTRAINT);
+            assert((*formulaIt).type() == carl::FormulaType::CONSTRAINT);
             if((*formulaIt).constraint().variables().has(variable)) {
                 if((*formulaIt).constraint().relation() == carl::Relation::EQ) {
                     res[2].push_back(*formulaIt);
@@ -106,10 +106,10 @@ namespace smtrat::qe::fm {
 
         // check if equations are pairwise equal - if not return false, otherwise use one of the equations.
         for(const auto& f : bounds[2]) {
-            assert(f.getType() == carl::FormulaType::CONSTRAINT);
+            assert(f.type() == carl::FormulaType::CONSTRAINT);
             for(const auto& g : bounds[2]) {
-                assert(g.getType() == carl::FormulaType::CONSTRAINT);
-                if( FormulaT(f.constraint().lhs() - g.constraint().lhs(), carl::Relation::EQ).getType() == carl::FormulaType::FALSE) {
+                assert(g.type() == carl::FormulaType::CONSTRAINT);
+                if( FormulaT(f.constraint().lhs() - g.constraint().lhs(), carl::Relation::EQ).type() == carl::FormulaType::FALSE) {
                     constraints.emplace_back(FormulaT(carl::FormulaType::FALSE));
                     return constraints;
                 }
@@ -120,12 +120,12 @@ namespace smtrat::qe::fm {
         Poly substitute = bounds[2].front().constraint().lhs() - bounds[2].front().constraint().coefficient(v,1)*v;
         // lower bounds
         for(auto fc : bounds[0]) {
-            assert(fc.getType() == carl::FormulaType::CONSTRAINT);
+            assert(fc.type() == carl::FormulaType::CONSTRAINT);
             constraints.emplace_back(carl::substitute(fc.constraint().lhs(), v, substitute), fc.constraint().relation());
         }
         // upper bounds
         for(auto fc : bounds[1]) {
-            assert(fc.getType() == carl::FormulaType::CONSTRAINT);
+            assert(fc.type() == carl::FormulaType::CONSTRAINT);
             constraints.emplace_back(carl::substitute(fc.constraint().lhs(), v, substitute), fc.constraint().relation());
         }
 

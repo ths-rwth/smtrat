@@ -18,7 +18,7 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 			SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Skipping inactive Constraint " << c);
 			continue;
 		}
-		assert(c.getType() == carl::FormulaType::CONSTRAINT);
+		assert(c.type() == carl::FormulaType::CONSTRAINT);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding Constraint " << c);
 		if(!af.addConstraint(c)){
 			conflict.push_back(c);
@@ -46,7 +46,7 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 }
 
 bool AssignmentFinder::active(const mcsat::Bookkeeping& data, const FormulaT& f) const {
-		if(f.getType() != carl::FormulaType::VARCOMPARE)
+		if(f.type() != carl::FormulaType::VARCOMPARE)
 			return true;
 
 		const auto& val = f.variableComparison().value();

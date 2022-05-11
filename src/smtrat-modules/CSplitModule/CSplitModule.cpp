@@ -28,7 +28,7 @@ namespace smtrat
 	{
 		addReceivedSubformulaToPassedFormula(_subformula);
 		const FormulaT& formula{_subformula->formula()};
-		if (formula.getType() == carl::FormulaType::FALSE)
+		if (formula.type() == carl::FormulaType::FALSE)
 			mInfeasibleSubsets.push_back({formula});
 		else if (formula.isBound())
 		{
@@ -42,7 +42,7 @@ namespace smtrat
 			if (mVariableBounds.isConflicting())
 				mInfeasibleSubsets.emplace_back(mVariableBounds.getConflict());
 		}
-		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		else if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -178,7 +178,7 @@ namespace smtrat
 			mVariableBounds.removeBound(formula, formula);
 			mExpansions.firstAt(*formula.variables().begin()).mChangedBounds = true;
 		}
-		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		else if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -493,7 +493,7 @@ namespace smtrat
 					}
 				}
 			}
-			else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+			else if (formula.type() == carl::FormulaType::CONSTRAINT)
 			{
 				const ConstraintT& constraint{formula.constraint()};
 				auto linearizationIter{mLinearizations.secondFind(constraint.lhs().normalize())};

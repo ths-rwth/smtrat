@@ -31,7 +31,7 @@ namespace smtrat
     template<class Settings>
     bool UnionFindModule<Settings>::informCore( const FormulaT& _constraint )
     {
-        assert(_constraint.getType() == carl::UEQ);
+        assert(_constraint.type() == carl::UEQ);
         const auto& ueq = _constraint.uequality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
@@ -68,7 +68,7 @@ namespace smtrat
             need_to_update = false;
         }
 
-        assert(_subformula->formula().getType() == carl::UEQ);
+        assert(_subformula->formula().type() == carl::UEQ);
         const auto& ueq = _subformula->formula().uequality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
@@ -94,7 +94,7 @@ namespace smtrat
     template<class Settings>
     void UnionFindModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        assert(_subformula->formula().getType() == carl::UEQ);
+        assert(_subformula->formula().type() == carl::UEQ);
         const auto& ueq = _subformula->formula().uequality();
 
         auto it = std::find(history.rbegin(), history.rend(), ueq);

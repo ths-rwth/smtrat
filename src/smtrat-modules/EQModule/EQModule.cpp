@@ -38,7 +38,7 @@ namespace smtrat {
 	template<class Settings>
 		bool EQModule<Settings>::informCore(const FormulaT& _constraint)
 	{
-		if(_constraint.getType() == carl::UEQ) {
+		if(_constraint.type() == carl::UEQ) {
 			const UEquality &ueq = _constraint.uequality();
 			const term_type &lhs = ueq.lhs();
 			const term_type &rhs = ueq.rhs();
@@ -179,7 +179,7 @@ namespace smtrat {
 			std::cout << "assertSubformula: " << _subformula->formula() << std::endl;
 		}
 
-		if(_subformula->formula().getType() != carl::UEQ) {
+		if(_subformula->formula().type() != carl::UEQ) {
 			++mCountNonUEQFormulas;
 			return true;
 		}
@@ -366,7 +366,7 @@ namespace smtrat {
 			std::cout << "removeSubformula: " << _subformula->formula() << std::endl;
 		}
 
-		if(_subformula->formula().getType() != carl::UEQ) {
+		if(_subformula->formula().type() != carl::UEQ) {
 			--mCountNonUEQFormulas;
 			return;
 		}

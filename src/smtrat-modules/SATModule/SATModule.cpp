@@ -312,7 +312,7 @@ namespace smtrat
             auto iter = origs.begin();
             while( iter != origs.end() )
             {
-                if( *iter == _origin || (iter->getType() == carl::FormulaType::AND && iter->contains( _origin )) )
+                if( *iter == _origin || (iter->type() == carl::FormulaType::AND && iter->contains( _origin )) )
                 {
                     if (iter != --origs.end())
                     {
@@ -524,7 +524,7 @@ namespace smtrat
                         {
                             assert( mBooleanConstraintMap[k].second != nullptr );
                             const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
+                            if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.type() == carl::FormulaType::UEQ || abstr.reabstraction.type() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
                             {
                                 excludeClause.push( mkLit( k, assigns[k] != l_False ) ); 
                             }
@@ -976,7 +976,7 @@ namespace smtrat
         assert( _type < 4 );
         bool everythingDecisionRelevant = !Settings::formula_guided_decision_heuristic;
         unsigned nextDepth = _depth+1;
-        switch( _formula.getType() )
+        switch( _formula.type() )
         {
             case carl::FormulaType::TRUE:
             case carl::FormulaType::FALSE:
@@ -1062,7 +1062,7 @@ namespace smtrat
                 mTseitinVariable.set(static_cast<std::size_t>(var(tsLit)));
                 if( _type == NORMAL_CLAUSE )
                     cnfInfoIter->second.mLiteral = tsLit;
-                switch( _formula.getType() )
+                switch( _formula.type() )
                 {
                 case carl::FormulaType::ITE:
                 {
@@ -1309,7 +1309,7 @@ namespace smtrat
                     std::cerr << "Formula must be quantifier-free!" << std::endl;
                     break;
                 default:
-					SMTRAT_LOG_ERROR("smtrat.sat", "Unexpected formula type " << _formula.getType());
+					SMTRAT_LOG_ERROR("smtrat.sat", "Unexpected formula type " << _formula.type());
 					SMTRAT_LOG_ERROR("smtrat.sat", _formula);
                     assert( false );
                 }
@@ -1345,7 +1345,7 @@ namespace smtrat
         assert( _formula.propertyHolds( carl::PROP_IS_A_LITERAL ) );
         FormulaT content = _formula.baseFormula();
 		bool negated = (content != _formula);
-        if( content.getType() == carl::FormulaType::BOOL )
+        if( content.type() == carl::FormulaType::BOOL )
         {
             Lit l = lit_Undef;
             BooleanVarMap::iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
@@ -1353,7 +1353,7 @@ namespace smtrat
             {
                 if( _decisionRelevant ) {
                     if (Settings::mc_sat) {
-                        setDecisionVar( booleanVarPair->second, _decisionRelevant, content.getType() != carl::FormulaType::VARASSIGN );
+                        setDecisionVar( booleanVarPair->second, _decisionRelevant, content.type() != carl::FormulaType::VARASSIGN );
                     } else {
                         setDecisionVar( booleanVarPair->second, _decisionRelevant );
                     }
@@ -1368,8 +1368,8 @@ namespace smtrat
                 mMinisatVarMap.emplace((int)var,content);
                 mBooleanConstraintMap.push( std::make_pair( nullptr, nullptr ) );
 				if (Settings::mc_sat) {
-                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << var << " that abstracts " << content << " having type " << content.getType());
-                    if (content.getType() != carl::FormulaType::VARASSIGN) {
+                    SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Adding " << var << " that abstracts " << content << " having type " << content.type());
+                    if (content.type() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addBooleanVariable(var);
                         insertVarOrder(var);
                     }
@@ -1398,7 +1398,7 @@ namespace smtrat
                 }
                 if( _decisionRelevant ) {
                     if (Settings::mc_sat) {
-                        setDecisionVar( abstractionVar, _decisionRelevant, content.getType() != carl::FormulaType::VARASSIGN );
+                        setDecisionVar( abstractionVar, _decisionRelevant, content.type() != carl::FormulaType::VARASSIGN );
                     } else {
                         setDecisionVar( abstractionVar, _decisionRelevant );
                     }
@@ -1441,8 +1441,8 @@ namespace smtrat
                 #endif
                 FormulaT constraint = content;
                 FormulaT invertedConstraint = content.negated();
-				assert(constraint.getType() != carl::FormulaType::NOT);
-				assert(invertedConstraint.getType() != carl::FormulaType::NOT);
+				assert(constraint.type() != carl::FormulaType::NOT);
+				assert(invertedConstraint.type() != carl::FormulaType::NOT);
 				SMTRAT_LOG_TRACE("smtrat.sat", "Adding " << constraint << " / " << invertedConstraint << ", negated? " << negated);
 
                 // Note: insertVarOrder cannot be called inside newVar, as some orderings may depend on the abstracted constraint (ugly hack)
@@ -1450,8 +1450,8 @@ namespace smtrat
                 // map the abstraction variable to the abstraction information for the constraint and it's negation
                 mBooleanConstraintMap.push( std::make_pair( new Abstraction( passedFormulaEnd(), constraint ), new Abstraction( passedFormulaEnd(), invertedConstraint ) ) );
 				if (Settings::mc_sat) {
-                    SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Adding " << constraintAbstraction << " that abstracts " << content << " having type " << content.getType());
-                    if (content.getType() != carl::FormulaType::VARASSIGN) {
+                    SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Adding " << constraintAbstraction << " that abstracts " << content << " having type " << content.type());
+                    if (content.type() != carl::FormulaType::VARASSIGN) {
 	                    mMCSAT.addBooleanVariable(constraintAbstraction);
                         insertVarOrder(constraintAbstraction);
                     }
@@ -1511,9 +1511,9 @@ namespace smtrat
     template<class Settings>
     Lit SATModule<Settings>::getLiteral( const FormulaT& _formula ) const
     {
-		bool negated = _formula.getType() == carl::FormulaType::NOT;
+		bool negated = _formula.type() == carl::FormulaType::NOT;
         const FormulaT& content = negated ? _formula.subformula() : _formula;
-        if( content.getType() == carl::FormulaType::BOOL )
+        if( content.type() == carl::FormulaType::BOOL )
         {
             BooleanVarMap::const_iterator booleanVarPair = mBooleanVarMap.find(content.boolean());
             assert( booleanVarPair != mBooleanVarMap.end() );
@@ -1548,10 +1548,10 @@ namespace smtrat
                     assert( mBooleanConstraintMap[i].second != nullptr );
                     auto posInPasForm = mBooleanConstraintMap[i].first->position;
                     if( posInPasForm != rPassedFormula().end() )
-                        posInPasForm->formula().setActivity(activity[i]);
+                        posInPasForm->formula().set_activity(activity[i]);
                     posInPasForm = mBooleanConstraintMap[i].second->position;
                     if( posInPasForm != rPassedFormula().end() )
-                        posInPasForm->formula().setActivity(activity[i]);
+                        posInPasForm->formula().set_activity(activity[i]);
                 }
             }
             mAllActivitiesChanged = false;
@@ -1565,10 +1565,10 @@ namespace smtrat
                      assert( mBooleanConstraintMap[v].second != nullptr );
                     auto posInPasForm = mBooleanConstraintMap[v].first->position;
                     if( posInPasForm != rPassedFormula().end() )
-                        posInPasForm->formula().setActivity(activity[v]);
+                        posInPasForm->formula().set_activity(activity[v]);
                     posInPasForm = mBooleanConstraintMap[v].second->position;
                     if( posInPasForm != rPassedFormula().end() )
-                        posInPasForm->formula().setActivity(activity[v]);
+                        posInPasForm->formula().set_activity(activity[v]);
                 }
             }
         }
@@ -1599,11 +1599,11 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.sat", "Adding " << _abstr.reabstraction);
             assert( !_abstr.reabstraction.isTrue() );
             assert( 
-				_abstr.reabstraction.getType() == carl::FormulaType::UEQ ||
-				_abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR ||
-				(_abstr.reabstraction.getType() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) || 
-				_abstr.reabstraction.getType() == carl::FormulaType::VARCOMPARE ||
-				_abstr.reabstraction.getType() == carl::FormulaType::VARASSIGN
+				_abstr.reabstraction.type() == carl::FormulaType::UEQ ||
+				_abstr.reabstraction.type() == carl::FormulaType::BITVECTOR ||
+				(_abstr.reabstraction.type() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) || 
+				_abstr.reabstraction.type() == carl::FormulaType::VARCOMPARE ||
+				_abstr.reabstraction.type() == carl::FormulaType::VARASSIGN
 			);
             auto res = addSubformulaToPassedFormula( _abstr.reabstraction, _abstr.origins );
             _abstr.position = res.first;
@@ -1625,7 +1625,7 @@ namespace smtrat
                 {
                     assert( mBooleanConstraintMap[k].second != nullptr );
                     const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.getType() == carl::FormulaType::UEQ || abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
+                    if( !abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (abstr.reabstraction.type() == carl::FormulaType::UEQ || abstr.reabstraction.type() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
                     {
                         if( !rPassedFormula().contains( abstr.reabstraction ) )
                         {
@@ -3200,7 +3200,7 @@ namespace smtrat
             if (Settings::use_new_var_scheduler) {
                 Lit next = var_scheduler.pop();
                 assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
-                assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.getType() != carl::FormulaType::VARASSIGN);
+                assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.type() != carl::FormulaType::VARASSIGN);
                 SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
                 return next;
             } else {
@@ -3734,10 +3734,10 @@ namespace smtrat
 				mChangedBooleans.push_back( var( p ) );
 			} else {
 	            if (!abstr.reabstraction.isTrue() && abstr.consistencyRelevant && (
-						abstr.reabstraction.getType() == carl::FormulaType::UEQ ||
-						abstr.reabstraction.getType() == carl::FormulaType::BITVECTOR ||
-						abstr.reabstraction.getType() == carl::FormulaType::VARCOMPARE ||
-						abstr.reabstraction.getType() == carl::FormulaType::VARASSIGN ||
+						abstr.reabstraction.type() == carl::FormulaType::UEQ ||
+						abstr.reabstraction.type() == carl::FormulaType::BITVECTOR ||
+						abstr.reabstraction.type() == carl::FormulaType::VARCOMPARE ||
+						abstr.reabstraction.type() == carl::FormulaType::VARASSIGN ||
 						abstr.reabstraction.constraint().isConsistent() != 1
 					)) 
 	            {
@@ -4035,7 +4035,7 @@ NextClause:
             {
                 for( const auto& lem : (*backend)->lemmas() )
                 {
-                    if( lem.mLemma.getType() != carl::FormulaType::TRUE )
+                    if( lem.mLemma.type() != carl::FormulaType::TRUE )
                     {
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Found a lemma: " << lem.mLemma);
                         SMTRAT_VALIDATION_ADD("smtrat.modules.sat.lemma",(*backend)->moduleName() + "_lemma",FormulaT( carl::FormulaType::NOT, lem.mLemma ), false);

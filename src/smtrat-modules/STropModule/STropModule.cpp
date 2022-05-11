@@ -26,9 +26,9 @@ namespace smtrat
 	{   
 		addReceivedSubformulaToPassedFormula(_subformula);
 		const FormulaT& formula{_subformula->formula()};
-		if (formula.getType() == carl::FormulaType::FALSE)
+		if (formula.type() == carl::FormulaType::FALSE)
 			mInfeasibleSubsets.push_back({formula});
-		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		else if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -124,7 +124,7 @@ namespace smtrat
 	void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
 		const FormulaT& formula{_subformula->formula()};
-		if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -456,7 +456,7 @@ namespace smtrat
 	{
 		if (assert)
 			mLRAModule.add(formula);
-		else if (formula.getType() == carl::FormulaType::AND)
+		else if (formula.type() == carl::FormulaType::AND)
 		{
 			auto iter{mLRAModule.formulaBegin()};
 			for (const auto& subformula : formula.subformulas())

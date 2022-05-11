@@ -115,7 +115,7 @@ namespace smtrat
 	template<typename Settings>
 	void MCBModule<Settings>::collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const {
 		for (const auto& f: formula.subformulas()) {
-			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
+			if (f.type() == carl::FormulaType::CONSTRAINT || (f.type() == carl::FormulaType::NOT && f.subformula().type() == carl::FormulaType::CONSTRAINT)) {
 				addConstraintBound(cb, f, conjunction);
 			}
 		}
@@ -123,7 +123,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	void MCBModule<Settings>::collectChoices(const FormulaT& formula) {
-		if (formula.getType() != carl::FormulaType::OR) return;
+		if (formula.type() != carl::FormulaType::OR) return;
 		
 		carl::ConstraintBounds<Poly> cb;
 		collectBounds(cb, formula, false);

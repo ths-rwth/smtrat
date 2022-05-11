@@ -285,7 +285,7 @@ namespace smtrat
                     return mPosition;
                 }
 
-                size_t getId() const
+                size_t id() const
                 {
                     return mId;
                 }
@@ -481,7 +481,7 @@ namespace smtrat
                     int counter = 0;
                     if( !mpInfimum->isInfinite() )
                     {
-                        if( mpInfimum->pOrigins()->front().getType() == carl::FormulaType::AND )
+                        if( mpInfimum->pOrigins()->front().type() == carl::FormulaType::AND )
                         {
                             for( const FormulaT& form : mpInfimum->pOrigins()->front().subformulas() )
                             {
@@ -491,14 +491,14 @@ namespace smtrat
                         }
                         else
                         {
-                            assert( mpInfimum->pOrigins()->front().getType() == carl::FormulaType::CONSTRAINT );
+                            assert( mpInfimum->pOrigins()->front().type() == carl::FormulaType::CONSTRAINT );
                             mConflictActivity += mpInfimum->pOrigins()->front().activity();
                             ++counter;
                         }
                     }
                     if( !mpSupremum->isInfinite() )
                     {
-                        if( mpSupremum->pOrigins()->front().getType() == carl::FormulaType::AND )
+                        if( mpSupremum->pOrigins()->front().type() == carl::FormulaType::AND )
                         {
                             for( const FormulaT& form : mpSupremum->pOrigins()->front().subformulas() )
                             {
@@ -508,7 +508,7 @@ namespace smtrat
                         }
                         else
                         {
-                            assert( mpSupremum->pOrigins()->front().getType() == carl::FormulaType::CONSTRAINT );
+                            assert( mpSupremum->pOrigins()->front().type() == carl::FormulaType::CONSTRAINT );
                             mConflictActivity += mpSupremum->pOrigins()->front().activity();
                             ++counter;
                         }
@@ -580,7 +580,7 @@ namespace smtrat
                 {
                     if( this == &_variable )
                         return false;
-                    return this->getId() < _variable.getId();
+                    return this->id() < _variable.id();
                 }
                 
                 bool operator>( const Variable& _variable ) const
@@ -590,7 +590,7 @@ namespace smtrat
                 
                 bool operator==( const Variable& _variable ) const
                 {
-                    return _variable.getId() == this->getId();
+                    return _variable.id() == this->id();
                 }
                 
                 bool operator!=( const Variable& _variable ) const
@@ -629,7 +629,7 @@ namespace std
          */
         size_t operator()( const smtrat::lra::Variable<T1,T2>& _lraVar ) const 
         {
-            return _lraVar.getId();
+            return _lraVar.id();
         }
     };
 }

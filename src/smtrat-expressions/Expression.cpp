@@ -15,7 +15,7 @@ namespace expression {
 		//return boost::apply_visitor(ExpressionTypeChecker<T>(), mContent->content);
 	}
 	template<typename T>
-	const T& Expression::getType() const {
+	const T& Expression::type() const {
 		return boost::get<T>(mContent->content);
 	}
 	

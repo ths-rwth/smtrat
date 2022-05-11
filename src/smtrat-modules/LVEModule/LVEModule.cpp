@@ -30,7 +30,7 @@ namespace smtrat
 		std::map<carl::Variable, std::size_t> counts;
 		for (const auto& f: rReceivedFormula()) {
 			carl::visit(f.formula(), [&counts,this](const auto& f){
-				if (f.getType() == carl::FormulaType::CONSTRAINT) {
+				if (f.type() == carl::FormulaType::CONSTRAINT) {
 					count_variables(counts, f.constraint());
 				}
 			});
@@ -300,7 +300,7 @@ namespace smtrat
 		mStatistics.lone_variables = std::max(mStatistics.lone_variables, vars.size());
 #endif
 		for (const auto& f: rReceivedFormula()) {
-			if (f.formula().getType() == carl::FormulaType::CONSTRAINT) {
+			if (f.formula().type() == carl::FormulaType::CONSTRAINT) {
 				const auto& c = f.formula().constraint();
 				carl::Variable target = carl::Variable::NO_VARIABLE;
 				for (auto v: vars) {

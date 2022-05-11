@@ -169,7 +169,7 @@ public:
 		}
 	}
 	void declareFun(const carl::Variable&) {
-		//if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
+		//if (smtrat::parser::TypeOfTerm::get(var.type()) == smtrat::parser::ExpressionType::THEORY) {
 		//	this->solver.quantifierManager().addUnquantifiedVariable(var);
 		//}
 	}

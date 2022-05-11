@@ -48,7 +48,7 @@ namespace smtrat
         {
             const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
             mFormulaConditionMap.erase( mFormulaConditionMap.begin() );
-            mpConditionIdAllocator->free( pRecCond->getId() );
+            mpConditionIdAllocator->free( pRecCond->id() );
             delete pRecCond;
             pRecCond = NULL;
         }
@@ -62,12 +62,12 @@ namespace smtrat
         mLazyMode = false;
         bool negated = false;
         FormulaT constraintF = _subformula->formula();
-        if( constraintF.getType() == carl::FormulaType::NOT && constraintF.subformula().getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::NOT && constraintF.subformula().type() == carl::FormulaType::CONSTRAINT )
         {
             constraintF = _subformula->formula().subformula();
             negated = true;
         }
-        if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::inverse( constraintF.constraint().relation() ) ) : constraintF.constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
@@ -106,7 +106,7 @@ namespace smtrat
             }
             mConditionsChanged = true;
         }
-        else if( _subformula->formula().getType() == carl::FormulaType::FALSE )
+        else if( _subformula->formula().type() == carl::FormulaType::FALSE )
         {
             removeStatesFromRanking( *mpStateTree );
             mIDCounter = 0;
@@ -129,9 +129,9 @@ namespace smtrat
     {
         mLazyMode = false;
         FormulaT constraintF = _subformula->formula();
-        if( constraintF.getType() == carl::FormulaType::NOT && constraintF.subformula().getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::NOT && constraintF.subformula().type() == carl::FormulaType::CONSTRAINT )
             constraintF = _subformula->formula().subformula();
-        if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
             auto formulaConditionPair = mFormulaConditionMap.find( constraintF );
@@ -153,7 +153,7 @@ namespace smtrat
                 insertTooHighDegreeStatesInRanking( mpStateTree );
             }
             mFormulaConditionMap.erase( formulaConditionPair );
-            mpConditionIdAllocator->free( condToDelete->getId() );
+            mpConditionIdAllocator->free( condToDelete->id() );
             delete condToDelete;
             condToDelete = NULL;
             mConditionsChanged = true;
@@ -1217,7 +1217,7 @@ namespace smtrat
                 _currentState->rConditions().pop_back();
                 if( Settings::use_variable_bounds )
                     _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
-                mpConditionIdAllocator->free( pCond->getId() );
+                mpConditionIdAllocator->free( pCond->id() );
                 delete pCond;
                 pCond = NULL;
             }
@@ -1256,7 +1256,7 @@ namespace smtrat
                         _currentState->rConditions().pop_back();
                         if( Settings::use_variable_bounds )
                             _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
-                        mpConditionIdAllocator->free( pCond->getId() );
+                        mpConditionIdAllocator->free( pCond->id() );
                         delete pCond;
                         pCond = NULL;
                     }
@@ -1276,7 +1276,7 @@ namespace smtrat
             {
                 const vs::Condition* rpCond = oldConditions.back();
                 oldConditions.pop_back();
-                mpConditionIdAllocator->free( rpCond->getId() );
+                mpConditionIdAllocator->free( rpCond->id() );
                 delete rpCond;
                 rpCond = NULL;
             }
@@ -1288,7 +1288,7 @@ namespace smtrat
                     {
                         const vs::Condition* rpCond = allSubResults.back().back().back();
                         allSubResults.back().back().pop_back();
-                        mpConditionIdAllocator->free( rpCond->getId() );
+                        mpConditionIdAllocator->free( rpCond->id() );
                         delete rpCond;
                         rpCond = NULL;
                     }
@@ -1551,12 +1551,12 @@ namespace smtrat
             auto receivedConstraint = rReceivedFormula().begin();
             while( receivedConstraint != rReceivedFormula().end() )
             {
-                if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
+                if( receivedConstraint->formula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
                         break;
                 }
-                else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
+                else if( receivedConstraint->formula().type() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
                     if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
@@ -1595,12 +1595,12 @@ namespace smtrat
             auto receivedConstraint = rReceivedFormula().begin();
             while( receivedConstraint != rReceivedFormula().end() )
             {
-                if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
+                if( receivedConstraint->formula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
                         break;
                 }
-                else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
+                else if( receivedConstraint->formula().type() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
                     if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )

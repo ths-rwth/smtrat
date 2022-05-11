@@ -42,7 +42,7 @@ namespace smtrat
 		
 		// Extract top-level Equalities
 		for (const auto& f: rReceivedFormula()) {
-			if (f.formula().getType() == carl::FormulaType::CONSTRAINT) {
+			if (f.formula().type() == carl::FormulaType::CONSTRAINT) {
 				if (f.formula().constraint().relation() == carl::Relation::EQ) {
 					SMTRAT_LOG_DEBUG("smtrat.gbpp", "Found equality " << f.formula().constraint());
 					mEqualities.emplace(f.formula().constraint());
@@ -96,7 +96,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT GBPPModule<Settings>::simplifyInequality(const FormulaT& formula) const {
-		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		if (formula.type() != carl::FormulaType::CONSTRAINT) return formula;
 		// This case should be catched by ESModule...
 		if (mEqualities.find(formula) != mEqualities.end()) return formula;
 		const auto& c = formula.constraint();

@@ -19,7 +19,7 @@ namespace expression {
 		template<typename T>
 		bool isType() const;
 		template<typename T>
-		const T& getType() const;
+		const T& type() const;
 		
 		explicit Expression(const ExpressionContent* _content): mContent(_content) {}
 		

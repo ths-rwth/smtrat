@@ -53,8 +53,8 @@ namespace smtrat
     template<typename Settings>
     FormulaT BEModule<Settings>::extractBounds(const FormulaT& formula)
     {
-		if (formula.getType() != carl::FormulaType::OR && formula.getType() != carl::FormulaType::AND) return formula;
-		bool conjunction = formula.getType() == carl::FormulaType::AND;
+		if (formula.type() != carl::FormulaType::OR && formula.type() != carl::FormulaType::AND) return formula;
+		bool conjunction = formula.type() == carl::FormulaType::AND;
 	
 		carl::ConstraintBounds<Poly> cb;
 		collectBounds(cb, formula, conjunction);
@@ -89,7 +89,7 @@ namespace smtrat
 	template<typename Settings>
 	void BEModule<Settings>::collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const {
 		for (const auto& f: formula.subformulas()) {
-			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
+			if (f.type() == carl::FormulaType::CONSTRAINT || (f.type() == carl::FormulaType::NOT && f.subformula().type() == carl::FormulaType::CONSTRAINT)) {
 				addConstraintBound(cb, f, conjunction);
 			}
 		}

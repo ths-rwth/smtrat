@@ -71,7 +71,7 @@ namespace smtrat
 	template<typename Settings>
     FormulaT SplitSOSModule<Settings>::splitSOS( const FormulaT& formula )
     {
-		if( formula.getType() == carl::FormulaType::CONSTRAINT )
+		if( formula.type() == carl::FormulaType::CONSTRAINT )
         {
             std::vector<std::pair<Rational,Poly>> sosDec;
             bool lcoeffNeg = carl::isNegative( formula.constraint().lhs().lcoeff() );

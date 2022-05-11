@@ -27,7 +27,7 @@ NewCoveringModule<Settings>::~NewCoveringModule() {}
 template<class Settings>
 bool NewCoveringModule<Settings>::informCore(const FormulaT& _constraint) {
 	// Gather all possible constraints for the initial (complete!) variable ordering
-	assert(_constraint.getType() == carl::FormulaType::CONSTRAINT);
+	assert(_constraint.type() == carl::FormulaType::CONSTRAINT);
 	mAllConstraints.push_back(_constraint.constraint());
 	return true;
 }
@@ -38,7 +38,7 @@ void NewCoveringModule<Settings>::init() {}
 template<class Settings>
 bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 	// Incremental call
-	assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+	assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
 	mUnknownConstraints.push_back(_subformula->formula());
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new unknown constraint: " << _subformula->formula().constraint());
 	return true;
@@ -47,7 +47,7 @@ bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformul
 template<class Settings>
 void NewCoveringModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
 	// Backtracking
-	assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+	assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
 	mRemoveConstraints.push_back(_subformula->formula());
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Adding to remove constraint: " << _subformula->formula().constraint());
 }

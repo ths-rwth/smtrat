@@ -49,7 +49,7 @@ namespace smtrat
 	template<class Settings>
 	bool NewCADModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+		assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
 		if (!Settings::force_nonincremental) {
 			addConstraint(_subformula->formula().constraint());
 		}
@@ -59,7 +59,7 @@ namespace smtrat
 	template<class Settings>
 	void NewCADModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
-		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+		assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
 		if (!Settings::force_nonincremental) {
 			removeConstraint(_subformula->formula().constraint());
 		}

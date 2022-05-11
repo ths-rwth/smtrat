@@ -108,9 +108,9 @@ namespace smtrat {
 				remove_xor_first_arg remover(*this, formula);
 
 				if(notCount % 2) {
-					return FormulaT(formula.getType() == carl::EXISTS ? carl::FORALL : carl::EXISTS, formula.quantifiedVariables(), std::move(subformula));
+					return FormulaT(formula.type() == carl::EXISTS ? carl::FORALL : carl::EXISTS, formula.quantifiedVariables(), std::move(subformula));
 				} else {
-					return FormulaT(formula.getType(), formula.quantifiedVariables(), std::move(subformula));
+					return FormulaT(formula.type(), formula.quantifiedVariables(), std::move(subformula));
 				}
 			}
 

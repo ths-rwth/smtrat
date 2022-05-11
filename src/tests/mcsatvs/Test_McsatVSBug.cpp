@@ -42,7 +42,7 @@ BOOST_AUTO_TEST_CASE(McsatVSBug) {
   bool r = mcsat::vs::helper::substituteHelper(c1, sub, subResTmp);
   BOOST_CHECK(r);
   auto subRes = mcsat::vs::helper::doccToFormula(subResTmp);
-  BOOST_CHECK(subRes.getType() != carl::FormulaType::TRUE);
+  BOOST_CHECK(subRes.type() != carl::FormulaType::TRUE);
 
   // The bug lies in splitSosDecompositions()
 }

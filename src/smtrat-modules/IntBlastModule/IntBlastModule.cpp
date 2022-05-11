@@ -118,7 +118,7 @@ namespace smtrat
          * Steps that are applied if the formula is only a single constraint
          */
 
-        if(formula.getType() == carl::FormulaType::CONSTRAINT) {
+        if(formula.type() == carl::FormulaType::CONSTRAINT) {
             // Update mBoundsFromInput using the new formula
             mBoundsFromInput.addBound(formula.constraint(), formula);
 
@@ -150,7 +150,7 @@ namespace smtrat
         mInputVariables.removeOrigin(formula);
         mNonlinearInputVariables.removeOrigin(formula);
 
-        if(formula.getType() == carl::FormulaType::CONSTRAINT) {
+        if(formula.type() == carl::FormulaType::CONSTRAINT) {
             mBoundsFromInput.removeBound(formula.constraint(), formula);
         }
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
@@ -706,7 +706,7 @@ namespace smtrat
     template<class Settings>
     FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT* _collectedBitvectorConstraints)
     {
-        if(_original.getType() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
+        if(_original.type() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
         {
             ConstrTree constraintTree(_original.constraint());
             const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, *_collectedBitvectorConstraints);
@@ -1039,7 +1039,7 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::addConstraintFormulaToICP(const FormulaT& _formula)
     {
-        assert(_formula.getType() == carl::FormulaType::CONSTRAINT);
+        assert(_formula.type() == carl::FormulaType::CONSTRAINT);
         ConstrTree constraintTree(_formula.constraint());
 
         // Add the root (the constraint itself) to ICP

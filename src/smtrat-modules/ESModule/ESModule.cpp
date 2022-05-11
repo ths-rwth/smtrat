@@ -33,7 +33,7 @@ namespace smtrat
             getBackendsModel();
             for( const auto& iter : mBoolSubs )
             {
-                if( iter.first.getType() == carl::FormulaType::BOOL )
+                if( iter.first.type() == carl::FormulaType::BOOL )
                 {
                     assert( mModel.find( iter.first.boolean() ) == mModel.end() );
                     mModel.emplace( iter.first.boolean(), iter.second );
@@ -109,7 +109,7 @@ namespace smtrat
             return iter->second ? FormulaT( carl::FormulaType::TRUE ) : FormulaT( carl::FormulaType::FALSE );
         }
         FormulaT result = _formula;
-        switch( _formula.getType() )
+        switch( _formula.type() )
         {
             case carl::FormulaType::AND:
             {
@@ -131,15 +131,15 @@ namespace smtrat
                     // Process all equations first.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ )
+                        if( sf.type() == carl::FormulaType::CONSTRAINT && sf.constraint().relation() == carl::Relation::EQ )
                         {
                             FormulaT tmp = elimSubstitutions( sf );
-                            if( tmp.getType() == carl::FormulaType::FALSE )
+                            if( tmp.type() == carl::FormulaType::FALSE )
                             {
                                 result = tmp;
                                 goto Return;
                             }
-                            else if( tmp.getType() != carl::FormulaType::TRUE )
+                            else if( tmp.type() != carl::FormulaType::TRUE )
                             {
                                 auto subs = carl::get_substitution(tmp.constraint(), false, objective());
                                 if( subs )
@@ -162,7 +162,7 @@ namespace smtrat
                     // Now the other sub-formulas.
                     for( const auto& sf : currentSubformulas )
                     {
-                        if( sf.getType() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ || !sf.constraint().lhs().isLinear() )
+                        if( sf.type() != carl::FormulaType::CONSTRAINT || sf.constraint().relation() != carl::Relation::EQ || !sf.constraint().lhs().isLinear() )
                         {
                             auto iterC = foundBooleanSubstitutions.find( sf );
                             if( iterC != foundBooleanSubstitutions.end() )
@@ -181,7 +181,7 @@ namespace smtrat
                                 if( sf != sfSimplified )
                                 {
                                     foundNewSubstitution = true;
-                                    if( sfSimplified.getType() == carl::FormulaType::AND )
+                                    if( sfSimplified.type() == carl::FormulaType::AND )
                                         sfs.insert( sfSimplified.subformulas().begin(), sfSimplified.subformulas().end() );
                                     else
                                         sfs.insert( sfs.end(), sfSimplified );
@@ -190,7 +190,7 @@ namespace smtrat
                                 {
                                     if( !(_outermost && sfSimplified.isLiteral() && sfSimplified.isOnlyPropositional()) )
                                         sfs.insert( sfs.end(), sfSimplified );
-                                    if( sfSimplified.getType() == carl::FormulaType::NOT )
+                                    if( sfSimplified.type() == carl::FormulaType::NOT )
                                     {
                                         SMTRAT_LOG_TRACE("smtrat.es", "found boolean substitution [" << sfSimplified.subformula() << " -> false]");
                                         assert( mBoolSubs.find( sfSimplified.subformula() ) == mBoolSubs.end() );
@@ -243,20 +243,20 @@ namespace smtrat
             case carl::FormulaType::ITE:
             {
                 FormulaT cond = elimSubstitutions( _formula.condition() );
-                if( cond.getType() == carl::FormulaType::CONSTRAINT )
+                if( cond.type() == carl::FormulaType::CONSTRAINT )
                 {
                     auto subs = carl::get_substitution(cond.constraint(), false);
                     if( subs )
                     {
                         SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subs->first << " -> " << subs->second << "]" );
-                        auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
+                        auto addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
                         SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                         assert( addedBoolSub.second );
                         auto iterB = mArithSubs.emplace( subs->first, subs->second ).first;
                         FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                         mArithSubs.erase( iterB );
                         mBoolSubs.erase( addedBoolSub.first );
-                        addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
+                        addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
                         SMTRAT_LOG_DEBUG("smtrat.es",  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
                         assert( addedBoolSub.second );
                         FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
@@ -270,12 +270,12 @@ namespace smtrat
                         if( subs )
                         {
                             SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subs->first << " -> " << subs->second << "]" );
-                            auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
+                            auto addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
                             SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
                             assert( addedBoolSub.second );
                             FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                             mBoolSubs.erase( addedBoolSub.first );
-                            addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
+                            addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
                             SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]" );
                             assert( addedBoolSub.second );
                             auto iterB = mArithSubs.emplace( subs->first, subs->second ).first;
@@ -297,12 +297,12 @@ namespace smtrat
                 }
                 else
                 {
-                    auto addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
+                    auto addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
                     SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                     assert( addedBoolSub.second );
                     FormulaT firstCaseTmp = elimSubstitutions( _formula.firstCase() );
                     mBoolSubs.erase( addedBoolSub.first );
-                    addedBoolSub = cond.getType() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
+                    addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), true ) : mBoolSubs.emplace( cond, false );
                     SMTRAT_LOG_DEBUG("smtrat.es",  __LINE__ << "   found boolean substitution [" << addedBoolSub.first->first << " -> " << (addedBoolSub.first->second ? "true" : "false") << "]");
                     assert( addedBoolSub.second );
                     FormulaT secondCaseTmp = elimSubstitutions( _formula.secondCase() );
@@ -322,7 +322,7 @@ namespace smtrat
                     newSubformulas.push_back(newCur);
                 }
                 if (changed)
-                    result = FormulaT(_formula.getType(), std::move(newSubformulas));
+                    result = FormulaT(_formula.type(), std::move(newSubformulas));
                 break;
             }
             case carl::FormulaType::NOT: {
@@ -357,7 +357,7 @@ namespace smtrat
             case carl::FormulaType::FORALL: {
                 FormulaT sub = elimSubstitutions(_formula.quantifiedFormula());
                 if (sub != _formula.quantifiedFormula())
-                    result = FormulaT(_formula.getType(), _formula.quantifiedVariables(), sub);
+                    result = FormulaT(_formula.type(), _formula.quantifiedVariables(), sub);
             }
             default: {}
         }

@@ -48,7 +48,7 @@ namespace smtrat
     
 	template<typename Settings>
     FormulaT EMModule<Settings>::eliminateEquation(const FormulaT& formula) {
-		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		if (formula.type() != carl::FormulaType::CONSTRAINT) return formula;
 		carl::Relation rel = formula.constraint().relation();
 		switch (rel) {
 			case carl::Relation::EQ:
