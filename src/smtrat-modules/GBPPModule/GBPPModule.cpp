@@ -67,7 +67,7 @@ namespace smtrat
 			if (res != f.formula()) {
 				SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << f.formula() << " to " << res);
 			}
-			if (!res.isTrue()) {
+			if (!res.is_true()) {
 				addSubformulaToPassedFormula(res, f.formula());
 			}
 		}

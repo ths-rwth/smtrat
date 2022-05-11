@@ -435,7 +435,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		// f is part of the conflict, because the trail is feasible without f:
 		if (std::holds_alternative<FormulaT>(res)) {
-			if (std::get<FormulaT>(res).isFalse()) {
+			if (std::get<FormulaT>(res).is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explanation failed.");
 			} else {
 				assert(std::get<FormulaT>(res).contains(f));

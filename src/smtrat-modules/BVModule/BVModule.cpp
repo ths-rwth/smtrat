@@ -73,10 +73,10 @@ namespace smtrat
     template<class Settings>
     bool BVModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().isTrue() )
+        if( _subformula->formula().is_true() )
             return true;
         mModelComputed = false;
-        if( _subformula->formula().isFalse() )
+        if( _subformula->formula().is_false() )
         {
             receivedFormulasAsInfeasibleSubset( _subformula );
             return false;

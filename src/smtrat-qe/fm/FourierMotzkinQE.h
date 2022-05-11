@@ -24,7 +24,7 @@ public:
         : mQuery(quantifiers)
         , mFormula(qfree)
     {
-        assert(qfree.type() == carl::FormulaType::CONSTRAINT || qfree.isRealConstraintConjunction());
+        assert(qfree.type() == carl::FormulaType::CONSTRAINT || qfree.is_real_constraint_conjunction());
     }
 
     FormulaT eliminateQuantifiers();

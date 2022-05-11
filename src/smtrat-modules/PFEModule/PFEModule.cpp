@@ -53,7 +53,7 @@ namespace smtrat
 				++receivedFormula;
 				continue;
 			}
-			if (receivedFormula->formula().isBound()) {
+			if (receivedFormula->formula().is_bound()) {
 				addReceivedSubformulaToPassedFormula(receivedFormula);
 				++receivedFormula;
 				continue;
@@ -67,7 +67,7 @@ namespace smtrat
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "due to bounds " << varbounds.getEvalIntervalMap());
 			}
 			
-			if (formula.isFalse()) {
+			if (formula.is_false()) {
 				mInfeasibleSubsets.clear();
 				carl::carlVariables vars = carl::variables(receivedFormula->formula());
 				FormulaSetT infeasibleSubset = varbounds.getOriginSetOfBounds(vars.as_set());
@@ -75,7 +75,7 @@ namespace smtrat
 				mInfeasibleSubsets.push_back(std::move(infeasibleSubset));
 				return UNSAT;
 			}
-			if (!formula.isTrue()) {
+			if (!formula.is_true()) {
 				if (formula == receivedFormula->formula()) {
 					addReceivedSubformulaToPassedFormula(receivedFormula);
 				} else {

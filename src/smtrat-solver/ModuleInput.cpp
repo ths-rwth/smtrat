@@ -37,8 +37,8 @@ namespace smtrat
         {
 			auto res = carl::model::substitute(fwo.formula(), _assignment);
 			SMTRAT_LOG_DEBUG("smtrat.module", "Checking whether model satisfies " << fwo.formula() << " -> " << res);
-			if (res.isFalse()) return 0;
-			if (!res.isTrue()) result = 2;
+			if (res.is_false()) return 0;
+			if (!res.is_true()) result = 2;
         }
         return result;
     }

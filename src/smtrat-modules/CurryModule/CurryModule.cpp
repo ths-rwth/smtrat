@@ -53,7 +53,7 @@ namespace smtrat
             return res->second;
         }
 
-        const auto& ueq = formula.uequality();
+        const auto& ueq = formula.u_equality();
 
         auto eq = FormulaT(curry(ueq.lhs()), curry(ueq.rhs()), ueq.negated());
         formula_store.emplace(formula, eq);
@@ -135,7 +135,7 @@ namespace smtrat
             return res->second;
         }
 
-        const auto& ueq = formula.uequality();
+        const auto& ueq = formula.u_equality();
 
         std::vector<FormulaT> substitution;
         auto lhs = flatten(ueq.lhs(), substitution);

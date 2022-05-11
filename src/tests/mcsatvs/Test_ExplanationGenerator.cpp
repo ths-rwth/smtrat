@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
 	FormulaT result;
 	bool status = substitute(varcomp, substitution, Model(), result);
 	BOOST_CHECK(status);
-	BOOST_CHECK(result.variableComparison() == varcomp);
+	BOOST_CHECK(result.variable_comparison() == varcomp);
 }
 BOOST_AUTO_TEST_CASE(Test_substitute_varComp_MVRoot) {
 }

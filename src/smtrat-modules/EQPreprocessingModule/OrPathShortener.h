@@ -59,9 +59,9 @@ namespace smtrat {
 			typedef pmatrix<eqentry> pair_map;
 
 			void handleEQ(const FormulaT& formula, var_index& vars, std::size_t& size) {
-				assert(formula.type() == carl::UEQ && !formula.uequality().negated());
+				assert(formula.type() == carl::UEQ && !formula.u_equality().negated());
 
-				const UArg &lhs(formula.uequality().lhs()), &rhs(formula.uequality().rhs());
+				const UArg &lhs(formula.u_equality().lhs()), &rhs(formula.u_equality().rhs());
 				if(!(lhs == rhs)) {
 					v_iterator iter;
 					bool inserted;

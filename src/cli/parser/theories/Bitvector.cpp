@@ -210,8 +210,8 @@ namespace parser {
 			errors.next() << "Failed to construct ITE, the then-term \"" << thent << "\" and the else-term \"" << elset << "\" have different widths.";
 			return false;
 		}
-		if (ifterm.isTrue()) { result = thent; return true; }
-		if (ifterm.isFalse()) { result = elset; return true; }
+		if (ifterm.is_true()) { result = thent; return true; }
+		if (ifterm.is_false()) { result = elset; return true; }
 		carl::SortManager& sm = carl::SortManager::getInstance();
 		carl::Variable var = carl::freshVariable(carl::VariableType::VT_BITVECTOR);
 		state->artificialVariables.emplace_back(var);

@@ -29,7 +29,7 @@ namespace smtrat
 			addReceivedSubformulaToPassedFormula(it);
 		}
 		auto symm = carl::formula::breakSymmetries(FormulaT(rPassedFormula()));
-		if (!symm.isTrue()) {
+		if (!symm.is_true()) {
 			SMTRAT_LOG_DEBUG("smtrat.symmetry", "Broke symmetries by" << std::endl << symm);
 			addSubformulaToPassedFormula(symm);
 		}

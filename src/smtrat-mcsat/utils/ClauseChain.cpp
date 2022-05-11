@@ -8,7 +8,7 @@ FormulaT ClauseChain::resolve() const {
 
     // initialize with conflicting clause
     assert(mClauseChain.back().isConflicting());
-    if (mClauseChain.back().clause().isNary()) {
+    if (mClauseChain.back().clause().is_nary()) {
         for (const auto& lit : mClauseChain.back().clause()) {
             if (isTseitinVar(lit)) {
                 toProcess.insert(lit);
@@ -37,7 +37,7 @@ FormulaT ClauseChain::resolve() const {
             toProcess.erase(iter->impliedTseitinLiteral().negated());
 
             // add literals of clauses to respective sets
-            if (iter->clause().isNary()) {
+            if (iter->clause().is_nary()) {
                 for (const auto& lit : iter->clause().subformulas()) {
                     if (lit != iter->impliedTseitinLiteral()) {
                         if (isTseitinVar(lit)) {

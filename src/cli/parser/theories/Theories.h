@@ -252,8 +252,8 @@ struct Theories {
 			HANDLE_ERROR
 			return result;
 		}
-		if (ifterm.isTrue()) return arguments[1];
-		if (ifterm.isFalse()) return arguments[2];
+		if (ifterm.is_true()) return arguments[1];
+		if (ifterm.is_false()) return arguments[2];
 		TheoryError te;
 		for (auto& t: theories) {
 			if (t.second->handleITE(ifterm, arguments[1], arguments[2], result, te(t.first))) return result;

@@ -467,7 +467,7 @@ namespace smtrat
                     }
                     const Bound<T1,T2>* bound = boundVector->back();
                     assert(!bound->isActive());
-                    if( !bound->neqRepresentation().isTrue() )
+                    if( !bound->neqRepresentation().is_true() )
                     {
                         bound->markAsDeleted();
                     }

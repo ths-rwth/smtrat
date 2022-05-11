@@ -20,7 +20,7 @@ namespace helper {
             result.insert(f);
         } else if (f.type() == carl::FormulaType::NOT) {
             getFormulaAtoms(f.subformula(), result);
-        } else if (f.isNary()) {
+        } else if (f.is_nary()) {
             for (const auto& sub : f.subformulas()) {
                 getFormulaAtoms(sub, result);
             }
@@ -62,7 +62,7 @@ namespace helper {
         } else if (formula.type()==carl::FormulaType::TRUE || formula.type()==carl::FormulaType::FALSE) {
             return true;
         } else if (formula.type()==carl::FormulaType::VARCOMPARE) {
-            if (!carl::vs::gather_zeros(formula.variableComparison(), eliminationVar, res)) {
+            if (!carl::vs::gather_zeros(formula.variable_comparison(), eliminationVar, res)) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zero");
                 return false;
             }
@@ -114,7 +114,7 @@ namespace helper {
             // Determine the substitution type: normal or +epsilon
             assert(constraint.type() == carl::FormulaType::CONSTRAINT || constraint.type() == carl::FormulaType::TRUE || constraint.type() == carl::FormulaType::FALSE || constraint.type() == carl::FormulaType::VARCOMPARE);
             bool isConstraint = constraint.type() == carl::FormulaType::CONSTRAINT || constraint.type() == carl::FormulaType::TRUE || constraint.type() == carl::FormulaType::FALSE;
-            const carl::Relation& relation = isConstraint ? constraint.constraint().relation() : constraint.variableComparison().relation();
+            const carl::Relation& relation = isConstraint ? constraint.constraint().relation() : constraint.variable_comparison().relation();
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             auto subType = weakConstraint ? carl::vs::TermType::NORMAL : carl::vs::TermType::PLUS_EPSILON;
 
@@ -147,7 +147,7 @@ namespace helper {
                 return true;
             }
         } else if (constr.type() == carl::FormulaType::VARCOMPARE) {
-            auto subres = carl::vs::substitute(constr.variableComparison(), var, term);
+            auto subres = carl::vs::substitute(constr.variable_comparison(), var, term);
             if (!subres) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
                 return false;

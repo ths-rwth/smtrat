@@ -73,7 +73,7 @@ namespace smtrat
 
 	template<class Settings>
 	void PBPPModule<Settings>::addConstraints(const FormulaT& formula) {
-		if  (formula.isBooleanCombination() && formula.isNary()) {
+		if  (formula.is_boolean_combination() && formula.is_nary()) {
 			SMTRAT_LOG_DEBUG("smtrat.pbc", "Searching for embedded constraints in " << formula);
 			for (const auto& subformula : formula.subformulas()) {
 				addConstraints(subformula);
@@ -119,7 +119,7 @@ namespace smtrat
 
 	template<class Settings>
 	void PBPPModule<Settings>::extractConstraints(const FormulaT& formula) {
-		if (formula.isBooleanCombination()) {
+		if (formula.is_boolean_combination()) {
 			assert(formula.type() == carl::FormulaType::AND);
 			for (const auto& subformula: formula.subformulas()) {
 				extractConstraints(subformula);
@@ -288,7 +288,7 @@ namespace smtrat
 			if (liaConstraintFormula.find(constraint) != liaConstraintFormula.end()) return liaConstraintFormula[constraint];
 
 			return formula;
-		} else if (formula.isBooleanCombination() && formula.isNary()) {
+		} else if (formula.is_boolean_combination() && formula.is_nary()) {
 			FormulasT subforms;
 			for (const auto& subformula : formula.subformulas()) {
 				subforms.push_back(restoreFormula(subformula));

@@ -5,11 +5,11 @@ namespace mcsat {
 
 template<typename Settings>
 void MCSATMixin<Settings>::pushTheoryDecision(const FormulaT& assignment, Minisat::Lit decisionLiteral) {
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << assignment.variableAssignment().var() << ": " << decisionLiteral);
+	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Made theory decision for " << assignment.variable_assignment().var() << ": " << decisionLiteral);
 	assert(mInconsistentVariables.empty());
-	mBackend.pushAssignment( assignment.variableAssignment().var(),  assignment.variableAssignment().value(), assignment);
+	mBackend.pushAssignment( assignment.variable_assignment().var(),  assignment.variable_assignment().value(), assignment);
 	mTheoryStack.emplace_back();
-	current().variable = assignment.variableAssignment().var();
+	current().variable = assignment.variable_assignment().var();
 	current().decisionLiteral = decisionLiteral;
 	updateCurrentLevel();
 }

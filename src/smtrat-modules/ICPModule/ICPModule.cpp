@@ -495,7 +495,7 @@ namespace smtrat
                 std::cout << "linearize constraint to   " << linearFormula.constraint() << std::endl;
                 #endif
             };
-            assert( !linearFormula.isTrue() );
+            assert( !linearFormula.is_true() );
             // store replacement for later comparison when asserting
             assert( mDeLinearizations.find( linearFormula ) == mDeLinearizations.end() );
             assert( mLinearizations.find( _formula ) == mLinearizations.end() );
@@ -2585,7 +2585,7 @@ namespace smtrat
                         {
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalLeftBound(), true );
                         }
-                        if ( leftTmp.isTrue() )
+                        if ( leftTmp.is_true() )
                         {
                             icpVar.setExternalLeftBound( passedFormulaEnd() );
                         }
@@ -2608,7 +2608,7 @@ namespace smtrat
                         {
                             Module::eraseSubformulaFromPassedFormula( icpVar.externalRightBound(), true );
                         }
-                        if( rightTmp.isTrue() )
+                        if( rightTmp.is_true() )
                         {
                             icpVar.setExternalRightBound( passedFormulaEnd() );
                         }
@@ -2686,10 +2686,10 @@ namespace smtrat
                 }
                 const DoubleInterval& interval = varIntervalIter->second;
                 FormulaT leftTmp = intervalBoundToFormula( tmpSymbol, interval, varInitialIntervalIter, false );
-                if( !leftTmp.isTrue() )
+                if( !leftTmp.is_true() )
                     result.push_back( leftTmp );
                 FormulaT rightTmp = intervalBoundToFormula( tmpSymbol, interval, varInitialIntervalIter, true );
-                if( !rightTmp.isTrue() )
+                if( !rightTmp.is_true() )
                     result.push_back( rightTmp );
             }
         }
@@ -2908,7 +2908,7 @@ namespace smtrat
         {
             return FormulaT( carl::FormulaType::NOT, getReceivedFormulas( _deduction.subformula() ) );
         }
-        else if( _deduction.isBooleanCombination() )
+        else if( _deduction.is_boolean_combination() )
         {
             FormulasT subformulas;
             for( const FormulaT& subformula : _deduction.subformulas() )

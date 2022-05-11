@@ -73,7 +73,7 @@ namespace expression {
 		return getType<BinaryExpression>();
 	}
 	
-	bool Expression::isNary() const {
+	bool Expression::is_nary() const {
 		return isType<NaryExpression>();
 	}
 	const NaryExpression& Expression::getNary() const {

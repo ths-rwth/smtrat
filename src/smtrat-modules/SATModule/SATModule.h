@@ -995,20 +995,20 @@ namespace smtrat
 				if (std::holds_alternative<FormulaT>(explanation)) {
                     // add conflict clause
                     const auto& clause = std::get<FormulaT>(explanation);
-                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                    bool added = addClauseIfNew(clause.is_nary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
                 } else {
                     const auto& chain = std::get<mcsat::ClauseChain>(explanation);
                     if (Settings::mcsat_resolve_clause_chains) {
                         FormulaT clause = chain.resolve();
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
-                        bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        bool added = addClauseIfNew(clause.is_nary() ? clause.subformulas() : FormulasT({clause}));
                         assert(added);
                     } else {
                         // add propagations
                         bool added = false;
                         for (const auto& link : chain) {
-                            added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
+                            added |= addClauseIfNew(link.clause().is_nary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
                         assert(added);
                     }                    
@@ -1170,7 +1170,7 @@ namespace smtrat
                         const auto& reabstr = mBooleanConstraintMap[x].first->reabstraction;
                         if (reabstr.type() == carl::FormulaType::VARASSIGN) {
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Converting " << x << " (" << reabstr << ")...")
-                            const carl::Variable tvar = reabstr.variableAssignment().var();
+                            const carl::Variable tvar = reabstr.variable_assignment().var();
                             x = mMCSAT.minisatVar(tvar);
                             SMTRAT_LOG_DEBUG("smtrat.sat", "..to " << x << " (" << tvar << ")");
                         }

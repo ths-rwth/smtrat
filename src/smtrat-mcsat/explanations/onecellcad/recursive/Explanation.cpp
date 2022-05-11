@@ -184,7 +184,7 @@ std::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(con
 		}
 	}
 
-	//    if (!impliedLiteral.isFalse())
+	//    if (!impliedLiteral.is_false())
 	//      explainLiterals.emplace_back(impliedLiteral);
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);

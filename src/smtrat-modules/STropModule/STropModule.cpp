@@ -250,7 +250,7 @@ namespace smtrat
 		
 		/// Apply the method only if the asserted formula is not trivially undecidable
 		if (!mRelationalConflicts
-			&& rReceivedFormula().isConstraintConjunction()
+			&& rReceivedFormula().is_constraint_conjunction()
 			&& std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict))
 		{
 			/// Update the linearization of all changed separators

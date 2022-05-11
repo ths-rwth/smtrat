@@ -86,17 +86,17 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is " << category << " under " << mModel << " w.r.t. " << mVar);
 		switch (category) {
 			case mcsat::ConstraintType::Constant:
-				assert(f.isTrue() || f.isFalse());
-				if (f.isFalse()) return false;
+				assert(f.is_true() || f.is_false());
+				if (f.is_false()) return false;
 				break;
 			case mcsat::ConstraintType::Assigned: {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Checking fully assigned " << f);
 				FormulaT fnew = carl::model::substitute(f, mModel);
-				if (fnew.isTrue()) {
+				if (fnew.is_true()) {
 					SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
 					return true;
 				} else {
-					assert(fnew.isFalse());
+					assert(fnew.is_false());
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 					return false;
 				}
@@ -130,11 +130,11 @@ public:
 					return false;
 				}
 			}
-		} else if (fnew.isTrue()) {
+		} else if (fnew.is_true()) {
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
 			return true;
 		} else {
-			assert(fnew.isFalse());
+			assert(fnew.is_false());
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		}
@@ -154,15 +154,15 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding univariate bound " << f);
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
-		if (fnew.isTrue()) {
+		if (fnew.is_true()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
 			return true;
-		} else if (fnew.isFalse()) {
+		} else if (fnew.is_false()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		}
 		assert(fnew.type() == carl::FormulaType::VARCOMPARE);
-		ModelValue value = fnew.variableComparison().value();
+		ModelValue value = fnew.variable_comparison().value();
 		if (value.isSubstitution()) {
 			// Prevent memory error due to deallocation of shared_ptr before copying value from shared_ptr.
 			auto res = value.asSubstitution()->evaluate(mModel);

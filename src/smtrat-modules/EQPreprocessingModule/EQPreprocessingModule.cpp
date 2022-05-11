@@ -121,12 +121,12 @@ namespace smtrat
 
 		std::tie(iter, inserted) = mFacts.emplace(fact, !negated);
 		if(inserted) {
-			FormulaT realFact(fact.uequality().lhs(), fact.uequality().rhs(), negated);
+			FormulaT realFact(fact.u_equality().lhs(), fact.u_equality().rhs(), negated);
 			mFactOrigins.emplace(realFact, origin);
 			return std::make_pair(mEQHelper.add(realFact), false);
 		} else {
 			if(negated == iter->second) {
-				FormulaT realFact(fact.uequality().lhs(), fact.uequality().rhs(), negated);
+				FormulaT realFact(fact.u_equality().lhs(), fact.u_equality().rhs(), negated);
 				mFactOrigins.emplace(realFact, origin);
 				bool result = mEQHelper.add(realFact);
 				assert(!result); (void)result;

@@ -55,7 +55,7 @@ namespace expression {
 		bool isBinary() const;
 		const BinaryExpression& getBinary() const;
 		
-		bool isNary() const;
+		bool is_nary() const;
 		const NaryExpression& getNary() const;
 		
 		bool operator==(const Expression& expr) const;

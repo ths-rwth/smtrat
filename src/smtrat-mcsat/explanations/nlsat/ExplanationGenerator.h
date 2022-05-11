@@ -66,17 +66,17 @@ namespace helper {
 				// Note that we only add the polynomials here and don't really care about the relation
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
-				carl::Relation rel = cAtom.variableComparison().negated() ? inverse(cAtom.variableComparison().relation()) : cAtom.variableComparison().relation();
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variableComparison().defining_polynomial());
-				cons.emplace(cAtom.variableComparison().defining_polynomial(), carl::Relation::NEQ);
+				carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variable_comparison().defining_polynomial());
+				cons.emplace(cAtom.variable_comparison().defining_polynomial(), carl::Relation::NEQ);
 				// removed (makes no sense):
 				// -> var - poly to ensure that the relation still holds
-				//cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().defining_polynomial(), rel);
+				//cons.emplace(Poly(cAtom.variable_comparison().var()) - cAtom.variable_comparison().defining_polynomial(), rel);
 			} else if (cAtom.type() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
 				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << cAtom);
-				const VariableComparisonT& vc = cAtom.variableAssignment();
+				const VariableComparisonT& vc = cAtom.variable_assignment();
 				cons.emplace(vc.defining_polynomial(), carl::Relation::EQ);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << cAtom);
@@ -235,7 +235,7 @@ public:
 					explainClauseLiterals.emplace_back(explainAtom.negated());
 			}
 		}
-		if (!impliedAtom.isTrue()) explainClauseLiterals.emplace_back(impliedAtom);
+		if (!impliedAtom.is_true()) explainClauseLiterals.emplace_back(impliedAtom);
 		return FormulaT(carl::FormulaType::OR, std::move(explainClauseLiterals));
 	}
 };

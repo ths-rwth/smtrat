@@ -8,7 +8,7 @@ namespace smtrat {
 	struct CollectBoolsInUEQs : public formula_visitor<CollectBoolsInUEQs, void> {
 		public:
 			void visit_ueq(const FormulaT& formula) {
-				const carl::UEquality& ueq = formula.uequality();
+				const carl::UEquality& ueq = formula.u_equality();
 				P_handle_arg(ueq.lhs(), ueq.lhs().isUFInstance());
 				P_handle_arg(ueq.rhs(), ueq.rhs().isUFInstance());
 			}

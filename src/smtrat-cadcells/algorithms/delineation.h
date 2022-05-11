@@ -28,7 +28,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
         if (c.type() == carl::FormulaType::CONSTRAINT) {
             p = c.constraint().lhs();
         } else if (c.type() == carl::FormulaType::VARCOMPARE) {
-            p = c.variableComparison().defining_polynomial();
+            p = c.variable_comparison().defining_polynomial();
         } else {
             assert(false);
             return std::nullopt;

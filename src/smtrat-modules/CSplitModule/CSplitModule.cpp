@@ -30,7 +30,7 @@ namespace smtrat
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.type() == carl::FormulaType::FALSE)
 			mInfeasibleSubsets.push_back({formula});
-		else if (formula.isBound())
+		else if (formula.is_bound())
 		{
 			/// Update the variable domain with the asserted bound
 			mVariableBounds.addBound(formula, formula);
@@ -172,7 +172,7 @@ namespace smtrat
 	void CSplitModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
 		const FormulaT& formula{_subformula->formula()};	
-		if (formula.isBound())
+		if (formula.is_bound())
 		{
 			/// Update the variable domain with the removed bound
 			mVariableBounds.removeBound(formula, formula);
@@ -231,7 +231,7 @@ namespace smtrat
 			return Answer::UNSAT;
 		
 		/// Apply the method only if the asserted formula is not trivially undecidable
-		if (rReceivedFormula().isConstraintConjunction())
+		if (rReceivedFormula().is_constraint_conjunction())
 		{
 			mLRAModule.push();
 			if (resetExpansions())
@@ -421,7 +421,7 @@ namespace smtrat
 		
 		/// Scan the infeasible subset of the LRA solver for potential candidates
 		for (const FormulaT& formula : LRAConflict)
-			if (formula.isBound())
+			if (formula.is_bound())
 			{
 				const ConstraintT& constraint{formula.constraint()};
 				const carl::Variable variable{constraint.variables().as_vector().front()};
@@ -477,7 +477,7 @@ namespace smtrat
 		FormulaSetT infeasibleSubset;
 		for (const FormulaT& formula : LRAConflict)
 		{
-			if (formula.isBound())
+			if (formula.is_bound())
 			{
 				auto expansionIter{mExpansions.secondFind(*formula.variables().begin())};
 				if (expansionIter != mExpansions.end())

@@ -872,7 +872,7 @@ namespace smtrat
 
             Bit createBit(const FormulaT& _formula)
             {
-                if(_formula.isAtom() || (_formula.type() == carl::FormulaType::NOT && _formula.subformula().isAtom())) {
+                if(_formula.is_atom() || (_formula.type() == carl::FormulaType::NOT && _formula.subformula().is_atom())) {
                     return _formula;
                 }
 
@@ -962,7 +962,7 @@ namespace smtrat
             {
                 if(_original.type() == carl::FormulaType::BITVECTOR)
                 {
-                    Bit substitute = encodeConstraint(_original.bvConstraint());
+                    Bit substitute = encodeConstraint(_original.bv_constraint());
                     return substitute;
                 }
                 return _original;

@@ -32,7 +32,7 @@ private:
 	std::map<FormulaT, std::string> mSoftFormulaIds;
 
 	bool satisfied(const FormulaT& formula, const Model& model) {
-		return carl::model::substitute(formula, model).isTrue();
+		return carl::model::substitute(formula, model).is_true();
 	}
 
 public:

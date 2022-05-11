@@ -121,7 +121,7 @@ namespace smtrat
 						assert( bounds != NULL );
 						activateBound( *bounds->begin(), formula );
 
-						if( !(*bounds->begin())->neqRepresentation().isTrue() )
+						if( !(*bounds->begin())->neqRepresentation().is_true() )
 						{
 							auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
 							if( pos != mActiveUnresolvedNEQConstraints.end() )
@@ -237,7 +237,7 @@ namespace smtrat
 						}
 						if( (*bound)->origins().empty() )
 						{
-							if( !(*bound)->neqRepresentation().isTrue() )
+							if( !(*bound)->neqRepresentation().is_true() )
 							{
 								auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
 								assert( constrBoundIterB != mTableau.constraintToBound().end() );
@@ -331,13 +331,13 @@ namespace smtrat
             std::cout << f.formula() << std::endl;
         #endif
         bool containsIntegerValuedVariables = true;
-        if( !rReceivedFormula().isConstraintConjunction() )
+        if( !rReceivedFormula().is_constraint_conjunction() )
             return processResult( UNKNOWN );
         if( !mInfeasibleSubsets.empty() )
             return processResult( UNSAT );
         if( Settings::simple_theory_propagation )
             simpleTheoryPropagation();
-        if( rReceivedFormula().isRealConstraintConjunction() )
+        if( rReceivedFormula().is_real_constraint_conjunction() )
             containsIntegerValuedVariables = false;
 //        if( mTableau.isConflicting() )
 //            exit(77);
@@ -641,7 +641,7 @@ namespace smtrat
             }
         }
         // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
-        if(true || _result != UNKNOWN && !rReceivedFormula().isRealConstraintConjunction() )
+        if(true || _result != UNKNOWN && !rReceivedFormula().is_real_constraint_conjunction() )
         {
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {

@@ -78,11 +78,11 @@ boost::tribool AssignmentFinder_SMT::addConstraint(const FormulaT& f) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Constraint " << f << " did not fully evaluate under the current model");
 			return boost::indeterminate;
 		}
-	} else if (fnew.isTrue()) {
+	} else if (fnew.is_true()) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Ignoring " << f << " which simplified to true.");
 		return true;
 	} else {
-		assert(fnew.isFalse());
+		assert(fnew.is_false());
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Conflict: " << f << " simplified to false.");
 		return false;
 	}
@@ -102,16 +102,16 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 	// * If the MVRoot or RAN evaluates to a Rational, we can simplify it to a Constraint y ~ Rational,
 	// * otherwise, this method fails.
 
-	VariablePos lvl = std::find(mVariables.first, mVariables.second, f.variableComparison().var());
+	VariablePos lvl = std::find(mVariables.first, mVariables.second, f.variable_comparison().var());
 	if (lvl == mVariables.second) {
-		if (mModel.find(f.variableComparison().var()) != mModel.end()) {
+		if (mModel.find(f.variable_comparison().var()) != mModel.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
 			FormulaT fnew(carl::model::substitute(f, mModel));
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
-			if (fnew.isTrue()) {
+			if (fnew.is_true()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
 				return true;
-			} else if (fnew.isFalse()) {
+			} else if (fnew.is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 				return false;
 			} else { // not fully evaluated => not possible, as all variables are assigned
@@ -125,16 +125,16 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
-		if (fnew.isTrue()) {
+		if (fnew.is_true()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
 			return true;
-		} else if (fnew.isFalse()) {
+		} else if (fnew.is_false()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		} else {
 			assert(fnew.type() == carl::FormulaType::VARCOMPARE);
 
-			ModelValue value = fnew.variableComparison().value();
+			ModelValue value = fnew.variable_comparison().value();
 			if (value.isSubstitution()) {
 				auto res = value.asSubstitution()->evaluate(mModel);
 				value = res;
@@ -143,13 +143,13 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 
 			if (value.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Value is Rational, can convert to Constraint");
-				auto rel =  fnew.variableComparison().negated() ? carl::inverse(fnew.variableComparison().relation()) : fnew.variableComparison().relation();
-				ConstraintT constr(Poly(fnew.variableComparison().var()) - value.asRational(), rel);
+				auto rel =  fnew.variable_comparison().negated() ? carl::inverse(fnew.variable_comparison().relation()) : fnew.variable_comparison().relation();
+				ConstraintT constr(Poly(fnew.variable_comparison().var()) - value.asRational(), rel);
 				FormulaT fnewnew = FormulaT(constr);
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering constraint " << fnewnew);
 				mConstraints[lvl].push_back(fnewnew);
 				mEvaluatedConstraints[fnewnew] = f;
-				mFreeConstraintVars[lvl].insert(fnew.variableComparison().var());
+				mFreeConstraintVars[lvl].insert(fnew.variable_comparison().var());
 				return true;
 			} else {
 				return boost::indeterminate;

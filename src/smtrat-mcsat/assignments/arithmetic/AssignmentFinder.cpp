@@ -49,18 +49,18 @@ bool AssignmentFinder::active(const mcsat::Bookkeeping& data, const FormulaT& f)
 		if(f.type() != carl::FormulaType::VARCOMPARE)
 			return true;
 
-		const auto& val = f.variableComparison().value();
+		const auto& val = f.variable_comparison().value();
 		if (std::holds_alternative<VariableComparisonT::RAN>(val)) {
 			return true;
 		} else {
-			if (data.model().find(f.variableComparison().var()) == data.model().end()) {
+			if (data.model().find(f.variable_comparison().var()) == data.model().end()) {
 				return true;
 			} else {
 				const auto& mvroot = std::get<MultivariateRootT>(val);
 				auto vars = carl::variables(mvroot.poly()).as_set();
 				vars.erase(mvroot.var());
 				for (auto iter = data.assignedVariables().begin(); iter != data.assignedVariables().end(); iter++) {
-					if (*iter == f.variableComparison().var()) {
+					if (*iter == f.variable_comparison().var()) {
 						break;
 					}
 					vars.erase(*iter);

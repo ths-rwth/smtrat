@@ -37,14 +37,14 @@ namespace smtrat
         #ifdef DEBUG_IntEqModule
         std::cout << "Assert: " << _subformula->formula() << std::endl;
         #endif
-        if( _subformula->formula().isFalse() )
+        if( _subformula->formula().is_false() )
         {
             FormulaSetT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         } 
-        else if( _subformula->formula().isTrue() )
+        else if( _subformula->formula().is_true() )
         {
             return true;
         }
@@ -77,7 +77,7 @@ namespace smtrat
                 std::cout << "After temporary substitution: " << new_poly << std::endl;
                 #endif
                 FormulaT temp_eq( ( ConstraintT( new_poly, carl::Relation::EQ ) ) );
-                if( !temp_eq.isTrue() && !temp_eq.isFalse() )  
+                if( !temp_eq.is_true() && !temp_eq.is_false() )  
                 {
                     if( *iter_subs != mSubstitutions.back() )
                     {
@@ -125,7 +125,7 @@ namespace smtrat
             #endif
             FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
             // Return UNSAT if the newly obtained constraint is unsatisfiable
-            if( newEq.isFalse() )
+            if( newEq.is_false() )
             {
                 #ifdef DEBUG_IntEqModule
                 std::cout << "NewEq is invalid" << std::endl;
@@ -136,7 +136,7 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( infSubSet );
                 return false;                
             }
-            if( newEq.isTrue() )
+            if( newEq.is_true() )
             {
                 return true;
             }
@@ -370,7 +370,7 @@ namespace smtrat
     template<class Settings>
     Answer IntEqModule<Settings>::checkCore()
     {
-        if( !rReceivedFormula().isConstraintConjunction() )
+        if( !rReceivedFormula().is_constraint_conjunction() )
         {
             return UNKNOWN;
         }
@@ -392,7 +392,7 @@ namespace smtrat
              * the smallest absolute value
              */
             const ConstraintT& curr_constr = mProc_Constraints.begin()->first.constraint();
-            if( mProc_Constraints.begin()->first.isFalse() )
+            if( mProc_Constraints.begin()->first.is_false() )
             {
                 size_t i = determine_smallest_origin( *( mProc_Constraints.begin()->second ) );
                 FormulaSetT infSubSet;
@@ -551,7 +551,7 @@ namespace smtrat
                 }    
                 FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
-                if( newEq.isFalse() )
+                if( newEq.is_false() )
                 {
                     #ifdef DEBUG_IntEqModule
                     std::cout << "Constraint is invalid!" << std::endl;
@@ -617,7 +617,7 @@ namespace smtrat
                 //cout << "After substitution: " << new_poly << std::endl;
                 #endif 
                 FormulaT formula_passed( ConstraintT( new_poly, (*iter_formula).formula().constraint().relation() ) );                
-                if( formula_passed.isFalse() )
+                if( formula_passed.is_false() )
                 {
                     #ifdef DEBUG_IntEqModule
                     std::cout << "The obtained formula is unsatisfiable" << std::endl;

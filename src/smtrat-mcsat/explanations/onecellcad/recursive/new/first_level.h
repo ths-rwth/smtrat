@@ -391,7 +391,7 @@ bool compute_unsat_intervals(const FormulaT& constr, const Model& model, carl::V
     if (constr.type() == carl::FormulaType::CONSTRAINT) {
         return compute_unsat_intervals(constr.constraint(), model, variable, results);
     } else if (constr.type() == carl::FormulaType::VARCOMPARE) {
-        return compute_unsat_intervals(constr.variableComparison(), model, variable, results);
+        return compute_unsat_intervals(constr.variable_comparison(), model, variable, results);
     } else {
         assert(false);
         return false;

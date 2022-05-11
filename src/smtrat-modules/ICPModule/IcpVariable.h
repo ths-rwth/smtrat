@@ -286,9 +286,9 @@ namespace icp
             
             Updated isInternalBoundsSet() const
             {
-                if( !mInternalLeftBound.isTrue() )
+                if( !mInternalLeftBound.is_true() )
                 {
-                    if( !mInternalRightBound.isTrue() )
+                    if( !mInternalRightBound.is_true() )
                         return Updated::BOTH;
                     return Updated::LEFT;
                 }

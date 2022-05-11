@@ -28,14 +28,14 @@ namespace smtrat
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while (receivedFormula != rReceivedFormula().end()) {
             FormulaT formula = receivedFormula->formula();
-            if (receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
+            if (receivedFormula->formula().property_holds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
                 formula = carl::visit_result(receivedFormula->formula(), eliminateEquationFunction);
             }
-            if (formula.isFalse()) {
+            if (formula.is_false()) {
                 receivedFormulasAsInfeasibleSubset(receivedFormula);
                 return UNSAT;
             }
-            if (!formula.isTrue()) {
+            if (!formula.is_true()) {
                 addSubformulaToPassedFormula(formula, receivedFormula->formula());
             }
             ++receivedFormula;

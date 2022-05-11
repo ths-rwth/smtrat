@@ -39,7 +39,7 @@ namespace smtrat {
 		bool EQModule<Settings>::informCore(const FormulaT& _constraint)
 	{
 		if(_constraint.type() == carl::UEQ) {
-			const UEquality &ueq = _constraint.uequality();
+			const UEquality &ueq = _constraint.u_equality();
 			const term_type &lhs = ueq.lhs();
 			const term_type &rhs = ueq.rhs();
 			
@@ -185,7 +185,7 @@ namespace smtrat {
 		}
 		
 		const FormulaT& formula = _subformula->formula();
-		const UEquality &ueq = formula.uequality();
+		const UEquality &ueq = formula.u_equality();
 		const term_type &lhs = ueq.lhs();
 		const term_type &rhs = ueq.rhs();
 
@@ -372,7 +372,7 @@ namespace smtrat {
 		}
 		
 		const FormulaT& formula = _subformula->formula();
-		const UEquality &ueq = formula.uequality();
+		const UEquality &ueq = formula.u_equality();
 		const term_type &lhs = ueq.lhs();
 		const term_type &rhs = ueq.rhs();
 		
@@ -1485,7 +1485,7 @@ namespace smtrat {
 	{
 		for(auto entry = mAllNotAssertedEqualities.begin(); entry != mAllNotAssertedEqualities.end(); ) {
 			const FormulaT &formula = entry->mFormula;
-			const UEquality &ueq = formula.uequality();
+			const UEquality &ueq = formula.u_equality();
 			
 			g_iterator itrLhs = entry->mLhs;
 			g_iterator itrRhs = entry->mRhs;

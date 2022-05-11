@@ -37,8 +37,8 @@ namespace smtrat {
 						mNeedMerge = false;
 					}
 
-					const term_type &lhs = ueq.uequality().lhs();
-					const term_type &rhs = ueq.uequality().rhs();
+					const term_type &lhs = ueq.u_equality().lhs();
+					const term_type &rhs = ueq.u_equality().rhs();
 
 					const term_type *rep_lhs = mEQHelper.get().find_representative(lhs);
 					const term_type *rep_rhs = mEQHelper.get().find_representative(rhs);

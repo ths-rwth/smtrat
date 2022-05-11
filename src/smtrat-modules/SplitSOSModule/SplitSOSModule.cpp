@@ -35,11 +35,11 @@ namespace smtrat
         while( receivedFormula != rReceivedFormula().end() )
         {
             FormulaT formula = receivedFormula->formula();
-            if( receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
+            if( receivedFormula->formula().property_holds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
             {
                 formula = carl::visit_result( receivedFormula->formula(), splitSOSFunction );
             }
-            if( formula.isFalse() )
+            if( formula.is_false() )
             {
                 mInfeasibleSubsets.clear();
                 FormulaSetT infeasibleSubset;
@@ -47,7 +47,7 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
                 return UNSAT;
             }
-            if( !formula.isTrue() )
+            if( !formula.is_true() )
             {
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             }

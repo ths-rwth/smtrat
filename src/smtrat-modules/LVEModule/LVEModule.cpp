@@ -153,7 +153,7 @@ namespace smtrat
 				return FormulaT(without, rel);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.lve", "Possible values for " << v << " are " << *posval << " and " << *negval);
-			if (FormulaT(without, carl::Relation::LESS).isFalse()) {
+			if (FormulaT(without, carl::Relation::LESS).is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " negative.");
 				switch (rel) {
 					case carl::Relation::LESS:		mPPModel.emplace(v, *negval); break;
@@ -162,7 +162,7 @@ namespace smtrat
 				}
 				return FormulaT(without, carl::Relation::GREATER);
 			}
-			if (FormulaT(without, carl::Relation::GREATER).isFalse()) {
+			if (FormulaT(without, carl::Relation::GREATER).is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " positive.");
 				switch (rel) {
 					case carl::Relation::LESS:		mPPModel.emplace(v, *posval); break;

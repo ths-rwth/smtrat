@@ -35,12 +35,12 @@ namespace smtrat
         while( receivedFormula != rReceivedFormula().end() )
         {
             FormulaT formula = carl::visit_result( receivedFormula->formula(), extractBoundsFunction );
-            if( formula.isFalse() )
+            if( formula.is_false() )
             {
                 receivedFormulasAsInfeasibleSubset( receivedFormula );
                 return UNSAT;
             }
-            if( !formula.isTrue() )
+            if( !formula.is_true() )
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }

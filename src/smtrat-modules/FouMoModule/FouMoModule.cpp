@@ -60,7 +60,7 @@ namespace smtrat
                 ++iter_poly;
             }
         }
-        if( _subformula->formula().isFalse() )
+        if( _subformula->formula().is_false() )
         {
             #ifdef DEBUG_FouMoModule
             std::cout << "Asserted formula: " << _subformula->formula().constraint() << "is false" << std::endl;
@@ -70,7 +70,7 @@ namespace smtrat
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;
         }
-        else if( _subformula->formula().isTrue() )
+        else if( _subformula->formula().is_true() )
         {
             return true;
         }
@@ -181,7 +181,7 @@ namespace smtrat
                                         #endif
                                         std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() );
                                         *origins_new = std::move( merge( *( iter_temp->second ), *( iter_lower->second ) ) );
-                                        if( new_formula.isFalse() )
+                                        if( new_formula.is_false() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             std::cout << "The obtained formula is unsatisfiable" << std::endl;
@@ -200,7 +200,7 @@ namespace smtrat
                                                 std::pair< FormulaT, bool > result = worthInserting( derived_constr, new_formula.constraint().lhs() );
                                                 if( result.second == true )
                                                 {
-                                                    if( !result.first.isFalse() )
+                                                    if( !result.first.is_false() )
                                                     {
                                                         auto iter_delete = derived_constr.find( result.first );
                                                         assert( iter_delete != derived_constr.end() );
@@ -234,7 +234,7 @@ namespace smtrat
                                         #endif
                                         std::shared_ptr<std::vector<FormulaT>> origins_new( new std::vector<FormulaT>() );
                                         *origins_new = std::move( merge( *( iter_temp->second ), *( iter_upper->second ) ) );
-                                        if( new_formula.isFalse() )
+                                        if( new_formula.is_false() )
                                         {
                                             #ifdef DEBUG_FouMoModule
                                             std::cout << "The obtained formula is unsatisfiable" << std::endl;
@@ -253,7 +253,7 @@ namespace smtrat
                                                 std::pair< FormulaT, bool > result = worthInserting( derived_constr, new_formula.constraint().lhs() );
                                                 if( result.second == true )
                                                 {
-                                                    if( !result.first.isFalse() )
+                                                    if( !result.first.is_false() )
                                                     {
                                                         auto iter_delete = derived_constr.find( result.first );
                                                         assert( iter_delete != derived_constr.end() );
@@ -307,7 +307,7 @@ namespace smtrat
                         std::pair< FormulaT, bool > result = worthInserting( temp_constr, iter_derived->first.constraint().lhs() );
                         if( result.second == true )
                         {
-                            if( !result.first.isFalse() )
+                            if( !result.first.is_false() )
                             {
                                 auto iter_delete = temp_constr.find( result.first );
                                 assert( iter_delete != temp_constr.end() );
@@ -335,7 +335,7 @@ namespace smtrat
                     std::pair< FormulaT, bool > result = worthInserting( mProc_Constraints, iter_temp->first.constraint().lhs() );
                     if( result.second == true )
                     {
-                        if( !result.first.isFalse() )
+                        if( !result.first.is_false() )
                         {
                             auto iter_delete = mProc_Constraints.find( result.first );
                             assert( iter_delete != mProc_Constraints.end() );
@@ -806,7 +806,7 @@ namespace smtrat
                         ++iter_origins;
                     }
                     #endif
-                    if( new_formula.isFalse() )
+                    if( new_formula.is_false() )
                     {
                         #ifdef DEBUG_FouMoModule
                         std::cout << "The obtained formula is unsatisfiable" << std::endl;
@@ -827,7 +827,7 @@ namespace smtrat
                             std::pair< FormulaT, bool > result = worthInserting( mProc_Constraints, new_formula.constraint().lhs() );
                             if( result.second == true )
                             {
-                                if( !result.first.isFalse() )
+                                if( !result.first.is_false() )
                                 {
                                     auto iter_delete = mProc_Constraints.find( result.first );
                                     assert( iter_delete != mProc_Constraints.end() );

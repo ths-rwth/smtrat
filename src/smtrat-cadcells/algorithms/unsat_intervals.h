@@ -172,7 +172,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     if (c.type() == carl::FormulaType::CONSTRAINT) {
         return get_unsat_intervals<op>(c.constraint(), proj, sample);
     } else if (c.type() == carl::FormulaType::VARCOMPARE) {
-        return get_unsat_intervals<op>(c.variableComparison(), proj, sample);
+        return get_unsat_intervals<op>(c.variable_comparison(), proj, sample);
     } else {
         assert(false);
         return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();

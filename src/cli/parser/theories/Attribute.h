@@ -33,8 +33,8 @@ public:
 	}
 	void simplify() {
 		if (FormulaT* f = boost::get<FormulaT>(&value)) {
-			if (f->isTrue()) value = true;
-			else if (f->isFalse()) value = false;
+			if (f->is_true()) value = true;
+			else if (f->is_false()) value = false;
 		}
 	}
 };

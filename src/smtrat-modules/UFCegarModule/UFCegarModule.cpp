@@ -36,7 +36,7 @@ namespace smtrat
             return res->second;
         }
 
-        const auto& ueq = formula.uequality();
+        const auto& ueq = formula.u_equality();
         FormulaT eq{flatten(ueq.lhs()), flatten(ueq.rhs()), ueq.negated()};
         formula_store.emplace(formula, eq);
         return eq;

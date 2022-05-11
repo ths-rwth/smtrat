@@ -468,13 +468,13 @@ namespace smtrat {
 
 					case carl::EXISTS: {
 						P_enter_exists(formula, SMTRAT_DISP_TAG(enter_exists));
-						result_type result(P_dispatch(formula.quantifiedFormula()));
+						result_type result(P_dispatch(formula.quantified_formula()));
 						return P_visit_exists(formula, std::move(result), SMTRAT_DISP_TAG(visit_exists));
 					}
 
 					case carl::FORALL: {
 						P_enter_forall(formula, SMTRAT_DISP_TAG(enter_forall));
-						result_type result(P_dispatch(formula.quantifiedFormula()));
+						result_type result(P_dispatch(formula.quantified_formula()));
 						return P_visit_forall(formula, std::move(result), SMTRAT_DISP_TAG(visit_forall));
 					}
 
@@ -488,8 +488,8 @@ namespace smtrat {
 					case carl::ITE: {
 						P_enter_ite(formula, SMTRAT_DISP_TAG(enter_ite));
 						result_type condition(P_dispatch(formula.condition()));
-						result_type true_case(P_dispatch(formula.firstCase()));
-						result_type false_case(P_dispatch(formula.secondCase()));
+						result_type true_case(P_dispatch(formula.first_case()));
+						result_type false_case(P_dispatch(formula.second_case()));
 						return P_visit_ite(formula, std::move(condition), std::move(true_case), std::move(false_case), SMTRAT_DISP_TAG(visit_ite));
 					}
 
@@ -918,14 +918,14 @@ namespace smtrat {
 
 					case carl::EXISTS: {
 						P_enter_exists(formula, SMTRAT_DISP_TAG(enter_exists));
-						P_dispatch(formula.quantifiedFormula());
+						P_dispatch(formula.quantified_formula());
 						P_visit_exists(formula, SMTRAT_DISP_TAG(visit_exists));
 						return;
 					}
 
 					case carl::FORALL: {
 						P_enter_forall(formula, SMTRAT_DISP_TAG(enter_forall));
-						P_dispatch(formula.quantifiedFormula());
+						P_dispatch(formula.quantified_formula());
 						P_visit_forall(formula, SMTRAT_DISP_TAG(visit_forall));
 						return;
 					}
@@ -941,8 +941,8 @@ namespace smtrat {
 					case carl::ITE: {
 						P_enter_ite(formula, SMTRAT_DISP_TAG(enter_ite));
 						P_dispatch(formula.condition());
-						P_dispatch(formula.firstCase());
-						P_dispatch(formula.secondCase());
+						P_dispatch(formula.first_case());
+						P_dispatch(formula.second_case());
 						P_visit_ite(formula, SMTRAT_DISP_TAG(visit_ite));
 						return;
 					}
@@ -1095,7 +1095,7 @@ namespace smtrat {
 			}
 
 			template<typename = void> FormulaT P_visit_quantified(const FormulaT& formula, FormulaT&& subformula, std::false_type) {
-				return P_rewrite_default(formula, FormulaT(formula.type(), formula.quantifiedVariables(), std::move(subformula)));
+				return P_rewrite_default(formula, FormulaT(formula.type(), formula.quantified_variables(), std::move(subformula)));
 			}
 
 			FormulaT P_visit_quantified(const FormulaT& formula, FormulaT&& subformula) {
