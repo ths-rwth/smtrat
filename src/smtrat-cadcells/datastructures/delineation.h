@@ -68,7 +68,7 @@ std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
 class Delineation {
     friend class DelineationInterval;
 
-    /// A map from the actual roots to indexed root expressions. Not that this map is sorted.
+    /// A map from the actual roots to indexed root expressions. Note that this map is sorted.
     RootMap m_roots;
     /// The set of all nullified polynomials.
     boost::container::flat_set<PolyRef> m_polys_nullified;

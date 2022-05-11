@@ -7,7 +7,7 @@ namespace smtrat::cadcells::algorithms {
 /**
  * Computes a delineation w.r.t. a set of constraints.
  * 
- * A set of polynomials that are univariate under a sample induces a delineation (i.e. the order of their roots, polynomials without roots and nullified polynomials). This delineation is generalized such that the ordering on hte roots etc is invariant.
+ * A set of polynomials that are univariate under a sample induces a delineation (i.e. the order of their roots, polynomials without roots and nullified polynomials). This delineation is generalized such that the ordering on the roots etc is invariant.
  * 
  * @param constraints Atoms of the same level.
  * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
