@@ -381,7 +381,7 @@ namespace smtrat
 
 		void gatherVariables(carl::carlVariables& vars) const {
 			for (const auto& f: *this) {
-				f.formula().gatherVariables(vars);
+				carl::variables(f.formula(), vars);
 			}
 		}
         

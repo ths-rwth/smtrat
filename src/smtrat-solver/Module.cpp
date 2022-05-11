@@ -895,8 +895,8 @@ namespace smtrat
 		carl::carlVariables variables;
 		std::set<carl::UninterpretedFunction> functions;
 		for (const auto& f: *mpReceivedFormula) {
-			f.formula().gatherVariables(variables);
-			f.formula().gatherUFs(functions);
+			carl::variables(f.formula(),variables);
+			carl::uninterpreted_functions(f.formula(),functions);
 		}
 		// Filter model
 		for (auto it = mModel.begin(); it != mModel.end(); ) {
@@ -1025,7 +1025,7 @@ namespace smtrat
     {
 		carl::carlVariables vars(carl::variable_type_filter::arithmetic());
 		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
-			it->gatherVariables(vars);
+			carl::variables(*it, vars);
 		}
         std::stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";

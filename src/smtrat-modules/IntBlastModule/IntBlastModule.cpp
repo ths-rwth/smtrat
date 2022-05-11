@@ -80,7 +80,7 @@ namespace smtrat
         INTBLAST_DEBUG("ADD " << formula);
 
         std::vector<ConstraintT> containedConstraints;
-        formula.getConstraints(containedConstraints);
+        carl::arithmetic_constraints(formula, containedConstraints);
 
         /*
          * Steps that are applied for every constraint in formula
@@ -1294,7 +1294,7 @@ namespace smtrat
         // ConstrBlastings is now deleted
         for(const auto& inputFormula : rReceivedFormula()) {
             std::vector<ConstraintT> constraintsInFormula;
-            inputFormula.formula().getConstraints(constraintsInFormula);
+            arithmetic_constraints(inputFormula.formula(),constraintsInFormula);
 
             bool needsReencoding = false;
             for(const ConstraintT& constraint : constraintsInFormula) {

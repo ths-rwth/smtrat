@@ -333,7 +333,7 @@ namespace smtrat
 				{
 					carl::carlVariables variables;
 					for (const FormulaT& formula : LRAConflict)
-						formula.gatherVariables(variables);
+						carl::variables(formula, variables);
 					Conflict conflict;
 					for (const auto& separatorsEntry : mSeparators)
 					{

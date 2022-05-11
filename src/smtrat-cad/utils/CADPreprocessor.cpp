@@ -292,7 +292,7 @@ bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Var
     SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding necessary parts of model to conflict: " << conflict);
     carl::carlVariables vars;
     bool changed = false;
-    for (const auto& f: conflict) f.gatherVariables(vars);
+    for (const auto& f: conflict) carl::variables(f,vars);
     while (!vars.empty()) {
         carl::carlVariables newvars;
         for (auto v: vars) {
@@ -303,7 +303,7 @@ bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Var
             auto cit = conflict.emplace(it->second);
             changed = true;
             if (cit.second) {
-                cit.first->gatherVariables(newvars);
+                carl::variables(*cit.first, newvars);
                 SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
             }
         }

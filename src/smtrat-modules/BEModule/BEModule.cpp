@@ -108,7 +108,7 @@ namespace smtrat
 		}
 		FormulaT res = carl::substitute(f, repl);
 		carl::carlVariables remainingVars;
-		res.gatherVariables(remainingVars);
+		carl::variables(res,remainingVars);
 		FormulasT impl;
 		for (const auto& v: variables) {
 			if (remainingVars.has(v)) {

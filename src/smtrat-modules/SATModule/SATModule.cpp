@@ -286,7 +286,7 @@ namespace smtrat
                 mFormulaCNFInfosMap.erase( cnfInfoIter );
             }
             std::vector<FormulaT> constraints;
-            _subformula->formula().getConstraints( constraints );
+            carl::arithmetic_constraints(_subformula->formula(), constraints);
             for( const FormulaT& constraint : constraints )
             {
                 ConstraintLiteralsMap::iterator constraintLiteralPair = mConstraintLiteralMap.find( constraint );

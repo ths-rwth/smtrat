@@ -37,7 +37,7 @@ namespace smtrat
 	bool NewCADModule<Settings>::informCore( const FormulaT& _constraint )
 	{
 		mPolynomials.emplace_back(_constraint.constraint().lhs());
-		_constraint.gatherVariables(mVariables);
+		carl::variables(_constraint,mVariables);
 		return true; // This should be adapted according to your implementation.
 	}
 	
@@ -72,7 +72,7 @@ namespace smtrat
 		if( solverState() == SAT ) {
 			carl::carlVariables vars;
 			for (const auto& f: rReceivedFormula()) {
-				f.formula().gatherVariables(vars);
+				carl::variables(f.formula(),vars);
 			}
 			for (const auto var : vars) {
 				mModel.assign(var, mLastModel.at(var));

@@ -420,7 +420,7 @@ public:
 		const auto& f = mGetter.reabstractLiteral(literal);
 
 		carl::carlVariables vars;
-		f.gatherVariables(vars);
+		carl::variables(f,vars);
 		for (const auto& v : mBackend.assignedVariables())
 			vars.erase(v);
 		assert(vars.size() == 1);
@@ -494,7 +494,7 @@ public:
 	std::size_t computeTheoryLevel(const FormulaT& f) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		carl::carlVariables vars;
-		f.gatherVariables(vars);
+		carl::variables(f,vars);
 		if (vars.empty()) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
 			return 0;

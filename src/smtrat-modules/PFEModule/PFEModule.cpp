@@ -69,8 +69,7 @@ namespace smtrat
 			
 			if (formula.isFalse()) {
 				mInfeasibleSubsets.clear();
-				carl::carlVariables vars;
-				receivedFormula->formula().gatherVariables(vars);
+				carl::carlVariables vars = carl::variables(receivedFormula->formula());
 				FormulaSetT infeasibleSubset = varbounds.getOriginSetOfBounds(vars.as_set());
 				infeasibleSubset.insert(receivedFormula->formula());
 				mInfeasibleSubsets.push_back(std::move(infeasibleSubset));
@@ -80,8 +79,7 @@ namespace smtrat
 				if (formula == receivedFormula->formula()) {
 					addReceivedSubformulaToPassedFormula(receivedFormula);
 				} else {
-					carl::carlVariables vars;
-					receivedFormula->formula().gatherVariables(vars);
+					carl::carlVariables vars = carl::variables(receivedFormula->formula());
 					FormulasT origins = varbounds.getOriginsOfBounds(vars.as_set());
 					origins.push_back(receivedFormula->formula());
 					addSubformulaToPassedFormula(formula, std::make_shared<std::vector<FormulaT>>(std::move(origins)));

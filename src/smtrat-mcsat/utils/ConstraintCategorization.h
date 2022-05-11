@@ -38,7 +38,7 @@ namespace constraint_type {
 	ConstraintType categorize(const T& t, const Model& model, carl::Variable next) {
 		assert(model.find(next) == model.end());
 		carl::carlVariables vars;
-		t.gatherVariables(vars);
+		carl::variables(t,vars);
 		if (vars.empty()) return ConstraintType::Constant;
 		bool foundNext = false;
 		for (const auto& var: vars) {
@@ -61,7 +61,7 @@ namespace constraint_type {
 	bool isConstant(const T& t) {
 		// Avoid unnecessary overhead of categorize()
 		carl::carlVariables vars;
-		t.gatherVariables(vars);
+		carl::variables(t,vars);
 		return vars.empty();
 	}
 	
@@ -73,7 +73,7 @@ namespace constraint_type {
 	bool isAssigned(const T& t, const Model& model) {
 		// Avoid unnecessary overhead of categorize()
 		carl::carlVariables vars;
-		t.gatherVariables(vars);
+		carl::variables(t,vars);
 		for (const auto& var: vars) {
 			if (model.find(var) == model.end()) return false;
 		}

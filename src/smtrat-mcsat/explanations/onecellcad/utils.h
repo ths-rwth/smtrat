@@ -132,13 +132,13 @@ inline std::size_t getDegree(TagPoly p, carl::Variable v) {
  * - polyLevel(x*y+2) == 1 wrt. [y < x < z] because of x
  * - polyLevel(x*y+2) == 2 wrt. [x < z < y] because of y
  * Preconditions:
- * - 'poly.gatherVariables()' must be a subset of 'variableOrder'.
+ * - 'variables(poly)' must be a subset of 'variableOrder'.
  */
 inline std::optional<std::size_t> levelOf(
         const std::vector<carl::Variable>& variableOrder,
         const Poly& poly) {
     // precondition:
-    //assert(isSubset(asVector(poly.gatherVariables()), variableOrder));
+    //assert(isSubset(asVector(variables(poly)), variableOrder));
 
     // Algorithm:
     // Iterate through each variable inside 'variableOrder' in ascending order
