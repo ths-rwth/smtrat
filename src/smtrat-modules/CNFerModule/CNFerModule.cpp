@@ -7,7 +7,7 @@
 
 #include "CNFerModule.h"
 
-#include <carl-formula/formula/functions/to_cnf.h>
+#include <carl-formula/formula/functions/CNF.h>
 
 namespace smtrat
 {

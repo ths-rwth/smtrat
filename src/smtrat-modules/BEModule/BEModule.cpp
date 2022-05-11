@@ -56,14 +56,14 @@ namespace smtrat
 		if (formula.getType() != carl::FormulaType::OR && formula.getType() != carl::FormulaType::AND) return formula;
 		bool conjunction = formula.getType() == carl::FormulaType::AND;
 	
-		FormulaT::ConstraintBounds cb;
+		carl::ConstraintBounds<Poly> cb;
 		collectBounds(cb, formula, conjunction);
 		if (cb.empty()) return formula;
 		
 		SMTRAT_LOG_DEBUG("smtrat.be", "Extracted bounds " << cb);
 		if (conjunction) {
 			FormulasT f;
-			FormulaT::swapConstraintBounds(cb, f, conjunction);
+			swapConstraintBounds(cb, f, conjunction);
 			f.push_back(formula);
 			return FormulaT(carl::FormulaType::AND, std::move(f));
 		} else {
@@ -87,10 +87,10 @@ namespace smtrat
 	}
 	
 	template<typename Settings>
-	void BEModule<Settings>::collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const {
+	void BEModule<Settings>::collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const {
 		for (const auto& f: formula.subformulas()) {
 			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
-				FormulaT::addConstraintBound(cb, f, conjunction);
+				addConstraintBound(cb, f, conjunction);
 			}
 		}
 	}

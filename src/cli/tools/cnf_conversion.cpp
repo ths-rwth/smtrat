@@ -8,7 +8,7 @@
 #include "parser_smtlib_utils.h"
 #include "execute_smtlib.h"
 
-#include <carl-formula/formula/functions/to_cnf.h>
+#include <carl-formula/formula/functions/CNF.h>
 #include <carl-io/DIMACSExporter.h>
 #include <carl-io/SMTLIBStream.h>
 

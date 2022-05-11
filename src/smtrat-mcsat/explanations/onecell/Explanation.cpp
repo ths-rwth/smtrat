@@ -1,5 +1,6 @@
 #include "Explanation.h"
 #include <smtrat-cadcells/algorithms/onecell.h>
+#include <carl-formula/formula/functions/Negations.h>
 
 namespace smtrat::mcsat::onecell {
 
@@ -44,7 +45,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result->second << " of constraints " << result->first << " wrt " << vars << " and " << ass);
         FormulasT expl;
         for (const auto& f : result->first) expl.push_back(f.negated());
-        expl.push_back(result->second.negated().resolveNegation());
+        expl.push_back(carl::resolve_negation(result->second.negated()));
         return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(expl)));
     } 
 }
