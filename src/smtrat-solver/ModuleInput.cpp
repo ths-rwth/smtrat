@@ -7,7 +7,7 @@
 
 #include "ModuleInput.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 // Main smtrat namespace.
 namespace smtrat
@@ -37,8 +37,8 @@ namespace smtrat
         {
 			auto res = carl::model::substitute(fwo.formula(), _assignment);
 			SMTRAT_LOG_DEBUG("smtrat.module", "Checking whether model satisfies " << fwo.formula() << " -> " << res);
-			if (res.isFalse()) return 0;
-			if (!res.isTrue()) result = 2;
+			if (res.is_false()) return 0;
+			if (!res.is_true()) result = 2;
         }
         return result;
     }
@@ -111,7 +111,7 @@ namespace smtrat
         auto iter = origs.begin();
         while( iter != origs.end() )
         {
-            if( *iter == _origin || (iter->getType() == carl::FormulaType::AND && iter->contains( _origin )) )
+            if( *iter == _origin || (iter->type() == carl::FormulaType::AND && iter->contains( _origin )) )
             {
                 if (iter != --origs.end())
                 {
@@ -188,7 +188,7 @@ namespace smtrat
 
     std::pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        if( _mightBeConjunction && _formula.getType() == carl::FormulaType::AND )
+        if( _mightBeConjunction && _formula.type() == carl::FormulaType::AND )
         {
             std::pair<iterator,bool> res = std::pair<iterator,bool>(end(), false);
             auto formulaIter = _formula.subformulas().begin();

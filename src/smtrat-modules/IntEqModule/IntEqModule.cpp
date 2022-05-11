@@ -8,7 +8,7 @@
 
 #include "IntEqModule.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 //#define DEBUG_IntEqModule
 
@@ -37,14 +37,14 @@ namespace smtrat
         #ifdef DEBUG_IntEqModule
         std::cout << "Assert: " << _subformula->formula() << std::endl;
         #endif
-        if( _subformula->formula().isFalse() )
+        if( _subformula->formula().is_false() )
         {
             FormulaSetT infSubSet;
             infSubSet.insert( _subformula->formula() );
             mInfeasibleSubsets.push_back( std::move( infSubSet ) );
             return false;            
         } 
-        else if( _subformula->formula().isTrue() )
+        else if( _subformula->formula().is_true() )
         {
             return true;
         }
@@ -77,7 +77,7 @@ namespace smtrat
                 std::cout << "After temporary substitution: " << new_poly << std::endl;
                 #endif
                 FormulaT temp_eq( ( ConstraintT( new_poly, carl::Relation::EQ ) ) );
-                if( !temp_eq.isTrue() && !temp_eq.isFalse() )  
+                if( !temp_eq.is_true() && !temp_eq.is_false() )  
                 {
                     if( *iter_subs != mSubstitutions.back() )
                     {
@@ -125,7 +125,7 @@ namespace smtrat
             #endif
             FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );
             // Return UNSAT if the newly obtained constraint is unsatisfiable
-            if( newEq.isFalse() )
+            if( newEq.is_false() )
             {
                 #ifdef DEBUG_IntEqModule
                 std::cout << "NewEq is invalid" << std::endl;
@@ -136,7 +136,7 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( infSubSet );
                 return false;                
             }
-            if( newEq.isTrue() )
+            if( newEq.is_true() )
             {
                 return true;
             }
@@ -370,7 +370,7 @@ namespace smtrat
     template<class Settings>
     Answer IntEqModule<Settings>::checkCore()
     {
-        if( !rReceivedFormula().isConstraintConjunction() )
+        if( !rReceivedFormula().is_constraint_conjunction() )
         {
             return UNKNOWN;
         }
@@ -392,7 +392,7 @@ namespace smtrat
              * the smallest absolute value
              */
             const ConstraintT& curr_constr = mProc_Constraints.begin()->first.constraint();
-            if( mProc_Constraints.begin()->first.isFalse() )
+            if( mProc_Constraints.begin()->first.is_false() )
             {
                 size_t i = determine_smallest_origin( *( mProc_Constraints.begin()->second ) );
                 FormulaSetT infSubSet;
@@ -469,7 +469,7 @@ namespace smtrat
                         if( (*iter_coeff).getSingleVariable() != corr_var )
                         {
                             carl::Variable var = (*iter_coeff).getSingleVariable();
-                            *temp += carl::makePolynomial<Poly>(var)*Poly(Rational(-1)*sign*(Rational)(*iter_coeff).coeff());
+                            *temp += Poly(var)*Poly(Rational(-1)*sign*(Rational)(*iter_coeff).coeff());
                         }                          
                     }
                     else
@@ -497,11 +497,11 @@ namespace smtrat
                             carl::Variable var = (*iter_coeff).getSingleVariable();        
                             if( positive )
                             {
-                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
+                                *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*Poly(var);
                             }
                             else
                             {
-                                *temp -= sign*Poly( (Rational)(-1)*Rational( carl::floor( carl::div( (Rational)(-1)*coeff, smallest_abs_value ) ) ) )*carl::makePolynomial<Poly>(var);
+                                *temp -= sign*Poly( (Rational)(-1)*Rational( carl::floor( carl::div( (Rational)(-1)*coeff, smallest_abs_value ) ) ) )*Poly(var);
                             }    
                         }   
                     }
@@ -520,7 +520,7 @@ namespace smtrat
                 }
                 carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT ); 
                 mAuxiliaries.insert( fresh_var );
-                *temp += carl::makePolynomial<Poly>(fresh_var);
+                *temp += Poly(fresh_var);
             }
             // Substitute the reformulation of the found variable for all occurences
             // of this variable in equations of mProc_Constraints
@@ -551,7 +551,7 @@ namespace smtrat
                 }    
                 FormulaT newEq( ConstraintT( new_poly, carl::Relation::EQ ) );          
                 // Check whether newEq is unsatisfiable
-                if( newEq.isFalse() )
+                if( newEq.is_false() )
                 {
                     #ifdef DEBUG_IntEqModule
                     std::cout << "Constraint is invalid!" << std::endl;
@@ -617,7 +617,7 @@ namespace smtrat
                 //cout << "After substitution: " << new_poly << std::endl;
                 #endif 
                 FormulaT formula_passed( ConstraintT( new_poly, (*iter_formula).formula().constraint().relation() ) );                
-                if( formula_passed.isFalse() )
+                if( formula_passed.is_false() )
                 {
                     #ifdef DEBUG_IntEqModule
                     std::cout << "The obtained formula is unsatisfiable" << std::endl;
@@ -734,7 +734,7 @@ namespace smtrat
         auto iter = rReceivedFormula().begin();
         while( iter != rReceivedFormula().end() )
         {
-            if( iter->formula().constraint().satisfiedBy( temp_map ) != 1 )
+            if( satisfiedBy( iter->formula().constraint(),temp_map ) != 1 )
             {
                 return false;
                 #ifdef DEBUG_IntEqModule

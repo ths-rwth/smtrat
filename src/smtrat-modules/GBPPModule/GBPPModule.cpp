@@ -42,7 +42,7 @@ namespace smtrat
 		
 		// Extract top-level Equalities
 		for (const auto& f: rReceivedFormula()) {
-			if (f.formula().getType() == carl::FormulaType::CONSTRAINT) {
+			if (f.formula().type() == carl::FormulaType::CONSTRAINT) {
 				if (f.formula().constraint().relation() == carl::Relation::EQ) {
 					SMTRAT_LOG_DEBUG("smtrat.gbpp", "Found equality " << f.formula().constraint());
 					mEqualities.emplace(f.formula().constraint());
@@ -60,15 +60,14 @@ namespace smtrat
 		SMTRAT_LOG_DEBUG("smtrat.gbpp", "Constructed Gröbner Basis:" << std::endl << mBasis.getIdeal());
 		
 		// Simplify all inequalities w.r.t. GBasis and forward to backend
-		carl::FormulaVisitor<FormulaT> visitor;
 		for (const auto& f: rReceivedFormula()) {
 			if (mEqualities.find(f.formula()) != mEqualities.end()) continue;
-			auto res = visitor.visitResult(f.formula(), simplifyInequalityFunction);
+			auto res = carl::visit_result(f.formula(), simplifyInequalityFunction);
 			
 			if (res != f.formula()) {
 				SMTRAT_LOG_INFO("smtrat.gbpp", "Reduced " << f.formula() << " to " << res);
 			}
-			if (!res.isTrue()) {
+			if (!res.is_true()) {
 				addSubformulaToPassedFormula(res, f.formula());
 			}
 		}
@@ -97,7 +96,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT GBPPModule<Settings>::simplifyInequality(const FormulaT& formula) const {
-		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		if (formula.type() != carl::FormulaType::CONSTRAINT) return formula;
 		// This case should be catched by ESModule...
 		if (mEqualities.find(formula) != mEqualities.end()) return formula;
 		const auto& c = formula.constraint();

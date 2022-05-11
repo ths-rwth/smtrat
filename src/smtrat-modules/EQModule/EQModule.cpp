@@ -6,7 +6,7 @@
  * Created on 2014-10-19.
  */
 
-#include <carl-model/uninterpreted/SortValueManager.h>
+#include <carl-formula/uninterpreted/SortValueManager.h>
 
 #include <iostream>
 #include <iterator>
@@ -38,8 +38,8 @@ namespace smtrat {
 	template<class Settings>
 		bool EQModule<Settings>::informCore(const FormulaT& _constraint)
 	{
-		if(_constraint.getType() == carl::UEQ) {
-			const UEquality &ueq = _constraint.uequality();
+		if(_constraint.type() == carl::UEQ) {
+			const UEquality &ueq = _constraint.u_equality();
 			const term_type &lhs = ueq.lhs();
 			const term_type &rhs = ueq.rhs();
 			
@@ -179,13 +179,13 @@ namespace smtrat {
 			std::cout << "assertSubformula: " << _subformula->formula() << std::endl;
 		}
 
-		if(_subformula->formula().getType() != carl::UEQ) {
+		if(_subformula->formula().type() != carl::UEQ) {
 			++mCountNonUEQFormulas;
 			return true;
 		}
 		
 		const FormulaT& formula = _subformula->formula();
-		const UEquality &ueq = formula.uequality();
+		const UEquality &ueq = formula.u_equality();
 		const term_type &lhs = ueq.lhs();
 		const term_type &rhs = ueq.rhs();
 
@@ -366,13 +366,13 @@ namespace smtrat {
 			std::cout << "removeSubformula: " << _subformula->formula() << std::endl;
 		}
 
-		if(_subformula->formula().getType() != carl::UEQ) {
+		if(_subformula->formula().type() != carl::UEQ) {
 			--mCountNonUEQFormulas;
 			return;
 		}
 		
 		const FormulaT& formula = _subformula->formula();
-		const UEquality &ueq = formula.uequality();
+		const UEquality &ueq = formula.u_equality();
 		const term_type &lhs = ueq.lhs();
 		const term_type &rhs = ueq.rhs();
 		
@@ -1485,7 +1485,7 @@ namespace smtrat {
 	{
 		for(auto entry = mAllNotAssertedEqualities.begin(); entry != mAllNotAssertedEqualities.end(); ) {
 			const FormulaT &formula = entry->mFormula;
-			const UEquality &ueq = formula.uequality();
+			const UEquality &ueq = formula.u_equality();
 			
 			g_iterator itrLhs = entry->mLhs;
 			g_iterator itrRhs = entry->mRhs;

@@ -44,7 +44,7 @@ namespace smtrat
 			}
 			void pushConstraintsToReplacer() {
 				for (const auto& f: rReceivedFormula()) {
-					assert(f.formula().getType() == carl::FormulaType::CONSTRAINT);
+					assert(f.formula().type() == carl::FormulaType::CONSTRAINT);
 					addConstraint(f.formula().constraint());
 				}
 			}

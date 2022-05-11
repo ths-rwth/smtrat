@@ -2,7 +2,7 @@
 #include "ParserState.h"
 #include "../ParserSettings.h"
 
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl-formula/uninterpreted/UFInstanceManager.h>
 
 namespace smtrat {
 namespace parser {
@@ -108,7 +108,7 @@ namespace uninterpreted {
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
 				carl::Variable tmp = carl::freshRealVariable();
 				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
-				state->global_formulas.emplace_back(FormulaT(*p - carl::makePolynomial<Poly>(tmp), carl::Relation::EQ));
+				state->global_formulas.emplace_back(FormulaT(*p - Poly(tmp), carl::Relation::EQ));
 			} else if (const carl::UTerm* ut = boost::get<carl::UTerm>(&v)) {
 				if (!settings_parser().disable_uf_flattening && ut->isUFInstance()) { // do flattening
 					carl::Variable tmp = carl::freshUninterpretedVariable();

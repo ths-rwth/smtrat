@@ -17,10 +17,10 @@ namespace smtrat::cadcells::helper {
  * - level(x*y+2) == 2 wrt. [y < x < z] because of x
  * - level(x*y+2) == 3 wrt. [x < z < y] because of y
  * Preconditions:
- * - 'poly.gatherVariables()' must be a subset of 'order'.
+ * - 'variables(poly)' must be a subset of 'order'.
  */
-size_t level_of(const VariableOrdering& order, const Poly& poly) {
-    // assert(isSubset(asVector(poly.gatherVariables()), order));
+static size_t level_of(const VariableOrdering& order, const Poly& poly) {
+    // assert(isSubset(asVector(variables(poly)), order));
     auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {
         // polynomial is constant
@@ -34,8 +34,8 @@ size_t level_of(const VariableOrdering& order, const Poly& poly) {
     return 0;
 }
 
-carl::Variable main_var(const VariableOrdering& order, const Poly& poly) {
-    // assert(isSubset(asVector(poly.gatherVariables()), order));
+static carl::Variable main_var(const VariableOrdering& order, const Poly& poly) {
+    // assert(isSubset(asVector(variables(poly)), order));
     auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {
         // polynomial is constant

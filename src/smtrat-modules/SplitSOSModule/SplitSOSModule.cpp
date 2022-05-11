@@ -14,8 +14,7 @@ namespace smtrat
 {
     template<class Settings>
     SplitSOSModule<Settings>::SplitSOSModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _formula, _conditionals, _manager ),
-        mVisitor()
+        PModule( _formula, _conditionals, _manager )
     {
         splitSOSFunction = std::bind(&SplitSOSModule<Settings>::splitSOS, this, std::placeholders::_1);
     }
@@ -36,11 +35,11 @@ namespace smtrat
         while( receivedFormula != rReceivedFormula().end() )
         {
             FormulaT formula = receivedFormula->formula();
-            if( receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
+            if( receivedFormula->formula().property_holds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL) )
             {
-                formula = mVisitor.visitResult( receivedFormula->formula(), splitSOSFunction );
+                formula = carl::visit_result( receivedFormula->formula(), splitSOSFunction );
             }
-            if( formula.isFalse() )
+            if( formula.is_false() )
             {
                 mInfeasibleSubsets.clear();
                 FormulaSetT infeasibleSubset;
@@ -48,7 +47,7 @@ namespace smtrat
                 mInfeasibleSubsets.push_back( std::move(infeasibleSubset) );
                 return UNSAT;
             }
-            if( !formula.isTrue() )
+            if( !formula.is_true() )
             {
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             }
@@ -72,7 +71,7 @@ namespace smtrat
 	template<typename Settings>
     FormulaT SplitSOSModule<Settings>::splitSOS( const FormulaT& formula )
     {
-		if( formula.getType() == carl::FormulaType::CONSTRAINT )
+		if( formula.type() == carl::FormulaType::CONSTRAINT )
         {
             std::vector<std::pair<Rational,Poly>> sosDec;
             bool lcoeffNeg = carl::isNegative( formula.constraint().lhs().lcoeff() );

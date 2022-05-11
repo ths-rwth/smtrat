@@ -19,8 +19,7 @@
 #include <vector>
 
 #include <carl/ran/ran.h>
-#include <carl/ran/RealAlgebraicPoint.h>
-#include <carl/ran/interval/ran_interval_extra.h>
+#include "RealAlgebraicPoint.h"
 
 #include "OCStatistics.h"
 #include "Assertables.h"
@@ -133,13 +132,13 @@ inline std::size_t getDegree(TagPoly p, carl::Variable v) {
  * - polyLevel(x*y+2) == 1 wrt. [y < x < z] because of x
  * - polyLevel(x*y+2) == 2 wrt. [x < z < y] because of y
  * Preconditions:
- * - 'poly.gatherVariables()' must be a subset of 'variableOrder'.
+ * - 'variables(poly)' must be a subset of 'variableOrder'.
  */
 inline std::optional<std::size_t> levelOf(
         const std::vector<carl::Variable>& variableOrder,
         const Poly& poly) {
     // precondition:
-    //assert(isSubset(asVector(poly.gatherVariables()), variableOrder));
+    //assert(isSubset(asVector(variables(poly)), variableOrder));
 
     // Algorithm:
     // Iterate through each variable inside 'variableOrder' in ascending order
@@ -335,7 +334,7 @@ inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std:
                              rootIdx);
 }
 
-inline carl::RealAlgebraicPoint<smtrat::Rational> asRANPoint(
+inline RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         const mcsat::Bookkeeping& data) {
     std::vector<carl::RealAlgebraicNumber<smtrat::Rational>> point;
     for (const auto variable : data.assignedVariables()) {
@@ -343,7 +342,7 @@ inline carl::RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         assert(modelValue.isRational() || modelValue.isRAN());
         modelValue.isRational() ? point.emplace_back(modelValue.asRational()) : point.emplace_back(modelValue.asRAN());
     }
-    return carl::RealAlgebraicPoint<smtrat::Rational>(std::move(point));
+    return RealAlgebraicPoint<smtrat::Rational>(std::move(point));
 }
 
 
@@ -455,10 +454,10 @@ public:
      * Variables can also be indexed by level. Polys with mathematical level 1 contain the variable in variableOrder[0]
      */
     const std::vector<carl::Variable>& variableOrder;
-    const carl::RealAlgebraicPoint<Rational>& point;
+    const RealAlgebraicPoint<Rational>& point;
 
 
-    OneCellCAD(const std::vector<carl::Variable>& variableOrder, const carl::RealAlgebraicPoint<Rational>& point)
+    OneCellCAD(const std::vector<carl::Variable>& variableOrder, const RealAlgebraicPoint<Rational>& point)
             : variableOrder(variableOrder),
               point(point) {
         // precondition:
@@ -507,9 +506,7 @@ public:
 
         const carl::Variable mainVariable = variableOrder[polyLevel];
 
-        return carl::ran::interval::vanishes(
-                carl::to_univariate_polynomial(poly, mainVariable),
-                prefixPointToStdMap(polyLevel));
+        return carl::ran::real_roots(carl::to_univariate_polynomial(poly, mainVariable), prefixPointToStdMap(polyLevel)).is_nullified();
     }
 
     bool isPointRootOfPoly(
@@ -519,7 +516,7 @@ public:
 
         //No fail-check here
         auto res = carl::evaluate(
-                ConstraintT(poly, carl::Relation::EQ),
+                carl::BasicConstraint<Poly>(poly, carl::Relation::EQ),
                 prefixPointToStdMap(componentCount));
         assert(!indeterminate(res));
         return (bool) res;

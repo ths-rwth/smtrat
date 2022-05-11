@@ -38,7 +38,7 @@ using UniPoly = carl::UnivariatePolynomial<smtrat::Rational>;
 using MultiPoly = carl::MultivariatePolynomial<smtrat::Rational>;
 using MultiCoeffUniPoly = carl::UnivariatePolynomial<MultiPoly>;
 using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
-using RANPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
+using RANPoint = RealAlgebraicPoint<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
 /**
@@ -129,11 +129,11 @@ OpenCADCell createFullspaceCoveringCell(size_t level) {
    * - levelOf(x*y+2) == 2 wrt. [y < x < z] because of x
    * - levelOf(x*y+2) == 3 wrt. [x < z < y] because of y
    * Preconditions:
-   * - 'poly.gatherVariables()' must be a subset of 'variableOrder'.
+   * - 'variables(poly)' must be a subset of 'variableOrder'.
    */
 size_t levelOf(const MultiPoly& poly,
 			   const std::vector<carl::Variable>& variableOrder) {
-	// 'gatherVariables()' collects only vars with positive degree
+	// 'variables()' collects only vars with positive degree
 	std::set<carl::Variable> polyVarSet = carl::variables(poly).as_set();
 	// Algorithm:
 	// Iterate through each variable inside 'variableOrder' in ascending order
@@ -194,7 +194,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 		return std::optional<OpenCADCell>(cell);
 
 	auto result = carl::evaluate(
-			ConstraintT(poly, carl::Relation::EQ),
+			carl::BasicConstraint<Poly>(poly, carl::Relation::EQ),
 			toStdMap(point, level, variableOrder));
 	assert(result);
 	if (*result) {

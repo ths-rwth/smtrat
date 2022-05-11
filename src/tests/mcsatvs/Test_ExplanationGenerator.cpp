@@ -312,7 +312,7 @@ BOOST_AUTO_TEST_CASE(Test_substitute_constraint_simple) {
 	FormulaT result;
 	bool status = substitute(constraint, substitution, result);
 	BOOST_CHECK(status);
-	BOOST_CHECK(result.getType() == carl::FormulaType::FALSE);
+	BOOST_CHECK(result.type() == carl::FormulaType::FALSE);
 }
 BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
 	carl::Variable x = carl::freshRealVariable("x");
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
 	FormulaT result;
 	bool status = substitute(varcomp, substitution, Model(), result);
 	BOOST_CHECK(status);
-	BOOST_CHECK(result.variableComparison() == varcomp);
+	BOOST_CHECK(result.variable_comparison() == varcomp);
 }
 BOOST_AUTO_TEST_CASE(Test_substitute_varComp_MVRoot) {
 }

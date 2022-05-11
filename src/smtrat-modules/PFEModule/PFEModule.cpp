@@ -14,7 +14,6 @@ namespace smtrat
 	template<class Settings>
 	PFEModule<Settings>::PFEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
 		PModule( _formula, _conditionals, _manager, Settings::moduleName ),
-		visitor(),
 		varbounds()
 	{   
 		removeFactorsFunction = std::bind(&PFEModule<Settings>::removeFactors, this, std::placeholders::_1);
@@ -54,35 +53,33 @@ namespace smtrat
 				++receivedFormula;
 				continue;
 			}
-			if (receivedFormula->formula().isBound()) {
+			if (receivedFormula->formula().is_bound()) {
 				addReceivedSubformulaToPassedFormula(receivedFormula);
 				++receivedFormula;
 				continue;
 			}
-			FormulaT formula = visitor.visitResult(receivedFormula->formula(), removeFactorsFunction);
-			formula = visitor.visitResult(formula, removeSquaresFunction);
-			//formula = visitor.visitResult(formula, implyDefinitenessFunction);
+			FormulaT formula = carl::visit_result(receivedFormula->formula(), removeFactorsFunction);
+			formula = carl::visit_result(formula, removeSquaresFunction);
+			//formula = carl::visit(formula, implyDefinitenessFunction);
 			if (receivedFormula->formula() != formula) {
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "Simplified " << receivedFormula->formula());
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "to " << formula);
 				SMTRAT_LOG_DEBUG("smtrat.pfe", "due to bounds " << varbounds.getEvalIntervalMap());
 			}
 			
-			if (formula.isFalse()) {
+			if (formula.is_false()) {
 				mInfeasibleSubsets.clear();
-				carl::carlVariables vars;
-				receivedFormula->formula().gatherVariables(vars);
+				carl::carlVariables vars = carl::variables(receivedFormula->formula());
 				FormulaSetT infeasibleSubset = varbounds.getOriginSetOfBounds(vars.as_set());
 				infeasibleSubset.insert(receivedFormula->formula());
 				mInfeasibleSubsets.push_back(std::move(infeasibleSubset));
 				return UNSAT;
 			}
-			if (!formula.isTrue()) {
+			if (!formula.is_true()) {
 				if (formula == receivedFormula->formula()) {
 					addReceivedSubformulaToPassedFormula(receivedFormula);
 				} else {
-					carl::carlVariables vars;
-					receivedFormula->formula().gatherVariables(vars);
+					carl::carlVariables vars = carl::variables(receivedFormula->formula());
 					FormulasT origins = varbounds.getOriginsOfBounds(vars.as_set());
 					origins.push_back(receivedFormula->formula());
 					addSubformulaToPassedFormula(formula, std::make_shared<std::vector<FormulaT>>(std::move(origins)));
@@ -109,14 +106,14 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::removeFactors(const FormulaT& formula){
-		if(formula.getType() == carl::FormulaType::CONSTRAINT) {
-			const auto& factors = formula.constraint().factorization();
+		if(formula.type() == carl::FormulaType::CONSTRAINT) {
+			const auto& factors = formula.constraint().lhs_factorization();
 			SMTRAT_LOG_TRACE("smtrat.pfe", "Factorization of " << formula << " = " << factors);
 			std::vector<Factorization::const_iterator> Pq;
 			std::vector<Factorization::const_iterator> Pr;
 			carl::Relation qrel = carl::Relation::GREATER;
 			for (auto it = factors.begin(); it != factors.end(); it++) {
-				auto i = carl::IntervalEvaluation::evaluate(it->first, completeBounds(it->first));
+				auto i = carl::evaluate(it->first, completeBounds(it->first));
 				SMTRAT_LOG_TRACE("smtrat.pfe", "Considering factor " << it->first << " with bounds " << i);
 				if (i.isPositive()) {
 					qrel = combine(qrel, carl::Relation::GREATER, it->second);
@@ -182,7 +179,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::removeSquaresFromStrict(const FormulaT& formula) {
-		const auto& factors = formula.constraint().factorization();
+		const auto& factors = formula.constraint().lhs_factorization();
 		std::vector<Factorization::const_iterator> Pq;
 		std::vector<Factorization::const_iterator> Pr;
 		
@@ -209,7 +206,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::removeSquares(const FormulaT& formula) {
-		if(formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		if(formula.type() != carl::FormulaType::CONSTRAINT) return formula;
 		
 		carl::Relation rel = formula.constraint().relation();
 		
@@ -232,7 +229,7 @@ namespace smtrat
 	FormulaT PFEModule<Settings>::implyDefinitenessFromStrict(const FormulaT& formula) {
 		FormulasT res;
 		res.emplace_back(formula);
-		for (const auto& f: formula.constraint().factorization()) {
+		for (const auto& f: formula.constraint().lhs_factorization()) {
 			res.emplace_back(ConstraintT(f.first, carl::Relation::NEQ));
 		}
 		return FormulaT(carl::FormulaType::AND, std::move(res));
@@ -240,7 +237,7 @@ namespace smtrat
 	
 	template<typename Settings>
 	FormulaT PFEModule<Settings>::implyDefiniteness(const FormulaT& formula) {
-		if(formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		if(formula.type() != carl::FormulaType::CONSTRAINT) return formula;
 		
 		carl::Relation rel = formula.constraint().relation();
 		

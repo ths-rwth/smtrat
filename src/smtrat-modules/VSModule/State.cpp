@@ -14,6 +14,7 @@
 #include <numeric>
 #include <carl/core/polynomialfunctions/RootBounds.h>
 #include <carl/core/polynomialfunctions/RootCounting.h>
+#include <carl/constraint/IntervalEvaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -133,7 +134,7 @@ namespace vs
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
                 mpVariableBounds->removeBound( pCond->constraint(), pCond );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -152,7 +153,7 @@ namespace vs
                     {
                         const Condition* rpCond = mpSubstitutionResults->back().back().first.back();
                         mpSubstitutionResults->back().back().first.pop_back();
-                        mpConditionIdAllocator->free( rpCond->getId() );
+                        mpConditionIdAllocator->free( rpCond->id() );
                         delete rpCond;
                         rpCond = NULL;
                     }
@@ -275,7 +276,7 @@ namespace vs
     bool State::occursInEquation( const carl::Variable& _variable ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
+            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().variables().has( _variable ) )
                 return true;
         return false;
     }
@@ -463,7 +464,7 @@ namespace vs
                             {
                                 const Condition* rpCond = condConjunction->first.back();
                                 condConjunction->first.pop_back();
-                                mpConditionIdAllocator->free( rpCond->getId() );
+                                mpConditionIdAllocator->free( rpCond->id() );
                                 delete rpCond;
                                 rpCond = NULL;
                             }
@@ -501,7 +502,7 @@ namespace vs
                             {
                                 const Condition* rpCond = subResult->back().first.back();
                                 subResult->back().first.pop_back();
-                                mpConditionIdAllocator->free( rpCond->getId() );
+                                mpConditionIdAllocator->free( rpCond->id() );
                                 delete rpCond;
                                 rpCond = NULL;
                             }
@@ -590,10 +591,10 @@ namespace vs
             for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
             {
                 const smtrat::ConstraintT& constr = (*iter)->constraint();
-                if( !constr.isBound() )
+                if( !carl::is_bound(constr) )
                 {
                     carl::Relation stricterRelation = constr.relation();
-                    switch( constr.consistentWith( varIntervals, stricterRelation ) )
+                    switch( consistentWith(constr.constr(), varIntervals, stricterRelation ) )
                     {
                         case 0:
                         {
@@ -795,7 +796,7 @@ namespace vs
                         redundantConditionSet.erase( iter );
                         const Condition* toDel = *cond;
                         cond = _conditionVectorToSimplify.erase( cond );
-                        mpConditionIdAllocator->free( toDel->getId() );
+                        mpConditionIdAllocator->free( toDel->id() );
                         delete toDel;
                         toDel = NULL;
                     }
@@ -1130,7 +1131,7 @@ namespace vs
                             (**cond).pOriginalConditions()->insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
                         const Condition* pCond = *newCond;
                         newCond = newCombination.erase( newCond );
-                        mpConditionIdAllocator->free( pCond->getId() );
+                        mpConditionIdAllocator->free( pCond->id() );
                         delete pCond;
                         pCond = NULL;
                         condOccursInNewConds = true;
@@ -1161,7 +1162,7 @@ namespace vs
             {
                 const Condition* rpCond = newCombination.back();
                 newCombination.pop_back();
-                mpConditionIdAllocator->free( rpCond->getId() );
+                mpConditionIdAllocator->free( rpCond->id() );
                 delete rpCond; // TODO: this has to be done maybe in some situations or somewhere else
                 rpCond = NULL;
             }
@@ -1182,7 +1183,7 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() );//  || (**cond).constraint().isUpperBound();
+            (**cond).rFlag() = !(**cond).constraint().variables().has( index() );//  || (**cond).constraint().isUpperBound();
         }
     }
 
@@ -1557,7 +1558,7 @@ namespace vs
                                     (*condB)->rRecentlyAdded() = true;
                                     recentlyAddedConditionLeft = true;
                                     if( index() != carl::Variable::NO_VARIABLE )
-                                        (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                        (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                                 }
                             }
                             delete changedVar;
@@ -1595,7 +1596,7 @@ namespace vs
         {
             const Condition* pCond = *deletedConditions.begin();
             deletedConditions.erase( deletedConditions.begin() );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -1638,7 +1639,7 @@ namespace vs
                                 (*condB)->rRecentlyAdded() = true;
                                 recentlyAddedConditionLeft = true;
                                 if( index() != carl::Variable::NO_VARIABLE )
-                                    (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                    (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                             }
                         }
                         delete changedVar;
@@ -1668,7 +1669,7 @@ namespace vs
         {
             const Condition* condToDel = condsToDelete.back();
             condsToDelete.pop_back();
-            mpConditionIdAllocator->free( condToDel->getId() );
+            mpConditionIdAllocator->free( condToDel->id() );
             delete condToDel;
             condToDel = NULL;
         }
@@ -1882,7 +1883,7 @@ namespace vs
                             const Condition* rpCond = *cond;
                             cond             = condConj->first.erase( cond );
                             condConj->second = false;
-                            mpConditionIdAllocator->free( rpCond->getId() );
+                            mpConditionIdAllocator->free( rpCond->id() );
                             delete rpCond;
                             rpCond = NULL;
                             rSubResultsSimplified() = false;
@@ -2119,7 +2120,7 @@ namespace vs
                     while( oCond != (**cond).originalConditions().end() )
                     {
                         assert( father().index() != carl::Variable::NO_VARIABLE );
-                        if( (**oCond).constraint().hasVariable( father().index() ) )
+                        if( (**oCond).constraint().variables().has( father().index() ) )
                             coverSetOCondsContainIndexOfFather = true;
                         coverSetOConds.insert( *oCond );
                         oCond++;
@@ -2172,7 +2173,7 @@ namespace vs
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
                 mpVariableBounds->removeBound( pCond->constraint(), pCond );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -2349,11 +2350,11 @@ namespace vs
         else
         {
             smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
-            smtrat::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
-            smtrat::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
-            smtrat::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
+            smtrat::DoubleInterval solutionSpaceConst = carl::evaluate( substitution().term().constantPart(), intervals );
+            smtrat::DoubleInterval solutionSpaceFactor = carl::evaluate( substitution().term().factor(), intervals );
+            smtrat::DoubleInterval solutionSpaceRadicand = carl::evaluate( substitution().term().radicand(), intervals );
             smtrat::DoubleInterval solutionSpaceSqrt = carl::sqrt(solutionSpaceRadicand);
-            smtrat::DoubleInterval solutionSpaceDenom = carl::IntervalEvaluation::evaluate( substitution().term().denominator(), intervals );
+            smtrat::DoubleInterval solutionSpaceDenom = carl::evaluate( substitution().term().denominator(), intervals );
             smtrat::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
@@ -2449,7 +2450,7 @@ namespace vs
             if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
                 indexDomain->second.setLowerBoundType( carl::BoundType::WEAK );
         }
-        smtrat::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
+        smtrat::DoubleInterval solutionSpace = carl::evaluate( cons.lhs(), intervals );
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK

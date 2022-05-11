@@ -21,7 +21,6 @@ namespace smtrat
         private:
             // Members.
             ///
-			carl::FormulaVisitor<FormulaT> mVisitor;
 
         public:
 			typedef Settings SettingsType;

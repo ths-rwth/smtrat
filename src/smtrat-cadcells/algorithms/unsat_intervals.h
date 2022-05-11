@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include "../helper.h"
 
 namespace smtrat::cadcells::algorithms {
 
@@ -25,7 +26,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
     if (roots.empty()) {
         tmp_sample.insert_or_assign(current_var, RAN(0));
-        if (!carl::evaluate(c, tmp_sample)) {
+        if (!carl::evaluate(c.constr(), tmp_sample)) {
             results.emplace_back(datastructures::make_sampled_derivation<typename operators::PropertiesSet<op>::type>(deriv,RAN(0)));
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
             assert(results.back()->cell().lower_unbounded());
@@ -39,12 +40,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
                 assert(results.back()->cell().is_section());
             }
         }
-        // TODO unify neighbouring intervals whenever the poly does not change its sign at a zero
 
         {
             auto current_sample = RAN(carl::sample_below(roots.begin()->first));
             tmp_sample.insert_or_assign(current_var, current_sample);
-            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
+            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c.constr(), tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
@@ -55,7 +55,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         for (auto root = roots.begin(); root != std::prev(roots.end()); root++) {
             auto current_sample = carl::sample_between(root->first, std::next(root)->first);
             tmp_sample.insert_or_assign(current_var, current_sample);
-            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
+            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c.constr(), tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
@@ -67,7 +67,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         {
             auto current_sample = RAN(carl::sample_above((--roots.end())->first));
             tmp_sample.insert_or_assign(current_var, current_sample);
-            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
+            if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c.constr(), tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
@@ -94,20 +94,20 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto value_result = [&]() -> std::variant<std::pair<datastructures::IndexedRoot, RAN>, datastructures::PolyRef> {
         if (std::holds_alternative<RAN>(c.value())) {
             RAN root = std::get<RAN>(c.value());
-            auto p = c.definingPolynomial();
+            auto p = c.defining_polynomial();
             auto poly = proj.polys()(p);
             auto poly_roots = proj.real_roots(sample, poly); // TODO sample is irrelevant here, but needed for the correct level...
             size_t index = (size_t)std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
             datastructures::IndexedRoot iroot(poly, index);
             return std::make_pair(iroot, root);
         } else {
-            auto eval_res = std::get<MultivariateRootT>(c.value()).evaluate(sample);
+            auto eval_res = carl::evaluate(std::get<MultivariateRootT>(c.value()), sample);
             if (!eval_res) {
-                auto p = c.definingPolynomial();
+                auto p = c.defining_polynomial();
                 return proj.polys()(p);
             } else {
                 RAN root = *eval_res;
-                auto p = c.definingPolynomial();
+                auto p = c.defining_polynomial();
                 datastructures::IndexedRoot iroot(proj.polys()(p), std::get<MultivariateRootT>(c.value()).k());
                 return std::make_pair(iroot, root);
             }
@@ -169,10 +169,10 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
 template <cadcells::operators::op op>
 std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const FormulaT& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
-    if (c.getType() == carl::FormulaType::CONSTRAINT) {
+    if (c.type() == carl::FormulaType::CONSTRAINT) {
         return get_unsat_intervals<op>(c.constraint(), proj, sample);
-    } else if (c.getType() == carl::FormulaType::VARCOMPARE) {
-        return get_unsat_intervals<op>(c.variableComparison(), proj, sample);
+    } else if (c.type() == carl::FormulaType::VARCOMPARE) {
+        return get_unsat_intervals<op>(c.variable_comparison(), proj, sample);
     } else {
         assert(false);
         return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();

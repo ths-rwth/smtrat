@@ -7,7 +7,7 @@
  */
 
 #include "EQPreprocessingModule.h"
-#include <carl-model/uninterpreted/SortValueManager.h>
+#include <carl-formula/uninterpreted/SortValueManager.h>
 
 namespace smtrat
 {
@@ -121,12 +121,12 @@ namespace smtrat
 
 		std::tie(iter, inserted) = mFacts.emplace(fact, !negated);
 		if(inserted) {
-			FormulaT realFact(fact.uequality().lhs(), fact.uequality().rhs(), negated);
+			FormulaT realFact(fact.u_equality().lhs(), fact.u_equality().rhs(), negated);
 			mFactOrigins.emplace(realFact, origin);
 			return std::make_pair(mEQHelper.add(realFact), false);
 		} else {
 			if(negated == iter->second) {
-				FormulaT realFact(fact.uequality().lhs(), fact.uequality().rhs(), negated);
+				FormulaT realFact(fact.u_equality().lhs(), fact.u_equality().rhs(), negated);
 				mFactOrigins.emplace(realFact, origin);
 				bool result = mEQHelper.add(realFact);
 				assert(!result); (void)result;
@@ -143,30 +143,30 @@ namespace smtrat
 		bool stable = true;
 
 		for(auto&& value : mOldToNew) {
-			if(value.second.getType() == carl::UEQ) {
+			if(value.second.type() == carl::UEQ) {
 				std::pair<bool,bool> r = P_collect_fact(value.first, value.second, false);
 				if(!r.first) {
 					return std::make_pair(false,false);
 				}
 
 				stable &= r.second;
-			} else if(value.second.getType() == carl::NOT && value.second.subformula().getType() == carl::UEQ) {
+			} else if(value.second.type() == carl::NOT && value.second.subformula().type() == carl::UEQ) {
 				std::pair<bool,bool> r = P_collect_fact(value.first, value.second.subformula(), true);
 				if(!r.first) {
 					return std::make_pair(false,false);
 				}
 
 				stable &= r.second;
-			} else if(value.second.getType() == carl::AND) {
+			} else if(value.second.type() == carl::AND) {
 				for(const FormulaT& fact : value.second.subformulas()) {
-					if(fact.getType() == carl::UEQ) {
+					if(fact.type() == carl::UEQ) {
 						std::pair<bool,bool> r = P_collect_fact(value.first, fact, false);
 						if(!r.first) {
 							return std::make_pair(false,false);
 						}
 
 						stable &= r.second;
-					} else if(fact.getType() == carl::NOT && fact.subformula().getType() == carl::UEQ) {
+					} else if(fact.type() == carl::NOT && fact.subformula().type() == carl::UEQ) {
 						std::pair<bool,bool> r = P_collect_fact(value.first, fact.subformula(), true);
 						if(!r.first) {
 							return std::make_pair(false,false);
@@ -223,7 +223,7 @@ namespace smtrat
 					assert(mFactOrigins.count(formula));
 					const FormulaT& orig = mFactOrigins.find(formula)->second;
 
-					if(orig.getType() != carl::TRUE) {
+					if(orig.type() != carl::TRUE) {
 						constructInfeasible.insert(orig);
 					}
 				}

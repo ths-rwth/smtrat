@@ -28,9 +28,9 @@ namespace smtrat
 	{
 		addReceivedSubformulaToPassedFormula(_subformula);
 		const FormulaT& formula{_subformula->formula()};
-		if (formula.getType() == carl::FormulaType::FALSE)
+		if (formula.type() == carl::FormulaType::FALSE)
 			mInfeasibleSubsets.push_back({formula});
-		else if (formula.isBound())
+		else if (formula.is_bound())
 		{
 			/// Update the variable domain with the asserted bound
 			mVariableBounds.addBound(formula, formula);
@@ -42,7 +42,7 @@ namespace smtrat
 			if (mVariableBounds.isConflicting())
 				mInfeasibleSubsets.emplace_back(mVariableBounds.getConflict());
 		}
-		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		else if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -172,13 +172,13 @@ namespace smtrat
 	void CSplitModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
 		const FormulaT& formula{_subformula->formula()};	
-		if (formula.isBound())
+		if (formula.is_bound())
 		{
 			/// Update the variable domain with the removed bound
 			mVariableBounds.removeBound(formula, formula);
 			mExpansions.firstAt(*formula.variables().begin()).mChangedBounds = true;
 		}
-		else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+		else if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -231,7 +231,7 @@ namespace smtrat
 			return Answer::UNSAT;
 		
 		/// Apply the method only if the asserted formula is not trivially undecidable
-		if (rReceivedFormula().isConstraintConjunction())
+		if (rReceivedFormula().is_constraint_conjunction())
 		{
 			mLRAModule.push();
 			if (resetExpansions())
@@ -421,7 +421,7 @@ namespace smtrat
 		
 		/// Scan the infeasible subset of the LRA solver for potential candidates
 		for (const FormulaT& formula : LRAConflict)
-			if (formula.isBound())
+			if (formula.is_bound())
 			{
 				const ConstraintT& constraint{formula.constraint()};
 				const carl::Variable variable{constraint.variables().as_vector().front()};
@@ -430,11 +430,11 @@ namespace smtrat
 				{
 					Expansion& expansion{*expansionIter};
 					Rational direction;
-					if (constraint.isLowerBound()
+					if (carl::is_lower_bound(constraint)
 						&& (expansion.mMaximalDomain.lowerBoundType() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.lower() < expansion.mActiveDomain.lower()))
 						direction = -1;
-					else if (constraint.isUpperBound()
+					else if (carl::is_upper_bound(constraint)
 						&& (expansion.mMaximalDomain.upperBoundType() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.upper() > expansion.mActiveDomain.upper()))
 						direction  = 1;
@@ -477,7 +477,7 @@ namespace smtrat
 		FormulaSetT infeasibleSubset;
 		for (const FormulaT& formula : LRAConflict)
 		{
-			if (formula.isBound())
+			if (formula.is_bound())
 			{
 				auto expansionIter{mExpansions.secondFind(*formula.variables().begin())};
 				if (expansionIter != mExpansions.end())
@@ -493,7 +493,7 @@ namespace smtrat
 					}
 				}
 			}
-			else if (formula.getType() == carl::FormulaType::CONSTRAINT)
+			else if (formula.type() == carl::FormulaType::CONSTRAINT)
 			{
 				const ConstraintT& constraint{formula.constraint()};
 				auto linearizationIter{mLinearizations.secondFind(constraint.lhs().normalize())};

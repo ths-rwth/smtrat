@@ -9,7 +9,7 @@
 #include "CubeLIAModule.h"
 //#define DEBUG_CUBELIAMODULE
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 namespace smtrat
 {
@@ -41,7 +41,7 @@ namespace smtrat
     template<class Settings>
     bool CubeLIAModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().getType() == carl::FormulaType::CONSTRAINT && !_subformula->formula().propertyHolds( carl::PROP_CONTAINS_REAL_VALUED_VARS ) )
+        if( _subformula->formula().type() == carl::FormulaType::CONSTRAINT && !_subformula->formula().property_holds( carl::PROP_CONTAINS_REAL_VALUED_VARS ) )
         {
             const ConstraintT& constraint = _subformula->formula().constraint();
             if( constraint.lhs().isLinear() && constraint.relation() != carl::Relation::NEQ && constraint.relation() != carl::Relation::EQ )
@@ -58,7 +58,7 @@ namespace smtrat
                             if( iter == mIntToRealVarMap.end() )
                             {
                                 carl::Variable realVar = carl::freshRealVariable();
-                                mIntToRealVarMap[var] = carl::makePolynomial<Poly>(realVar);
+                                mIntToRealVarMap[var] = Poly(realVar);
                                 mRealToIntVarMap[realVar] = var;
                             }
                         }
@@ -157,7 +157,7 @@ namespace smtrat
         print();
         #endif
         Answer ans;
-        if( !rReceivedFormula().isRealConstraintConjunction() )
+        if( !rReceivedFormula().is_real_constraint_conjunction() )
         {
             #ifdef DEBUG_CUBELIAMODULE
             std::cout << "Call internal LRAModule:" << std::endl;

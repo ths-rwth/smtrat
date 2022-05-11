@@ -53,8 +53,8 @@ namespace smtrat {
 
 	FormulaT RNSEncoder::rnsTransformation(const ConstraintT& formula, const Integer& prime) {
 		const auto& cLHS = formula.lhs();
-		assert(carl::isInteger(formula.constantPart()));
-		Integer cRHS = carl::getNum(formula.constantPart());
+		assert(carl::isInteger(formula.lhs().constantPart()));
+		Integer cRHS = carl::getNum(formula.lhs().constantPart());
 		Poly newLHS;
 		Rational newRHS = carl::mod(cRHS, prime);
 

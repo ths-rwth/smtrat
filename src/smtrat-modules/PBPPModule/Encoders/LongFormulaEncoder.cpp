@@ -5,7 +5,7 @@ namespace smtrat {
 		const auto& cLHS = constraint.lhs();
 		carl::Relation cRel = constraint.relation();
 		std::set<carl::Variable> cVars = constraint.variables().as_set();
-		Rational cRHS = -constraint.constantPart();
+		Rational cRHS = -constraint.lhs().constantPart();
 		bool positive = true;
 		bool negative = true;
 		Rational sum = 0;

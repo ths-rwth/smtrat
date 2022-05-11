@@ -20,7 +20,7 @@ std::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat:
         SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explain conflict " <<  reason);
     
         for (const auto& b : reason) {
-            if (b.getType() != carl::FormulaType::CONSTRAINT) {
+            if (b.type() != carl::FormulaType::CONSTRAINT) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-constraint bound " << b);
                 continue;
             }
@@ -29,7 +29,7 @@ std::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat:
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
                 continue;
             }
-            assert(b.getType() == carl::FormulaType::CONSTRAINT);
+            assert(b.type() == carl::FormulaType::CONSTRAINT);
             bounds.emplace_back(b.constraint());
         }
     } else {
@@ -40,7 +40,7 @@ std::optional<mcsat::Explanation> Explanation<Settings>::operator()(const mcsat:
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding non-univariate bound " << b);
                 continue;
             }
-            assert(b.getType() == carl::FormulaType::CONSTRAINT);
+            assert(b.type() == carl::FormulaType::CONSTRAINT);
             bounds.emplace_back(b.constraint());
         }
     }

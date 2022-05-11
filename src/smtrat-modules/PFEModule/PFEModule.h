@@ -23,7 +23,6 @@ namespace smtrat
         private:
             // Members.
             ///
-			carl::FormulaVisitor<FormulaT> visitor;
 			/// Collection of bounds of all received formulas.
 			vb::VariableBounds<FormulaT> varbounds;
 			bool boundsChanged = false;

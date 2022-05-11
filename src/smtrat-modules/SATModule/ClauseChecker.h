@@ -18,7 +18,7 @@ struct ClauseChecker {
 	}
 
 	void operator()(const FormulaT& formula) const {
-		if (formula.getType() == carl::FormulaType::OR) {
+		if (formula.type() == carl::FormulaType::OR) {
 			(*this)(formula.subformulas());
 		} else {
 			(*this)(FormulasT({formula}));

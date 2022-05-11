@@ -3,7 +3,7 @@
 #include "../common.h"
 #include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 
 
 namespace smtrat::cadcells::datastructures {
@@ -17,17 +17,17 @@ struct PolyRef {
     /// The id of the polynomial with respect to its level.
     size_t id;    
 };
-bool operator<(const PolyRef& lhs, const PolyRef& rhs) {
+inline bool operator<(const PolyRef& lhs, const PolyRef& rhs) {
     return lhs.level < rhs.level  || (lhs.level == rhs.level && lhs.id < rhs.id);
 }
-bool operator==(const PolyRef& lhs, const PolyRef& rhs) {
+inline bool operator==(const PolyRef& lhs, const PolyRef& rhs) {
     return lhs.level == rhs.level && lhs.id == rhs.id;
 }
-bool operator!=(const PolyRef& lhs, const PolyRef& rhs) {
+inline bool operator!=(const PolyRef& lhs, const PolyRef& rhs) {
     return !(lhs == rhs);
 }
 
-std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
+inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
     os << "(" << data.level << " " << data.id << ")";
     return os;
 }
@@ -70,7 +70,7 @@ public:
 
     const VariableOrdering& var_order() const { return m_var_order; }
 
-    PolyRef operator()(const Poly& poly) {
+    PolyRef insert(const Poly& poly) {
         auto npoly = poly.normalize();
         PolyRef ref;
         ref.level = helper::level_of(m_var_order, npoly);
@@ -92,7 +92,11 @@ public:
         return ref;
     }
 
-    const Poly& operator()(PolyRef ref) const {
+    PolyRef operator()(const Poly& poly){
+        return insert(poly);
+    }
+
+    const Poly& get(const PolyRef& ref) const {
         assert(ref.level <= m_polys.size());
         if (ref.level == 0) {
             assert(ref.id <=2);
@@ -102,6 +106,10 @@ public:
         }
         assert(ref.id < m_polys[ref.level-1].size());
         return m_polys[ref.level-1][ref.id];
+    }
+
+    const Poly& operator()(const PolyRef& ref) const{
+        return get(ref);
     }
 
     bool known(const Poly& poly) const {

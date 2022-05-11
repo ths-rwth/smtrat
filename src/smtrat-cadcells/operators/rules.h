@@ -145,23 +145,23 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& de
 }
 
 template<typename P>
-void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
+void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "connected(" << deriv.level() << ")");
-    if (cell.is_sector() && cell.lower() && cell.upper() && cell.lower()->poly != cell.upper()->poly) {
-        assert(deriv.contains(properties::poly_pdel{ cell.lower()->poly }));
-        assert(deriv.contains(properties::poly_pdel{ cell.upper()->poly }));
-        deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.lower()->poly, cell.upper()->poly) });
-        deriv.insert(properties::cell_connected{ deriv.level()-1 });
+    if (!cell.is_section() && !cell.lower().is_infty() && !cell.upper().is_infty() && cell.lower().value().poly != cell.upper().value().poly) {
+        assert(deriv.contains(properties::poly_pdel{ cell.lower().value().poly }));
+        assert(deriv.contains(properties::poly_pdel{ cell.upper().value().poly }));
+        assert(ordering.leq_transitive(cell.lower().value(),cell.upper().value()));
     }
+    deriv.insert(properties::cell_connected{ deriv.level()-1 });
 }
 
 template<typename P>
-void cell_analytic_submanifold(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription&) {
+void cell_analytic_submanifold(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval&) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "an_sub(" << deriv.level() << ")");
 }
 
 template<typename P>
-void poly_irreducible_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), using EC");
     assert(cell.is_section());
     assert(deriv.contains(properties::poly_pdel{ cell.section_defining().poly }));
@@ -180,14 +180,14 @@ void root_represents(datastructures::SampledDerivation<P>& deriv, datastructures
 }
 
 template<typename P>
-void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
+void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "repr(" << cell << ")");
-    if (cell.is_sector()) {
-        if (cell.lower()) {
-            root_represents(deriv, *cell.lower());
+    if (!cell.is_section()) {
+        if (!cell.lower().is_infty()) {
+            root_represents(deriv, cell.lower().value());
         }
-        if (cell.upper()) {
-            root_represents(deriv, *cell.upper());
+        if (!cell.upper().is_infty()) {
+            root_represents(deriv, cell.upper().value());
         }
     } else {
         root_represents(deriv, cell.section_defining());
@@ -195,14 +195,14 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
 }
 
 template<typename P>
-void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell) {
+void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "well_def(" << cell << ")");
-    if (cell.is_sector()) {
-        if (cell.lower()) {
-            deriv.insert(properties::root_well_def{ *cell.lower() });
+    if (!cell.is_section()) {
+        if (!cell.lower().is_infty()) {
+            deriv.insert(properties::root_well_def{ cell.lower().value() });
         }
-        if (cell.upper()) {
-            deriv.insert(properties::root_well_def{ *cell.upper() });
+        if (!cell.upper().is_infty()) {
+            deriv.insert(properties::root_well_def{ cell.upper().value() });
         }
     } else {
         deriv.insert(properties::root_well_def{ cell.section_defining() });
@@ -210,69 +210,37 @@ void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastruct
 }
 
 template<typename P>
-void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription&, const datastructures::IndexedRootOrdering& ordering) {
+void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     deriv.insert(properties::cell_connected{ deriv.level() });
-    for (const auto& rel : ordering.below()) {
-        if (rel.first.poly != rel.second.poly) {
-            assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
-            assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
-        }
-    }
-    for (const auto& rel : ordering.above()) {
-        if (rel.first.poly != rel.second.poly) {
-            assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
-            assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
-        }
-    }
-}
-
-template<typename P>
-void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& ordering) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     for (const auto& rel : ordering.data()) {
         if (rel.first.poly != rel.second.poly) {
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
-            assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(rel.first.poly) }));
-            assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(rel.second.poly) }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
         }
     }
 }
 
 template<typename P>
-void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::CellDescription& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     deriv.insert(properties::cell_connected{ poly.level-1 });
     if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
-        // not needed anymore:
-        // auto roots = deriv.proj().real_roots(deriv.underlying_sample(), poly);
-        // auto it = std::find(roots.begin(), roots.end(), deriv.main_var_sample());
-        // auto dist = std::distance(roots.begin(), it);
-        // assert(dist >= 0);
-        // deriv.insert(properties::root_well_def{ datastructures::IndexedRoot(poly, (size_t)dist + 1) });
+        // ok by indexed root ordering!
     } else {
         assert(!deriv.proj().is_zero(deriv.sample(), poly));
-        if (cell.is_sector() && (deriv.cell().lower_unbounded() || deriv.cell().upper_unbounded())) {
+        if (!cell.is_section() && (cell.lower().is_infty() || cell.upper().is_infty())) {
             deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
         } else {
-            bool has_lower = (poly == cell.lower_defining()->poly) || ordering.poly_has_lower(poly);
-            bool has_upper = (poly == cell.upper_defining()->poly) || ordering.poly_has_upper(poly);
+            assert(cell.is_section() || (cell.lower().is_strict() && cell.upper().is_strict()));
+            auto lower_root = ordering.leq_transitive(poly, cell.lower().value());
+            auto upper_root = ordering.leq_transitive(cell.upper().value(), poly);
 
             // compute set of polynomials that have a resultant with the current polynomials (according to the given ordering)
             boost::container::flat_set<datastructures::PolyRef> res_polys;
-            for (const auto& rel : ordering.below()) {
-                if (rel.first.poly == poly) {
-                    res_polys.insert(rel.second.poly);
-                } else if (rel.second.poly == poly) {
-                    res_polys.insert(rel.first.poly);
-                }
-            }
-            for (const auto& rel : ordering.above()) {
+            for (const auto& rel : ordering.data()) {
                 if (rel.first.poly == poly) {
                     res_polys.insert(rel.second.poly);
                 } else if (rel.second.poly == poly) {
@@ -281,76 +249,62 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const
             }
             
             // compute protection for lower bound
-            bool lower_protected = false;
-            if (has_upper) {
-                // check if a res_poly has a well defined root below
-                for (const auto& res_poly : res_polys) {
-                    if (res_poly == cell.lower_defining()->poly) {
-                        lower_protected = true;
-                        break;
-                    } else {
-                        auto root_it = std::find_if(ordering.below().begin(), ordering.below().end(), [&res_poly](const auto& rel) { return rel.second.poly == res_poly; });
-                        if (root_it != ordering.below().end()) {
-                            if (deriv.contains(properties::root_well_def{root_it->second}) || is_trivial_root_well_def(deriv.underlying().sampled(), root_it->second)) {
-                                lower_protected = true;
-                                break;
+            auto protect_lower = [&]() {
+                if (poly == cell.lower().value().poly) return true;
+
+                if (upper_root) {
+                    // check if a res_poly has a well defined root below
+                    for (const auto& res_poly : res_polys) {
+                        if (res_poly == cell.lower().value().poly) {
+                            return true;
+                        } else {
+                            auto res_lower_root = ordering.leq_transitive(res_poly, cell.lower().value());
+                            if (res_lower_root) {
+                                if (deriv.contains(properties::root_well_def{*res_lower_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_lower_root)) {
+                                    return true;
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            if (poly == cell.lower_defining()->poly) {
-                lower_protected = true;
-            }
-            if (has_lower && !lower_protected) {
-                for (const auto& rel : ordering.below()) {
-                    if (rel.second.poly == poly) {
-                        deriv.insert(properties::root_well_def{rel.second});
-                        lower_protected = true;
-                        break;
-                    }
+                if (lower_root) {
+                    deriv.insert(properties::root_well_def{*lower_root});
+                    return true;
                 }
-            }
 
-            if (!lower_protected) {
-                deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
-            }
+                return false;
+            };
 
             // compute protection for upper bound
-            bool upper_protected = false;
-            if (has_lower) {
-                // check if a res_poly has a well defined root above
-                for (const auto& res_poly : res_polys) {
-                    if (res_poly == cell.upper_defining()->poly) {
-                        upper_protected = true;
-                        break;
-                    } else {
-                        auto root_it = std::find_if(ordering.above().begin(), ordering.above().end(), [&res_poly](const auto& rel) { return rel.second.poly == res_poly; });
-                        if (root_it != ordering.above().end()) {
-                            if (deriv.contains(properties::root_well_def{root_it->second}) || is_trivial_root_well_def(deriv.underlying().sampled(), root_it->second)) {
-                                upper_protected = true;
-                                break;
+            auto protect_upper = [&]() {
+                if (poly == cell.upper().value().poly) return true;
+
+                if (lower_root) {
+                    // check if a res_poly has a well defined root above
+                    for (const auto& res_poly : res_polys) {
+                        if (res_poly == cell.upper().value().poly) {
+                            return true;
+                        } else {
+                            auto res_upper_root = ordering.leq_transitive(cell.upper().value(), res_poly);
+                            if (res_upper_root) {
+                                if (deriv.contains(properties::root_well_def{*res_upper_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_upper_root)) {
+                                    return true;
+                                }
                             }
                         }
                     }
                 }
-            } 
 
-            if (poly == cell.upper_defining()->poly) {
-                upper_protected = true;
-            }
-            if (has_upper && !upper_protected) {
-                for (const auto& rel : ordering.above()) {
-                    if (rel.second.poly == poly) {
-                        deriv.insert(properties::root_well_def{rel.second});
-                        upper_protected = true;
-                        break;
-                    }
+                if (upper_root) {
+                    deriv.insert(properties::root_well_def{*upper_root});
+                    return true;
                 }
-            }
 
-            if (!upper_protected) {
+                return false;
+            };
+            
+            if (!protect_lower() || !protect_upper()) {
                 deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
             }
         }
@@ -358,7 +312,7 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const
 }
 
 template<typename P>
-void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::GeneralIndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
+void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     assert(deriv.contains(properties::poly_pdel{ poly }));
     assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) }));
@@ -366,14 +320,12 @@ void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, co
 }
 
 template<typename P>
-void covering_holds(datastructures::DelineatedDerivation<P>& deriv, const datastructures::CoveringDescription& covering) {
+void covering_holds(datastructures::DelineatedDerivation<P>& deriv, const datastructures::CoveringDescription& covering, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "holds(" << covering << ")");
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {
-        assert(deriv.contains(properties::root_well_def{ *it->upper_defining() }));
-        assert(deriv.contains(properties::root_well_def{ *std::next(it)->lower_defining() }));
-        if (it->upper_defining()->poly != std::next(it)->lower_defining()->poly) {
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(it->upper_defining()->poly, std::next(it)->lower_defining()->poly) });
-        }
+        assert(deriv.contains(properties::root_well_def{ it->upper().value() }));
+        assert(deriv.contains(properties::root_well_def{ std::next(it)->lower().value() }));
+        assert(ordering.leq_transitive(std::next(it)->lower().value(), it->upper().value()));
     }
 }
 

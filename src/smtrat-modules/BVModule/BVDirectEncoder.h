@@ -33,8 +33,8 @@
 
 #include <boost/optional/optional.hpp>
 #include <smtrat-common/smtrat-common.h>
-#include <carl/formula/bitvector/BVConstraint.h>
-#include <carl/formula/bitvector/BVConstraintPool.h>
+#include <carl-formula/bitvector/BVConstraint.h>
+#include <carl-formula/bitvector/BVConstraintPool.h>
 
 namespace smtrat
 {
@@ -872,7 +872,7 @@ namespace smtrat
 
             Bit createBit(const FormulaT& _formula)
             {
-                if(_formula.isAtom() || (_formula.getType() == carl::FormulaType::NOT && _formula.subformula().isAtom())) {
+                if(_formula.is_atom() || (_formula.type() == carl::FormulaType::NOT && _formula.subformula().is_atom())) {
                     return _formula;
                 }
 
@@ -960,9 +960,9 @@ namespace smtrat
 
             FormulaT encodeBVConstraints(const FormulaT _original)
             {
-                if(_original.getType() == carl::FormulaType::BITVECTOR)
+                if(_original.type() == carl::FormulaType::BITVECTOR)
                 {
-                    Bit substitute = encodeConstraint(_original.bvConstraint());
+                    Bit substitute = encodeConstraint(_original.bv_constraint());
                     return substitute;
                 }
                 return _original;
@@ -973,9 +973,8 @@ namespace smtrat
             const FormulaSetT& encode(const FormulaT& _inputFormula)
             {
                 mCurrentEncodings.clear();
-                carl::FormulaVisitor<FormulaT> visitor;
                 std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&BVDirectEncoder::encodeBVConstraints, this, std::placeholders::_1);
-                FormulaT passedFormula = visitor.visitResult(_inputFormula, encodeConstraints);
+                FormulaT passedFormula = carl::visit_result(_inputFormula, encodeConstraints);
 
                 #ifdef SMTRAT_BV_ENCODER_DEBUG
                 std::cerr << "Formula encoded into: " << passedFormula << std::endl;

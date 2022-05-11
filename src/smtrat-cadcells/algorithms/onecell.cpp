@@ -13,7 +13,8 @@ namespace smtrat::cadcells::algorithms {
 // constexpr auto cell_heuristic = representation::CHAIN_EQ;
 // constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS_EQ;
 constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
-constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
+// constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
+constexpr auto covering_heuristic = representation::CHAIN_COVERING;
 constexpr auto op = operators::op::mccallum;
 constexpr bool use_delineation = false; 
 
@@ -56,8 +57,10 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
             return std::nullopt;
         }
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *cell_repr);
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
-        operators::project_delineated_cell_properties<op>(*cell_repr);
+        if (cell_deriv->level() > 1) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
+            operators::project_delineated_cell_properties<op>(*cell_repr);
+        }
 
         description.emplace_back(helper::to_formula(proj.polys(), cell_deriv->main_var(),cell_repr->description));
         proj.clear_assignment_cache(cell_deriv->sample());

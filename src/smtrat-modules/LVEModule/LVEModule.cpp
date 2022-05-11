@@ -9,7 +9,7 @@
 #include "LVEModule.h"
 
 #include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl-model/substitutions/ModelConditionalSubstitution.h>
+#include <carl-formula/model/substitutions/ModelConditionalSubstitution.h>
 
 #include "utils.h"
 
@@ -19,7 +19,7 @@ namespace smtrat
 	template<class Settings>
 	void LVEModule<Settings>::count_variables(std::map<carl::Variable, std::size_t>& count, const ConstraintT& c) const {
 		carl::carlVariables vars;
-		c.gatherVariables(vars);
+		carl::variables(c, vars);
 		for (auto v: vars) {
 			count[v] += 1;
 		}
@@ -28,10 +28,9 @@ namespace smtrat
 	template<class Settings>
 	std::map<carl::Variable, std::size_t> LVEModule<Settings>::get_variable_counts() const {
 		std::map<carl::Variable, std::size_t> counts;
-		carl::FormulaVisitor<FormulaT> v;
 		for (const auto& f: rReceivedFormula()) {
-			v.visit(f.formula(), [&counts,this](const auto& f){
-				if (f.getType() == carl::FormulaType::CONSTRAINT) {
+			carl::visit(f.formula(), [&counts,this](const auto& f){
+				if (f.type() == carl::FormulaType::CONSTRAINT) {
 					count_variables(counts, f.constraint());
 				}
 			});
@@ -154,7 +153,7 @@ namespace smtrat
 				return FormulaT(without, rel);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.lve", "Possible values for " << v << " are " << *posval << " and " << *negval);
-			if (FormulaT(without, carl::Relation::LESS).isFalse()) {
+			if (FormulaT(without, carl::Relation::LESS).is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " negative.");
 				switch (rel) {
 					case carl::Relation::LESS:		mPPModel.emplace(v, *negval); break;
@@ -163,7 +162,7 @@ namespace smtrat
 				}
 				return FormulaT(without, carl::Relation::GREATER);
 			}
-			if (FormulaT(without, carl::Relation::GREATER).isFalse()) {
+			if (FormulaT(without, carl::Relation::GREATER).is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.lve", "Cannot make " << without << " positive.");
 				switch (rel) {
 					case carl::Relation::LESS:		mPPModel.emplace(v, *posval); break;
@@ -208,7 +207,7 @@ namespace smtrat
 	std::optional<FormulaT> LVEModule<Settings>::eliminate_from_factors(carl::Variable v, const ConstraintT& c) {
 		Poly with_v = Poly(1);
 		Poly without_v = Poly(1);
-		for (const auto& factor: carl::factorization(c.lhs())) {
+		for (const auto& factor: c.lhs_factorization()) {
 			carl::carlVariables vars = carl::variables(factor.first);
 			if (vars == carl::carlVariables({ v })) {
 				with_v *= carl::pow(factor.first, factor.second);
@@ -301,7 +300,7 @@ namespace smtrat
 		mStatistics.lone_variables = std::max(mStatistics.lone_variables, vars.size());
 #endif
 		for (const auto& f: rReceivedFormula()) {
-			if (f.formula().getType() == carl::FormulaType::CONSTRAINT) {
+			if (f.formula().type() == carl::FormulaType::CONSTRAINT) {
 				const auto& c = f.formula().constraint();
 				carl::Variable target = carl::Variable::NO_VARIABLE;
 				for (auto v: vars) {

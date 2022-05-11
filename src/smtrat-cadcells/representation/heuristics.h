@@ -12,13 +12,16 @@ namespace smtrat::cadcells::representation {
     };
 
     enum CoveringHeuristic {
-        DEFAULT_COVERING
+        DEFAULT_COVERING, CHAIN_COVERING
     };
 
     enum DelineationHeuristic {
         CHAIN
     };
 
+    /**
+     * Note: If connected(i) holds, then the indexed root ordering must contain an ordering between the interval bounds. 
+     */
     template<CellHeuristic H>
     struct cell {
         template<typename T>
@@ -36,6 +39,38 @@ namespace smtrat::cadcells::representation {
         template<typename T>
         static std::optional<datastructures::DelineationRepresentation<T>> compute(datastructures::DelineatedDerivationRef<T>& der);
     };
+
+    inline std::string get_name(CellHeuristic heuristic){
+        switch (heuristic) {
+            case CellHeuristic::BIGGEST_CELL: return "BIGGEST_CELL";
+            case CellHeuristic::CHAIN_EQ: return "CHAIN_EQ";
+            case CellHeuristic::LOWEST_DEGREE_BARRIERS: return "LOWEST_DEGREE_BARRIERS";
+            case CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ: return "LOWEST_DEGREE_BARRIERS_EQ";
+        }
+    }
+
+    inline std::string get_name(CoveringHeuristic heuristic){
+        switch (heuristic) {
+            case CoveringHeuristic::DEFAULT_COVERING: return "DEFAULT_COVERING";
+            case CoveringHeuristic::CHAIN_COVERING: return "CHAIN_COVERING";
+        }
+    }
+
+    inline std::string get_name(DelineationHeuristic heuristic){
+        switch (heuristic) {
+            case DelineationHeuristic::CHAIN: return "CHAIN";
+        }
+    }
+
+    inline std::ostream& operator<<(std::ostream& os, CellHeuristic heuristic){
+        return os << get_name(heuristic);
+    }
+    inline std::ostream& operator<<(std::ostream& os, CoveringHeuristic heuristic){
+        return os << get_name(heuristic);
+    }
+    inline std::ostream& operator<<(std::ostream& os, DelineationHeuristic heuristic){
+        return os << get_name(heuristic);
+    }
 }
 
 #include "util.h"

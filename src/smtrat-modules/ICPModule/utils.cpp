@@ -24,9 +24,9 @@ namespace smtrat
                     if( !termIt->monomial()->isLinear() )
                     {
 #ifdef __VS
-                        result.emplace_back(carl::makePolynomial<Poly>(Poly::PolyType(termIt->monomial()))*_expr.coefficient());
+                        result.emplace_back(Poly(Poly::PolyType(termIt->monomial()))*_expr.coefficient());
 #else
-                        result.emplace_back( carl::makePolynomial<Poly>(typename Poly::PolyType(termIt->monomial()))*_expr.coefficient() );
+                        result.emplace_back(Poly(typename Poly::PolyType(termIt->monomial()))*_expr.coefficient() );
 #endif
                     }
                 }

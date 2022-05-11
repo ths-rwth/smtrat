@@ -1,7 +1,7 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
-#include <carl-model/Model.h>
+#include <carl-formula/model/Model.h>
 #include <smtrat-solver/Module.h>
 
 namespace smtrat {
@@ -32,7 +32,7 @@ private:
 	std::map<FormulaT, std::string> mSoftFormulaIds;
 
 	bool satisfied(const FormulaT& formula, const Model& model) {
-		return carl::model::substitute(formula, model).isTrue();
+		return carl::model::substitute(formula, model).is_true();
 	}
 
 public:

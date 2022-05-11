@@ -81,22 +81,22 @@ public:
 	AssignmentFinder_detail(carl::Variable var, const Model& model): mVar(var), mModel(model) {}
 	
 	bool addConstraint(const FormulaT& f) {
-		assert(f.getType() == carl::FormulaType::CONSTRAINT);
+		assert(f.type() == carl::FormulaType::CONSTRAINT);
 		auto category = mcsat::constraint_type::categorize(f, mModel, mVar);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is " << category << " under " << mModel << " w.r.t. " << mVar);
 		switch (category) {
 			case mcsat::ConstraintType::Constant:
-				assert(f.isTrue() || f.isFalse());
-				if (f.isFalse()) return false;
+				assert(f.is_true() || f.is_false());
+				if (f.is_false()) return false;
 				break;
 			case mcsat::ConstraintType::Assigned: {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Checking fully assigned " << f);
 				FormulaT fnew = carl::model::substitute(f, mModel);
-				if (fnew.isTrue()) {
+				if (fnew.is_true()) {
 					SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
 					return true;
 				} else {
-					assert(fnew.isFalse());
+					assert(fnew.is_false());
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 					return false;
 				}
@@ -112,7 +112,7 @@ public:
 		}
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		std::vector<RAN> list;
-		if (fnew.getType() == carl::FormulaType::CONSTRAINT) {
+		if (fnew.type() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << poly << " in " << mVar << " w.r.t. " << mModel);
 			auto roots = carl::model::real_roots(poly, mVar, mModel);
@@ -130,11 +130,11 @@ public:
 					return false;
 				}
 			}
-		} else if (fnew.isTrue()) {
+		} else if (fnew.is_true()) {
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
 			return true;
 		} else {
-			assert(fnew.isFalse());
+			assert(fnew.is_false());
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		}
@@ -146,7 +146,7 @@ public:
 	}
 	
 	bool addMVBound(const FormulaT& f) {
-		assert(f.getType() == carl::FormulaType::VARCOMPARE);
+		assert(f.type() == carl::FormulaType::VARCOMPARE);
 		if (!isUnivariate(f)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
 			return true;
@@ -154,15 +154,15 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding univariate bound " << f);
 		FormulaT fnew(carl::model::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
-		if (fnew.isTrue()) {
+		if (fnew.is_true()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
 			return true;
-		} else if (fnew.isFalse()) {
+		} else if (fnew.is_false()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 			return false;
 		}
-		assert(fnew.getType() == carl::FormulaType::VARCOMPARE);
-		ModelValue value = fnew.variableComparison().value();
+		assert(fnew.type() == carl::FormulaType::VARCOMPARE);
+		ModelValue value = fnew.variable_comparison().value();
 		if (value.isSubstitution()) {
 			// Prevent memory error due to deallocation of shared_ptr before copying value from shared_ptr.
 			auto res = value.asSubstitution()->evaluate(mModel);

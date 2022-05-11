@@ -7,6 +7,8 @@
 #include <vector>
 #include <cassert>
 
+#include <limits>
+
 #ifdef SMTRAT_STRAT_PARALLEL_MODE
 #include <mutex>
 #endif

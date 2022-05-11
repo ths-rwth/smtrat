@@ -5,7 +5,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
-#include <carl/util/Common.h>
+#include <carl/core/Common.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -17,10 +17,10 @@ namespace helper {
 	 * Simplify to a regular constraint if possible.
 	 */
 	inline FormulaT buildFormulaFromVC(VariableComparisonT&& vc) {
-		auto constraint = vc.asConstraint();
+		auto constraint = vc.as_constraint();
 		if (constraint) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Simplified " << vc << " to " << *constraint);
-			return FormulaT(*constraint);
+			return FormulaT(ConstraintT(*constraint));
 		}
 		return FormulaT(std::move(vc));
 	}
@@ -59,25 +59,25 @@ namespace helper {
 		std::set<ConstraintT> cons;
 		for (const auto& cAtom: constraintAtoms) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom << " to " << cons);
-			if (cAtom.getType() == carl::FormulaType::CONSTRAINT) {
+			if (cAtom.type() == carl::FormulaType::CONSTRAINT) {
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding " << cAtom);
 				cons.emplace(cAtom.constraint());
-			} else if (cAtom.getType() == carl::FormulaType::VARCOMPARE) {
+			} else if (cAtom.type() == carl::FormulaType::VARCOMPARE) {
 				// Note that we only add the polynomials here and don't really care about the relation
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
-				carl::Relation rel = cAtom.variableComparison().negated() ? inverse(cAtom.variableComparison().relation()) : cAtom.variableComparison().relation();
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variableComparison().definingPolynomial());
-				cons.emplace(cAtom.variableComparison().definingPolynomial(), carl::Relation::NEQ);
+				carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variable_comparison().defining_polynomial());
+				cons.emplace(cAtom.variable_comparison().defining_polynomial(), carl::Relation::NEQ);
 				// removed (makes no sense):
 				// -> var - poly to ensure that the relation still holds
-				//cons.emplace(Poly(cAtom.variableComparison().var()) - cAtom.variableComparison().definingPolynomial(), rel);
-			} else if (cAtom.getType() == carl::FormulaType::VARASSIGN) {
+				//cons.emplace(Poly(cAtom.variable_comparison().var()) - cAtom.variable_comparison().defining_polynomial(), rel);
+			} else if (cAtom.type() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
 				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << cAtom);
-				const VariableComparisonT& vc = cAtom.variableAssignment();
-				cons.emplace(vc.definingPolynomial(), carl::Relation::EQ);
+				const VariableComparisonT& vc = cAtom.variable_assignment();
+				cons.emplace(vc.defining_polynomial(), carl::Relation::EQ);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << cAtom);
 				assert(false);
@@ -235,7 +235,7 @@ public:
 					explainClauseLiterals.emplace_back(explainAtom.negated());
 			}
 		}
-		if (!impliedAtom.isTrue()) explainClauseLiterals.emplace_back(impliedAtom);
+		if (!impliedAtom.is_true()) explainClauseLiterals.emplace_back(impliedAtom);
 		return FormulaT(carl::FormulaType::OR, std::move(explainClauseLiterals));
 	}
 };

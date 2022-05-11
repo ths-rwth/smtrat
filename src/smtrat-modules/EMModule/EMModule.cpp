@@ -28,14 +28,14 @@ namespace smtrat
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while (receivedFormula != rReceivedFormula().end()) {
             FormulaT formula = receivedFormula->formula();
-            if (receivedFormula->formula().propertyHolds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
-                formula = mVisitor.visitResult(receivedFormula->formula(), eliminateEquationFunction);
+            if (receivedFormula->formula().property_holds(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL)) {
+                formula = carl::visit_result(receivedFormula->formula(), eliminateEquationFunction);
             }
-            if (formula.isFalse()) {
+            if (formula.is_false()) {
                 receivedFormulasAsInfeasibleSubset(receivedFormula);
                 return UNSAT;
             }
-            if (!formula.isTrue()) {
+            if (!formula.is_true()) {
                 addSubformulaToPassedFormula(formula, receivedFormula->formula());
             }
             ++receivedFormula;
@@ -48,12 +48,12 @@ namespace smtrat
     
 	template<typename Settings>
     FormulaT EMModule<Settings>::eliminateEquation(const FormulaT& formula) {
-		if (formula.getType() != carl::FormulaType::CONSTRAINT) return formula;
+		if (formula.type() != carl::FormulaType::CONSTRAINT) return formula;
 		carl::Relation rel = formula.constraint().relation();
 		switch (rel) {
 			case carl::Relation::EQ:
 			case carl::Relation::NEQ: {
-				auto factors = formula.constraint().factorization();
+				auto& factors = formula.constraint().lhs_factorization();
 				FormulasT res;
 				for (const auto& factor: factors) {
 					res.emplace_back(factor.first, rel);

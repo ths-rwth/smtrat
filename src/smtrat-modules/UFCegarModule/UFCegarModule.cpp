@@ -9,7 +9,7 @@
 
 #include "UFCegarModule.h"
 
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl-formula/uninterpreted/UFInstanceManager.h>
 
 namespace smtrat
 {
@@ -36,7 +36,7 @@ namespace smtrat
             return res->second;
         }
 
-        const auto& ueq = formula.uequality();
+        const auto& ueq = formula.u_equality();
         FormulaT eq{flatten(ueq.lhs()), flatten(ueq.rhs()), ueq.negated()};
         formula_store.emplace(formula, eq);
         return eq;
@@ -91,10 +91,8 @@ namespace smtrat
     template<class Settings>
     bool UFCegarModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        carl::FormulaVisitor<FormulaT> visitor;
-
-        auto flattened = visitor.visitResult( _subformula->formula(), [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ) {
+        auto flattened = carl::visit_result( _subformula->formula(), [&] (const auto& formula) {
+            if (formula.type() == carl::UEQ) {
                 return flatten(formula);
             } else {
                 return formula;

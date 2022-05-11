@@ -229,7 +229,7 @@ namespace smtrat
             auto ctbIter = mConstraintToBound.find( _constraint );
             if( ctbIter != mConstraintToBound.end() )
                 return std::make_pair( *ctbIter->second->begin(), false );
-            assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
+            assert( _constraint.type() == carl::FormulaType::CONSTRAINT );
             const ConstraintT& constraint = _constraint.constraint();
             assert( constraint.isConsistent() == 2 );
             T1 factor( 0 );
@@ -467,7 +467,7 @@ namespace smtrat
                     }
                     const Bound<T1,T2>* bound = boundVector->back();
                     assert(!bound->isActive());
-                    if( !bound->neqRepresentation().isTrue() )
+                    if( !bound->neqRepresentation().is_true() )
                     {
                         bound->markAsDeleted();
                     }
@@ -505,7 +505,7 @@ namespace smtrat
             if( !_optimizationVar )
                 mSlackVars.erase( _variable->pExpression() );
             assert( _variable->isBasic() );
-            mVariableIdAllocator.free( _variable->getId() );
+            mVariableIdAllocator.free( _variable->id() );
             delete _variable;
         }
 
@@ -1487,7 +1487,7 @@ namespace smtrat
                         }
                         assert(leaving_dVio.find(candidate->first) != leaving_dVio.end());
                         Value<T1> helper_diff = leaving_dVio[candidate->first];;
-                        SMTRAT_LOG_DEBUG("smtrat", "candidate is" << "(" << candidate->first << "," << candidate->second->position() << ")" << " id " << candidate->second->getId());
+                        SMTRAT_LOG_DEBUG("smtrat", "candidate is" << "(" << candidate->first << "," << candidate->second->position() << ")" << " id " << candidate->second->id());
 
                         // tie-breaking in the size of variable numbers
                         if( helper_diff < min_val){
@@ -1500,8 +1500,8 @@ namespace smtrat
                             min_pair = candidate;
                             SMTRAT_LOG_DEBUG("smtrat", "Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
                         }
-                        else if((helper_diff == min_val && candidate->first.abs() == min_pair->first.abs() && min_pair->second->getId() > candidate->second->getId() )){
-                            SMTRAT_LOG_DEBUG("smtrat", "ID: " << min_pair->second->getId() << " " << candidate->second->getId() );
+                        else if((helper_diff == min_val && candidate->first.abs() == min_pair->first.abs() && min_pair->second->id() > candidate->second->id() )){
+                            SMTRAT_LOG_DEBUG("smtrat", "ID: " << min_pair->second->id() << " " << candidate->second->id() );
                             min_val = helper_diff;
                             min_pair = candidate;
                             SMTRAT_LOG_DEBUG("smtrat", "Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
@@ -2832,7 +2832,7 @@ namespace smtrat
                     mNonActiveBasics.erase( basicVar.positionInNonActives() );
                     basicVar.setPositionInNonActives( mNonActiveBasics.end() );
                     assert( columnVar->isBasic() );
-                    mVariableIdAllocator.free( columnVar->getId() );
+                    mVariableIdAllocator.free( columnVar->id() );
                     delete columnVar;
                 }
             }

@@ -43,9 +43,9 @@ public:
 			carl::carlVariables vars;
 			for (int i = 0; i < c.size(); ++i) {
 				if (c[i].first == nullptr) continue;
-				if (c[i].first->reabstraction.getType() != carl::FormulaType::CONSTRAINT) continue;
+				if (c[i].first->reabstraction.type() != carl::FormulaType::CONSTRAINT) continue;
 				const ConstraintT& constr = c[i].first->reabstraction.constraint(); 
-				constr.gatherVariables(vars);
+				carl::variables(constr, vars);
 			}
 			mBookkeeping.updateVariables(vars.as_set());
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variables " << variables());

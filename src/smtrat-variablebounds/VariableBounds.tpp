@@ -186,7 +186,7 @@ namespace smtrat
             {
                 const Rational coeff = _constraint.lhs().lterm().coeff();
                 carl::Relation rel = _constraint.relation();
-                Rational* limit = new Rational( -_constraint.constantPart()/coeff );
+                Rational* limit = new Rational( -_constraint.lhs().constantPart()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
                 if( rel == carl::Relation::EQ )
                 {
@@ -321,8 +321,9 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                carl::Variable var = *_constraint.variables().begin();
-                if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
+                auto vars = carl::variables(_constraint);
+                carl::Variable var = *vars.begin();
+                if( vars.size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     typename VariableBounds<T>::ConstraintBoundMap::iterator cbPair = mpConstraintBoundMap->find( _constraint );
                     if( cbPair != mpConstraintBoundMap->end() )
@@ -360,7 +361,7 @@ namespace smtrat
                 {
                     if( mNonBoundConstraints.insert( _constraint ).second )
                     {
-						for (auto sym: _constraint.variables())
+						for (auto sym: carl::variables(_constraint))
                         {
                             Variable<T>* variable = new Variable<T>();
                             if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( sym, variable ) ).second )
@@ -371,7 +372,7 @@ namespace smtrat
             }
             else
             {
-				for (auto sym: _constraint.variables())
+				for (auto sym: carl::variables(_constraint))
                 {
                     Variable<T>* variable = new Variable<T>();
                     if( !mpVariableMap->insert( std::pair< const carl::Variable, Variable<T>* >( sym, variable ) ).second )
@@ -383,11 +384,11 @@ namespace smtrat
 		
 		template<typename T>
         bool VariableBounds<T>::addBound( const FormulaT& _formula, const T& _origin ) {
-			switch (_formula.getType()) {
+			switch (_formula.type()) {
 				case carl::FormulaType::CONSTRAINT:
 					return addBound(_formula.constraint(), _origin);
 				case carl::FormulaType::NOT: {
-	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+	                if (_formula.subformula().type() == carl::FormulaType::CONSTRAINT) {
 	                    const ConstraintT& c = _formula.subformula().constraint();
 	                    return addBound(ConstraintT(c.lhs(), carl::inverse(c.relation())), _origin);
 	                }
@@ -410,8 +411,9 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                carl::Variable var = *_constraint.variables().begin();
-                if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
+                auto vars = carl::variables(_constraint);
+                carl::Variable var = *vars.begin();
+                if( vars.size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];
@@ -438,8 +440,9 @@ namespace smtrat
         {
             if( _constraint.relation() != carl::Relation::NEQ )
             {
-                carl::Variable var = *_constraint.variables().begin();
-                if( _constraint.variables().size() == 1 && _constraint.maxDegree( var ) == 1 )
+                auto vars = carl::variables(_constraint);
+                carl::Variable var = *vars.begin();
+                if( vars.size() == 1 && _constraint.maxDegree( var ) == 1 )
                 {
                     assert( mpConstraintBoundMap->find( _constraint ) != mpConstraintBoundMap->end() );
                     const Bound<T>& bound = *(*mpConstraintBoundMap)[_constraint];
@@ -464,11 +467,11 @@ namespace smtrat
 
 		template<typename T>
 		unsigned VariableBounds<T>::removeBound(const FormulaT& _formula, const T& _origin) {
-			switch (_formula.getType()) {
+			switch (_formula.type()) {
 				case carl::FormulaType::CONSTRAINT:
 					return removeBound(_formula.constraint(), _origin);
 				case carl::FormulaType::NOT: {
-	                if (_formula.subformula().getType() == carl::FormulaType::CONSTRAINT) {
+	                if (_formula.subformula().type() == carl::FormulaType::CONSTRAINT) {
 	                    const ConstraintT& c = _formula.subformula().constraint();
 	                    return removeBound(ConstraintT(c.lhs(), carl::inverse(c.relation())), _origin);
 	                }
@@ -825,9 +828,9 @@ namespace smtrat
 //                            std::cout << (*bcons) << std::endl;
                         Poly varCoeff = cons->coefficient( var, 1 );
                         assert( !varCoeff.isZero() );
-                        RationalInterval varCoeffEvaluated = carl::IntervalEvaluation::evaluate( varCoeff, bounds );
+                        RationalInterval varCoeffEvaluated = carl::evaluate( varCoeff, bounds );
                         Poly remainder = carl::substitute(cons->lhs(), var, Poly(0) );
-                        RationalInterval remainderEvaluated = carl::IntervalEvaluation::evaluate( remainder, bounds ).inverse();
+                        RationalInterval remainderEvaluated = carl::evaluate( remainder, bounds ).inverse();
                         
                         RationalInterval newBoundsA;
                         RationalInterval newBoundsB;

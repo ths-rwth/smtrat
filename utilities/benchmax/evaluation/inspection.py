@@ -6,7 +6,7 @@ def inspect_answer(df):
     answers = ['sat','unsat','unknown','wrong','error','timeout','memout','no answer','segmentation fault','segfault','abort']
     
     data = []
-    data.append(tuple([len(df) for _ in solvers]))
+    data.append(tuple([len(df[~df[(solver,'answer')].isnull()]) for solver in solvers]))
     for answer in answers:
         r = []
         for solver in solvers:

@@ -362,13 +362,13 @@ namespace smtrat
     {
         if( mpReceivedFormula->contains( _origin ) )
             return true;
-        if( _origin.getType() == carl::FormulaType::AND )
+        if( _origin.type() == carl::FormulaType::AND )
         {
             FormulasT subFormulasInRF;
             for( auto fwo = mpReceivedFormula->begin();  fwo != mpReceivedFormula->end(); ++fwo )
             {
                 const FormulaT& subform = fwo->formula();
-                if( subform.getType() == carl::FormulaType::AND )
+                if( subform.type() == carl::FormulaType::AND )
                     subFormulasInRF.insert(subFormulasInRF.end(), subform.subformulas().begin(), subform.subformulas().end() );
                 else
                     subFormulasInRF.push_back( subform );
@@ -393,11 +393,11 @@ namespace smtrat
             while( originSetB != _vecSetB.end() )
             {
                 FormulasT subformulas;
-                if( originSetA->getType() == carl::FormulaType::AND )
+                if( originSetA->type() == carl::FormulaType::AND )
                     subformulas = originSetA->subformulas();
                 else
                     subformulas.push_back( *originSetA );
-                if( originSetB->getType() == carl::FormulaType::AND )
+                if( originSetB->type() == carl::FormulaType::AND )
                     subformulas.insert(subformulas.end(), originSetB->begin(), originSetB->end() );
                 else
                     subformulas.push_back( *originSetB );
@@ -573,7 +573,7 @@ namespace smtrat
     
     void Module::splitUnequalConstraint( const FormulaT& _unequalConstraint )
     {
-        assert( _unequalConstraint.getType() == CONSTRAINT );
+        assert( _unequalConstraint.type() == CONSTRAINT );
         assert( _unequalConstraint.constraint().relation() == Relation::NEQ );
         const Poly& lhs = _unequalConstraint.constraint().lhs();
         FormulaT lessConstraint = FormulaT( lhs, Relation::LESS );
@@ -895,8 +895,8 @@ namespace smtrat
 		carl::carlVariables variables;
 		std::set<carl::UninterpretedFunction> functions;
 		for (const auto& f: *mpReceivedFormula) {
-			f.formula().gatherVariables(variables);
-			f.formula().gatherUFs(functions);
+			carl::variables(f.formula(),variables);
+			carl::uninterpreted_functions(f.formula(),functions);
 		}
 		// Filter model
 		for (auto it = mModel.begin(); it != mModel.end(); ) {
@@ -971,10 +971,10 @@ namespace smtrat
         }
         else
         {
-            if(_formula.getType() != carl::FormulaType::AND ){
-                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
+            if(_formula.type() != carl::FormulaType::AND ){
+                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.type() << ", not AND-Type");
             }
-            assert( _formula.getType() != carl::FormulaType::AND );
+            assert( _formula.type() != carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
@@ -991,10 +991,10 @@ namespace smtrat
         }
         else
         {
-            if(_formula.getType() != carl::FormulaType::AND ){
-                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
+            if(_formula.type() != carl::FormulaType::AND ){
+                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.type() << ", not AND-Type");
             }
-            assert( _formula.getType() == carl::FormulaType::AND );
+            assert( _formula.type() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
@@ -1025,7 +1025,7 @@ namespace smtrat
     {
 		carl::carlVariables vars(carl::variable_type_filter::arithmetic());
 		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
-			it->gatherVariables(vars);
+			carl::variables(*it, vars);
 		}
         std::stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";

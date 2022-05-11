@@ -43,7 +43,7 @@ namespace smtrat {
 			FormulasT conjunction;
 			for (const auto& sum : subsetsums) {
 				ConstraintT lhsImplication(lhs - sum, carl::Relation::GEQ); // poly lhs + constantPart >= bi
-				ConstraintT rhsImplication(rhs - sum - constraint.constantPart(), carl::Relation::GEQ); // rhs >= bi
+				ConstraintT rhsImplication(rhs - sum - constraint.lhs().constantPart(), carl::Relation::GEQ); // rhs >= bi
 
 
 				FormulaT chosenLhsEncoding = findSubEncoding(mNormalizer.trim(lhsImplication));
@@ -72,7 +72,7 @@ namespace smtrat {
 			FormulasT conjunction;
 			for (const auto& sum : subsetsumsPositive) {
 				ConstraintT lhsImplication(lhs - sum, carl::Relation::EQ);
-				ConstraintT rhsImplication(rhs - sum - constraint.constantPart(), carl::Relation::EQ);
+				ConstraintT rhsImplication(rhs - sum - constraint.lhs().constantPart(), carl::Relation::EQ);
 
 				FormulaT chosenLhsEncoding = findSubEncoding(mNormalizer.trim(lhsImplication));
 				FormulaT chosenRhsEncoding = findSubEncoding(mNormalizer.trim(rhsImplication));
@@ -81,7 +81,7 @@ namespace smtrat {
 			}
 
 			for (const auto& sum : subsetsumsNegative) {
-				ConstraintT lhsImplication(lhs - constraint.constantPart() - sum, carl::Relation::EQ);
+				ConstraintT lhsImplication(lhs - constraint.lhs().constantPart() - sum, carl::Relation::EQ);
 				ConstraintT rhsImplication(rhs - sum, carl::Relation::EQ);
 
 				FormulaT chosenLhsEncoding = findSubEncoding(mNormalizer.trim(lhsImplication));

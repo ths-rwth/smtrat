@@ -10,8 +10,8 @@
 #include "UnionFindModule.h"
 #include "UnionFind.h"
 
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
-#include <carl-model/uninterpreted/SortValueManager.h>
+#include <carl-formula/uninterpreted/UFInstanceManager.h>
+#include <carl-formula/uninterpreted/SortValueManager.h>
 
 namespace smtrat
 {
@@ -31,8 +31,8 @@ namespace smtrat
     template<class Settings>
     bool UnionFindModule<Settings>::informCore( const FormulaT& _constraint )
     {
-        assert(_constraint.getType() == carl::UEQ);
-        const auto& ueq = _constraint.uequality();
+        assert(_constraint.type() == carl::UEQ);
+        const auto& ueq = _constraint.u_equality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
         auto process = [&] (const auto& var) {
@@ -68,8 +68,8 @@ namespace smtrat
             need_to_update = false;
         }
 
-        assert(_subformula->formula().getType() == carl::UEQ);
-        const auto& ueq = _subformula->formula().uequality();
+        assert(_subformula->formula().type() == carl::UEQ);
+        const auto& ueq = _subformula->formula().u_equality();
         assert(ueq.lhs().isUVariable() && ueq.rhs().isUVariable());
 
         const auto& lhs = ueq.lhs().asUVariable();
@@ -94,8 +94,8 @@ namespace smtrat
     template<class Settings>
     void UnionFindModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
     {
-        assert(_subformula->formula().getType() == carl::UEQ);
-        const auto& ueq = _subformula->formula().uequality();
+        assert(_subformula->formula().type() == carl::UEQ);
+        const auto& ueq = _subformula->formula().u_equality();
 
         auto it = std::find(history.rbegin(), history.rend(), ueq);
 

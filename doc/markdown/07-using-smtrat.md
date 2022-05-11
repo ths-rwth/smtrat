@@ -173,7 +173,7 @@ where \f$a\f$ is a rational number,\f$e\f$ is a natural number greater one, \f$b
 
 ### Boolean combinations of constraints and Boolean variables
 
-For more information, check out the docs of [CArL](https://github.com/smtrat/carl).
+For more information, check out the docs of [CArL](https://github.com/ths-rwth/carl).
 
 A formula is stored as a directed acyclic graph, where the intermediate nodes represent the Boolean operations on the sub-formulas represented by the successors of this node. The leaves (nodes without successor) contain either a Boolean variable, a constraint or an uninterpreted equality. Equal formulas, that is formulas being leaves and containing the same element or formulas representing the same operation on the same sub-formulas, are stored only once.
 

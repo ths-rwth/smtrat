@@ -25,7 +25,7 @@
 #include <boost/spirit/include/phoenix_stl.hpp>
 #include <boost/spirit/include/support_line_pos_iterator.hpp>
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 
 #define PARSER_BITVECTOR

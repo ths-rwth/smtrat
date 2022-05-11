@@ -13,7 +13,7 @@
 #include <deque>
 #include <limits>
 #include "Variable.h"
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 
 namespace smtrat
 {

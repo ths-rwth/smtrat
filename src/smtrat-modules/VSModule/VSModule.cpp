@@ -8,6 +8,8 @@
 
 #include "VSModule.h"
 
+#include <carl/vs/Substitution.h>
+#include <carl/vs/Evaluation.h>
 
 #ifdef VS_STATE_DEBUG_METHODS
 //#define VS_DEBUG_METHODS
@@ -17,6 +19,7 @@
 
 namespace smtrat
 {
+
 	using namespace vs;
     template<class Settings>
     VSModule<Settings>::VSModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* const _manager ):
@@ -45,7 +48,7 @@ namespace smtrat
         {
             const vs::Condition* pRecCond = mFormulaConditionMap.begin()->second;
             mFormulaConditionMap.erase( mFormulaConditionMap.begin() );
-            mpConditionIdAllocator->free( pRecCond->getId() );
+            mpConditionIdAllocator->free( pRecCond->id() );
             delete pRecCond;
             pRecCond = NULL;
         }
@@ -59,12 +62,12 @@ namespace smtrat
         mLazyMode = false;
         bool negated = false;
         FormulaT constraintF = _subformula->formula();
-        if( constraintF.getType() == carl::FormulaType::NOT && constraintF.subformula().getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::NOT && constraintF.subformula().type() == carl::FormulaType::CONSTRAINT )
         {
             constraintF = _subformula->formula().subformula();
             negated = true;
         }
-        if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::inverse( constraintF.constraint().relation() ) ) : constraintF.constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
@@ -103,7 +106,7 @@ namespace smtrat
             }
             mConditionsChanged = true;
         }
-        else if( _subformula->formula().getType() == carl::FormulaType::FALSE )
+        else if( _subformula->formula().type() == carl::FormulaType::FALSE )
         {
             removeStatesFromRanking( *mpStateTree );
             mIDCounter = 0;
@@ -126,9 +129,9 @@ namespace smtrat
     {
         mLazyMode = false;
         FormulaT constraintF = _subformula->formula();
-        if( constraintF.getType() == carl::FormulaType::NOT && constraintF.subformula().getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::NOT && constraintF.subformula().type() == carl::FormulaType::CONSTRAINT )
             constraintF = _subformula->formula().subformula();
-        if( constraintF.getType() == carl::FormulaType::CONSTRAINT )
+        if( constraintF.type() == carl::FormulaType::CONSTRAINT )
         {
             mInconsistentConstraintAdded = false;
             auto formulaConditionPair = mFormulaConditionMap.find( constraintF );
@@ -150,7 +153,7 @@ namespace smtrat
                 insertTooHighDegreeStatesInRanking( mpStateTree );
             }
             mFormulaConditionMap.erase( formulaConditionPair );
-            mpConditionIdAllocator->free( condToDelete->getId() );
+            mpConditionIdAllocator->free( condToDelete->id() );
             delete condToDelete;
             condToDelete = NULL;
             mConditionsChanged = true;
@@ -764,7 +767,7 @@ namespace smtrat
                 else
                 {
                     assert( sub.type() != Substitution::PLUS_INFINITY );
-                    SqrtEx substitutedTerm = sub.term().substitute( rationalAssignments );
+                    SqrtEx substitutedTerm = substitute(sub.term(), rationalAssignments );
                     if( sub.type() == Substitution::PLUS_EPSILON )
                     {
                         assert( state->substitution().variable().type() != carl::VariableType::VT_INT );
@@ -774,8 +777,8 @@ namespace smtrat
                     {
                         if( substitutedTerm.isRational() )
                             ass = substitutedTerm.asRational();
-                        if( substitutedTerm.isPolynomial() )
-                            ass = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( substitutedTerm.asPolynomial() );
+                        if( substitutedTerm.is_polynomial() )
+                            ass = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( substitutedTerm.as_polynomial() );
                         else
                             ass = substitutedTerm;
                     }
@@ -815,7 +818,7 @@ namespace smtrat
     {
         // Get the constraint of this condition.
         const ConstraintT& constraint = (*_condition).constraint();
-        assert( _condition->constraint().hasVariable( _eliminationVar ) );
+        assert( _condition->constraint().variables().has( _eliminationVar ) );
         bool generatedTestCandidateBeingASolution = false;
         unsigned numberOfAddedChildren = 0;
         carl::PointerSet<vs::Condition> oConditions;
@@ -837,22 +840,26 @@ namespace smtrat
             Substitution::Type subType = weakConstraint ? Substitution::NORMAL : Substitution::PLUS_EPSILON;
             std::vector< Poly > factors = std::vector< Poly >();
             ConstraintsT sideConditions;
-            if( Settings::elimination_with_factorization && constraint.hasFactorization() )
+            if( Settings::elimination_with_factorization )
             {
-                for( auto iter = constraint.factorization().begin(); iter != constraint.factorization().end(); ++iter )
-                {
-                    if( carl::variables(iter->first).has( _eliminationVar ) )
-                        factors.push_back( iter->first );
-                    else
+                auto& factorization = constraint.lhs_factorization();
+                if (!carl::is_trivial(factorization)) {
+                    for( auto iter = factorization.begin(); iter != factorization.end(); ++iter )
                     {
-                        ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
-                        if( cons != ConstraintT( true ) )
+                        if( carl::variables(iter->first).has( _eliminationVar ) )
+                            factors.push_back( iter->first );
+                        else
                         {
-                            assert( cons != ConstraintT( false ) );
-                            sideConditions.insert( cons );
+                            ConstraintT cons = ConstraintT( iter->first, carl::Relation::NEQ );
+                            if( cons != ConstraintT( true ) )
+                            {
+                                assert( cons != ConstraintT( false ) );
+                                sideConditions.insert( cons );
+                            }
                         }
                     }
                 }
+                
             }
             else
                 factors.push_back( constraint.lhs() );
@@ -1210,7 +1217,7 @@ namespace smtrat
                 _currentState->rConditions().pop_back();
                 if( Settings::use_variable_bounds )
                     _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
-                mpConditionIdAllocator->free( pCond->getId() );
+                mpConditionIdAllocator->free( pCond->id() );
                 delete pCond;
                 pCond = NULL;
             }
@@ -1249,7 +1256,7 @@ namespace smtrat
                         _currentState->rConditions().pop_back();
                         if( Settings::use_variable_bounds )
                             _currentState->rVariableBounds().removeBound( pCond->constraint(), pCond );
-                        mpConditionIdAllocator->free( pCond->getId() );
+                        mpConditionIdAllocator->free( pCond->id() );
                         delete pCond;
                         pCond = NULL;
                     }
@@ -1269,7 +1276,7 @@ namespace smtrat
             {
                 const vs::Condition* rpCond = oldConditions.back();
                 oldConditions.pop_back();
-                mpConditionIdAllocator->free( rpCond->getId() );
+                mpConditionIdAllocator->free( rpCond->id() );
                 delete rpCond;
                 rpCond = NULL;
             }
@@ -1281,7 +1288,7 @@ namespace smtrat
                     {
                         const vs::Condition* rpCond = allSubResults.back().back().back();
                         allSubResults.back().back().pop_back();
-                        mpConditionIdAllocator->free( rpCond->getId() );
+                        mpConditionIdAllocator->free( rpCond->id() );
                         delete rpCond;
                         rpCond = NULL;
                     }
@@ -1291,6 +1298,24 @@ namespace smtrat
             }
         }
         return !anySubstitutionFailed;
+    }
+
+    namespace vsmodulehelper {
+        /**
+         * @param _var The variable to check the size of its solution set for.
+         * @return true, if it is easy to decide whether this constraint has a finite solution set
+         *                in the given variable;
+         *          false, otherwise.
+         */
+        bool hasFinitelyManySolutionsIn(const ConstraintT& constr, const carl::Variable& _var) {
+            if (constr.variables().has(_var))
+                return true;
+            if (constr.relation() == carl::Relation::EQ) {
+                if (constr.variables().size() == 1)
+                    return true;
+            }
+            return false;
+        }
     }
 
     template<class Settings>
@@ -1311,7 +1336,7 @@ namespace smtrat
                 {
                     bool onlyTestCandidateToConsider = false;
                     if( _currentState->index() != carl::Variable::NO_VARIABLE ) // TODO: Maybe only if the degree is not to high
-                        onlyTestCandidateToConsider = (**cond).constraint().hasFinitelyManySolutionsIn( _currentState->index() );
+                        onlyTestCandidateToConsider = vsmodulehelper::hasFinitelyManySolutionsIn((**cond).constraint(), _currentState->index() );
                     if( onlyTestCandidateToConsider )
                         deleteExistingTestCandidates = true;
                 }
@@ -1346,7 +1371,7 @@ namespace smtrat
                      */
                     for( auto cond = recentlyAddedConditions.begin(); cond != recentlyAddedConditions.end(); ++cond )
                     {
-                        if( _currentState->index() != carl::Variable::NO_VARIABLE && (**cond).constraint().hasVariable( _currentState->index() ) )
+                        if( _currentState->index() != carl::Variable::NO_VARIABLE && (**cond).constraint().variables().has( _currentState->index() ) )
                         {
                             bool worseConditionFound = false;
                             auto child = _currentState->rChildren().begin();
@@ -1526,12 +1551,12 @@ namespace smtrat
             auto receivedConstraint = rReceivedFormula().begin();
             while( receivedConstraint != rReceivedFormula().end() )
             {
-                if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
+                if( receivedConstraint->formula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
                         break;
                 }
-                else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
+                else if( receivedConstraint->formula().type() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
                     if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
@@ -1570,12 +1595,12 @@ namespace smtrat
             auto receivedConstraint = rReceivedFormula().begin();
             while( receivedConstraint != rReceivedFormula().end() )
             {
-                if( receivedConstraint->formula().getType() == carl::FormulaType::CONSTRAINT )
+                if( receivedConstraint->formula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( (**oCond).constraint() == receivedConstraint->formula().constraint() )
                         break;
                 }
-                else if( receivedConstraint->formula().getType() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().getType() == carl::FormulaType::CONSTRAINT )
+                else if( receivedConstraint->formula().type() == carl::FormulaType::NOT && receivedConstraint->formula().subformula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     ConstraintT recConstraint = receivedConstraint->formula().subformula().constraint();
                     if( (**oCond).constraint() == ConstraintT( recConstraint.lhs(), carl::inverse( recConstraint.relation() ) ) )
@@ -1737,7 +1762,6 @@ namespace smtrat
                         }
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
-                        Rational evaluatedSubTerm;
                         if( carl::isZero(carl::substitute(subTerm.denominator(), varSolutions )) )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Something is zero");
@@ -1745,7 +1769,9 @@ namespace smtrat
                                 splitUnequalConstraint( FormulaT( subTerm.denominator(), carl::Relation::NEQ ) );
                             return false;
                         }
-                        bool assIsInteger = subTerm.evaluate( evaluatedSubTerm, varSolutions, -1 );
+                        auto result = evaluate( subTerm, varSolutions, -1 );
+                        Rational evaluatedSubTerm = result.first;
+                        bool assIsInteger = result.second;
                         assIsInteger &= carl::isInteger( evaluatedSubTerm );
                         if( !assIsInteger )
                         {

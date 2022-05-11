@@ -2,7 +2,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-cad/projectionoperator/utils.h>
 #include <carl-covering/carl-covering.h>
 #include <carl/ran/interval/ran_interval_extra.h>
@@ -195,13 +195,13 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Does not have variable");
         return false;
     }
-    carl::carlVariables vars;
-    constr.gatherVariables(vars);
+    carl::carlVariables vars = carl::variables(constr);
     if (!var_subset(vars, model, variable)) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(constr.definingPolynomial(), variable), as_ran_map(model))) {
+ 
+    if (carl::ran::real_roots(carl::to_univariate_polynomial(constr.defining_polynomial(), variable), as_ran_map(model)).is_nullified()) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }
@@ -211,19 +211,19 @@ bool compute_unsat_intervals(const VariableComparisonT& constr, const Model& mod
         return false;
     }
 
-    assert(carl::irreducibleFactors(constr.definingPolynomial(), false).size() == 1);
+    assert(carl::irreducibleFactors(constr.defining_polynomial(), false).size() == 1);
 
     RAN ran;
     indexed_root ir;
     if (std::holds_alternative<RAN>(constr.value())) {
         ran = std::get<RAN>(constr.value());
         size_t index = 1; // TODO determine index, not relevant for covering
-        ir = indexed_root({ constr.definingPolynomial(), index });
+        ir = indexed_root({ constr.defining_polynomial(), index });
     } else {
         assert(std::holds_alternative<MultivariateRootT>(constr.value()));
-        ir = indexed_root({ constr.definingPolynomial(), std::get<MultivariateRootT>(constr.value()).k() });
+        ir = indexed_root({ constr.defining_polynomial(), std::get<MultivariateRootT>(constr.value()).k() });
 
-        auto res = std::get<MultivariateRootT>(constr.value()).evaluate(as_ran_map(model));
+        auto res = evaluate(std::get<MultivariateRootT>(constr.value()),as_ran_map(model));
         assert(res);
         ran = *res;
     }
@@ -271,7 +271,7 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Contains unassigned variables");
         return false;
     }
-    if (carl::ran::interval::vanishes(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model))) {
+    if (carl::ran::real_roots(carl::to_univariate_polynomial(constr.lhs(), variable), as_ran_map(model)).is_nullified()) {
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecellcad.firstlevel", "Vanishes");
         return false;
     }
@@ -388,10 +388,10 @@ bool compute_unsat_intervals(const ConstraintT& constr, const Model& model, carl
 }
 
 bool compute_unsat_intervals(const FormulaT& constr, const Model& model, carl::Variable variable, std::vector<cell_at_level>& results) {
-    if (constr.getType() == carl::FormulaType::CONSTRAINT) {
+    if (constr.type() == carl::FormulaType::CONSTRAINT) {
         return compute_unsat_intervals(constr.constraint(), model, variable, results);
-    } else if (constr.getType() == carl::FormulaType::VARCOMPARE) {
-        return compute_unsat_intervals(constr.variableComparison(), model, variable, results);
+    } else if (constr.type() == carl::FormulaType::VARCOMPARE) {
+        return compute_unsat_intervals(constr.variable_comparison(), model, variable, results);
     } else {
         assert(false);
         return false;

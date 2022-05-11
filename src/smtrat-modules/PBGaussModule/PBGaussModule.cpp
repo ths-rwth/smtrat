@@ -55,7 +55,7 @@ namespace smtrat
 	{
 		for(const auto& subformula : rReceivedFormula()){
 			const FormulaT& f = subformula.formula();
-			if(f.getType() == carl::FormulaType::CONSTRAINT){
+			if(f.type() == carl::FormulaType::CONSTRAINT){
 				const ConstraintT& c = f.constraint();
 				for (const auto& var : c.variables()) {
 					mVariables.insert(var);
@@ -137,7 +137,7 @@ namespace smtrat
 				}
 			}
 			
-			coef.push_back(-it.constantPart());
+			coef.push_back(-it.lhs().constantPart());
 		}
 		
 		std::size_t rows = mEquations.size();
@@ -247,7 +247,7 @@ template<class Settings>
 					ineqCoef.push_back(0);
 				}
 			}
-			ineqCoef.push_back(i.constantPart());
+			ineqCoef.push_back(i.lhs().constantPart());
 		}
 
 

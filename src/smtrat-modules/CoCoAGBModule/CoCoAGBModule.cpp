@@ -37,7 +37,7 @@ namespace smtrat
 	template<class Settings>
 	bool CoCoAGBModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
 	{
-		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+		assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
 		auto p = getPoly(_subformula->formula().constraint());
 		if (p) {
 			mGBPolys.emplace(_subformula->formula().constraint(), *p);
@@ -51,7 +51,7 @@ namespace smtrat
 	template<class Settings>
 	void CoCoAGBModule<Settings>::removeCore( ModuleInput::const_iterator _subformula )
 	{
-		assert(_subformula->formula().getType() == carl::FormulaType::CONSTRAINT);
+		assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
 		auto it = mGBPolys.find(_subformula->formula().constraint());
 		if (it != mGBPolys.end()) {
 			mGBPolys.erase(it);

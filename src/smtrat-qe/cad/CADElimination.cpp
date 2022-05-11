@@ -13,8 +13,7 @@ CADElimination::CADElimination(const FormulaT& quantifierFreePart, const QEQuery
 	mQuantifierFreePart = quantifierFreePart;
 	mQuantifiers = smtrat::qe::flattenQEQuery(quantifiers);
 
-	carl::carlVariables vars;
-	quantifierFreePart.gatherVariables(vars);
+	carl::carlVariables vars = carl::variables(quantifierFreePart);
 	// quantified variables
 	for (const auto& v : mQuantifiers) {
 		mVariables.emplace_back(v.second);
@@ -29,7 +28,7 @@ CADElimination::CADElimination(const FormulaT& quantifierFreePart, const QEQuery
 	// number of free variables
 	k = mVariables.size() - mQuantifiers.size();
 
-	mQuantifierFreePart.getConstraints(mConstraints);
+	carl::arithmetic_constraints(mQuantifierFreePart,mConstraints);
 }
 
 FormulaT CADElimination::eliminateQuantifiers() {

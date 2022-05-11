@@ -8,7 +8,7 @@
 #include "LRAModule.h"
 
 #include <smtrat-common/model.h>
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 #ifdef DEBUG_METHODS_TABLEAU
 //#define DEBUG_METHODS_LRA_MODULE
@@ -47,7 +47,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         std::cout << "LRAModule::inform  " << "inform about " << _constraint << std::endl;
         #endif
-        if( _constraint.getType() == carl::FormulaType::CONSTRAINT )
+        if( _constraint.type() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
             if( !constraint.lhs().isConstant() && constraint.lhs().isLinear() )
@@ -80,7 +80,7 @@ namespace smtrat
         std::cout << "LRAModule::add " << _subformula->formula() << std::endl;
         #endif
         mOptimumComputed = false;
-        switch( _subformula->formula().getType() )
+        switch( _subformula->formula().type() )
         {
             case carl::FormulaType::FALSE:
             {
@@ -121,7 +121,7 @@ namespace smtrat
 						assert( bounds != NULL );
 						activateBound( *bounds->begin(), formula );
 
-						if( !(*bounds->begin())->neqRepresentation().isTrue() )
+						if( !(*bounds->begin())->neqRepresentation().is_true() )
 						{
 							auto pos = mActiveUnresolvedNEQConstraints.find( (*bounds->begin())->neqRepresentation() );
 							if( pos != mActiveUnresolvedNEQConstraints.end() )
@@ -191,7 +191,7 @@ namespace smtrat
         #endif
         mOptimumComputed = false;
         const FormulaT& formula = _subformula->formula();
-        if( formula.getType() == carl::FormulaType::CONSTRAINT )
+        if( formula.type() == carl::FormulaType::CONSTRAINT )
         {
             // Remove the mapping of the constraint to the sub-formula in the received formula
             const ConstraintT& constraint = formula.constraint();
@@ -219,13 +219,13 @@ namespace smtrat
 						bool mainOriginRemains = true;
 						while( origin != (*bound)->origins().end() )
 						{
-							if( origin->getType() == carl::FormulaType::AND && origin->contains( pformula ) )
+							if( origin->type() == carl::FormulaType::AND && origin->contains( pformula ) )
 							{
 								origin = (*bound)->pOrigins()->erase( origin );
 							}
 							else if( mainOriginRemains && *origin == pformula )
 							{
-								assert( origin->getType() == carl::FormulaType::CONSTRAINT );
+								assert( origin->type() == carl::FormulaType::CONSTRAINT );
 								origin = (*bound)->pOrigins()->erase( origin );
 								// ensures that only one main origin is removed, in the case that a formula is contained more than once in the module input
 								mainOriginRemains = false;
@@ -237,7 +237,7 @@ namespace smtrat
 						}
 						if( (*bound)->origins().empty() )
 						{
-							if( !(*bound)->neqRepresentation().isTrue() )
+							if( !(*bound)->neqRepresentation().is_true() )
 							{
 								auto constrBoundIterB = mTableau.constraintToBound().find( (*bound)->neqRepresentation() );
 								assert( constrBoundIterB != mTableau.constraintToBound().end() );
@@ -331,13 +331,13 @@ namespace smtrat
             std::cout << f.formula() << std::endl;
         #endif
         bool containsIntegerValuedVariables = true;
-        if( !rReceivedFormula().isConstraintConjunction() )
+        if( !rReceivedFormula().is_constraint_conjunction() )
             return processResult( UNKNOWN );
         if( !mInfeasibleSubsets.empty() )
             return processResult( UNSAT );
         if( Settings::simple_theory_propagation )
             simpleTheoryPropagation();
-        if( rReceivedFormula().isRealConstraintConjunction() )
+        if( rReceivedFormula().is_real_constraint_conjunction() )
             containsIntegerValuedVariables = false;
 //        if( mTableau.isConflicting() )
 //            exit(77);
@@ -512,7 +512,7 @@ namespace smtrat
     template<class Settings>
     unsigned LRAModule<Settings>::currentlySatisfied( const FormulaT& _formula ) const
     {
-        switch( _formula.getType() )
+        switch( _formula.type() )
         {
             case carl::FormulaType::TRUE:
                 return 1;
@@ -641,7 +641,7 @@ namespace smtrat
             }
         }
         // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
-        if(true || _result != UNKNOWN && !rReceivedFormula().isRealConstraintConjunction() )
+        if(true || _result != UNKNOWN && !rReceivedFormula().is_real_constraint_conjunction() )
         {
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {
@@ -677,7 +677,7 @@ namespace smtrat
             for( auto bound = bounds.begin(); bound != bounds.end(); ++bound )
             {
                 const FormulaT& boundOrigins = *(*bound)->origins().begin();
-                if( boundOrigins.getType() == carl::FormulaType::AND )
+                if( boundOrigins.type() == carl::FormulaType::AND )
                 {
                     originSet.insert( originSet.end(), boundOrigins.subformulas().begin(), boundOrigins.subformulas().end() );
                     for( auto origin = boundOrigins.subformulas().begin(); origin != boundOrigins.subformulas().end(); ++origin )
@@ -693,7 +693,7 @@ namespace smtrat
                 }
                 else
                 {
-                    assert( boundOrigins.getType() == carl::FormulaType::CONSTRAINT );
+                    assert( boundOrigins.type() == carl::FormulaType::CONSTRAINT );
                     originSet.push_back( boundOrigins );
                     auto constrBoundIter = mTableau.rConstraintToBound().find( boundOrigins );
                     assert( constrBoundIter != mTableau.constraintToBound().end() );
@@ -897,11 +897,11 @@ namespace smtrat
         for( const LRABound* bound : _premiseBounds )
         {
             const FormulaT& origin = *bound->origins().begin();
-            if( origin.getType() == carl::FormulaType::AND )
+            if( origin.type() == carl::FormulaType::AND )
             {
                 for( auto& subformula : origin.subformulas() )
                 {
-                    assert( subformula.getType() == carl::FormulaType::CONSTRAINT );
+                    assert( subformula.type() == carl::FormulaType::CONSTRAINT );
                     subformulas.push_back( subformula );
                     if( subformula.constraint().relation() != carl::Relation::EQ )
                         _premiseOnlyEqualities = false;
@@ -909,7 +909,7 @@ namespace smtrat
             }
             else
             {
-                assert( origin.getType() == carl::FormulaType::CONSTRAINT );
+                assert( origin.type() == carl::FormulaType::CONSTRAINT );
                 subformulas.push_back( origin );
                 if( origin.constraint().relation() != carl::Relation::EQ )
                     _premiseOnlyEqualities = false;
@@ -1026,14 +1026,14 @@ namespace smtrat
         originSet.push_back( _neqOrigin );
         auto iter = _weakBound.origins().begin();
         assert( iter != _weakBound.origins().end() );
-        if( iter->getType() == carl::FormulaType::AND )
+        if( iter->type() == carl::FormulaType::AND )
         {
             originSet.insert( originSet.end(), iter->subformulas().begin(), iter->subformulas().end() );
             involvedConstraints.insert( iter->subformulas().begin(), iter->subformulas().end() );
         }
         else
         {
-            assert( iter->getType() == carl::FormulaType::CONSTRAINT );
+            assert( iter->type() == carl::FormulaType::CONSTRAINT );
             originSet.push_back( *iter );
             involvedConstraints.insert( *iter );
         }
@@ -1044,14 +1044,14 @@ namespace smtrat
         {
             FormulasT originSetB;
             originSetB.push_back( _neqOrigin );
-            if( iter->getType() == carl::FormulaType::AND )
+            if( iter->type() == carl::FormulaType::AND )
             {
                 originSetB.insert( originSetB.end(), iter->subformulas().begin(), iter->subformulas().end() );
                 involvedConstraints.insert( iter->subformulas().begin(), iter->subformulas().end() );
             }
             else
             {
-                assert( iter->getType() == carl::FormulaType::CONSTRAINT );
+                assert( iter->type() == carl::FormulaType::CONSTRAINT );
                 originSetB.push_back( *iter );
                 involvedConstraints.insert( *iter );
             }
@@ -1336,8 +1336,8 @@ namespace smtrat
                     ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
                     ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - carl::evaluate(*gomory_poly, rMap_ ), carl::Relation::LESS );
                     //std::cout << gomory_constr << std::endl;
-                    assert( !gomory_constr.satisfiedBy( rMap_ ) );
-                    assert( !neg_gomory_constr.satisfiedBy( rMap_ ) );
+                    assert( !satisfiedBy( gomory_constr, rMap_ ) );
+                    assert( !satisfiedBy( neg_gomory_constr, rMap_ ) );
                     FormulasT subformulas;
                     mTableau.collect_premises( basicVar, subformulas );
                     FormulasT premisesOrigins;

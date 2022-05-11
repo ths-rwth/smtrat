@@ -8,12 +8,13 @@
 
 #include "BEModule.h"
 
+#include <carl-formula/formula/functions/Substitution.h>
+
 namespace smtrat
 {
     template<class Settings>
     BEModule<Settings>::BEModule( const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager ):
-        PModule( _formula, _conditionals, _manager ),
-        mVisitor()
+        PModule( _formula, _conditionals, _manager )
     {
         extractBoundsFunction = std::bind(&BEModule<Settings>::extractBounds, this, std::placeholders::_1);
     }
@@ -33,13 +34,13 @@ namespace smtrat
         auto receivedFormula = firstUncheckedReceivedSubformula();
         while( receivedFormula != rReceivedFormula().end() )
         {
-            FormulaT formula = mVisitor.visitResult( receivedFormula->formula(), extractBoundsFunction );
-            if( formula.isFalse() )
+            FormulaT formula = carl::visit_result( receivedFormula->formula(), extractBoundsFunction );
+            if( formula.is_false() )
             {
                 receivedFormulasAsInfeasibleSubset( receivedFormula );
                 return UNSAT;
             }
-            if( !formula.isTrue() )
+            if( !formula.is_true() )
                 addSubformulaToPassedFormula( formula, receivedFormula->formula() );
             ++receivedFormula;
         }
@@ -52,17 +53,17 @@ namespace smtrat
     template<typename Settings>
     FormulaT BEModule<Settings>::extractBounds(const FormulaT& formula)
     {
-		if (formula.getType() != carl::FormulaType::OR && formula.getType() != carl::FormulaType::AND) return formula;
-		bool conjunction = formula.getType() == carl::FormulaType::AND;
+		if (formula.type() != carl::FormulaType::OR && formula.type() != carl::FormulaType::AND) return formula;
+		bool conjunction = formula.type() == carl::FormulaType::AND;
 	
-		FormulaT::ConstraintBounds cb;
+		carl::ConstraintBounds<Poly> cb;
 		collectBounds(cb, formula, conjunction);
 		if (cb.empty()) return formula;
 		
 		SMTRAT_LOG_DEBUG("smtrat.be", "Extracted bounds " << cb);
 		if (conjunction) {
 			FormulasT f;
-			FormulaT::swapConstraintBounds(cb, f, conjunction);
+			swapConstraintBounds(cb, f, conjunction);
 			f.push_back(formula);
 			return FormulaT(carl::FormulaType::AND, std::move(f));
 		} else {
@@ -86,10 +87,10 @@ namespace smtrat
 	}
 	
 	template<typename Settings>
-	void BEModule<Settings>::collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const {
+	void BEModule<Settings>::collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const {
 		for (const auto& f: formula.subformulas()) {
-			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
-				FormulaT::addConstraintBound(cb, f, conjunction);
+			if (f.type() == carl::FormulaType::CONSTRAINT || (f.type() == carl::FormulaType::NOT && f.subformula().type() == carl::FormulaType::CONSTRAINT)) {
+				addConstraintBound(cb, f, conjunction);
 			}
 		}
 	}
@@ -105,10 +106,9 @@ namespace smtrat
 			variables.push_back(v);
 			repl.emplace(form, FormulaT(r.second));
 		}
-		carl::FormulaSubstitutor<FormulaT> subs;
-		FormulaT res = subs.substitute(f, repl);
+		FormulaT res = carl::substitute(f, repl);
 		carl::carlVariables remainingVars;
-		res.gatherVariables(remainingVars);
+		carl::variables(res,remainingVars);
 		FormulasT impl;
 		for (const auto& v: variables) {
 			if (remainingVars.has(v)) {

@@ -80,7 +80,7 @@ namespace smtrat
         INTBLAST_DEBUG("ADD " << formula);
 
         std::vector<ConstraintT> containedConstraints;
-        formula.getConstraints(containedConstraints);
+        carl::arithmetic_constraints(formula, containedConstraints);
 
         /*
          * Steps that are applied for every constraint in formula
@@ -118,7 +118,7 @@ namespace smtrat
          * Steps that are applied if the formula is only a single constraint
          */
 
-        if(formula.getType() == carl::FormulaType::CONSTRAINT) {
+        if(formula.type() == carl::FormulaType::CONSTRAINT) {
             // Update mBoundsFromInput using the new formula
             mBoundsFromInput.addBound(formula.constraint(), formula);
 
@@ -150,7 +150,7 @@ namespace smtrat
         mInputVariables.removeOrigin(formula);
         mNonlinearInputVariables.removeOrigin(formula);
 
-        if(formula.getType() == carl::FormulaType::CONSTRAINT) {
+        if(formula.type() == carl::FormulaType::CONSTRAINT) {
             mBoundsFromInput.removeBound(formula.constraint(), formula);
         }
         // mBoundsInRestriction: updated by updateBoundsFromICP() in next check
@@ -693,9 +693,8 @@ namespace smtrat
         INTBLAST_DEBUG("Formula " << _formula << " encoded to BV:");
 
         FormulasT bitvectorConstraints;
-        carl::FormulaVisitor<FormulaT> visitor;
         std::function<FormulaT(FormulaT)> encodeConstraints = std::bind(&IntBlastModule::encodeConstraintToBV, this, std::placeholders::_1, &bitvectorConstraints);
-        FormulaT bitvectorFormula = visitor.visitResult(_formula, encodeConstraints);
+        FormulaT bitvectorFormula = carl::visit_result(_formula, encodeConstraints);
 
         addFormulaToBV(bitvectorFormula, _formula);
 
@@ -707,7 +706,7 @@ namespace smtrat
     template<class Settings>
     FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT* _collectedBitvectorConstraints)
     {
-        if(_original.getType() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
+        if(_original.type() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
         {
             ConstrTree constraintTree(_original.constraint());
             const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, *_collectedBitvectorConstraints);
@@ -1040,7 +1039,7 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::addConstraintFormulaToICP(const FormulaT& _formula)
     {
-        assert(_formula.getType() == carl::FormulaType::CONSTRAINT);
+        assert(_formula.type() == carl::FormulaType::CONSTRAINT);
         ConstrTree constraintTree(_formula.constraint());
 
         // Add the root (the constraint itself) to ICP
@@ -1295,7 +1294,7 @@ namespace smtrat
         // ConstrBlastings is now deleted
         for(const auto& inputFormula : rReceivedFormula()) {
             std::vector<ConstraintT> constraintsInFormula;
-            inputFormula.formula().getConstraints(constraintsInFormula);
+            arithmetic_constraints(inputFormula.formula(),constraintsInFormula);
 
             bool needsReencoding = false;
             for(const ConstraintT& constraint : constraintsInFormula) {

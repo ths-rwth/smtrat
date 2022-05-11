@@ -9,7 +9,7 @@
 
 #include "CurryModule.h"
 
-#include <carl/formula/uninterpreted/UFInstanceManager.h>
+#include <carl-formula/uninterpreted/UFInstanceManager.h>
 
 namespace smtrat
 {
@@ -47,13 +47,13 @@ namespace smtrat
     template<class Settings>
     auto CurryModule<Settings>::curry(const FormulaT& formula) noexcept -> FormulaT
     {
-        assert(formula.getType() == carl::UEQ);
+        assert(formula.type() == carl::UEQ);
 
         if (auto res = formula_store.find(formula); res != formula_store.end()) {
             return res->second;
         }
 
-        const auto& ueq = formula.uequality();
+        const auto& ueq = formula.u_equality();
 
         auto eq = FormulaT(curry(ueq.lhs()), curry(ueq.rhs()), ueq.negated());
         formula_store.emplace(formula, eq);
@@ -130,12 +130,12 @@ namespace smtrat
     template<class Settings>
     auto CurryModule<Settings>::flatten(const FormulaT& formula) noexcept -> const std::vector<FormulaT>&
     {
-        assert(formula.getType() == carl::UEQ);
+        assert(formula.type() == carl::UEQ);
         if (auto res = flattened_store.find(formula); res != flattened_store.end()) {
             return res->second;
         }
 
-        const auto& ueq = formula.uequality();
+        const auto& ueq = formula.u_equality();
 
         std::vector<FormulaT> substitution;
         auto lhs = flatten(ueq.lhs(), substitution);
@@ -149,17 +149,15 @@ namespace smtrat
     template<class Settings>
     bool CurryModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        carl::FormulaVisitor<FormulaT> visitor;
-
-        auto curryfied = visitor.visitResult( _subformula->formula(), [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ)
+        auto curryfied = carl::visit_result( _subformula->formula(), [&] (const auto& formula) {
+            if (formula.type() == carl::UEQ)
                 return curry(formula);
             else
                 return formula;
         } );
 
-        auto flattened = visitor.visitResult( curryfied, [&] (const auto& formula) {
-            if (formula.getType() == carl::UEQ)
+        auto flattened = carl::visit_result( curryfied, [&] (const auto& formula) {
+            if (formula.type() == carl::UEQ)
                 return FormulaT(carl::FormulaType::AND, flatten(formula));
             else
                 return formula;

@@ -18,9 +18,9 @@ namespace smtrat {
 			typedef carl::UEquality UEquality;
 
 			FormulaT rewrite_ueq(const FormulaT& formula) {
-				assert(formula.getType() == carl::UEQ);
+				assert(formula.type() == carl::UEQ);
 
-				const UEquality& ueq = formula.uequality();
+				const UEquality& ueq = formula.u_equality();
 				UVariable lhs, rhs;
 				bool changed = false;
 

@@ -1,5 +1,6 @@
 #include "Explanation.h"
 #include <smtrat-cadcells/algorithms/onecell.h>
+#include <carl-formula/formula/functions/Negations.h>
 
 namespace smtrat::mcsat::onecell {
 
@@ -22,7 +23,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
     vars.push_back(var);
 
     carl::carlVariables reason_vars;
-    for (const auto& r : reason) r.gatherVariables(reason_vars);
+    for (const auto& r : reason) carl::variables(r,reason_vars);
     for (const auto v : reason_vars) {
         if (ass.find(v) == ass.end() && v != var) {
             SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Conflict reasons are of higher level than the current one.");
@@ -44,7 +45,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result->second << " of constraints " << result->first << " wrt " << vars << " and " << ass);
         FormulasT expl;
         for (const auto& f : result->first) expl.push_back(f.negated());
-        expl.push_back(result->second.negated().resolveNegation());
+        expl.push_back(carl::resolve_negation(result->second.negated()));
         return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(expl)));
     } 
 }

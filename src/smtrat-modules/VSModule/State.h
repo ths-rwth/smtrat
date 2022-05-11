@@ -10,7 +10,7 @@
 #include <map>
 #include <limits.h>
 #include "Substitution.h"
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 #include <smtrat-variablebounds/VariableBounds.h>
 #include "VSSettings.h"
 

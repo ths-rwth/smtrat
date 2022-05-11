@@ -9,6 +9,7 @@
 #include "MCBModule.h"
 
 #include <smtrat-common/model.h>
+#include <carl-formula/formula/functions/Substitution.h>
 
 namespace smtrat
 {
@@ -85,10 +86,9 @@ namespace smtrat
 	{
 		mRemaining.clear();
 		mChoices.clear();
-		carl::FormulaVisitor<FormulaT> visitor;
 		auto receivedFormula = firstUncheckedReceivedSubformula();
 		while (receivedFormula != rReceivedFormula().end()) {
-			visitor.visit(receivedFormula->formula(), collectChoicesFunction);
+			carl::visit(receivedFormula->formula(), collectChoicesFunction);
 			receivedFormula++;
 		}
 		FormulaT newFormula = applyReplacements(FormulaT(rReceivedFormula()));
@@ -113,19 +113,19 @@ namespace smtrat
 	}
 	
 	template<typename Settings>
-	void MCBModule<Settings>::collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const {
+	void MCBModule<Settings>::collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const {
 		for (const auto& f: formula.subformulas()) {
-			if (f.getType() == carl::FormulaType::CONSTRAINT || (f.getType() == carl::FormulaType::NOT && f.subformula().getType() == carl::FormulaType::CONSTRAINT)) {
-				FormulaT::addConstraintBound(cb, f, conjunction);
+			if (f.type() == carl::FormulaType::CONSTRAINT || (f.type() == carl::FormulaType::NOT && f.subformula().type() == carl::FormulaType::CONSTRAINT)) {
+				addConstraintBound(cb, f, conjunction);
 			}
 		}
 	}
 	
 	template<typename Settings>
 	void MCBModule<Settings>::collectChoices(const FormulaT& formula) {
-		if (formula.getType() != carl::FormulaType::OR) return;
+		if (formula.type() != carl::FormulaType::OR) return;
 		
-		FormulaT::ConstraintBounds cb;
+		carl::ConstraintBounds<Poly> cb;
 		collectBounds(cb, formula, false);
 		if (cb.empty()) return;
 			
@@ -161,9 +161,8 @@ namespace smtrat
 				repl.emplace(form, FormulaT(v));
 			}
 		}
-		carl::FormulaSubstitutor<FormulaT> subs;
 		SMTRAT_LOG_DEBUG("smtrat.mcb", "Applying " << repl << " on \n\t" << f);
-		FormulaT res = subs.substitute(f, repl);
+		FormulaT res = carl::substitute(f, repl);
 		SMTRAT_LOG_DEBUG("smtrat.mcb", "Resulting in\n\t" << res);
 		
 		mRemaining.clear();

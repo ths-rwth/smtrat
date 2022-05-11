@@ -30,7 +30,8 @@
 #include "BVModule.h"
 #include <limits>
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
+#include <carl-formula/formula/functions/Complexity.h>
 
 //#define DEBUG_BVMODULE
 
@@ -72,17 +73,17 @@ namespace smtrat
     template<class Settings>
     bool BVModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
     {
-        if( _subformula->formula().isTrue() )
+        if( _subformula->formula().is_true() )
             return true;
         mModelComputed = false;
-        if( _subformula->formula().isFalse() )
+        if( _subformula->formula().is_false() )
         {
             receivedFormulasAsInfeasibleSubset( _subformula );
             return false;
         }
         if( Settings::incremental_flattening )
         {
-            auto sortKey = std::make_pair( evaluateBVFormula(_subformula->formula()), _subformula->formula().getId() );
+            auto sortKey = std::make_pair( evaluateBVFormula(_subformula->formula()), _subformula->formula().id() );
             #ifdef DEBUG_BVMODULE
             std::cout << std::endl << std::endl << "add formula" << std::endl;
             std::cout << _subformula->formula() << std::endl;
@@ -298,9 +299,9 @@ namespace smtrat
     template<class Settings>
     size_t BVModule<Settings>::evaluateBVFormula( const FormulaT& _formula )
     {
-        if( _formula.getType() == carl::FormulaType::CONSTRAINT && _formula.constraint().relation() == carl::Relation::EQ )
-            return _formula.complexity();
-        return Settings::equation_preference_weight * _formula.complexity();
+        if( _formula.type() == carl::FormulaType::CONSTRAINT && _formula.constraint().relation() == carl::Relation::EQ )
+            return carl::complexity(_formula);
+        return Settings::equation_preference_weight * carl::complexity(_formula);
     }
 }
 

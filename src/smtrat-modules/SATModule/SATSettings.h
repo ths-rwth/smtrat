@@ -159,6 +159,11 @@ struct SATSettingsMCSATFMICPVSOC : SATSettingsMCSAT {
     using MCSATSettings = mcsat::MCSATSettingsFMICPVSOC;
 };
 
+struct SATSettingsMCSATFMICPOC : SATSettingsMCSAT {
+    static constexpr auto muduleName = "SATModule<SATSettingsMCSATFMICPOC>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPOC;
+};
+
 struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
     static constexpr auto muduleName = "SATModule<MCSATOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsOCNew;

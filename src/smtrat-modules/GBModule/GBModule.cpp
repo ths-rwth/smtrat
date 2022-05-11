@@ -56,7 +56,7 @@ GBModule<Settings>::~GBModule( )
 template<class Settings>
 bool GBModule<Settings>::addCore( ModuleInput::const_iterator _formula )
 {
-    if( _formula->formula().getType() != carl::FormulaType::CONSTRAINT )
+    if( _formula->formula().type() != carl::FormulaType::CONSTRAINT )
     {
         return true;
     }
@@ -166,7 +166,7 @@ Answer GBModule<Settings>::checkCore()
     std::cout << "GB Called" << std::endl;
 #endif
     // We can only handle conjunctions of constraints.
-    if(!rReceivedFormula().isConstraintConjunction())
+    if(!rReceivedFormula().is_constraint_conjunction())
     {
         return UNKNOWN;
     }
@@ -273,7 +273,7 @@ Answer GBModule<Settings>::checkCore()
             for( ++it; it != mBacktrackPoints.end( ); ++it )
             {
                 assert(it != mBacktrackPoints.end());
-                assert( (*it)->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+                assert( (*it)->formula().type() == carl::FormulaType::CONSTRAINT );
                 assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) ==  carl::Relation::EQ );
 
                 if( Settings::getReasonsForInfeasibility )
@@ -322,7 +322,7 @@ Answer GBModule<Settings>::checkCore()
             // TODO: Do not use rPassedFormulaBegin, which should be disabled
             for( ModuleInput::iterator i = passedFormulaBegin( ); i != rPassedFormula().end( ); )
             {
-                // assert( i->formula().getType( ) == carl::FormulaType::CONSTRAINT ); // TODO: Assure, not to add TRUE to the passed formula.
+                // assert( i->formula().type() == carl::FormulaType::CONSTRAINT ); // TODO: Assure, not to add TRUE to the passed formula.
                 if( std::count(mGbEqualities.begin(), mGbEqualities.end(), i->formula()) == 1 )
                 {
                     i = super::eraseSubformulaFromPassedFormula( i, true );
@@ -624,7 +624,7 @@ void GBModule<Settings>::newConstraintDeduction( )
 template<class Settings>
 void GBModule<Settings>::removeCore( ModuleInput::const_iterator _formula )
 {
-    if(_formula->formula().getType() !=  carl::FormulaType::CONSTRAINT) {
+    if(_formula->formula().type() !=  carl::FormulaType::CONSTRAINT) {
         return;
     }
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -671,7 +671,7 @@ void GBModule<Settings>::removeReceivedFormulaFromNewInequalities( ModuleInput::
 template<class Settings>
 void GBModule<Settings>::pushBacktrackPoint( ModuleInput::const_iterator btpoint )
 {
-    assert( mBacktrackPoints.empty( ) || btpoint->formula().getType( ) ==  carl::FormulaType::CONSTRAINT );
+    assert( mBacktrackPoints.empty( ) || btpoint->formula().type() ==  carl::FormulaType::CONSTRAINT );
     assert( mBacktrackPoints.size( ) == mStateHistory.size( ) );
 
     // We save the current level
@@ -810,16 +810,16 @@ template<class Settings>
 typename GBModule<Settings>::GBPolynomial GBModule<Settings>::transformIntoEquality( ModuleInput::const_iterator constraint )
 {
     GBPolynomial result( (typename Poly::PolyType)constraint->formula().constraint( ).lhs( ) );
-    size_t constrId = constraint->formula().constraint( ).id( );
-    std::map<size_t, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constrId );
+    const auto& constr = constraint->formula().constraint( );
+    std::map<ConstraintT, carl::Variable>::const_iterator mapentry = mAdditionalVarMap.find( constr );
     carl::Variable var = carl::Variable::NO_VARIABLE;
     if( mapentry == mAdditionalVarMap.end( ) )
     {
         std::stringstream stream;
-        stream << "AddVarGB" << constrId;
+        stream << "AddVarGB" << constr;
         
         var = carl::freshRealVariable( stream.str() );
-        mAdditionalVarMap.insert(std::pair<size_t, carl::Variable>(constrId, var));
+        mAdditionalVarMap.insert(std::pair<ConstraintT, carl::Variable>(constr, var));
     }
     else
     {
@@ -912,7 +912,7 @@ void GBModule<Settings>::passGB( )
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
         assert(!simplIt->isConstant());
-        auto res = addSubformulaToPassedFormula( FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
+        auto res = addSubformulaToPassedFormula( FormulaT( Poly(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
             mGbEqualities.push_back(res.first->formula());
     }
@@ -938,7 +938,7 @@ FormulasT GBModule<Settings>::generateReasons( const carl::BitVector& reasons )
     auto it = mBacktrackPoints.begin( );
     for( ++it; it != mBacktrackPoints.end( ); ++it )
     {
-        assert( (*it)->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+        assert( (*it)->formula().type() == carl::FormulaType::CONSTRAINT );
         assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) == carl::Relation::EQ );
         // If the corresponding entry in the reason vector is set,
         // we add the polynomial.
@@ -972,7 +972,7 @@ FormulaSetT GBModule<Settings>::generateReasonSet( const carl::BitVector& reason
     auto it = mBacktrackPoints.begin( );
     for( ++it; it != mBacktrackPoints.end( ); ++it )
     {
-        assert( (*it)->formula().getType( ) == carl::FormulaType::CONSTRAINT );
+        assert( (*it)->formula().type() == carl::FormulaType::CONSTRAINT );
         assert( Settings::transformIntoEqualities != NO_INEQUALITIES || (*it)->formula().constraint( ).relation( ) == carl::Relation::EQ );
         // If the corresponding entry in the reason vector is set,
         // we add the polynomial.
