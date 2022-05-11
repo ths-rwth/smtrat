@@ -119,6 +119,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 	SMTRAT_STATISTICS_CALL(stats.countCheckSatCalls());
 	SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
 	//std::cout << "Call " << counter << "\n";
+	//std::cout << "Formula: " << FormulaT(*mpReceivedFormula) << "\n";
 	counter++;
 	if (!Settings::incremental) {
 		mModel.clear();
@@ -213,6 +214,8 @@ Answer FMPlexModule<Settings>::checkCore() {
 			}
 		}
 
+		//std::cout << "\nOn level " << std::distance(mFMPlexBranch.begin(), currentIterator) << "\n";
+		//if (currentIterator->varToEliminate) std::cout << "variable: " << currentIterator->varToEliminate.get().name();
 		// We are now on the right level + want to apply the next elimination
 		// Sort constraints from connector into same + opposite combination lists + the level's lists as well
 		auto sameBoundsToCombine = ConstraintList();
@@ -261,7 +264,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		statusCheckResult = currentIterator->trueFalseCheck();
 	}
 	SMTRAT_LOG_INFO("fmplex", "SAT");
-	//std::cout << "SAT \n";
+	std::cout << "SAT \n";
 	return SAT;
 
 }
@@ -325,8 +328,8 @@ void FMPlexModule<Settings>::updateModel() const {
 								set = true;
 							}
 						}
-						// put value between glb and ub
-						mModel.assign(var, (glb + sub)/2);
+						if (itr->oppositeDirectionConstraints.empty()) mModel.assign(var, (glb + Rational(1)));
+						else mModel.assign(var, (glb + sub)/2);
 					} else {
 						auto subLhs = itr->currentEliminator->constraint.lhs();
 						for (auto modelValuation : mModel){
@@ -353,7 +356,8 @@ void FMPlexModule<Settings>::updateModel() const {
 							}
 						}
 						// put value between sub and glb
-						mModel.assign(var, (sub + glb)/2);
+						if (itr->oppositeDirectionConstraints.empty()) mModel.assign(var, (sub - Rational(1)));
+						else mModel.assign(var, (sub + glb)/2);
 					}
 				}
 			} else {
@@ -404,6 +408,7 @@ void FMPlexModule<Settings>::updateModel() const {
 		}
 
 	}
+
 
 
 
@@ -562,7 +567,8 @@ void FMPlexModule<Settings>::FmplexLvl::baseHeuristicVarDir() {
 	// Set varToEliminate to next best var we can find
 	carl::carlVariables occurringVars = carl::variables(connector.front().constraint.lhs());
 	varToEliminate = *occurringVars.begin();
-	eliminateViaLB = true;
+	if (connector.front().constraint.lhs().lcoeff(varToEliminate.get()) > Rational(0)) eliminateViaLB = false;
+	else eliminateViaLB = true;
 }
 
 template<typename Settings>
