@@ -264,7 +264,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		statusCheckResult = currentIterator->trueFalseCheck();
 	}
 	SMTRAT_LOG_INFO("fmplex", "SAT");
-	std::cout << "SAT \n";
+	//std::cout << "SAT \n";
 	return SAT;
 
 }
@@ -691,6 +691,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 				while (backtrackIt->todoConstraints.empty() && backtrackIt != branch->begin()){
 					backtrackIt--;
 				}
+				if (backtrackIt == branch->begin()) return branch->end();
 				break;
 			} else if (std::string("furthest").compare(Settings::backtrackingMode) == 0 && std::distance(branch->begin(), backtrackIt) > std::distance(branch->begin(), cConstr->conflictLevel)){
 				backtrackIt = cConstr->conflictLevel;
