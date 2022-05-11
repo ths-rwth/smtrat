@@ -11,7 +11,7 @@
 #include <smtrat-solver/Module.h>
 #include <utility>
 #include <smtrat-common/statistics/Statistics.h>
-#include <carl/core/SimpleConstraint.h>
+#include <carl/constraint/BasicConstraint.h>
 #include "FMPlexSettings.h"
 
 namespace smtrat {
@@ -21,7 +21,7 @@ namespace smtrat {
 		struct ConstraintWithInfo;
 		class FmplexLvl;
 		// Typedefs
-		typedef carl::SimpleConstraint<Poly> SimpleConstraint;
+		typedef carl::BasicConstraint<Poly> BasicConstraint;
 		typedef std::list<ConstraintWithInfo> ConstraintList;
 		typedef std::list<FmplexLvl> FMPlexBranch;
 		typedef typename std::list<FMPlexModule<Settings>::FmplexLvl>::iterator BranchIterator;
@@ -98,22 +98,22 @@ namespace smtrat {
 			/*** Nested Classes and Structs ***/
 			
 			struct ConstraintWithInfo{
-				SimpleConstraint constraint;
+				BasicConstraint constraint;
 				BranchIterator conflictLevel;
-				std::map<std::shared_ptr<SimpleConstraint>, Rational> derivationCoefficients;
+				std::map<std::shared_ptr<BasicConstraint>, Rational> derivationCoefficients;
 
 				// Constructor for adding new constraints
-				ConstraintWithInfo(const std::shared_ptr<SimpleConstraint>& f, BranchIterator cl): constraint(*f), conflictLevel(cl){
+				ConstraintWithInfo(const std::shared_ptr<BasicConstraint>& f, BranchIterator cl): constraint(*f), conflictLevel(cl){
 					constraint = *f;
-					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
+					derivationCoefficients = std::map<std::shared_ptr<BasicConstraint>, Rational>();
 					derivationCoefficients[f] = Rational (1);
 					conflictLevel = cl;
 				}
 
 				// Constructor for combinations
-				ConstraintWithInfo(SimpleConstraint f, BranchIterator cl): constraint(f), conflictLevel(cl){
+				ConstraintWithInfo(BasicConstraint f, BranchIterator cl): constraint(f), conflictLevel(cl){
 					constraint = f;
-					derivationCoefficients = std::map<std::shared_ptr<SimpleConstraint>, Rational>();
+					derivationCoefficients = std::map<std::shared_ptr<BasicConstraint>, Rational>();
 					conflictLevel = cl;
 				}
 
@@ -201,10 +201,10 @@ namespace smtrat {
 
 			/*** Member Variables ***/
 			// Contains constraints newly added since last checkCore()
-			std::list<std::shared_ptr<SimpleConstraint>> mNewConstraints;
+			std::list<std::shared_ptr<BasicConstraint>> mNewConstraints;
 
 			// Bc I cant access mpReceived bc it is a private member in the superclass
-			std::list<std::shared_ptr<SimpleConstraint>> mAllConstraints;
+			std::list<std::shared_ptr<BasicConstraint>> mAllConstraints;
 
 			// Main structure for algorithm, represents the current branch of the decision tree
 			FMPlexBranch mFMPlexBranch;
@@ -213,7 +213,7 @@ namespace smtrat {
 			bool mModelFit;
 
 			// Iterator indicating up to which constraint in mNewConstraints we successfully tested our model.
-			std::list<std::shared_ptr<SimpleConstraint>>::iterator mModelFitUntilHere;
+			std::list<std::shared_ptr<BasicConstraint>>::iterator mModelFitUntilHere;
 
 			/*** Member Functions ***/
 

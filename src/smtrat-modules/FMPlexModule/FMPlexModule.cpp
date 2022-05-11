@@ -13,8 +13,8 @@ namespace smtrat {
 template<class Settings>
 FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager) : Module(_formula, _conditionals, _manager){
 	mFMPlexBranch = FMPlexBranch();
-	mAllConstraints = std::list<std::shared_ptr<SimpleConstraint>>();
-	mNewConstraints = std::list<std::shared_ptr<SimpleConstraint>>();
+	mAllConstraints = std::list<std::shared_ptr<BasicConstraint>>();
+	mNewConstraints = std::list<std::shared_ptr<BasicConstraint>>();
 	mModelFit = false;
 	mModelFitUntilHere = mNewConstraints.end();
 	counter = 1;
@@ -25,16 +25,16 @@ bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 	assert(formula->formula().getType() == carl::CONSTRAINT);
 	assert(formula->formula().constraint().maxDegree() <= 1);
 	if (formula->formula().constraint().relation() == carl::Relation::LEQ) {
-		auto formulaPtr = std::make_shared<SimpleConstraint>(formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		auto formulaPtr = std::make_shared<BasicConstraint>(formula->formula().constraint().lhs(), carl::Relation::LEQ);
 		mAllConstraints.push_back(formulaPtr);
 		mNewConstraints.push_back(formulaPtr);
 	} else if (formula->formula().constraint().relation() == carl::Relation::LESS) {
-		auto formulaPtr = std::make_shared<SimpleConstraint>(formula->formula().constraint().lhs(), carl::Relation::LESS);
+		auto formulaPtr = std::make_shared<BasicConstraint>(formula->formula().constraint().lhs(), carl::Relation::LESS);
 		mAllConstraints.push_back(formulaPtr);
 		mNewConstraints.push_back(formulaPtr);
 	} else if (formula->formula().constraint().relation() == carl::Relation::EQ) {
-		auto formulaPtr1 = std::make_shared<SimpleConstraint>(formula->formula().constraint().lhs(), carl::Relation::LEQ);
-		auto formulaPtr2 = std::make_shared<SimpleConstraint>(Rational (-1) * formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		auto formulaPtr1 = std::make_shared<BasicConstraint>(formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		auto formulaPtr2 = std::make_shared<BasicConstraint>(Rational (-1) * formula->formula().constraint().lhs(), carl::Relation::LEQ);
 		mAllConstraints.push_back(formulaPtr1);
 		mNewConstraints.push_back(formulaPtr1);
 		mAllConstraints.push_back(formulaPtr2);
@@ -53,9 +53,9 @@ template<typename Settings>
 void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 	if (formula->formula().constraint().relation() != carl::Relation::EQ) {
 		// Inconvenient search bc we need to compare the actual formulas, not their shared ptrs (as remove() would)
-		auto constrToRemove = SimpleConstraint(formula->formula().constraint().lhs(), formula->formula().constraint().relation());
+		auto constrToRemove = BasicConstraint(formula->formula().constraint().lhs(), formula->formula().constraint().relation());
 		bool found = false;
-		std::shared_ptr<SimpleConstraint> toRemove;
+		std::shared_ptr<BasicConstraint> toRemove;
 		for (const auto& it : mAllConstraints) {
 			if (it->lhs() == constrToRemove.lhs() && it->rel() == constrToRemove.rel()) {
 				toRemove = it;
@@ -69,10 +69,10 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 		resetBranch();
 	} else {
 		// Special Treatment for equalities
-		auto constrToRemove1 = SimpleConstraint(formula->formula().constraint().lhs(), carl::Relation::LEQ);
-		auto constrToRemove2 = SimpleConstraint(Rational (-1) * formula->formula().constraint().lhs(), carl::Relation::LEQ);
-		std::shared_ptr<SimpleConstraint> toRemove1;
-		std::shared_ptr<SimpleConstraint> toRemove2;
+		auto constrToRemove1 = BasicConstraint(formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		auto constrToRemove2 = BasicConstraint(Rational (-1) * formula->formula().constraint().lhs(), carl::Relation::LEQ);
+		std::shared_ptr<BasicConstraint> toRemove1;
+		std::shared_ptr<BasicConstraint> toRemove2;
 		bool found1 = false;
 		bool found2 = false;
 		for (const auto& it : mAllConstraints) {
@@ -130,16 +130,32 @@ Answer FMPlexModule<Settings>::checkCore() {
 		mModelFit = true;
 		for (auto c = mModelFitUntilHere == mNewConstraints.end() ? mNewConstraints.begin() : mModelFitUntilHere; c != mNewConstraints.end() && mModelFit; c++) {
 			auto checkConstr = c->get()->lhs();
-			//std::cout << "replace in: " << checkConstr << "...\n";
+
+
+			/*std::cout << "replace in: ";
+			for (auto t : checkConstr) {
+				std::cout << t << " + ";
+			}
+			std::cout << "\n";
 			for (auto modelValuation : mModel){
-				//std::cout << "var: " << modelValuation.first.asVariable().name() << ", value: " << modelValuation.second.asRational() << "\n";
+				std::cout << "var: " << modelValuation.first.asVariable().name() << ", value: " << modelValuation.second.asRational() << "\n";
 				// if statement is quickfix for now. there are terms in some multivariate polynomials that evaluate to 0 but have not been removed for some reason
 				if (checkConstr.lcoeff(modelValuation.first.asVariable()) != 0){
 					substitute_inplace(checkConstr, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 				}
+				substitute_inplace(checkConstr, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 
+			}*/
+			carl::carlVariables vars = carl::variables(checkConstr);
+			for (auto var : vars) {
+				if (mModel.find(var) == mModel.end()) {
+					mModelFit = false;
+					break;
+				} else {
+					substitute_inplace(checkConstr, var, Poly(mModel.find(var)->second.asRational()));
+				}
 			}
-			if (!SimpleConstraint(checkConstr, c->get()->rel()).isTrivialTrue()) {
+			if (!BasicConstraint(checkConstr, c->get()->rel()).isTrivialTrue()) {
 				mModelFit = false;
 			}
 		}
@@ -278,7 +294,7 @@ void FMPlexModule<Settings>::updateModel() const {
 		mModel.clear();
 		// Set all vars to 0 (it is important that this is 0!)
 		// This is so the implcitly eliminated vars are 0 already
-		for (std::shared_ptr<SimpleConstraint> constraint : mAllConstraints) {
+		for (std::shared_ptr<BasicConstraint> constraint : mAllConstraints) {
 			carl::carlVariables newVars = carl::variables(constraint->lhs());
 			for (carl::Variable var : newVars) {
 				mModel.assign(var, Rational(0));
@@ -482,7 +498,7 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 	}
 
 	// Create new constraint
-	SimpleConstraint newConstraint = SimpleConstraint((eliminatorPolynomial * factor + elimineePolynomial), rel);
+	BasicConstraint newConstraint = BasicConstraint((eliminatorPolynomial * factor + elimineePolynomial), rel);
 	ConstraintWithInfo res = ConstraintWithInfo(newConstraint, cl);
 
 	// Update Derivation coefficients: Coeffs in both or only eliminator
