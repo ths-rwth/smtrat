@@ -734,7 +734,7 @@ namespace smtrat
         auto iter = rReceivedFormula().begin();
         while( iter != rReceivedFormula().end() )
         {
-            if( satisfiedBy( iter->formula().constraint(),temp_map ) != 1 )
+            if( carl::satisfied_by( iter->formula().constraint(),temp_map ) != 1 )
             {
                 return false;
                 #ifdef DEBUG_IntEqModule

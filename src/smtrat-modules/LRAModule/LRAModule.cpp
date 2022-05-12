@@ -551,7 +551,7 @@ namespace smtrat
                     else
                     {
                         const auto& m = getRationalModel();
-						return carl::model::satisfiedBy(_formula, Model(m)); // TODO: Isn't this an unnecessary copy operation, Gereon?
+						return carl::model::satisfied_by(_formula, Model(m)); // TODO: Isn't this an unnecessary copy operation, Gereon?
                     }
                 }
                 break;
@@ -626,7 +626,7 @@ namespace smtrat
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
             //unsigned consistency = iter->first.satisfiedBy( ass );
-			unsigned consistency = carl::model::satisfiedBy(iter->first, Model(ass)); // TODO: Isn't this an unnecessary copy operation, Gereon?
+			unsigned consistency = carl::model::satisfied_by(iter->first, Model(ass)); // TODO: Isn't this an unnecessary copy operation, Gereon?
             assert( consistency != 2 );
             if( consistency == 0 )
             {
@@ -646,7 +646,7 @@ namespace smtrat
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {
                 //unsigned consistency = iter->first.satisfiedBy( ass );
-				unsigned consistency = carl::model::satisfiedBy(iter->first, Model(ass));
+				unsigned consistency = carl::model::satisfied_by(iter->first, Model(ass));
                 assert( consistency != 2 );
                 if( consistency == 0 )
                 {
@@ -952,7 +952,7 @@ namespace smtrat
             // Check whether the assignment satisfies the non linear constraints.
             for( const auto& constraint : mNonlinearConstraints )
             {
-                if( carl::model::satisfiedBy(constraint, assignments) != 1 )
+                if( carl::model::satisfied_by(constraint, assignments) != 1 )
                 {
                     return false;
                 }
@@ -1336,8 +1336,8 @@ namespace smtrat
                     ConstraintT gomory_constr = ConstraintT( *gomory_poly , carl::Relation::GEQ );
                     ConstraintT neg_gomory_constr = ConstraintT( *gomory_poly - carl::evaluate(*gomory_poly, rMap_ ), carl::Relation::LESS );
                     //std::cout << gomory_constr << std::endl;
-                    assert( !satisfiedBy( gomory_constr, rMap_ ) );
-                    assert( !satisfiedBy( neg_gomory_constr, rMap_ ) );
+                    assert( !carl::satisfied_by( gomory_constr, rMap_ ) );
+                    assert( !carl::satisfied_by( neg_gomory_constr, rMap_ ) );
                     FormulasT subformulas;
                     mTableau.collect_premises( basicVar, subformulas );
                     FormulasT premisesOrigins;
@@ -1459,7 +1459,7 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            unsigned sat = carl::model::satisfiedBy(iter->formula(), Model(rmodel));
+            unsigned sat = carl::model::satisfied_by(iter->formula(), Model(rmodel));
             if (sat != 1) {
                 assert( sat == 0 );
                 return false;

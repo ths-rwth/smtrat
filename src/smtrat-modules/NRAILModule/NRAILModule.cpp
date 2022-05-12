@@ -622,7 +622,7 @@ namespace smtrat
             }
         } else {
             for(FormulaT formula:formulas) {
-                if (carl::model::satisfiedBy(formula, model) == 0){
+                if (carl::model::satisfied_by(formula, model) == 0){
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "unsatisfiedFormula: " << formula << std::endl; }
                     unsatisfiedFormulas.push_back(formula);
                     if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){

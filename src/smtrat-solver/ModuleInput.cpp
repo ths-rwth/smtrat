@@ -17,7 +17,7 @@ namespace smtrat
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
-            switch( carl::model::satisfiedBy(fwo.formula(), Model(_assignment)) )
+            switch( carl::model::satisfied_by(fwo.formula(), Model(_assignment)) )
             {
                 case 0:
                     return 0;

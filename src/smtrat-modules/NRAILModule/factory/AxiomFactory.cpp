@@ -614,17 +614,17 @@ namespace smtrat {
 
         FormulasT monotonicityFormulas;
 
-        if(carl::model::satisfiedBy(createOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+        if(carl::model::satisfied_by(createOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
             monotonicityFormulas.push_back(
                     createEquivalentToOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
         }
 
-        if(carl::model::satisfiedBy(createOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+        if(carl::model::satisfied_by(createOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
             monotonicityFormulas.push_back(
                     createEquivalentToOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
         }
 
-        if(carl::model::satisfiedBy(createOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+        if(carl::model::satisfied_by(createOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
             monotonicityFormulas.push_back(
                     createEquivalentToOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
         }
@@ -786,7 +786,7 @@ namespace smtrat {
         // c != a * b or, c - a * b != 0
         FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::NEQ);
 
-        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+        if (carl::model::satisfied_by(abcFormula, abcModel) == 1){
             return true;
         }
 
@@ -807,7 +807,7 @@ namespace smtrat {
         // c < a * b or, c - a * b < 0
         FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::LESS);
 
-        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+        if (carl::model::satisfied_by(abcFormula, abcModel) == 1){
             return true;
         }
 
@@ -828,7 +828,7 @@ namespace smtrat {
         // c > a * b or, c - a * b > 0
         FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::GREATER);
 
-        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+        if (carl::model::satisfied_by(abcFormula, abcModel) == 1){
             return true;
         }
 
