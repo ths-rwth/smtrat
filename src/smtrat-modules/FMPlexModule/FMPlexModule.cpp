@@ -210,18 +210,18 @@ Answer FMPlexModule<Settings>::checkCore() {
 					std::cout << "\nVariable to eliminate: " << currentIterator->varToEliminate.get().name() << "\n";
 					if (currentIterator->eliminateViaLB) std::cout << "\nEliminating via lower bound.\n";
 					else std::cout << "\nEliminating via upper bound.\n";
-					std::cout << "\nCurrentEliminator: " << to_string(currentIterator->currentEliminator.get().constraint, true) << "\n";
+					std::cout << "\nCurrentEliminator: " << currentIterator->currentEliminator.get().constraint << "\n";
 					std::cout << "\ndoneConstraints:\n";
 					for (auto c : currentIterator->doneConstraints) {
-						std::cout << to_string(c.constraint, true) << "\n";
+						std::cout << c.constraint << "\n";
 					}
 					std::cout << "\noppositeConstraints:\n";
 					for (auto c : currentIterator->oppositeDirectionConstraints) {
-						std::cout << to_string(c.constraint, true) << "\n";
+						std::cout << c.constraint << "\n";
 					}
 					std::cout << "\nnon-bounds:\n";
 					for (auto c : currentIterator->nonBoundConstraints) {
-						std::cout << to_string(c.constraint, true) << "\n";
+						std::cout << c.constraint << "\n";
 					}
 				}
 				assert(!currentIterator->todoConstraints.empty());
