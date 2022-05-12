@@ -93,7 +93,7 @@ private:
 
 	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower bound " << lower << " in conflict with upper bound " << upper);
-		bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
+		bool strict = carl::is_strict(lower.constr.relation()) || carl::is_strict(upper.constr.relation());
 		carl::Relation rel = (lower.neg xor upper.neg) ? (strict ? carl::Relation::GREATER : carl::Relation::GEQ) : (strict ? carl::Relation::LESS : carl::Relation::LEQ);
 		FormulasT res;
 		res.emplace_back(lower.constr.negation());
@@ -246,7 +246,7 @@ public:
 		for (const Bound& lower : mLower) {
 			for (const Bound& upper : mUpper) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Combining " << lower << " and " << upper);
-				bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
+				bool strict = carl::is_strict(lower.constr.relation()) || carl::is_strict(upper.constr.relation());
 				
 				if (lower.r < upper.r) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Not in conflict");

@@ -192,12 +192,12 @@ namespace smtrat
 	template<class Settings>
 	std::optional<FormulaT> LVEModule<Settings>::eliminate_from_separated_factors(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel) {
 		SMTRAT_LOG_DEBUG("smtrat.lve", "Considering " << v << " in " << with << " and " << without << " and relation " << rel);
-		if (carl::isWeak(rel)) {
+		if (carl::is_weak(rel)) {
 			return eliminate_from_separated_weak_inequality(v, with, without, rel);
 		} else if (rel == carl::Relation::NEQ) {
 			return eliminate_from_separated_disequality(v, with, without);
 		} else {
-			assert(carl::isStrict(rel));
+			assert(carl::is_strict(rel));
 			return eliminate_from_separated_strict_inequality(v, with, without, rel);
 		}
 		return std::nullopt;

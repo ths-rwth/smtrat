@@ -270,9 +270,9 @@ namespace smtrat
             if( carl::isZero(reduced) || reduced.isConstant( ) )
             {
                 bool satisfied = false;
-                if( carl::isZero(reduced) && isWeak( relation ) )
+                if( carl::isZero(reduced) && is_weak( relation ) )
                 {
-                    assert( isWeak( relation ) );
+                    assert( is_weak( relation ) );
                     satisfied = true;
                 }
                 else if( !carl::isZero(reduced) )
