@@ -56,7 +56,7 @@ namespace smtrat {
 			void countCheckSatCalls() { // user defined
 				++mCheckSatCalls;
 			}
-			void unsuppRel() { // user defined
+			void unsupprelation() { // user defined
 				mUnsupportedRelation = true;
 			}
 		};
@@ -121,7 +121,7 @@ namespace smtrat {
 					bool res = true;
 					// this should be sufficient, at least for what I want
 					res &= (this->constraint.lhs() == other.constraint.lhs());
-					res &= (this->constraint.rel() == other.constraint.rel());
+					res &= (this->constraint.relation() == other.constraint.relation());
 					return res;
 				}
 
