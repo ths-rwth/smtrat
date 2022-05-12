@@ -43,7 +43,7 @@ bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 		//std::cout << "RELATION NOT SUPPORTED: " << formula->formula().constraint().relation() << std::endl;
 		//std::cout << "LHS: " << formula->formula().constraint().lhs();
 		assert(false);
-		SMTRAT_STATISTICS_CALL(stats.unsuppRel());
+		SMTRAT_STATISTICS_CALL(stats.unsupprelation());
 		std::exit(44);
 	}
 	return true;
@@ -57,7 +57,7 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 		bool found = false;
 		std::shared_ptr<BasicConstraint> toRemove;
 		for (const auto& it : mAllConstraints) {
-			if (it->lhs() == constrToRemove.lhs() && it->rel() == constrToRemove.rel()) {
+			if (it->lhs() == constrToRemove.lhs() && it->relation() == constrToRemove.relation()) {
 				toRemove = it;
 				found = true;
 				break;
@@ -76,7 +76,7 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 		bool found1 = false;
 		bool found2 = false;
 		for (const auto& it : mAllConstraints) {
-			if (it->rel() == carl::Relation::LEQ) {
+			if (it->relation() == carl::Relation::LEQ) {
 				if (it->lhs() == constrToRemove1.lhs()) {
 					toRemove1 = it;
 					found1 = true;
@@ -97,7 +97,7 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 		found1 = false;
 		found2 = false;
 		for (const auto& it : mNewConstraints) {
-			if (it->rel() == carl::Relation::LEQ) {
+			if (it->relation() == carl::Relation::LEQ) {
 				if (it->lhs() == constrToRemove1.lhs()) {
 					toRemove1 = it;
 					found1 = true;
@@ -117,7 +117,7 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 template<typename Settings>
 Answer FMPlexModule<Settings>::checkCore() {
 	SMTRAT_STATISTICS_CALL(stats.countCheckSatCalls());
-	SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
+	//SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
 	//std::cout << "Call " << counter << "\n";
 	//std::cout << "Formula: " << FormulaT(*mpReceivedFormula) << "\n";
 	counter++;
@@ -155,7 +155,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 					substitute_inplace(checkConstr, var, Poly(mModel.find(var)->second.asRational()));
 				}
 			}
-			if (!BasicConstraint(checkConstr, c->get()->rel()).isTrivialTrue()) {
+			if (!BasicConstraint(checkConstr, c->get()->relation()).isTrivialTrue()) {
 				mModelFit = false;
 			}
 		}
@@ -307,7 +307,7 @@ void FMPlexModule<Settings>::updateModel() const {
 			assert(itr->varToEliminate.is_initialized());
 			carl::Variable var = itr->varToEliminate.get();
 			if (itr->currentEliminator.has_value()){
-				if (itr->currentEliminator->constraint.rel() == carl::Relation::LEQ){
+				if (itr->currentEliminator->constraint.relation() == carl::Relation::LEQ){
 					// We can put it on the bound
 					auto lhs = itr->currentEliminator->constraint.lhs();
 					for (auto modelValuation : mModel){
@@ -391,7 +391,7 @@ void FMPlexModule<Settings>::updateModel() const {
 						}
 						Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
 						// subtract 1 in case it's a strict bound
-						if (c.constraint.rel() == carl::Relation::LESS) bound = bound - Rational(1);
+						if (c.constraint.relation() == carl::Relation::LESS) bound = bound - Rational(1);
 						if (!set || bound < sub) {
 							sub = bound;
 							set = true;
@@ -412,7 +412,7 @@ void FMPlexModule<Settings>::updateModel() const {
 						}
 						Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
 						// add 1 in case it's a strict bound
-						if (c.constraint.rel() == carl::Relation::LESS) bound = bound + Rational(1);
+						if (c.constraint.relation() == carl::Relation::LESS) bound = bound + Rational(1);
 						if (!set || bound > glb) {
 							glb = bound;
 							set = true;
@@ -470,7 +470,7 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 		// Conflict level is the current level
 		cl = currentLvl;
 		// Relation
-		if (eliminator.constraint.rel() == carl::Relation::LEQ && eliminee.constraint.rel() == carl::Relation::LESS){
+		if (eliminator.constraint.relation() == carl::Relation::LEQ && eliminee.constraint.relation() == carl::Relation::LESS){
 			rel = carl::Relation::LESS;
 		} else{
 			rel = carl::Relation::LEQ;
@@ -490,7 +490,7 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 			}
 		}
 		// Relation: strict is dominant
-		if (eliminator.constraint.rel() == carl::Relation::LEQ && eliminee.constraint.rel() == carl::Relation::LEQ){
+		if (eliminator.constraint.relation() == carl::Relation::LEQ && eliminee.constraint.relation() == carl::Relation::LEQ){
 			rel = carl::Relation::LEQ;
 		} else {
 			rel = carl::Relation::LESS;
@@ -686,7 +686,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 		/*Poly sum = Poly(Rational(0));
 		for (auto devCoeff : cConstr->derivationCoefficients) {
 			sum = sum + Rational(devCoeff.second) * devCoeff.first.get()->lhs();
-			//std::cout << "og constraint (" << devCoeff.first.get()->lhs()  << devCoeff.first.get()->rel() << "0 ) * " << Rational(devCoeff.second) << "\n";
+			//std::cout << "og constraint (" << devCoeff.first.get()->lhs()  << devCoeff.first.get()->relation() << "0 ) * " << Rational(devCoeff.second) << "\n";
 		}
 		assert(cConstr->constraint.lhs().constantPart() == sum.constantPart());*/
 
