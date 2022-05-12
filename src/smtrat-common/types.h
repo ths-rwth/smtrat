@@ -2,7 +2,7 @@
 
 #include <carl/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
-#include <carl/poly/VariableInformation.h>
+#include <carl/poly/umvpoly/functions/VariableInformation.h>
 #include <carl-formula/formula/Formula.h>
 #include <carl-formula/formula/Logic.h>
 #include <carl-common/util/streamingOperators.h>
