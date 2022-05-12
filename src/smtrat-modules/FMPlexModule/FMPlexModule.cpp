@@ -151,7 +151,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 				if (mModel.find(var) == mModel.end()) {
 					mModelFit = false;
 					break;
-				} else {
+				} else if (checkConstr.lcoeff(var) != 0) {
 					substitute_inplace(checkConstr, var, Poly(mModel.find(var)->second.asRational()));
 				}
 			}
