@@ -594,7 +594,7 @@ namespace vs
                 if( !carl::is_bound(constr) )
                 {
                     carl::Relation stricterRelation = constr.relation();
-                    switch( consistentWith(constr.constr(), varIntervals, stricterRelation ) )
+                    switch( consistent_with(constr.constr(), varIntervals, stricterRelation ) )
                     {
                         case 0:
                         {

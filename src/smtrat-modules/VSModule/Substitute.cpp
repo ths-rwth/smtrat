@@ -75,7 +75,7 @@ namespace vs
                     cons = (*conj).erase( cons );
                 else
                 {
-                    unsigned conflictingWithSolutionSpace = consistentWith(cons->constr(), _solutionSpace );
+                    unsigned conflictingWithSolutionSpace = consistent_with(cons->constr(), _solutionSpace );
                     
 //                    std::cout << "Is  " << cons << std::endl;
 //                    std::cout << std::endl;
