@@ -2,7 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <carl/core/MultivariatePolynomial.h>
+#include <carl/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/ran/RealAlgebraicPoint.h>
 

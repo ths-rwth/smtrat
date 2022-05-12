@@ -9,8 +9,8 @@
 #include <cmath>
 #include <limits>
 
-#include <carl/core/polynomialfunctions/Derivative.h>
-#include <carl/core/polynomialfunctions/SoSDecomposition.h>
+#include <carl/poly/umvpoly/functions/Derivative.h>
+#include <carl/poly/umvpoly/functions/SoSDecomposition.h>
 #include <carl/constraint/IntervalEvaluation.h>
 #include <carl/vs/Substitution.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "carl/core/Monomial.h"
+#include <carl/poly/umvpoly/Monomial.h>
 #include "unordered_map"
 #include <smtrat-common/smtrat-common.h>
 

@@ -8,7 +8,7 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
-#include <carl/core/Term.h>
+#include <carl/poly/umvpoly/Term.h>
 
 typedef carl::BitVector BitVector;
 

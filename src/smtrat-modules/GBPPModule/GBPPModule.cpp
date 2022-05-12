@@ -8,7 +8,7 @@
 
 #include "GBPPModule.h"
 
-#include <carl/core/polynomialfunctions/Complexity.h>
+#include <carl/poly/umvpoly/functions/Complexity.h>
 
 namespace smtrat
 {

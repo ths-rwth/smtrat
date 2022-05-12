@@ -1,6 +1,6 @@
 #pragma once
 
-#include "carl/core/Variable.h"
+#include <carl/core/Variable.h>
 
 namespace smtrat
 {

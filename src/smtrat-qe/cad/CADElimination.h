@@ -9,11 +9,11 @@
 #include <smtrat-cad/projection/Projection.h>
 #include "CAD.h"
 
-#include <carl/core/MultivariatePolynomial.h>
+#include <carl/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl/core/Relation.h>
 #include <carl/core/Sign.h>
-#include <carl/core/UnivariatePolynomial.h>
-#include <carl/core/polynomialfunctions/Factorization.h>
+#include <carl/poly/umvpoly/UnivariatePolynomial.h>
+#include <carl/poly/umvpoly/functions/Factorization.h>
 #include <carl-formula/model/Model.h>
 #include <carl/ran/ran.h>
 

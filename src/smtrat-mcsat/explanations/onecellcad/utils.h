@@ -1,10 +1,10 @@
 #pragma once
 
-#include <carl/core/polynomialfunctions/Derivative.h>
-#include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
-#include <carl/core/polynomialfunctions/Definiteness.h>
-#include <carl/core/polynomialfunctions/Representation.h>
+#include <carl/poly/umvpoly/functions/Derivative.h>
+#include <carl/poly/umvpoly/functions/Factorization.h>
+#include <carl/poly/umvpoly/functions/Resultant.h>
+#include <carl/poly/umvpoly/functions/Definiteness.h>
+#include <carl/poly/umvpoly/functions/Representation.h>
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>

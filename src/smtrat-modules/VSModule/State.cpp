@@ -8,12 +8,12 @@
 #include "State.h"
 //#include <smtrat-modules/Module.h>
 #include <carl/interval/set_theory.h>
-#include <carl/core/polynomialfunctions/SturmSequence.h>
+#include <carl/poly/umvpoly/functions/SturmSequence.h>
 #include <cmath>
 #include <float.h>
 #include <numeric>
-#include <carl/core/polynomialfunctions/RootBounds.h>
-#include <carl/core/polynomialfunctions/RootCounting.h>
+#include <carl/poly/umvpoly/functions/RootBounds.h>
+#include <carl/poly/umvpoly/functions/RootCounting.h>
 #include <carl/constraint/IntervalEvaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
