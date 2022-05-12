@@ -22,7 +22,7 @@ FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& 
 
 template<typename Settings>
 bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
-	assert(formula->formula().getType() == carl::CONSTRAINT);
+	//assert(formula->formula().getType() == carl::CONSTRAINT);
 	assert(formula->formula().constraint().maxDegree() <= 1);
 	if (formula->formula().constraint().relation() == carl::Relation::LEQ) {
 		auto formulaPtr = std::make_shared<BasicConstraint>(formula->formula().constraint().lhs(), carl::Relation::LEQ);
@@ -155,7 +155,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 					substitute_inplace(checkConstr, var, Poly(mModel.find(var)->second.asRational()));
 				}
 			}
-			if (!BasicConstraint(checkConstr, c->get()->relation()).isTrivialTrue()) {
+			if (!BasicConstraint(checkConstr, c->get()->relation()).is_trivial_true()) {
 				mModelFit = false;
 			}
 		}
@@ -666,9 +666,9 @@ std::pair<bool, std::list<typename FMPlexModule<Settings>::ConstraintList::itera
 	auto res = std::list<typename ConstraintList::iterator>();
 	auto toRemove = std::list<ConstraintWithInfo>();
 	for (auto it = connector.begin(); it != connector.end(); it++) {
-		if (it->constraint.isTrivialTrue()){
+		if (it->constraint.is_trivial_true()){
 			toRemove.push_back(*it);
-		} else if (it->constraint.isTrivialFalse()){
+		} else if (it->constraint.is_trivial_false()){
 			res.push_back(it);
 		}
 	}
