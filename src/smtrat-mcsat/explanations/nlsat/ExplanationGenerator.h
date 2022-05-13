@@ -122,7 +122,7 @@ private:
 			if (carl::isZero(carl::model::substitute(poly, model))) continue;
 			auto polyvars = carl::variables(poly);
 			polyvars.erase(poly.mainVar());
-			auto list = carl::real_roots(poly, get_ran_assignment(polyvars, mModel));
+			auto list = carl::real_roots(poly, carl::get_ran_assignment(polyvars, mModel));
 			if (list.is_nullified()) continue;
 			assert(list.is_univariate());
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Looking at " << poly << " with roots " << list.roots());
