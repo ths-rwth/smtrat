@@ -96,7 +96,7 @@ namespace cad {
                                 if (carl::isZero(psubs)) continue;
 								auto polyvars = carl::variables(poly);
 								polyvars.erase(poly.mainVar());
-                                auto list = carl::real_roots(poly, carl::get_ran_assignment(polyvars, model));
+                                auto list = carl::real_roots(poly, *carl::get_ran_assignment(polyvars, model));
 								if (list.is_nullified()) continue;
 								assert(list.is_univariate());
 
