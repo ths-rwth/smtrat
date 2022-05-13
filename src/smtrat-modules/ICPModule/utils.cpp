@@ -43,7 +43,7 @@ namespace smtrat
                 Rational bound  = carl::rationalize<Rational>( _interval.lower() );
                 Poly leftEx = _lhs - bound;
                 
-                switch( _interval.lowerBoundType() )
+                switch( _interval.lower_bound_type() )
                 {
                     case carl::BoundType::STRICT:
                         leftTmp = ConstraintT(leftEx, carl::Relation::GREATER);
@@ -63,7 +63,7 @@ namespace smtrat
                 Rational bound = carl::rationalize<Rational>( _interval.upper() );
                 Poly rightEx = _lhs - bound;
                 
-                switch( _interval.upperBoundType() )
+                switch( _interval.upper_bound_type() )
                 {
                     case carl::BoundType::STRICT:
                         rightTmp = ConstraintT(rightEx, carl::Relation::LESS);
@@ -83,7 +83,7 @@ namespace smtrat
         {
             for ( auto intervalIt = _intervals.begin(); intervalIt != _intervals.end(); ++intervalIt )
             {
-                if ( (*intervalIt).second.isEmpty() )
+                if ( (*intervalIt).second.is_empty() )
                     return true;
             }
             return false;

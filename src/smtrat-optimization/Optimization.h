@@ -31,8 +31,8 @@ private:
 public:
 	Optimization(Solver& s) :
 		mSolver(s) ,
-		mOptimizationVarInt(carl::freshIntegerVariable("__opt_int")),
-		mOptimizationVarReal(carl::freshRealVariable("__opt_real"))
+		mOptimizationVarInt(carl::fresh_integer_variable("__opt_int")),
+		mOptimizationVarReal(carl::fresh_real_variable("__opt_real"))
 	{}
 
 	void add_objective(const Poly& objective, bool minimize = true) {

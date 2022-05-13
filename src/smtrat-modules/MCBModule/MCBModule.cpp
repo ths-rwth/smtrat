@@ -142,7 +142,7 @@ namespace smtrat
 			for (const auto& c: choices) {
 				auto it = m.find(c.first);
 				if (it == m.end()) {
-					m.emplace(c.first, std::make_pair(carl::freshBooleanVariable(), c.second));
+					m.emplace(c.first, std::make_pair(carl::fresh_boolean_variable(), c.second));
 				}
 			}
 		}

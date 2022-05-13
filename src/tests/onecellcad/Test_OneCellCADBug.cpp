@@ -19,8 +19,8 @@ using namespace smtrat;
 BOOST_AUTO_TEST_CASE(OneCellCadBug) {
 	// Variable x cannot be assigned for x^2 + x^4 + b*x^3 <= 0 , x != 0 under b -> -1
 	
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable b = carl::fresh_real_variable("b");
   carl::Variables vars({x,b});
 
 	FormulaT f1(ConstraintT((Poly(x)*x) + (Poly(x)*x*x*x) + (Poly(b)*x*x*x), carl::Relation::LEQ));

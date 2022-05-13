@@ -236,7 +236,7 @@ namespace smtrat
          * @return True, if this Numeric corresponds to a positive rational number;
          *          False, otherwise.
          */
-        bool Numeric::isPositive() const
+        bool Numeric::is_positive() const
         {
             return ( this->content() > 0 );
         }
@@ -245,7 +245,7 @@ namespace smtrat
          * @return true, if this Numeric corresponds to a positive rational number;
          *         false, otherwise.
          */
-        bool Numeric::isNegative() const
+        bool Numeric::is_negative() const
         {
             return ( this->content() < 0 );
         }

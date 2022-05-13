@@ -54,7 +54,7 @@ namespace smtrat
      */
     carl::Variable createZVariable(){
         std::string GeneratedVariableName = VariableName + std::to_string(zVariableCounter++);
-        return carl::freshRealVariable(GeneratedVariableName);
+        return carl::fresh_real_variable(GeneratedVariableName);
     }
 
     /**

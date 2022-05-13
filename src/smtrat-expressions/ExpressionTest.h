@@ -12,7 +12,7 @@ namespace smtrat {
 	}
 	
 	void testExpression() {
-		carl::Variable x = carl::freshBooleanVariable("x");
+		carl::Variable x = carl::fresh_boolean_variable("x");
 		expression::Expression e(x);
 		
 		expression::Expression e2(expression::NaryType::AND, { e, e });

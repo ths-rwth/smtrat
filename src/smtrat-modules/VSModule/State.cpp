@@ -2326,8 +2326,8 @@ namespace vs
         assert( !isRoot() );
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
-            if( father().variableBounds().getDoubleInterval( substitution().variable() ).lowerBoundType() == carl::BoundType::INFTY )
-                result.push_back( smtrat::DoubleInterval::unboundedInterval() );
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).lower_bound_type() == carl::BoundType::INFTY )
+                result.push_back( smtrat::DoubleInterval::unbounded_interval() );
             else
             {
                 auto conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
@@ -2337,8 +2337,8 @@ namespace vs
         }
         else if( substitution().type() == Substitution::PLUS_INFINITY )
         {
-            if( father().variableBounds().getDoubleInterval( substitution().variable() ).upperBoundType() == carl::BoundType::INFTY )
-                result.push_back( smtrat::DoubleInterval::unboundedInterval() );
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).upper_bound_type() == carl::BoundType::INFTY )
+                result.push_back( smtrat::DoubleInterval::unbounded_interval() );
             else
             {
                 auto conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
@@ -2370,9 +2370,9 @@ namespace vs
             smtrat::DoubleInterval resB;
             bool splitOccurred = solutionSpace.div_ext( solutionSpaceDenom, resA, resB );
             const smtrat::DoubleInterval& subVarInterval = intervals[substitution().variable()];
-            if( substitution().type() == Substitution::PLUS_EPSILON && resA.lowerBoundType() != carl::BoundType::INFTY )
+            if( substitution().type() == Substitution::PLUS_EPSILON && resA.lower_bound_type() != carl::BoundType::INFTY )
             {
-                if( resA.upperBoundType() == carl::BoundType::INFTY || resA.upper() == DBL_MAX )
+                if( resA.upper_bound_type() == carl::BoundType::INFTY || resA.upper() == DBL_MAX )
                 {
                     resA = smtrat::DoubleInterval( resA.lower(), carl::BoundType::STRICT, (double)0, carl::BoundType::INFTY );
                     if( splitOccurred )
@@ -2393,7 +2393,7 @@ namespace vs
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
             std::cout << ">>>    intersection part 1: " << std::setprecision(100) << resA << std::endl;
             #endif
-            if( !resA.isEmpty() )
+            if( !resA.is_empty() )
                 result.push_back( resA );
             if( splitOccurred )
             {
@@ -2404,7 +2404,7 @@ namespace vs
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
                 std::cout << ">>>    intersection part 1: " << resB << std::endl;
                 #endif
-                if( !resB.isEmpty() )
+                if( !resB.is_empty() )
                     result.push_back( resB );
             }
             if( result.empty() )
@@ -2447,8 +2447,8 @@ namespace vs
         if( rel == carl::Relation::GREATER || rel == carl::Relation::LESS || rel == carl::Relation::NEQ )
         {
             auto indexDomain = intervals.find( index() );
-            if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
-                indexDomain->second.setLowerBoundType( carl::BoundType::WEAK );
+            if( indexDomain->second.lower_bound_type() == carl::BoundType::STRICT )
+                indexDomain->second.set_lower_bound_type( carl::BoundType::WEAK );
         }
         smtrat::DoubleInterval solutionSpace = carl::evaluate( cons.lhs(), intervals );
         // TODO: if the condition is an equation and the degree in the index less than 3, 
@@ -2473,9 +2473,9 @@ namespace vs
                     ++numberOfRoots;
                 if( imageOfRightBound == Rational(0) )
                 {
-                    if( intervals.begin()->second.upperBoundType() == carl::BoundType::STRICT && numberOfRoots != 0 )
+                    if( intervals.begin()->second.upper_bound_type() == carl::BoundType::STRICT && numberOfRoots != 0 )
                         --numberOfRoots;
-                    if( intervals.begin()->second.upperBoundType() == carl::BoundType::WEAK )
+                    if( intervals.begin()->second.upper_bound_type() == carl::BoundType::WEAK )
                         ++numberOfRoots;
                 }
                 #ifdef VS_DEBUG_ROOTS_CHECK

@@ -27,7 +27,7 @@ public:
 		FormulasT phis;
 		std::size_t id = 0;
 		for (const auto& f : fs) {
-			auto it = mFormulas.emplace(carl::freshBooleanVariable(), f);
+			auto it = mFormulas.emplace(carl::fresh_boolean_variable(), f);
 			phis.emplace_back(FormulaT(it.first->first));
 			mSolver.add(FormulaT(carl::FormulaType::IFF, {FormulaT(it.first->first), f}));
 			SMTRAT_LOG_DEBUG("smtrat.unsatcore", it.first->first << " <-> " << f << " with id " << id);

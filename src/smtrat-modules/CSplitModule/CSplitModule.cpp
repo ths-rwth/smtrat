@@ -279,7 +279,7 @@ namespace smtrat
 				if (expansion.mRationalization.type() == carl::VariableType::VT_REAL)
 					maximalDomain *= Rational(Settings::discrDenom);
 				maximalDomain.integralPart_assign();
-				if (expansion.mMaximalDomain.isUnbounded())
+				if (expansion.mMaximalDomain.is_unbounded())
 					expansion.mMaximalDomainSize = DomainSize::UNBOUNDED;
 				else if (expansion.mMaximalDomain.diameter() > Settings::maxDomainSize)
 					expansion.mMaximalDomainSize = DomainSize::LARGE;
@@ -287,9 +287,9 @@ namespace smtrat
 					expansion.mMaximalDomainSize = DomainSize::SMALL;
 				expansion.mChangedBounds = false;
 			}
-			if (maximalDomain.isEmpty())
+			if (maximalDomain.is_empty())
 				return false;
-			expansion.mActiveDomain = RationalInterval::emptyInterval();
+			expansion.mActiveDomain = RationalInterval::empty_interval();
 			expansion.mPurifications.clear();
 		}
 		
@@ -373,10 +373,10 @@ namespace smtrat
 		{
 			/// Calculate the center point where the initial domain is located
 			expansion.mNucleus = 0;
-			if (expansion.mMaximalDomain.lowerBoundType() != carl::BoundType::INFTY
+			if (expansion.mMaximalDomain.lower_bound_type() != carl::BoundType::INFTY
 				&& expansion.mNucleus < expansion.mMaximalDomain.lower())
 				expansion.mNucleus = expansion.mMaximalDomain.lower();
-			else if (expansion.mMaximalDomain.upperBoundType() != carl::BoundType::INFTY
+			else if (expansion.mMaximalDomain.upper_bound_type() != carl::BoundType::INFTY
 				&& expansion.mNucleus > expansion.mMaximalDomain.upper())
 				expansion.mNucleus = expansion.mMaximalDomain.upper();
 			
@@ -431,11 +431,11 @@ namespace smtrat
 					Expansion& expansion{*expansionIter};
 					Rational direction;
 					if (carl::is_lower_bound(constraint)
-						&& (expansion.mMaximalDomain.lowerBoundType() == carl::BoundType::INFTY
+						&& (expansion.mMaximalDomain.lower_bound_type() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.lower() < expansion.mActiveDomain.lower()))
 						direction = -1;
 					else if (carl::is_upper_bound(constraint)
-						&& (expansion.mMaximalDomain.upperBoundType() == carl::BoundType::INFTY
+						&& (expansion.mMaximalDomain.upper_bound_type() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.upper() > expansion.mActiveDomain.upper()))
 						direction  = 1;
 					if (!carl::isZero(direction))
@@ -523,38 +523,38 @@ namespace smtrat
 		expansion.mActiveDomain = domain;
 		
 		/// Update the variable bounds
-		if (!activeDomain.isEmpty())
+		if (!activeDomain.is_empty())
 		{
-			if (activeDomain.lowerBoundType() != carl::BoundType::INFTY
-				&& (domain.lowerBoundType() == carl::BoundType::INFTY
+			if (activeDomain.lower_bound_type() != carl::BoundType::INFTY
+				&& (domain.lower_bound_type() == carl::BoundType::INFTY
 					|| domain.lower() != activeDomain.lower()
-					|| domain.isEmpty()))
+					|| domain.is_empty()))
 				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(activeDomain.lower()), carl::Relation::GEQ), false);
-			if (activeDomain.upperBoundType() != carl::BoundType::INFTY
-				&& (domain.upperBoundType() == carl::BoundType::INFTY
+			if (activeDomain.upper_bound_type() != carl::BoundType::INFTY
+				&& (domain.upper_bound_type() == carl::BoundType::INFTY
 					|| domain.upper() != activeDomain.upper()
-					|| domain.isEmpty()))
+					|| domain.is_empty()))
 				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(activeDomain.upper()), carl::Relation::LEQ), false);
 		}
-		if (!domain.isEmpty())
+		if (!domain.is_empty())
 		{
-			if (domain.lowerBoundType() != carl::BoundType::INFTY
-				&& (activeDomain.lowerBoundType() == carl::BoundType::INFTY
+			if (domain.lower_bound_type() != carl::BoundType::INFTY
+				&& (activeDomain.lower_bound_type() == carl::BoundType::INFTY
 					|| activeDomain.lower() != domain.lower()
-					|| activeDomain.isEmpty()))
+					|| activeDomain.is_empty()))
 				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(domain.lower()), carl::Relation::GEQ), true);
-			if (domain.upperBoundType() != carl::BoundType::INFTY
-				&& (activeDomain.upperBoundType() == carl::BoundType::INFTY
+			if (domain.upper_bound_type() != carl::BoundType::INFTY
+				&& (activeDomain.upper_bound_type() == carl::BoundType::INFTY
 					|| activeDomain.upper() != domain.upper()
-					|| activeDomain.isEmpty()))
+					|| activeDomain.is_empty()))
 				propagateFormula(FormulaT(expansion.mQuotients[0]-Poly(domain.upper()), carl::Relation::LEQ), true);
 		}
 		
 		/// Check if the digits of the expansion need to be encoded
 		if (expansion.mPurifications.empty())
 		{
-			activeDomain = RationalInterval::emptyInterval();
-			domain = RationalInterval::emptyInterval();
+			activeDomain = RationalInterval::empty_interval();
+			domain = RationalInterval::empty_interval();
 		}
 		
 		/// Update the case splits of the corresponding digits
@@ -563,8 +563,8 @@ namespace smtrat
 			if (domain.diameter() <= Settings::maxDomainSize)
 			{
 				/// Update the currently active linear encoding
-				Rational lower{activeDomain.isEmpty() ? domain.lower() : activeDomain.lower()};
-				Rational upper{activeDomain.isEmpty() ? domain.lower() : activeDomain.upper()+1};
+				Rational lower{activeDomain.is_empty() ? domain.lower() : activeDomain.lower()};
+				Rational upper{activeDomain.is_empty() ? domain.lower() : activeDomain.upper()+1};
 				for (const Purification *purification : expansion.mPurifications)
 				{
 					for (Rational alpha = domain.lower(); alpha < lower; ++alpha)
@@ -592,13 +592,13 @@ namespace smtrat
 				/// Switch from the linear to a logarithmic encoding
 				if (expansion.mQuotients.size() <= i+1)
 				{
-					expansion.mQuotients.emplace_back(carl::freshIntegerVariable());
-					expansion.mRemainders.emplace_back(carl::freshIntegerVariable());
+					expansion.mQuotients.emplace_back(carl::fresh_integer_variable());
+					expansion.mRemainders.emplace_back(carl::fresh_integer_variable());
 				}
 				for (Purification *purification : expansion.mPurifications)
 				{
 					if (purification->mSubstitutions.size() <= i+1)
-						purification->mSubstitutions.emplace_back(carl::freshIntegerVariable());
+						purification->mSubstitutions.emplace_back(carl::fresh_integer_variable());
 					for (Rational alpha = activeDomain.lower(); alpha <= activeDomain.upper(); ++alpha)
 						propagateFormula(
 							FormulaT(
@@ -624,32 +624,32 @@ namespace smtrat
 			}
 			
 			/// Calculate the domain of the next digit
-			if (!activeDomain.isEmpty()) {
+			if (!activeDomain.is_empty()) {
 				if (activeDomain.diameter() <= Settings::maxDomainSize)
-					activeDomain = RationalInterval::emptyInterval();
+					activeDomain = RationalInterval::empty_interval();
 				else
 					activeDomain = carl::floor(activeDomain/Rational(Settings::expansionBase));
 			}
-			if (!domain.isEmpty()) {
+			if (!domain.is_empty()) {
 				if (domain.diameter() <= Settings::maxDomainSize)
-					domain = RationalInterval::emptyInterval();
+					domain = RationalInterval::empty_interval();
 				else
 					domain = carl::floor(domain/Rational(Settings::expansionBase));
 			}
 			
 			/// Update the variable bounds of the next digit
-			if (!activeDomain.isEmpty())
+			if (!activeDomain.is_empty())
 			{
-				if (domain.isEmpty() || domain.lower() != activeDomain.lower())
+				if (domain.is_empty() || domain.lower() != activeDomain.lower())
 					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(activeDomain.lower()), carl::Relation::GEQ), false);
-				if (domain.isEmpty() || domain.upper() != activeDomain.upper())
+				if (domain.is_empty() || domain.upper() != activeDomain.upper())
 					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(activeDomain.upper()), carl::Relation::LEQ), false);
 			}
-			if (!domain.isEmpty())
+			if (!domain.is_empty())
 			{
-				if (activeDomain.isEmpty() || activeDomain.lower() != domain.lower())
+				if (activeDomain.is_empty() || activeDomain.lower() != domain.lower())
 					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(domain.lower()), carl::Relation::GEQ), true);
-				if (activeDomain.isEmpty() || activeDomain.upper() != domain.upper())
+				if (activeDomain.is_empty() || activeDomain.upper() != domain.upper())
 					propagateFormula(FormulaT(expansion.mQuotients[i+1]-Poly(domain.upper()), carl::Relation::LEQ), true);
 			}
 		}

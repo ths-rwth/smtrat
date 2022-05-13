@@ -99,7 +99,7 @@ namespace core {
 		switch (sm.getType(sort)) {
 			case carl::VariableType::VT_BOOL: {
 				assert(state->isSymbolFree(name));
-				carl::Variable var = carl::freshVariable(name, carl::VariableType::VT_BOOL);
+				carl::Variable var = carl::fresh_variable(name, carl::VariableType::VT_BOOL);
 				state->variables[name] = var;
 				result = var;
 				return true;

@@ -19,7 +19,7 @@ namespace smtrat{
         }
 
     private:
-        carl::Variable nullVariable = carl::freshRealVariable("0");
+        carl::Variable nullVariable = carl::fresh_real_variable("0");
 
     public:
         void insertMonomialMapping(carl::Variable variable, carl::Monomial::Arg monomial) {

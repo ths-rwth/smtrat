@@ -82,7 +82,7 @@ namespace smtrat {
 		// initialize result map
 		std::vector<carl::Variable> commanders;
 		for (int i = 0; i < COMMANDER_GROUP_SIZE; i++) {
-			carl::Variable commander = carl::freshBooleanVariable();
+			carl::Variable commander = carl::fresh_boolean_variable();
 			commanders.push_back(commander);
 			result[commander] = std::vector<carl::Variable>();
 		}

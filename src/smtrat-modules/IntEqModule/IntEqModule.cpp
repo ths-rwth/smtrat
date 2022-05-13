@@ -518,7 +518,7 @@ namespace smtrat
                     }
                     ++iter_coeff;
                 }
-                carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT ); 
+                carl::Variable fresh_var = carl::fresh_variable( carl::VariableType::VT_INT ); 
                 mAuxiliaries.insert( fresh_var );
                 *temp += Poly(fresh_var);
             }

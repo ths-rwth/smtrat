@@ -35,8 +35,8 @@ namespace smtrat
 				bool mUsed;
 				
 				Moment()
-					: mNormalVector(carl::freshRealVariable())
-					, mSignVariant(carl::freshBooleanVariable())
+					: mNormalVector(carl::fresh_real_variable())
+					, mSignVariant(carl::fresh_boolean_variable())
 					, mUsed(false)
 				{}
 			};
@@ -62,7 +62,7 @@ namespace smtrat
 					, mMonomial(term.monomial())
 					, mRating(
 						Settings::separatorType == SeparatorType::WEAK ?
-						carl::freshRealVariable() : carl::Variable::NO_VARIABLE)
+						carl::fresh_real_variable() : carl::Variable::NO_VARIABLE)
 				{}
 			};
 			
@@ -87,7 +87,7 @@ namespace smtrat
 				boost::optional<Direction> mActiveDirection;
 				
 				Separator(const Poly& normalization)
-					: mBias(carl::freshRealVariable())
+					: mBias(carl::fresh_real_variable())
 					, mVertices(normalization.begin(), normalization.end())
 					, mRelations()
 					, mActiveDirection(boost::none)

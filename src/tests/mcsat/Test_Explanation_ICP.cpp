@@ -9,9 +9,9 @@ using namespace smtrat;
 BOOST_AUTO_TEST_SUITE(Test_Explanation_ICP);
 
 BOOST_AUTO_TEST_CASE(Test_Basic) {
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable y = carl::freshRealVariable("y");
-	carl::Variable z = carl::freshRealVariable("z");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable y = carl::fresh_real_variable("y");
+	carl::Variable z = carl::fresh_real_variable("z");
 
 	Model model;
 	model.emplace(x, Rational(4)/10);

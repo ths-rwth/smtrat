@@ -818,7 +818,7 @@ typename GBModule<Settings>::GBPolynomial GBModule<Settings>::transformIntoEqual
         std::stringstream stream;
         stream << "AddVarGB" << constr;
         
-        var = carl::freshRealVariable( stream.str() );
+        var = carl::fresh_real_variable( stream.str() );
         mAdditionalVarMap.insert(std::pair<ConstraintT, carl::Variable>(constr, var));
     }
     else

@@ -37,8 +37,8 @@ namespace uninterpreted {
 	UninterpretedTheory::UninterpretedTheory(ParserState* state):
 		AbstractTheory(state), 
 		mBoolSort(carl::SortManager::getInstance().addSort("UF_Bool", carl::VariableType::VT_UNINTERPRETED)),
-		mTrue(carl::freshVariable("UF_TRUE", carl::VariableType::VT_UNINTERPRETED), mBoolSort),
-		mFalse(carl::freshVariable("UF_FALSE", carl::VariableType::VT_UNINTERPRETED), mBoolSort)
+		mTrue(carl::fresh_variable("UF_TRUE", carl::VariableType::VT_UNINTERPRETED), mBoolSort),
+		mFalse(carl::fresh_variable("UF_FALSE", carl::VariableType::VT_UNINTERPRETED), mBoolSort)
 	{
 		state->artificialVariables.emplace_back(mTrue);
 		state->artificialVariables.emplace_back(mFalse);
@@ -51,7 +51,7 @@ namespace uninterpreted {
 			return false;
 		}
 		assert(state->isSymbolFree(name));
-		carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_UNINTERPRETED);
+		carl::Variable v = carl::fresh_variable(name, carl::VariableType::VT_UNINTERPRETED);
 		carl::UVariable uv(v, sort);
 		state->variables[name] = uv;
 		result = uv;
@@ -74,7 +74,7 @@ namespace uninterpreted {
 			return false;
 		}
 
-		carl::Variable var = carl::freshUninterpretedVariable();
+		carl::Variable var = carl::fresh_uninterpreted_variable();
 		state->artificialVariables.emplace_back(var);
 		carl::UVariable uvar(var, thent.domain());
 		state->auxiliary_variables.insert(uvar);
@@ -98,20 +98,20 @@ namespace uninterpreted {
 				vars.push_back(it->second);
 				continue;
 			} else if (const carl::Variable* var = boost::get<carl::Variable>(&v)) {
-				carl::Variable tmp = carl::freshUninterpretedVariable();
+				carl::Variable tmp = carl::fresh_uninterpreted_variable();
 				vars.push_back(carl::UTerm(carl::UVariable(tmp, mBoolSort)));
 				state->global_formulas.emplace_back(coupleBooleanVariables(*var, carl::UVariable(tmp, mBoolSort)));
 			} else if (const FormulaT* formula = boost::get<FormulaT>(&v)) {
-				carl::Variable tmp = carl::freshBooleanVariable();
+				carl::Variable tmp = carl::fresh_boolean_variable();
 				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
 				state->global_formulas.emplace_back(FormulaT(carl::FormulaType::IFF, {FormulaT(tmp), *formula}));
 			} else if (const Poly* p = boost::get<Poly>(&v)) {
-				carl::Variable tmp = carl::freshRealVariable();
+				carl::Variable tmp = carl::fresh_real_variable();
 				vars.push_back(carl::UTerm(carl::UVariable(tmp)));
 				state->global_formulas.emplace_back(FormulaT(*p - Poly(tmp), carl::Relation::EQ));
 			} else if (const carl::UTerm* ut = boost::get<carl::UTerm>(&v)) {
 				if (!settings_parser().disable_uf_flattening && ut->isUFInstance()) { // do flattening
-					carl::Variable tmp = carl::freshUninterpretedVariable();
+					carl::Variable tmp = carl::fresh_uninterpreted_variable();
 					vars.emplace_back(carl::UVariable(tmp, ut->asUFInstance().uninterpretedFunction().codomain()));
 					state->global_formulas.emplace_back(FormulaT(carl::UEquality(carl::UTerm(vars.back()), *ut, false)));
 				} else {
@@ -132,12 +132,12 @@ namespace uninterpreted {
 			if (type == carl::VariableType::VT_BOOL) {
 				SMTRAT_LOG_ERROR("smtrat.parser", "Boolan functions should be abstracted to be of sort " << mBoolSort);
 			} else {
-				carl::Variable var = carl::freshVariable(type);
+				carl::Variable var = carl::fresh_variable(type);
 				state->global_formulas.emplace_back(FormulaT(carl::UEquality(carl::UVariable(var), ufi, false)));
 				result = var;
 			}
 		} else if (f.codomain() == mBoolSort) {
-			carl::UVariable uvar(carl::freshVariable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
+			carl::UVariable uvar(carl::fresh_variable(carl::VariableType::VT_UNINTERPRETED), mBoolSort);
 			state->global_formulas.emplace_back(carl::UEquality(carl::UTerm(uvar), carl::UTerm(ufi), false));
 			state->global_formulas.push_back(FormulaT(carl::FormulaType::OR, {
 				FormulaT(carl::UEquality(carl::UTerm(uvar), carl::UTerm(mTrue), false)),

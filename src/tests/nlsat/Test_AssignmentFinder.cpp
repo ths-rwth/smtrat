@@ -17,8 +17,8 @@ BOOST_AUTO_TEST_SUITE(Test_AssignmentFinder);
 BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 {
 	
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable y = carl::freshRealVariable("y");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable y = carl::fresh_real_variable("y");
 	
 	// Original constraints
 	FormulaT c1(Poly(x)+Rational(1), carl::Relation::LEQ);
@@ -86,8 +86,8 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 
 BOOST_AUTO_TEST_CASE(CoverComputation)
 {
-	carl::Variable a = carl::freshRealVariable("a");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable a = carl::fresh_real_variable("a");
+	carl::Variable b = carl::fresh_real_variable("b");
 	Poly p = Poly(20)*a*a*b - Poly(a)*a*a*a*b - Poly(120)*b;
 	carl::UnivariatePolynomial<Rational> q(a, {
 		Rational(900),
@@ -122,8 +122,8 @@ BOOST_AUTO_TEST_CASE(CoverComputation)
 BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	// assign variable b with constraints (a ! > rootExpr(1 + 3*__z^3 + -3*b^3 + 3*__z^6 + -6*__z^3*b^3 + 3*b^6 + __z^9 + -3*__z^6*b^3 + 3*__z^3*b^6 + -1*b^9, 1, __z)) under a = 2
 	
-	carl::Variable a = carl::freshRealVariable("a");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable a = carl::fresh_real_variable("a");
+	carl::Variable b = carl::fresh_real_variable("b");
 
 	Model model;
 	model.assign(a, Rational(2));

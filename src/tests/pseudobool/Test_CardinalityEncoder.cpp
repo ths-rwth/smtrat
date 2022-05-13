@@ -20,7 +20,7 @@ BOOST_AUTO_TEST_SUITE( Equality );
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Single_Literal_False )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
+	carl::Variable x = carl::fresh_boolean_variable("x");
 	
 	ConstraintT constraint = ConstraintT(Poly(x), carl::Relation::EQ);
 
@@ -37,9 +37,9 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Single_Literal_False )
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Multi_Literal_False )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("x");
-	carl::Variable z = carl::freshBooleanVariable("x");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("x");
+	carl::Variable z = carl::fresh_boolean_variable("x");
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z), carl::Relation::LEQ);
 
@@ -56,8 +56,8 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Multi_Literal_False )
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::EQ);
 
@@ -74,9 +74,9 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_1 )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
-	carl::Variable z = carl::freshBooleanVariable("z");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
+	carl::Variable z = carl::fresh_boolean_variable("z");
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) + Rational(-1), carl::Relation::EQ);
 
@@ -96,9 +96,9 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_1 )
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2 )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
-	carl::Variable z = carl::freshBooleanVariable("z");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
+	carl::Variable z = carl::fresh_boolean_variable("z");
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) + Rational(-2), carl::Relation::EQ);
 
@@ -118,9 +118,9 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2 )
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2_Negative )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
-	carl::Variable z = carl::freshBooleanVariable("z");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
+	carl::Variable z = carl::fresh_boolean_variable("z");
 
 	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-2), carl::Relation::EQ);
 
@@ -140,9 +140,9 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2_Negative )
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_FALSE )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
-	carl::Variable z = carl::freshBooleanVariable("z");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
+	carl::Variable z = carl::fresh_boolean_variable("z");
 	
 	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-4), carl::Relation::EQ);
 
@@ -162,9 +162,9 @@ BOOST_AUTO_TEST_SUITE_END();
 
 BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_LEQ_Coeff_LESS_CONST )
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
-	carl::Variable z = carl::freshBooleanVariable("z");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
+	carl::Variable z = carl::fresh_boolean_variable("z");
 
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) - Rational(4), carl::Relation::LEQ);
 
@@ -182,8 +182,8 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_LEQ_Coeff_LESS_CONST )
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple_LEQ)
 {
-	carl::Variable x = carl::freshBooleanVariable("x");
-	carl::Variable y = carl::freshBooleanVariable("y");
+	carl::Variable x = carl::fresh_boolean_variable("x");
+	carl::Variable y = carl::fresh_boolean_variable("y");
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
 
@@ -204,9 +204,9 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple_LEQ)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
 
 	// x1 + x2 + x3 + x4 <= 2
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Rational(-2), carl::Relation::LEQ);
@@ -236,9 +236,9 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_Strict)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
 
 	// x1 + x2 + x3 < 3
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Rational(-3), carl::Relation::LESS);
@@ -265,10 +265,10 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_Strict)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_True)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
-	carl::Variable x4 = carl::freshBooleanVariable("x4");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
+	carl::Variable x4 = carl::fresh_boolean_variable("x4");
 
 	// x1 + x2 + x3 + x4 <= 10
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(-10), carl::Relation::LEQ);
@@ -286,10 +286,10 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_True)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_False)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
-	carl::Variable x4 = carl::freshBooleanVariable("x4");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
+	carl::Variable x4 = carl::fresh_boolean_variable("x4");
 
 	// x1 + x2 + x3 + x4 <= -1
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(1), carl::Relation::LEQ);
@@ -307,9 +307,9 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_False)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast_False)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
 
 	ConstraintT constraint = ConstraintT(-Poly(x1) - Poly(x2) - Poly(x3) - Rational(-4), carl::Relation::LEQ);
 
@@ -326,9 +326,9 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast_False)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
 
 	ConstraintT constraint = ConstraintT(-Poly(x1) - Poly(x2) - Poly(x3) - Rational(-1), carl::Relation::LEQ);
 
@@ -348,9 +348,9 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast)
 
 BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast_2)
 {
-	carl::Variable x1 = carl::freshBooleanVariable("x1");
-	carl::Variable x2 = carl::freshBooleanVariable("x2");
-	carl::Variable x3 = carl::freshBooleanVariable("x3");
+	carl::Variable x1 = carl::fresh_boolean_variable("x1");
+	carl::Variable x2 = carl::fresh_boolean_variable("x2");
+	carl::Variable x3 = carl::fresh_boolean_variable("x3");
 
 	ConstraintT constraint = ConstraintT(-Poly(x1) - Poly(x2) - Poly(x3) - Rational(-2), carl::Relation::LEQ);
 

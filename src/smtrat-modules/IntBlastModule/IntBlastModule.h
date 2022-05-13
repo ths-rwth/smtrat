@@ -65,11 +65,11 @@ namespace smtrat
             return mBounds;
         }
 
-        const Integer& lowerBound() const {
+        const Integer& lower_bound() const {
             return mBounds.lower();
         }
 
-        const Integer& upperBound() const {
+        const Integer& upper_bound() const {
             return mBounds.upper();
         }
 
@@ -126,7 +126,7 @@ namespace smtrat
         AnnotatedBVTerm(const BVAnnotation& _type) :
         mType(_type), mTerm()
         {
-            carl::Variable var = carl::freshBitvectorVariable();
+            carl::Variable var = carl::fresh_bitvector_variable();
             carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", std::vector<std::size_t>({_type.width()}));
             carl::BVVariable bvVar(var, bvSort);
             mTerm = carl::BVTerm(carl::BVTermType::VARIABLE, bvVar);
@@ -197,19 +197,19 @@ namespace smtrat
             return mConstraints;
         }
 
-        const Integer& lowerBound() const {
+        const Integer& lower_bound() const {
             if(mIsConstant) {
                 return mConstant;
             } else {
-                return mTerm.type().lowerBound();
+                return mTerm.type().lower_bound();
             }
         }
 
-        const Integer& upperBound() const {
+        const Integer& upper_bound() const {
             if(mIsConstant) {
                 return mConstant;
             } else {
-                return mTerm.type().upperBound();
+                return mTerm.type().upper_bound();
             }
         }
 

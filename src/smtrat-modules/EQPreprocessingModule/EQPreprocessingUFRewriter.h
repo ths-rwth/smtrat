@@ -52,7 +52,7 @@ namespace smtrat {
 				if(iter == mUFIToVar.end()) {
 					const UFunction& fn = instance.uninterpretedFunction();
 
-					iter = mUFIToVar.emplace(instance, UVariable(carl::freshUninterpretedVariable(), fn.codomain())).first;
+					iter = mUFIToVar.emplace(instance, UVariable(carl::fresh_uninterpreted_variable(), fn.codomain())).first;
 					mVarToUFI.emplace(iter->second, iter->first);
 
 					auto fniter = mFnToUFI.find(fn);

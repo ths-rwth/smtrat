@@ -14,9 +14,9 @@
 using namespace smtrat;
 
 BOOST_AUTO_TEST_CASE(McsatVSBug) {
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable y = carl::freshRealVariable("y");
-  carl::Variable z = carl::freshRealVariable("z");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable y = carl::fresh_real_variable("y");
+  carl::Variable z = carl::fresh_real_variable("z");
 
   // 100 + -49*y^2 + -49*z^2 + 98*z*x + -98*x^2 < 0
   Poly p = Poly(Rational(100)) - Poly(Rational(49))*y*y - Poly(Rational(49))*z*z + Poly(Rational(98))*z*x - Poly(Rational(98))*x*x;
