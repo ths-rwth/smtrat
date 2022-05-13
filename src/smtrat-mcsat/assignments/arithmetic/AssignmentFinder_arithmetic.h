@@ -118,7 +118,7 @@ public:
 			auto upoly = carl::to_univariate_polynomial(poly, mVar);
 			auto polyvars = carl::variables(upoly);
 			polyvars.erase(mVar);
-			auto roots = carl::real_roots(upoly, get_ran_assignment(polyvars, mModel));
+			auto roots = carl::real_roots(upoly, carl::get_ran_assignment(polyvars, mModel));
 			if (roots.is_univariate()) {
 				list = roots.roots();
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "-> " << list);
