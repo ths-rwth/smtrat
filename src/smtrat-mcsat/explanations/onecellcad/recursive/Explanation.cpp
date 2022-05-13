@@ -3,8 +3,6 @@
 
 #include <smtrat-mcsat/explanations/nlsat/ExplanationGenerator.h>
 
-#include "new/first_level.h"
-
 namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
@@ -20,9 +18,6 @@ std::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(con
 						carl::Variable var,
 						const FormulasT& trailLiterals, bool) const {
 	
-	bool covering_at_first_level=false;
-	bool strict_unassigned_handling=false;
-
 	assert(trail.model().size() == trail.assignedVariables().size());
 
 #ifdef SMTRAT_DEVOPTION_Statistics

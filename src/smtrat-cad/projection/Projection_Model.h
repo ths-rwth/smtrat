@@ -8,6 +8,7 @@
 #include "BaseProjection.h"
 
 #include <smtrat-common/model.h>
+#include <carl-formula/model/Assignment.h>
 
 namespace smtrat {
 namespace cad {
@@ -93,7 +94,9 @@ namespace cad {
                                 const auto& poly = getPolynomialById(level, pid); 
                                 auto psubs = carl::model::substitute(poly, model);
                                 if (carl::isZero(psubs)) continue;
-                                auto list = carl::model::real_roots(poly, model);
+								auto polyvars = carl::variables(poly);
+								polyvars.erase(poly.mainVar());
+                                auto list = carl::real_roots(poly, carl::get_ran_assignment(polyvars, model));
 								if (list.is_nullified()) continue;
 								assert(list.is_univariate());
 

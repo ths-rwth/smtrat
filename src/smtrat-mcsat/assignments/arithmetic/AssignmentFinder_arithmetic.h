@@ -115,7 +115,10 @@ public:
 		if (fnew.type() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << poly << " in " << mVar << " w.r.t. " << mModel);
-			auto roots = carl::model::real_roots(poly, mVar, mModel);
+			auto upoly = carl::to_univariate_polynomial(poly, mVar);
+			auto polyvars = carl::variables(upoly);
+			polyvars.erase(mVar);
+			auto roots = carl::real_roots(upoly, get_ran_assignment(polyvars, mModel));
 			if (roots.is_univariate()) {
 				list = roots.roots();
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "-> " << list);
