@@ -251,7 +251,7 @@ namespace parser {
 		Instantiator<carl::BVVariable, carl::BVTerm> instantiator;
 		return instantiator.instantiate(v, repl, subject);
 	}
-	bool BitvectorTheory::refreshVariable(const types::VariableType& var, types::VariableType& subject, TheoryError& errors) {
+	bool BitvectorTheory::refresh_variable(const types::VariableType& var, types::VariableType& subject, TheoryError& errors) {
 		carl::BVVariable v;
 		conversion::VariantConverter<carl::BVVariable> c;
 		if (!c(var, v)) {
