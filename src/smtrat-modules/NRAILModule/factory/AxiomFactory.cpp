@@ -352,7 +352,7 @@ namespace smtrat {
      * @return created auxiliary variable
      */
     carl::Variable createAuxiliaryVariable(carl::Variable variable){
-        return carl::freshRealVariable("aux_" + variable.name());
+        return carl::fresh_real_variable("aux_" + variable.name());
     }
 
     /**
@@ -774,9 +774,9 @@ namespace smtrat {
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << std::endl << "Found values in abEqualcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << std::endl; }
 
-        carl::Variable aVariable = carl::freshRealVariable("a");
-        carl::Variable bVariable = carl::freshRealVariable("b");
-        carl::Variable cVariable = carl::freshRealVariable("c");
+        carl::Variable aVariable = carl::fresh_real_variable("a");
+        carl::Variable bVariable = carl::fresh_real_variable("b");
+        carl::Variable cVariable = carl::fresh_real_variable("c");
 
         Model abcModel;
         abcModel.emplace(aVariable, aRational);
@@ -795,9 +795,9 @@ namespace smtrat {
 
     bool abGreatercCheck(RationalCapsule rationalCapsule){
 
-        carl::Variable aVariable = carl::freshRealVariable("a");
-        carl::Variable bVariable = carl::freshRealVariable("b");
-        carl::Variable cVariable = carl::freshRealVariable("c");
+        carl::Variable aVariable = carl::fresh_real_variable("a");
+        carl::Variable bVariable = carl::fresh_real_variable("b");
+        carl::Variable cVariable = carl::fresh_real_variable("c");
 
         Model abcModel;
         abcModel.emplace(aVariable, rationalCapsule.getARational());
@@ -816,9 +816,9 @@ namespace smtrat {
 
     bool abLesscCheck(RationalCapsule rationalCapsule){
 
-        carl::Variable aVariable = carl::freshRealVariable("a");
-        carl::Variable bVariable = carl::freshRealVariable("b");
-        carl::Variable cVariable = carl::freshRealVariable("c");
+        carl::Variable aVariable = carl::fresh_real_variable("a");
+        carl::Variable bVariable = carl::fresh_real_variable("b");
+        carl::Variable cVariable = carl::fresh_real_variable("c");
 
         Model abcModel;
         abcModel.emplace(aVariable, rationalCapsule.getARational());
@@ -853,7 +853,7 @@ namespace smtrat {
             std::cout << "The bPrimeInterval is: " << bPrimeInterval << std::endl;
             if (bPrimeInterval.isConsistent())
                 std::cout << "isConsistent: " << std::endl;
-            if (!bPrimeInterval.isEmpty())
+            if (!bPrimeInterval.is_empty())
                 std::cout << "Not Empty: " << std::endl;
         }
 

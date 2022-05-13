@@ -527,14 +527,14 @@ namespace smtrat
             FormulaT s1, s2;
             OLD_SPLITTING_VARS_LOCK
             if( mOldSplittingVariables.empty() )
-                s1 = FormulaT( carl::freshBooleanVariable() );
+                s1 = FormulaT( carl::fresh_boolean_variable() );
             else
             {
                 s1 = mOldSplittingVariables.back();
                 mOldSplittingVariables.pop_back();
             }
             if( mOldSplittingVariables.empty() )
-                s2 = FormulaT( carl::freshBooleanVariable() );
+                s2 = FormulaT( carl::fresh_boolean_variable() );
             else
             {
                 s2 = mOldSplittingVariables.back();

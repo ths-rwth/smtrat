@@ -62,7 +62,7 @@ namespace smtrat
 		whats the point of this here?
 		if (objective() != carl::Variable::NO_VARIABLE) {
 			for (const auto& var: objectiveFunction().gatherVariables()) {
-				mVariablesCache.emplace(var, carl::freshIntegerVariable());
+				mVariablesCache.emplace(var, carl::fresh_integer_variable());
 			}
 		}*/
 
@@ -317,7 +317,7 @@ namespace smtrat
 			if (mVariablesCache.find(it) != mVariablesCache.end()) continue;
 
 			// add the variable since there is no integer coupling just yet.
-			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::freshIntegerVariable()));
+			mVariablesCache.insert(std::pair<carl::Variable, carl::Variable>(it, carl::fresh_integer_variable()));
 		}
 
 		Poly lhs;

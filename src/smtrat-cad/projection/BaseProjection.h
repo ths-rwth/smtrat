@@ -67,7 +67,7 @@ namespace cad {
 				}
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Bounds:" << std::endl << mConstraints.bounds().getEvalIntervalMap());
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Checking polynomial " << p << " against bounds, results in " << res);
-				if (res.isPositive() || res.isNegative()) return true;
+				if (res.is_positive() || res.is_negative()) return true;
 				SMTRAT_LOG_DEBUG("smtrat.cad.projection", "No.");
 			}
 			return false;

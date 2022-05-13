@@ -888,7 +888,7 @@ namespace smtrat
 
             Variable createVariable()
             {
-                Variable var = carl::freshBooleanVariable();
+                Variable var = carl::fresh_boolean_variable();
                 #ifndef SMTRAT_BV_ENCODER_DEBUG
                 mIntroducedVariables.insert(var);
                 #endif

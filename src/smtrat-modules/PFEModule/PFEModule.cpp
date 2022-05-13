@@ -115,16 +115,16 @@ namespace smtrat
 			for (auto it = factors.begin(); it != factors.end(); it++) {
 				auto i = carl::evaluate(it->first, completeBounds(it->first));
 				SMTRAT_LOG_TRACE("smtrat.pfe", "Considering factor " << it->first << " with bounds " << i);
-				if (i.isPositive()) {
+				if (i.is_positive()) {
 					qrel = combine(qrel, carl::Relation::GREATER, it->second);
 					Pq.push_back(it);
-				} else if (i.isSemiPositive()) {
+				} else if (i.is_semi_positive()) {
 					qrel = combine(qrel, carl::Relation::GEQ, it->second);
 					Pq.push_back(it);
-				} else if (i.isNegative()) {
+				} else if (i.is_negative()) {
 					qrel = combine(qrel, carl::Relation::LESS, it->second);
 					Pq.push_back(it);
-				} else if (i.isSemiNegative()) {
+				} else if (i.is_semi_negative()) {
 					qrel = combine(qrel, carl::Relation::LEQ, it->second);
 					Pq.push_back(it);
 				} else if (i.isZero()) {

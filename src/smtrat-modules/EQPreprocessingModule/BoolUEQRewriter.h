@@ -51,8 +51,8 @@ namespace smtrat {
 		public:
 			BoolUEQRewriter(CollectBoolsInUEQs&& collected) :
 				mCollected(std::move(collected)),
-				mTrueHelper(carl::freshBooleanVariable()),
-				mFalseHelper(carl::freshBooleanVariable()),
+				mTrueHelper(carl::fresh_boolean_variable()),
+				mFalseHelper(carl::fresh_boolean_variable()),
 				mHelperIneq(FormulaT(carl::NOT, FormulaT(carl::UTerm(mTrueHelper), carl::UTerm(mFalseHelper), false)))
 			{}
 

@@ -57,7 +57,7 @@ namespace smtrat
                             auto iter = mIntToRealVarMap.find( var );
                             if( iter == mIntToRealVarMap.end() )
                             {
-                                carl::Variable realVar = carl::freshRealVariable();
+                                carl::Variable realVar = carl::fresh_real_variable();
                                 mIntToRealVarMap[var] = Poly(realVar);
                                 mRealToIntVarMap[realVar] = var;
                             }

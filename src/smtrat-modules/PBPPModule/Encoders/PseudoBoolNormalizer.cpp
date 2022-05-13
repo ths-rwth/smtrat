@@ -85,7 +85,7 @@ namespace smtrat {
                 carl::Variable currentVariable = term.getSingleVariable();
                 if (mVariablesCache.find(currentVariable) == mVariablesCache.end()) {
                     // we have not seen this variable before. Add new variable for substitution and add to booleanPart
-                    mVariablesCache[currentVariable] = carl::freshBooleanVariable();
+                    mVariablesCache[currentVariable] = carl::fresh_boolean_variable();
                     Poly lhs; // b1 = 1 - b2 iff b1 + b2 - 1 = 0 
                     lhs += currentVariable;
                     lhs += mVariablesCache[currentVariable];

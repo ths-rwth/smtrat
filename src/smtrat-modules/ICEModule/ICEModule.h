@@ -133,10 +133,10 @@ namespace smtrat
 				return mBounds.getInterval(t).isZero();
 			}
 			bool isSemiPositive(const TermT& t) const {
-				return mBounds.getInterval(t).isSemiPositive();
+				return mBounds.getInterval(t).is_semi_positive();
 			}
 			bool isSemiNegative(const TermT& t) const {
-				return mBounds.getInterval(t).isSemiNegative();
+				return mBounds.getInterval(t).is_semi_negative();
 			}
 			bool isSuitable(const ConstraintT& c, TermT& src, std::vector<TermT>& dest, Coefficient& coeff);
 			

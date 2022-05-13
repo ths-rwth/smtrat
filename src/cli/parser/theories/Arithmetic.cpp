@@ -33,7 +33,7 @@ namespace parser {
 				carl::Variable var = mappedFormulaIt->second;
 				result = Poly(var);
 			} else {
-				carl::Variable var = carl::freshBooleanVariable();
+				carl::Variable var = carl::fresh_boolean_variable();
 				FormulaT subst = FormulaT(carl::FormulaType::IFF, FormulaT(var), formula);
 
 				state->global_formulas.emplace_back(subst);
@@ -183,7 +183,7 @@ namespace arithmetic {
 			case carl::VariableType::VT_INT:
 			case carl::VariableType::VT_REAL: {
 				assert(state->isSymbolFree(name));
-				carl::Variable var = carl::freshVariable(name, sm.getType(sort));
+				carl::Variable var = carl::fresh_variable(name, sm.getType(sort));
 				state->variables[name] = var;
 				result = var;
 				return true;
@@ -248,7 +248,7 @@ namespace arithmetic {
                         }
                     }   
                 }
-		carl::Variable auxVar = thenpoly.integerValued() && elsepoly.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable();
+		carl::Variable auxVar = thenpoly.integerValued() && elsepoly.integerValued() ? carl::fresh_integer_variable() : carl::fresh_real_variable();
 		state->artificialVariables.emplace_back(auxVar);
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 		result = Poly(auxVar);
@@ -297,7 +297,7 @@ namespace arithmetic {
 				errors.next() << "to_int should be called with a variable";
 				return false;
 			}
-			carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
+			carl::Variable v = carl::fresh_variable(carl::VariableType::VT_INT);
 			FormulaT lower(Poly(v) - arg, carl::Relation::LEQ);
 			FormulaT greater(Poly(v) - arg - Rational(1), carl::Relation::GREATER);
 			state->global_formulas.emplace_back(FormulaT(carl::FormulaType::AND, {lower, greater}));
@@ -319,8 +319,8 @@ namespace arithmetic {
 			carl::Variable arg;
 			Rational rarg;
 			if (cv(arguments[0], arg)) {
-				carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
-				carl::Variable u = carl::freshVariable(carl::VariableType::VT_INT);
+				carl::Variable v = carl::fresh_variable(carl::VariableType::VT_INT);
+				carl::Variable u = carl::fresh_variable(carl::VariableType::VT_INT);
 				FormulaT relation(Poly(v) - arg + u * modulus, carl::Relation::EQ);
 				FormulaT geq(Poly(v), carl::Relation::GEQ);
 				FormulaT less(Poly(v) - modulus, carl::Relation::LESS);

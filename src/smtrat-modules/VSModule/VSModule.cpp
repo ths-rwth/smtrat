@@ -747,10 +747,10 @@ namespace smtrat
             {
                 std::stringstream outA;
                 outA << "m_inf_" << id() << "_" << i;
-                carl::Variable minfVar( carl::freshRealVariable( outA.str() ) );
+                carl::Variable minfVar( carl::fresh_real_variable( outA.str() ) );
                 std::stringstream outB;
                 outB << "eps_" << id() << "_" << i;
-                carl::Variable epsVar( carl::freshRealVariable( outB.str() ) );
+                carl::Variable epsVar( carl::fresh_real_variable( outB.str() ) );
                 mVariableVector.push_back( std::pair<carl::Variable,carl::Variable>( minfVar, epsVar ) );
             }
             assert( !mRanking.empty() );

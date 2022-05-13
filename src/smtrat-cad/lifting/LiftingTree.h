@@ -180,7 +180,7 @@ namespace cad {
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
 			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
-			auto result = carl::real_roots(p, m, RationalInterval::unboundedInterval());
+			auto result = carl::real_roots(p, m, RationalInterval::unbounded_interval());
 			if (!result.is_univariate() || result.roots().empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << RAN(0));
 				newSamples.emplace_back(RAN(0), pid);
@@ -191,10 +191,10 @@ namespace cad {
 				}
 			}
 			auto bounds = mConstraints.bounds().getInterval(mVariables[sample.depth()]);
-			if (bounds.lowerBoundType() != carl::BoundType::INFTY) {
+			if (bounds.lower_bound_type() != carl::BoundType::INFTY) {
 				newSamples.emplace_back(RAN(bounds.lower()), true);
 			}
-			if (bounds.upperBoundType() != carl::BoundType::INFTY) {
+			if (bounds.upper_bound_type() != carl::BoundType::INFTY) {
 				newSamples.emplace_back(RAN(bounds.upper()), true);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tmerging " << newSamples);

@@ -12,7 +12,7 @@ namespace mcsat {
 
 namespace verifier {
 	inline auto getVar(const std::string& s) {
-		return carl::VariablePool::getInstance().findVariableWithName(s);
+		return carl::VariablePool::getInstance().find_variable_with_name(s);
 	}
 }
 

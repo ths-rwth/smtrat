@@ -13,7 +13,7 @@
 
 namespace smtrat
 {
-    using carl::freshUninterpretedVariable;
+    using carl::fresh_uninterpreted_variable;
     using carl::overloaded;
     using carl::SortManager;
 
@@ -82,7 +82,7 @@ namespace smtrat
             instances[ufi.uninterpretedFunction()].emplace(ufi);
         }
 
-        UTerm flattened{ UVariable(freshUninterpretedVariable(name), my_sort) };
+        UTerm flattened{ UVariable(fresh_uninterpreted_variable(name), my_sort) };
         term_store.emplace(term, flattened);
         term_store.emplace(flattened, flattened);
         return flattened;

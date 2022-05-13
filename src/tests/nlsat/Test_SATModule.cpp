@@ -10,8 +10,8 @@ BOOST_AUTO_TEST_SUITE(Test_SATModule);
 BOOST_AUTO_TEST_CASE(Test_Simple)
 {
 	
-	//carl::Variable x = carl::freshRealVariable("x");
-	//carl::Variable b = carl::freshBooleanVariable("b");
+	//carl::Variable x = carl::fresh_real_variable("x");
+	//carl::Variable b = carl::fresh_boolean_variable("b");
 	//
 	//FormulaT c1(x + Rational(1), carl::Relation::LESS);
 	//FormulaT c2(x - Rational(1), carl::Relation::GREATER);

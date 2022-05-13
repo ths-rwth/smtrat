@@ -78,7 +78,7 @@ namespace smtrat
 				for (const auto& c: choices) {
 					auto it = mReplacements.find(c);
 					if (it == mReplacements.end()) {
-						mReplacements.emplace(c, carl::freshBooleanVariable());
+						mReplacements.emplace(c, carl::fresh_boolean_variable());
 					}
 				}
 			}

@@ -68,7 +68,7 @@ namespace smtrat
 				if (it != mAuxVariables.end()) {
 					return it->second;
 				}
-				return mAuxVariables.emplace(c, carl::freshRealVariable()).first->second;
+				return mAuxVariables.emplace(c, carl::fresh_real_variable()).first->second;
 			}
 			// Return the polynomial to be put in the GB, does conversion for inequalities (if enabled)
 			boost::optional<Poly> getPoly(const ConstraintT& c) {

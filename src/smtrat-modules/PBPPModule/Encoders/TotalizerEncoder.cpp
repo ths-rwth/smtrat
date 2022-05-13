@@ -117,7 +117,7 @@ namespace smtrat {
 
 		// create size() many new variables save it to this node
 		for (size_t i = 0; i < variables.size(); i++) {
-			mNodeVariables.push_back(carl::freshBooleanVariable());
+			mNodeVariables.push_back(carl::fresh_boolean_variable());
 		}
 
 		SMTRAT_LOG_TRACE("smtrat.pbpp.total", "Partitioning node variables " << mNodeVariables);

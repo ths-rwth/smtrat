@@ -29,9 +29,9 @@ namespace {
 	using RANPoint = RealAlgebraicPoint<Rational>;
 
 struct VariableFixture {
-  Variable x = carl::freshRealVariable("x");
-  Variable y = carl::freshRealVariable("y");
-  Variable z = carl::freshRealVariable("z");
+  Variable x = carl::fresh_real_variable("x");
+  Variable y = carl::fresh_real_variable("y");
+  Variable z = carl::fresh_real_variable("z");
 };
 
 BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {

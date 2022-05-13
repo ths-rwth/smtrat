@@ -11,9 +11,9 @@ struct ClauseChecker {
 	Model buildModel() const {
 		const auto& vp = carl::VariablePool::getInstance();
 		Model model;
-		model.emplace(vp.findVariableWithName("X"), Rational(1)/2);
-		model.emplace(vp.findVariableWithName("Y"), Rational(-2));
-		model.emplace(vp.findVariableWithName("Z"), Rational(2));
+		model.emplace(vp.find_variable_with_name("X"), Rational(1)/2);
+		model.emplace(vp.find_variable_with_name("Y"), Rational(-2));
+		model.emplace(vp.find_variable_with_name("Z"), Rational(2));
 		return model;
 	}
 

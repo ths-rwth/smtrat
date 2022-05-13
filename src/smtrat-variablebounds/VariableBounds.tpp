@@ -541,9 +541,9 @@ namespace smtrat
             {
                 Variable<T>* var = new Variable<T>();
                 mpVariableMap->emplace( _var, var );
-                auto ret = mEvalIntervalMap.emplace( _var, RationalInterval::unboundedInterval() );
+                auto ret = mEvalIntervalMap.emplace( _var, RationalInterval::unbounded_interval() );
                 var->exactIntervalHasBeenUpdated();
-                mDoubleIntervalMap.emplace( _var, carl::Interval<double>::unboundedInterval() );
+                mDoubleIntervalMap.emplace( _var, carl::Interval<double>::unbounded_interval() );
                 var->doubleIntervalHasBeenUpdated();
                 return ret.first->second;
             }
@@ -652,9 +652,9 @@ namespace smtrat
             {
                 Variable<T>* var = new Variable<T>();
                 mpVariableMap->emplace( _var, var );
-                mEvalIntervalMap.emplace( _var, RationalInterval::unboundedInterval() );
+                mEvalIntervalMap.emplace( _var, RationalInterval::unbounded_interval() );
                 var->exactIntervalHasBeenUpdated();
-                auto ret = mDoubleIntervalMap.emplace( _var, carl::Interval<double>::unboundedInterval() );
+                auto ret = mDoubleIntervalMap.emplace( _var, carl::Interval<double>::unbounded_interval() );
                 var->doubleIntervalHasBeenUpdated();
                 return ret.first->second;
             }
@@ -843,32 +843,32 @@ namespace smtrat
                             Rational rb;
                             if( newBoundsA <= newBoundsB )
                             {
-                                lt = newBoundsA.lowerBoundType();
-                                rt = newBoundsB.upperBoundType();
+                                lt = newBoundsA.lower_bound_type();
+                                rt = newBoundsB.upper_bound_type();
                                 if( lt != carl::BoundType::INFTY ) lb = newBoundsA.lower();
                                 if( rt != carl::BoundType::INFTY ) rb = newBoundsB.upper();
                             }
                             else
                             {
                                 assert( newBoundsA >= newBoundsB );
-                                lt = newBoundsB.lowerBoundType();
-                                rt = newBoundsA.upperBoundType();
+                                lt = newBoundsB.lower_bound_type();
+                                rt = newBoundsA.upper_bound_type();
                                 if( lt != carl::BoundType::INFTY ) lb = newBoundsB.lower();
                                 if( rt != carl::BoundType::INFTY ) rb = newBoundsA.upper();
                             }
                             if( cons->relation() == carl::Relation::EQ )
                             {
-                                if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
+                                if( newBoundsA.lower_bound_type() != carl::BoundType::INFTY )
                                 {
                                     typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsA.lower();
-                                    carl::Relation boundRel = newBoundsA.lowerBoundType() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
+                                    carl::Relation boundRel = newBoundsA.lower_bound_type() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
                                     ConstraintT newBoundConstraint = ConstraintT( boundLhs, boundRel );
                                     result.push_back( std::pair<std::vector<ConstraintT>, ConstraintT >( boundConstraints, newBoundConstraint ) );
                                 }
-                                if( newBoundsB.upperBoundType() != carl::BoundType::INFTY )
+                                if( newBoundsB.upper_bound_type() != carl::BoundType::INFTY )
                                 {
                                     typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsB.upper();
-                                    carl::Relation boundRel = newBoundsA.upperBoundType() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
+                                    carl::Relation boundRel = newBoundsA.upper_bound_type() == carl::BoundType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS;
                                     ConstraintT newBoundConstraint = ConstraintT( boundLhs, boundRel );
                                     result.push_back( std::pair<std::vector< ConstraintT >, ConstraintT >( boundConstraints, newBoundConstraint ) );
                                 }
@@ -899,25 +899,25 @@ namespace smtrat
                                             break;
                                     }
                                 }
-                                if( newBoundsA.lowerBoundType() != carl::BoundType::INFTY )
+                                if( newBoundsA.lower_bound_type() != carl::BoundType::INFTY )
                                 {
                                     if( rel == carl::Relation::EQ || rel == carl::Relation::GEQ || rel == carl::Relation::GREATER )
                                     {
                                         typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsA.lower();
                                         carl::Relation boundRel = carl::Relation::GEQ;
-                                        if( newBoundsA.lowerBoundType() == carl::BoundType::STRICT || rel == carl::Relation::GREATER )
+                                        if( newBoundsA.lower_bound_type() == carl::BoundType::STRICT || rel == carl::Relation::GREATER )
                                             boundRel = carl::Relation::GREATER;
                                         ConstraintT newBoundConstraint = ConstraintT( boundLhs, boundRel );
                                         result.push_back( std::pair<std::vector< ConstraintT >, ConstraintT >( boundConstraints, newBoundConstraint ) );
                                     }
                                 }
-                                if( newBoundsA.upperBoundType() != carl::BoundType::INFTY )
+                                if( newBoundsA.upper_bound_type() != carl::BoundType::INFTY )
                                 {
                                     if( rel == carl::Relation::EQ || rel == carl::Relation::LEQ || rel == carl::Relation::LESS )
                                     {
                                         typename Poly::PolyType boundLhs = typename Poly::PolyType( var ) - newBoundsA.upper();
                                         carl::Relation boundRel = carl::Relation::LEQ;
-                                        if( newBoundsA.upperBoundType() == carl::BoundType::STRICT || rel == carl::Relation::LESS )
+                                        if( newBoundsA.upper_bound_type() == carl::BoundType::STRICT || rel == carl::Relation::LESS )
                                             boundRel = carl::Relation::LESS;
                                         ConstraintT newBoundConstraint = ConstraintT( boundLhs, boundRel );
                                         result.push_back( std::pair<std::vector< ConstraintT >, ConstraintT >( boundConstraints, newBoundConstraint ) );
