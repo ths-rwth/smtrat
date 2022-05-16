@@ -118,7 +118,7 @@ template<typename Settings>
 Answer FMPlexModule<Settings>::checkCore() {
 	SMTRAT_STATISTICS_CALL(stats.countCheckSatCalls());
 	SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
-	std::cout << "Call " << counter << "\n";
+	//std::cout << "Call " << counter << "\n";
 	//std::cout << "Formula: " << FormulaT(*mpReceivedFormula) << "\n";
 	counter++;
 	if (!Settings::incremental) {
@@ -163,7 +163,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 			mModelFitUntilHere = mNewConstraints.end();
 			mModelFitUntilHere--;
 			SMTRAT_LOG_INFO("fmplex", "Model Fits SAT");
-			std::cout << "SAT \n";
+			//std::cout << "SAT \n";
 			return SAT;
 		} else {
 			mModelFitUntilHere = mNewConstraints.end();
@@ -198,14 +198,14 @@ Answer FMPlexModule<Settings>::checkCore() {
 				mModel.clear();
 				mModelFit = false;
 				mModelFitUntilHere = mNewConstraints.end();
-				std::cout << "UNSAT \n";
+				//std::cout << "UNSAT \n";
 				return UNSAT;
 			} else {
 				// Local Conflict
 				SMTRAT_STATISTICS_CALL(stats.countLConflicts());
 				currentIterator = backtrackResult;
 				resetBelow(currentIterator);
-				if (currentIterator->todoConstraints.empty()) {
+				/*if (currentIterator->todoConstraints.empty()) {
 					std::cout << "\nProblematic backtrack level reached.\n";
 					std::cout << "\nVariable to eliminate: " << currentIterator->varToEliminate.get().name() << "\n";
 					if (currentIterator->eliminateViaLB) std::cout << "\nEliminating via lower bound.\n";
@@ -223,7 +223,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 					for (auto c : currentIterator->nonBoundConstraints) {
 						std::cout << c.constraint << "\n";
 					}
-				}
+				}*/
 				assert(!currentIterator->todoConstraints.empty());
 				currentIterator->chooseNextConstraint();
 				redoCombinations = true;
@@ -280,7 +280,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		statusCheckResult = currentIterator->trueFalseCheck();
 	}
 	SMTRAT_LOG_INFO("fmplex", "SAT");
-	std::cout << "SAT \n";
+	//std::cout << "SAT \n";
 	return SAT;
 
 }
@@ -707,7 +707,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 				while (backtrackIt->todoConstraints.empty() && backtrackIt != branch->begin()){
 					backtrackIt--;
 				}
-				if (backtrackIt == branch->begin()) return branch->end();
+				if (backtrackIt->todoConstraints.empty() && backtrackIt == branch->begin()) return branch->end();
 				break;
 			} else if (std::string("furthest").compare(Settings::backtrackingMode) == 0 && std::distance(branch->begin(), backtrackIt) > std::distance(branch->begin(), cConstr->conflictLevel)){
 				backtrackIt = cConstr->conflictLevel;
