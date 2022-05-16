@@ -15,7 +15,7 @@ Rational evaluate(carl::Variable v, const Poly& p, const Rational& r) {
 carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<Rational>& r) {
 	Model m;
 	m.assign(v, r);
-	auto res = carl::model::evaluate(p, m);
+	auto res = carl::evaluate(p, m);
 	if (res.isRational()) {
 		return carl::sgn(res.asRational());
 	} else if (res.isRAN()) {

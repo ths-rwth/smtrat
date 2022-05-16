@@ -45,7 +45,7 @@ private:
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", f << ", " << mModel << ", " << mVar << ", " << r);
 		Model m = mModel;
 		m.assign(mVar, r);
-		auto res = carl::model::evaluate(f, m);
+		auto res = carl::evaluate(f, m);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
 		if (!res.isBool()) return true;
 		assert(res.isBool());
@@ -93,7 +93,7 @@ public:
 				break;
 			case mcsat::ConstraintType::Assigned: {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Checking fully assigned " << f);
-				FormulaT fnew = carl::model::substitute(f, mModel);
+				FormulaT fnew = carl::substitute(f, mModel);
 				if (fnew.is_true()) {
 					SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
 					return true;
@@ -112,7 +112,7 @@ public:
 				return true;
 				break;
 		}
-		FormulaT fnew(carl::model::substitute(f, mModel));
+		FormulaT fnew(carl::substitute(f, mModel));
 		std::vector<RAN> list;
 		if (fnew.type() == carl::FormulaType::CONSTRAINT) {
 			const auto& poly = fnew.constraint().lhs();
@@ -157,7 +157,7 @@ public:
 			return true;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding univariate bound " << f);
-		FormulaT fnew(carl::model::substitute(f, mModel));
+		FormulaT fnew(carl::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
 		if (fnew.is_true()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
@@ -242,7 +242,7 @@ public:
 				
 				Model m = mModel;
 				m.assign(mVar, mRI.sampleFrom(i));
-				auto res = carl::model::evaluate(c, m);
+				auto res = carl::evaluate(c, m);
 				if (!res.isBool()) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", c << " is inconclusive on " << mRI.sampleFrom(i));
 				} else if (!res.asBool()) {

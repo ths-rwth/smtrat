@@ -450,7 +450,7 @@ namespace smtrat {
                     if (isTheoryAbstraction(Minisat::var(l))) {
                         const auto& reabstraction = reabstractLiteral(l);
 
-                        const auto substituted = carl::model::substitute(reabstraction, currentModel());
+                        const auto substituted = carl::substitute(reabstraction, currentModel());
 
                         auto vars = carl::arithmetic_variables(substituted);
 
@@ -477,7 +477,7 @@ namespace smtrat {
                 for (int i = 0; i < getClause(cl).size(); i++) {
                     const auto& l = getClause(cl)[i];
                     if (isTheoryAbstraction(Minisat::var(l))) {
-                        const auto& eval = carl::model::evaluate(reabstractLiteral(l), currentModel());
+                        const auto& eval = carl::evaluate(reabstractLiteral(l), currentModel());
                         if (!eval.isBool()) {
                             return false;
                         }

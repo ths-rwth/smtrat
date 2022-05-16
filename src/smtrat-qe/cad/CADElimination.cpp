@@ -222,7 +222,7 @@ void CADElimination::computeTruthValues() {
 		for (const auto& a : assignment) {
 			model.emplace(a.first, a.second);
 		}
-		bool truthValue = carl::model::evaluate(mQuantifierFreePart, model).asBool();
+		bool truthValue = carl::evaluate(mQuantifierFreePart, model).asBool();
 		mTruth.emplace(it, truthValue);
 	}
 
@@ -415,7 +415,7 @@ FormulaT CADElimination::constructImplicant(const TreeIT& sample) {
 	}
 	FormulasT L;
 	for (const auto& atomicFormula : mAtomicFormulas) {
-		if (carl::model::evaluate(atomicFormula, model).asBool()) {
+		if (carl::evaluate(atomicFormula, model).asBool()) {
 			L.push_back(atomicFormula);
 		}
 	}
@@ -430,7 +430,7 @@ FormulaT CADElimination::constructImplicant(const TreeIT& sample) {
 			model.emplace(a.first, a.second);
 		}
 		for (const auto& atomicFormula : L) {
-			if (!carl::model::evaluate(atomicFormula, model).asBool()) {
+			if (!carl::evaluate(atomicFormula, model).asBool()) {
 				evaluatedToFalse.push_back(atomicFormula);
 			}
 		}
@@ -479,7 +479,7 @@ FormulaT CADElimination::constructSolutionFormula() {
 			model.emplace(a.first, a.second);
 		}
 		for (auto const& implicant : implicants) {
-			if (carl::model::evaluate(implicant, model).asBool()) {
+			if (carl::evaluate(implicant, model).asBool()) {
 				captured = true;
 			}
 		}
@@ -499,7 +499,7 @@ FormulaT CADElimination::constructSolutionFormula() {
 			model.emplace(a.first, a.second);
 		}
 		for (auto const& implicant : implicants) {
-			if (carl::model::evaluate(implicant, model).asBool()) {
+			if (carl::evaluate(implicant, model).asBool()) {
 				i.push_back(implicant);
 			}
 		}

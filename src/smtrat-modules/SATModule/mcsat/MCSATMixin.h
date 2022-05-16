@@ -258,7 +258,7 @@ public:
 			mStatistics.modelAssignmentCacheHit();
 			#endif
 
-			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
+			auto res = carl::evaluate(f, mModelAssignmentCache.model());
 			if (!res.isBool() || !res.asBool()) {
 				mModelAssignmentCache.clear(); // clear model assignment cache
 			}
@@ -501,7 +501,7 @@ public:
 		}
 		
 		Model m = model();
-		if (!carl::model::evaluate(f, m).isBool()) {
+		if (!carl::evaluate(f, m).isBool()) {
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
 			return std::numeric_limits<std::size_t>::max();
 		}
@@ -509,7 +509,7 @@ public:
 			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
 			m.erase(variable(lvl));
 			if (!vars.has(variable(lvl))) continue;
-			if (!carl::model::evaluate(f, m).isBool()) {
+			if (!carl::evaluate(f, m).isBool()) {
 				return lvl;
 			}
 		}
@@ -551,7 +551,7 @@ public:
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){
-			auto res = carl::model::evaluate(c, trail.model());
+			auto res = carl::evaluate(c, trail.model());
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", c << " evaluates to " << res);
 			if (res.isBool()) {
 				if (!res.asBool()) return false;

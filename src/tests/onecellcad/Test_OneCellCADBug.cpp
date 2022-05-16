@@ -41,12 +41,12 @@ BOOST_AUTO_TEST_CASE(OneCellCadBug) {
 	model.assign(b, Rational(-5));
   model.assign(x, Rational(1));
 
-  auto res = carl::model::evaluate(f1, model);
+  auto res = carl::evaluate(f1, model);
 	BOOST_CHECK(res.isBool() && res.asBool());
-  auto res1 = carl::model::evaluate(f2, model);
+  auto res1 = carl::evaluate(f2, model);
 	BOOST_CHECK(res1.isBool() && res1.asBool());
 
-  auto res2 = carl::model::evaluate(boost::get<FormulaT>(*explanation), model);
+  auto res2 = carl::evaluate(boost::get<FormulaT>(*explanation), model);
   BOOST_CHECK(res2.isBool());
   BOOST_CHECK(res2.asBool());
 }

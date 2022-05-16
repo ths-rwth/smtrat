@@ -17,7 +17,7 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 		auto it = mAssignments.find(mTrail[tid].first);
 		if (it != mAssignments.end()) {
 			m.emplace(it->second, mModel.at(it->second));
-			auto tmp = carl::model::substitute(cur, m);
+			auto tmp = carl::substitute(cur, m);
 			if (tmp != cur) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << cur << " -> " << tmp << " with " << *it);
 				if (tmp.isConsistent() != 1) {
@@ -87,7 +87,7 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 				it = mCurrent.erase(it);
 				continue;
 			}
-			auto tmp = carl::model::substitute(*it, mModel);
+			auto tmp = carl::substitute(*it, mModel);
 			if (tmp != *it) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << *it << " -> " << tmp);
 				if (mCurrent.find(tmp) == mCurrent.end()) {

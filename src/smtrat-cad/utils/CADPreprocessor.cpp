@@ -124,7 +124,7 @@ bool AssignmentCollector::extractAssignments(std::map<ConstraintT, ConstraintT>&
 AssignmentCollector::CollectionResult AssignmentCollector::simplify(std::map<ConstraintT, ConstraintT>& constraints) {
 	bool changed = false;
     for (auto& c: constraints) {
-        auto tmp = carl::model::substitute(c.second, mModel);
+        auto tmp = carl::substitute(c.second, mModel);
 		if (tmp != c.second && constraints.find(tmp) == constraints.end()) {
 			changed = true;
 			c.second = tmp;
@@ -382,7 +382,7 @@ bool CADPreprocessor::preprocess() {
 		}
     }
     for (auto& c: mInequalities) {
-        carl::model::substituteIn(c.second, mModel);
+        carl::substitute_inplace(c.second, mModel);
         if (c.second.isConsistent() == 0) {
             mConflict = { FormulaT(c.first) };
             SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);

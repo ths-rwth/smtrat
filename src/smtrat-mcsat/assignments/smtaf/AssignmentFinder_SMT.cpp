@@ -59,7 +59,7 @@ std::variant<VariablePos,bool> AssignmentFinder_SMT::level(const FormulaT& const
 boost::tribool AssignmentFinder_SMT::addConstraint(const FormulaT& f) {
 	assert(f.type() == carl::FormulaType::CONSTRAINT);
 
-	FormulaT fnew(carl::model::substitute(f, mModel));
+	FormulaT fnew(carl::substitute(f, mModel));
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.smtaf", "Constraint " << f << " evaluated to " << fnew);
 	if (fnew.type() == carl::FormulaType::CONSTRAINT) {
 		assert(fnew.variables().size() > 0);
@@ -106,7 +106,7 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 	if (lvl == mVariables.second) {
 		if (mModel.find(f.variable_comparison().var()) != mModel.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
-			FormulaT fnew(carl::model::substitute(f, mModel));
+			FormulaT fnew(carl::substitute(f, mModel));
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
 			if (fnew.is_true()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");
@@ -123,7 +123,7 @@ boost::tribool AssignmentFinder_SMT::addMVBound(const FormulaT& f) {
 		}
 	} else { // the bound's level is potentially in the range to be checked
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Evaluating " << f);
-		FormulaT fnew(carl::model::substitute(f, mModel));
+		FormulaT fnew(carl::substitute(f, mModel));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "-> " << fnew);
 		if (fnew.is_true()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Bound evaluated to true, we can ignore it.");

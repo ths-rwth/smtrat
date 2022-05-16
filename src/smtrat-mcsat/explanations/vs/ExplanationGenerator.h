@@ -83,7 +83,7 @@ private:
 
 						// check if current constraint is part of the conflict
 						if (Settings::reduceConflictConstraints) {
-							carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(substitutionResult, mModel);
+							carl::ModelValue<Rational,Poly> eval = carl::evaluate(substitutionResult, mModel);
 							// If constraint is not fully evaluated or evaluates to false, we take it in.
 							if (!eval.isBool() || !eval.asBool()) {
 								SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
@@ -132,7 +132,7 @@ private:
 		}
 
 		#ifndef NDEBUG
-		carl::ModelValue<Rational,Poly> evalRes = carl::model::evaluate(*res, mModel);
+		carl::ModelValue<Rational,Poly> evalRes = carl::evaluate(*res, mModel);
 		assert(evalRes.isBool());
 		assert(!evalRes.asBool());
 		#endif

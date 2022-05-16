@@ -17,7 +17,7 @@ namespace smtrat
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
-            switch( carl::model::satisfied_by(fwo.formula(), Model(_assignment)) )
+            switch( carl::satisfied_by(fwo.formula(), Model(_assignment)) )
             {
                 case 0:
                     return 0;
@@ -35,7 +35,7 @@ namespace smtrat
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
-			auto res = carl::model::substitute(fwo.formula(), _assignment);
+			auto res = carl::substitute(fwo.formula(), _assignment);
 			SMTRAT_LOG_DEBUG("smtrat.module", "Checking whether model satisfies " << fwo.formula() << " -> " << res);
 			if (res.is_false()) return 0;
 			if (!res.is_true()) result = 2;

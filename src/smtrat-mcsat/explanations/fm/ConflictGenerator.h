@@ -162,7 +162,7 @@ public:
 				continue;
 			}
 			
-			auto evalp = carl::model::evaluate(p, mModel);
+			auto evalp = carl::evaluate(p, mModel);
 			if (!evalp.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << p << " did not evaluate to a rational");
 				continue;
@@ -170,7 +170,7 @@ public:
 			assert(evalp.isRational());
 
 			auto q = p * mVariable - b.lhs();
-			auto evalq = carl::model::evaluate(q, mModel);
+			auto evalq = carl::evaluate(q, mModel);
 			if (!evalq.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << q << " did not evaluate to a rational");
 				continue;

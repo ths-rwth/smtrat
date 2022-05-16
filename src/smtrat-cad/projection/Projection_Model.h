@@ -92,7 +92,7 @@ namespace cad {
                         
                         for (std::size_t pid = 0; pid < size(level); pid++) {
                                 const auto& poly = getPolynomialById(level, pid); 
-                                auto psubs = carl::model::substitute(poly, model);
+                                auto psubs = carl::substitute(poly, model);
                                 if (carl::isZero(psubs)) continue;
 								auto polyvars = carl::variables(poly);
 								polyvars.erase(poly.mainVar());

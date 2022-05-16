@@ -115,7 +115,7 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
                 newFormula.push_back(std::move(tseitinSub));
                 const auto& lit = newFormula.back();
                 // tseitinVar -> newFormula_1 && ... && newFormula_n
-                carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(sub, model);
+                carl::ModelValue<Rational,Poly> eval = carl::evaluate(sub, model);
                 assert(eval.isBool());
                 if (!eval.asBool()) {
                     chain.appendPropagating(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})), tseitinVar.negated());

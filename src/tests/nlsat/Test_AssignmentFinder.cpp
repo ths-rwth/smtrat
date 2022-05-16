@@ -111,11 +111,11 @@ BOOST_AUTO_TEST_CASE(CoverComputation)
 	model.assign(a, ran);
 	model.assign(b, Rational(-3));
 	
-	auto res = carl::model::evaluate(f, model);
+	auto res = carl::evaluate(f, model);
 	std::cout << f << " on " << model << " -> " << res << std::endl;
 	
 	model.assign(b, Rational(1));
-	res = carl::model::evaluate(f, model);
+	res = carl::evaluate(f, model);
 	std::cout << f << " on " << model << " -> " << res << std::endl;
 }
 
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	// proof that an assignment for b exist
 	Model model2 = model;
 	model2.assign(b, Rational(3));
-	auto res = carl::model::evaluate(formula, model2);
+	auto res = carl::evaluate(formula, model2);
 	BOOST_CHECK(res.isBool());
 	BOOST_CHECK(res.asBool());
 

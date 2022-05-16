@@ -551,7 +551,7 @@ namespace smtrat
                     else
                     {
                         const auto& m = getRationalModel();
-						return carl::model::satisfied_by(_formula, Model(m)); // TODO: Isn't this an unnecessary copy operation, Gereon?
+						return carl::satisfied_by(_formula, Model(m)); // TODO: Isn't this an unnecessary copy operation, Gereon?
                     }
                 }
                 break;
@@ -626,7 +626,7 @@ namespace smtrat
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
             //unsigned consistency = iter->first.satisfiedBy( ass );
-			unsigned consistency = carl::model::satisfied_by(iter->first, Model(ass)); // TODO: Isn't this an unnecessary copy operation, Gereon?
+			unsigned consistency = carl::satisfied_by(iter->first, Model(ass)); // TODO: Isn't this an unnecessary copy operation, Gereon?
             assert( consistency != 2 );
             if( consistency == 0 )
             {
@@ -646,7 +646,7 @@ namespace smtrat
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {
                 //unsigned consistency = iter->first.satisfiedBy( ass );
-				unsigned consistency = carl::model::satisfied_by(iter->first, Model(ass));
+				unsigned consistency = carl::satisfied_by(iter->first, Model(ass));
                 assert( consistency != 2 );
                 if( consistency == 0 )
                 {
@@ -952,7 +952,7 @@ namespace smtrat
             // Check whether the assignment satisfies the non linear constraints.
             for( const auto& constraint : mNonlinearConstraints )
             {
-                if( carl::model::satisfied_by(constraint, assignments) != 1 )
+                if( carl::satisfied_by(constraint, assignments) != 1 )
                 {
                     return false;
                 }
@@ -1459,7 +1459,7 @@ namespace smtrat
         }
         for( auto iter = rReceivedFormula().begin(); iter != rReceivedFormula().end(); ++iter )
         {
-            unsigned sat = carl::model::satisfied_by(iter->formula(), Model(rmodel));
+            unsigned sat = carl::satisfied_by(iter->formula(), Model(rmodel));
             if (sat != 1) {
                 assert( sat == 0 );
                 return false;

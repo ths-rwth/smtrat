@@ -139,7 +139,7 @@ namespace smtrat
             {
                 const ConstraintT& constr = _formula->formula().constraint();
                 // create and initialize slackvariables
-                if (carl::model::satisfied_by(constr, mFoundSolution) != 1 )
+                if (carl::satisfied_by(constr, mFoundSolution) != 1 )
                     mFoundSolution.clear();
                 if( !mIsIcpInitialized )
                 {
@@ -611,7 +611,7 @@ namespace smtrat
     {
         for( auto& constraint : mNotEqualConstraints )
         {
-            if( carl::model::satisfied_by(constraint, mFoundSolution) == 0 )
+            if( carl::satisfied_by(constraint, mFoundSolution) == 0 )
             {
                 if( mFinalCheck )
                 {
@@ -2280,7 +2280,7 @@ namespace smtrat
         for( const auto& rf : rReceivedFormula() )
         {
             assert( rf.formula().type() == carl::FormulaType::CONSTRAINT );
-            unsigned isSatisfied = carl::model::satisfied_by(rf.formula().constraint(), mFoundSolution);
+            unsigned isSatisfied = carl::satisfied_by(rf.formula().constraint(), mFoundSolution);
 			if (isSatisfied == 2) {
 				return false;
 			}

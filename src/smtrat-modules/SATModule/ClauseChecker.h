@@ -29,7 +29,7 @@ struct ClauseChecker {
 		bool allFalse = true;
 		SMTRAT_LOG_DEBUG("smtrat.sat.clausechecker", "Model: " << model);
 		for (const auto& f: formulas) {
-			ModelValue res = carl::model::evaluate(f, model);
+			ModelValue res = carl::evaluate(f, model);
 			SMTRAT_LOG_DEBUG("smtrat.sat.clausechecker", f << " -> " << res);
 			if (res.isBool()) {
 				allFalse = allFalse && !res.asBool();

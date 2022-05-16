@@ -28,11 +28,11 @@ BOOST_AUTO_TEST_CASE(McsatVSBug) {
   m.assign(y, Rational(0));
   m.assign(z, Rational(10)/7);
 
-  auto res = carl::model::evaluate(FormulaT(c1), m);
+  auto res = carl::evaluate(FormulaT(c1), m);
 	BOOST_CHECK(res.isBool());
   BOOST_CHECK(!res.asBool());
 
-  auto res2 = carl::model::evaluate(p, m);
+  auto res2 = carl::evaluate(p, m);
 	BOOST_CHECK(res2.isRational());
   BOOST_CHECK(res2.asRational() >= 0);
 
