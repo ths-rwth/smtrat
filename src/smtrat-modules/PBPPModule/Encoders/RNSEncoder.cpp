@@ -41,7 +41,7 @@ namespace smtrat {
 		}
 
 		for(Rational i = 0; i < max; i++){
-			product *= pFactory.nextPrime();
+			product *= pFactory.next_prime();
 		}
 
 		if(sum > product){
@@ -190,7 +190,7 @@ namespace smtrat {
 					carl::PrimeFactory<Integer> pFactory;
 					Integer prime = pFactory[24];
 					while(prime < first){
-						prime = pFactory.nextPrime();
+						prime = pFactory.next_prime();
 					}
 					if(prime == first){
 						//first is a big prime number
@@ -211,7 +211,7 @@ namespace smtrat {
 					carl::PrimeFactory<Integer> pFactory;
 					Integer prime = pFactory[24];
 					while(prime < second){
-						prime = pFactory.nextPrime();
+						prime = pFactory.next_prime();
 					}
 					if(prime == second){
 						//second is a big prime number
