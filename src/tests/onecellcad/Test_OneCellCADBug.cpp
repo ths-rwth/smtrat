@@ -7,7 +7,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
-#include <carl/core/MultivariatePolynomial.h>
+#include <carl/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl-formula/model/evaluation/ModelEvaluation.h>
 
@@ -19,8 +19,8 @@ using namespace smtrat;
 BOOST_AUTO_TEST_CASE(OneCellCadBug) {
 	// Variable x cannot be assigned for x^2 + x^4 + b*x^3 <= 0 , x != 0 under b -> -1
 	
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable b = carl::fresh_real_variable("b");
   carl::Variables vars({x,b});
 
 	FormulaT f1(ConstraintT((Poly(x)*x) + (Poly(x)*x*x*x) + (Poly(b)*x*x*x), carl::Relation::LEQ));
@@ -41,12 +41,12 @@ BOOST_AUTO_TEST_CASE(OneCellCadBug) {
 	model.assign(b, Rational(-5));
   model.assign(x, Rational(1));
 
-  auto res = carl::model::evaluate(f1, model);
+  auto res = carl::evaluate(f1, model);
 	BOOST_CHECK(res.isBool() && res.asBool());
-  auto res1 = carl::model::evaluate(f2, model);
+  auto res1 = carl::evaluate(f2, model);
 	BOOST_CHECK(res1.isBool() && res1.asBool());
 
-  auto res2 = carl::model::evaluate(boost::get<FormulaT>(*explanation), model);
+  auto res2 = carl::evaluate(boost::get<FormulaT>(*explanation), model);
   BOOST_CHECK(res2.isBool());
   BOOST_CHECK(res2.asBool());
 }

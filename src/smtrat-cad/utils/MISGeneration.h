@@ -4,7 +4,7 @@
 #include "../common.h"
 
 #include <carl-covering/carl-covering.h>
-#include <carl/core/polynomialfunctions/Complexity.h>
+#include <carl/constraint/Complexity.h>
 
 namespace smtrat {
 namespace cad {

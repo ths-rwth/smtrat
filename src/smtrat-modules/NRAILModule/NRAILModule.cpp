@@ -54,7 +54,7 @@ namespace smtrat
      */
     carl::Variable createZVariable(){
         std::string GeneratedVariableName = VariableName + std::to_string(zVariableCounter++);
-        return carl::freshRealVariable(GeneratedVariableName);
+        return carl::fresh_real_variable(GeneratedVariableName);
     }
 
     /**
@@ -622,7 +622,7 @@ namespace smtrat
             }
         } else {
             for(FormulaT formula:formulas) {
-                if (carl::model::satisfiedBy(formula, model) == 0){
+                if (carl::satisfied_by(formula, model) == 0){
                     if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << "unsatisfiedFormula: " << formula << std::endl; }
                     unsatisfiedFormulas.push_back(formula);
                     if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::FIRST){

@@ -14,7 +14,7 @@
 namespace smtrat
 {
     using carl::overloaded;
-    using carl::freshUninterpretedVariable;
+    using carl::fresh_uninterpreted_variable;
     using carl::newUninterpretedFunction;
     using carl::newUFInstance;
     using carl::SortManager;
@@ -68,7 +68,7 @@ namespace smtrat
         }
 
         auto uvar = [&] (const std::string& name) -> UVariable {
-            return UVariable( freshUninterpretedVariable(name), curry_sort );
+            return UVariable( fresh_uninterpreted_variable(name), curry_sort );
         };
 
         auto res = std::visit(overloaded {
@@ -116,7 +116,7 @@ namespace smtrat
             auto rhs = flatten(ufi.args()[1], substitution);
 
             auto fn = newUFInstance(curry_function, {lhs, rhs});
-            auto new_var = UVariable( freshUninterpretedVariable(), curry_sort );
+            auto new_var = UVariable( fresh_uninterpreted_variable(), curry_sort );
             substitution.emplace_back(fn, new_var, false);
 
             std::copy(substitution.begin(), substitution.end(), std::back_inserter(flat));

@@ -3081,7 +3081,7 @@ namespace smtrat
 					auto lit = learnt_clause[i];
 					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
 					assert(abstrptr != nullptr);
-					auto res = carl::model::evaluate(abstrptr->reabstraction, mMCSAT.model());
+					auto res = carl::evaluate(abstrptr->reabstraction, mMCSAT.model());
 					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Evaluated " << abstrptr->reabstraction << " to " << res);
 					if (!res.isBool() || res.asBool()) {
 						isConflicting = false;

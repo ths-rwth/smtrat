@@ -201,12 +201,12 @@ namespace icp
             
             void setInterval( const DoubleInterval& _interval )
             {
-                if( _interval.lowerBoundType() != mIntervalPos->second.lowerBoundType() || _interval.lower() != mIntervalPos->second.lower() )
+                if( _interval.lower_bound_type() != mIntervalPos->second.lower_bound_type() || _interval.lower() != mIntervalPos->second.lower() )
                 {
                     mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
                     mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
                 }
-                if( _interval.upperBoundType() != mIntervalPos->second.upperBoundType() || _interval.upper() != mIntervalPos->second.upper() )
+                if( _interval.upper_bound_type() != mIntervalPos->second.upper_bound_type() || _interval.upper() != mIntervalPos->second.upper() )
                 {
                     mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
                     mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;

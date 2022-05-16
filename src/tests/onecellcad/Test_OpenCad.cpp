@@ -2,7 +2,7 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <carl/core/MultivariatePolynomial.h>
+#include <carl/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/ran/RealAlgebraicPoint.h>
 
@@ -29,9 +29,9 @@ namespace {
 	using RANPoint = RealAlgebraicPoint<Rational>;
 
 struct VariableFixture {
-  Variable x = carl::freshRealVariable("x");
-  Variable y = carl::freshRealVariable("y");
-  Variable z = carl::freshRealVariable("z");
+  Variable x = carl::fresh_real_variable("x");
+  Variable y = carl::fresh_real_variable("y");
+  Variable z = carl::fresh_real_variable("z");
 };
 
 BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {

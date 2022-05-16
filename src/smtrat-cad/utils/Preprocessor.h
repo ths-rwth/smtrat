@@ -93,7 +93,7 @@ public:
 		return *mConflict;
 	}
 	FormulaT simplify(const FormulaT& f) const {
-		return carl::model::substitute(f, mModel);
+		return carl::substitute(f, mModel);
 	}
 
 	template<typename Map>

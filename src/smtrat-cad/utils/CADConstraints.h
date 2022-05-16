@@ -224,7 +224,7 @@ public:
 		for (const auto& c: mConstraintIts) {
 			if (c == mConstraintMap.end()) continue;
 			SMTRAT_LOG_TRACE("smtrat.cad", "Checking " << c->first << " against " << intervalmap);
-			switch (consistentWith(c->first.constr(),intervalmap)) {
+			switch (consistent_with(c->first.constr(),intervalmap)) {
 				case 0: {
 					SMTRAT_LOG_INFO("smtrat.cad", "Single constraint conflicts with bounds: " << c->first << std::endl << bounds());
 					mis.emplace_back();

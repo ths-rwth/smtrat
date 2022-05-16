@@ -650,7 +650,7 @@ namespace smtrat
                 auto iter_constr = rReceivedFormula().begin();
                 while( iter_constr != rReceivedFormula().end() )
                 {
-                    if( satisfiedBy( iter_constr->formula().constraint(),backends_solution ) == 0 || !( carl::substitute(iter_constr->formula().constraint().lhs(), backends_solution) ).isConstant() )
+                    if( carl::satisfied_by( iter_constr->formula().constraint(),backends_solution ) == 0 || !( carl::substitute(iter_constr->formula().constraint().lhs(), backends_solution) ).isConstant() )
                     {
                         #ifdef DEBUG_FouMoModule
                         std::cout << "The obtained solution is not correct!" << std::endl;
@@ -1297,7 +1297,7 @@ namespace smtrat
         auto iter_constr = rReceivedFormula().begin();
         while( iter_constr != rReceivedFormula().end() )
         {
-            if( !satisfiedBy( iter_constr->formula().constraint(),mVarAss ) || !( carl::substitute(iter_constr->formula().constraint().lhs(), mVarAss) ).isConstant() )
+            if( !carl::satisfied_by( iter_constr->formula().constraint(),mVarAss ) || !( carl::substitute(iter_constr->formula().constraint().lhs(), mVarAss) ).isConstant() )
             {
                 #ifdef DEBUG_FouMoModule
                 std::cout << "The obtained solution is not correct!" << std::endl;

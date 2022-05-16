@@ -8,7 +8,7 @@
 
 #include "SplitSOSModule.h"
 
-#include <carl/core/polynomialfunctions/SoSDecomposition.h>
+#include <carl/poly/umvpoly/functions/SoSDecomposition.h>
 
 namespace smtrat
 {

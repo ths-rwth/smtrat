@@ -19,9 +19,9 @@
 #include <vector>
 
 #include <carl/converter/CoCoAAdaptor.h>
-#include <carl/core/MultivariatePolynomial.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
-#include <carl/core/UnivariatePolynomial.h>
+#include <carl/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl/poly/umvpoly/functions/Resultant.h>
+#include <carl/poly/umvpoly/UnivariatePolynomial.h>
 #include <carl/core/Variable.h>
 #include <carl/core/VariablePool.h>
 #include <carl/ran/real_roots.h>

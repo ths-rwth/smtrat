@@ -155,7 +155,7 @@ namespace parser {
 					errors.next() << "The sort \"" << sort << "\" should have a single index, being the bit size.";
 					return false;
 				}
-				carl::Variable v = carl::freshVariable(name, carl::VariableType::VT_BITVECTOR);
+				carl::Variable v = carl::fresh_variable(name, carl::VariableType::VT_BITVECTOR);
 				carl::BVVariable bvv = carl::BVVariable(v, sort);
 				state->variables[name] = bvv;
 				result = bvv;
@@ -213,7 +213,7 @@ namespace parser {
 		if (ifterm.is_true()) { result = thent; return true; }
 		if (ifterm.is_false()) { result = elset; return true; }
 		carl::SortManager& sm = carl::SortManager::getInstance();
-		carl::Variable var = carl::freshVariable(carl::VariableType::VT_BITVECTOR);
+		carl::Variable var = carl::fresh_variable(carl::VariableType::VT_BITVECTOR);
 		state->artificialVariables.emplace_back(var);
 		carl::BVVariable bvvar(var, sm.index(this->bvSort, {thent.width()}));
 		state->auxiliary_variables.insert(bvvar);
@@ -258,7 +258,7 @@ namespace parser {
 			errors.next() << "The variable is not a bitvector variable.";
 			return false;
 		}
-		subject = carl::BVVariable(carl::freshVariable(carl::VariableType::VT_BITVECTOR), v.sort());
+		subject = carl::BVVariable(carl::fresh_variable(carl::VariableType::VT_BITVECTOR), v.sort());
 		return true;
 		
 	}

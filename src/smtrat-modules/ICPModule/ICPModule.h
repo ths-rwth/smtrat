@@ -490,7 +490,7 @@ return SettingsType::moduleName;
             
             bool fulfillsTarget( const DoubleInterval& _interval ) const
             {
-                if( _interval.lowerBoundType() == carl::BoundType::INFTY || _interval.upperBoundType() == carl::BoundType::INFTY )
+                if( _interval.lower_bound_type() == carl::BoundType::INFTY || _interval.upper_bound_type() == carl::BoundType::INFTY )
                     return false;
                 return _interval.diameter() <= mTargetDiameter;
             }
@@ -526,6 +526,6 @@ return SettingsType::moduleName;
              */
             void printPreprocessedInput( std::string _init = "" ) const;
             
-            void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::emptyInterval(), std::ostream& _out = std::cout ) const;
+            void printContraction( const icp::ContractionCandidate& _cc, const DoubleInterval& _before, const DoubleInterval& _afterA, const DoubleInterval& _afterB = DoubleInterval::empty_interval(), std::ostream& _out = std::cout ) const;
     };
 }    // namespace smtrat

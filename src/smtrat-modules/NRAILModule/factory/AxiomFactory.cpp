@@ -352,7 +352,7 @@ namespace smtrat {
      * @return created auxiliary variable
      */
     carl::Variable createAuxiliaryVariable(carl::Variable variable){
-        return carl::freshRealVariable("aux_" + variable.name());
+        return carl::fresh_real_variable("aux_" + variable.name());
     }
 
     /**
@@ -614,17 +614,17 @@ namespace smtrat {
 
         FormulasT monotonicityFormulas;
 
-        if(carl::model::satisfiedBy(createOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+        if(carl::satisfied_by(createOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
             monotonicityFormulas.push_back(
                     createEquivalentToOriginalMonotonicityOne(variableCapsuleOuter, variableCapsuleInner));
         }
 
-        if(carl::model::satisfiedBy(createOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+        if(carl::satisfied_by(createOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
             monotonicityFormulas.push_back(
                     createEquivalentToOriginalMonotonicityTwo(variableCapsuleOuter, variableCapsuleInner));
         }
 
-        if(carl::model::satisfiedBy(createOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
+        if(carl::satisfied_by(createOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner), absoluteValuedModel) == 0){
             monotonicityFormulas.push_back(
                     createEquivalentToOriginalMonotonicityThree(variableCapsuleOuter, variableCapsuleInner));
         }
@@ -774,9 +774,9 @@ namespace smtrat {
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) { std::cout << std::endl << "Found values in abEqualcCheck" << " Zvariable = " << cRational << " Xvariable = " << aRational << " Yvariable = " << bRational << std::endl; }
 
-        carl::Variable aVariable = carl::freshRealVariable("a");
-        carl::Variable bVariable = carl::freshRealVariable("b");
-        carl::Variable cVariable = carl::freshRealVariable("c");
+        carl::Variable aVariable = carl::fresh_real_variable("a");
+        carl::Variable bVariable = carl::fresh_real_variable("b");
+        carl::Variable cVariable = carl::fresh_real_variable("c");
 
         Model abcModel;
         abcModel.emplace(aVariable, aRational);
@@ -786,7 +786,7 @@ namespace smtrat {
         // c != a * b or, c - a * b != 0
         FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::NEQ);
 
-        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+        if (carl::satisfied_by(abcFormula, abcModel) == 1){
             return true;
         }
 
@@ -795,9 +795,9 @@ namespace smtrat {
 
     bool abGreatercCheck(RationalCapsule rationalCapsule){
 
-        carl::Variable aVariable = carl::freshRealVariable("a");
-        carl::Variable bVariable = carl::freshRealVariable("b");
-        carl::Variable cVariable = carl::freshRealVariable("c");
+        carl::Variable aVariable = carl::fresh_real_variable("a");
+        carl::Variable bVariable = carl::fresh_real_variable("b");
+        carl::Variable cVariable = carl::fresh_real_variable("c");
 
         Model abcModel;
         abcModel.emplace(aVariable, rationalCapsule.getARational());
@@ -807,7 +807,7 @@ namespace smtrat {
         // c < a * b or, c - a * b < 0
         FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::LESS);
 
-        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+        if (carl::satisfied_by(abcFormula, abcModel) == 1){
             return true;
         }
 
@@ -816,9 +816,9 @@ namespace smtrat {
 
     bool abLesscCheck(RationalCapsule rationalCapsule){
 
-        carl::Variable aVariable = carl::freshRealVariable("a");
-        carl::Variable bVariable = carl::freshRealVariable("b");
-        carl::Variable cVariable = carl::freshRealVariable("c");
+        carl::Variable aVariable = carl::fresh_real_variable("a");
+        carl::Variable bVariable = carl::fresh_real_variable("b");
+        carl::Variable cVariable = carl::fresh_real_variable("c");
 
         Model abcModel;
         abcModel.emplace(aVariable, rationalCapsule.getARational());
@@ -828,7 +828,7 @@ namespace smtrat {
         // c > a * b or, c - a * b > 0
         FormulaT abcFormula = FormulaT(Poly(cVariable) - Poly(aVariable*bVariable), carl::Relation::GREATER);
 
-        if (carl::model::satisfiedBy(abcFormula, abcModel) == 1){
+        if (carl::satisfied_by(abcFormula, abcModel) == 1){
             return true;
         }
 
@@ -853,7 +853,7 @@ namespace smtrat {
             std::cout << "The bPrimeInterval is: " << bPrimeInterval << std::endl;
             if (bPrimeInterval.isConsistent())
                 std::cout << "isConsistent: " << std::endl;
-            if (!bPrimeInterval.isEmpty())
+            if (!bPrimeInterval.is_empty())
                 std::cout << "Not Empty: " << std::endl;
         }
 

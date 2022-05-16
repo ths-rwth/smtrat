@@ -217,7 +217,7 @@ public:
 	void postprocessConflict(std::set<FormulaT>& mis) const;
 
 	FormulaT simplify(const FormulaT& f) const {
-		return carl::model::substitute(f, mModel);
+		return carl::substitute(f, mModel);
 	}
 };
 

@@ -10,8 +10,8 @@ BOOST_AUTO_TEST_SUITE(Test_Explanation_FM);
 BOOST_AUTO_TEST_CASE(Test_One)
 {
 	
-	carl::Variable a = carl::freshRealVariable("a");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable a = carl::fresh_real_variable("a");
+	carl::Variable b = carl::fresh_real_variable("b");
 	
 	// Original constraints
 	FormulaT c1(Poly(b), carl::Relation::EQ);
@@ -57,8 +57,8 @@ BOOST_AUTO_TEST_CASE(Test_One)
 BOOST_AUTO_TEST_CASE(Test_Two)
 {
 	
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable y = carl::freshRealVariable("y");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable y = carl::fresh_real_variable("y");
 	
 	// Original constraints
 	FormulaT c1(Poly(y), carl::Relation::GREATER);

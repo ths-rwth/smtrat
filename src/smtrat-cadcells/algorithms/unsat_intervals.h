@@ -33,7 +33,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             assert(results.back()->cell().upper_unbounded());
         }
     } else {
-        if (carl::isStrict(c.relation())) { // TODO later: allow weak bounds for SampledDerivations
+        if (carl::is_strict(c.relation())) { // TODO later: allow weak bounds for SampledDerivations
             for (auto root = roots.begin(); root != roots.end(); root++) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, root->first));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());

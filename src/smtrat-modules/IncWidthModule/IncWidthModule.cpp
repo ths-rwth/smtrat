@@ -204,7 +204,7 @@ namespace smtrat
             {
                 auto it = varBounds.find( v );
                 if( it == varBounds.end() )
-                    std::cout << "   " << v << " in " << RationalInterval::unboundedInterval() << std::endl;
+                    std::cout << "   " << v << " in " << RationalInterval::unbounded_interval() << std::endl;
                 else
                     std::cout << "   " << v << " in " << it->second << std::endl;
             }
@@ -215,7 +215,7 @@ namespace smtrat
             mRestartCheck = false;
             for( const auto& vb : varBounds )
             {
-                if( vb.second.lowerBoundType() != carl::BoundType::INFTY )
+                if( vb.second.lower_bound_type() != carl::BoundType::INFTY )
                 {
                     // (a,b) -> (0,b-a)  or  (a,oo) -> (0,oo)
                     mVariableShifts[vb.first] = smtrat::Poly( vb.first ) + vb.second.lower();
@@ -223,7 +223,7 @@ namespace smtrat
                     std::cout << "   " << vb.first << " -> " << mVariableShifts[vb.first] << std::endl;
                     #endif
                 }
-                else if( vb.second.upperBoundType() != carl::BoundType::INFTY )
+                else if( vb.second.upper_bound_type() != carl::BoundType::INFTY )
                 {
                     // (-oo,b) -> (0,oo)
                     mVariableShifts[vb.first] = -smtrat::Poly( vb.first ) + vb.second.upper();
@@ -324,14 +324,14 @@ namespace smtrat
             for( carl::Variable::Arg var : arithVars )
             {
                 auto vb = varBounds.find( var );
-                if( vb == varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY) )
+                if( vb == varBounds.end() || (vb->second.lower_bound_type() == carl::BoundType::INFTY && vb->second.upper_bound_type() == carl::BoundType::INFTY) )
                 {
                     formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GREATER, Rational( mHalfOfCurrentWidth ) ) ) );
                     formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -Rational( mHalfOfCurrentWidth ) ) ) );
                 }
                 else
                 {
-                    if( vb->second.lowerBoundType() != carl::BoundType::INFTY )
+                    if( vb->second.lower_bound_type() != carl::BoundType::INFTY )
                         formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::GEQ, Rational(2)*mHalfOfCurrentWidth ) ) );
                     else
                         formulas.push_back( FormulaT( ConstraintT( var, carl::Relation::LEQ, -(Rational(2)*mHalfOfCurrentWidth) ) ) );
@@ -394,7 +394,7 @@ namespace smtrat
             for( carl::Variable::Arg var : _allArithmeticVariables )
             {
                 auto vb = _varBounds.find( var );
-                if( (vb == _varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY)) )
+                if( (vb == _varBounds.end() || (vb->second.lower_bound_type() == carl::BoundType::INFTY && vb->second.upper_bound_type() == carl::BoundType::INFTY)) )
                 {
                     // Unbounded variable v. Add: mHalfONfCurrentWidth <= v < mHalfOfCurrentWidth
                     ConstraintT boundA( var, carl::Relation::LESS, Settings::exclude_negative_numbers ? Rational(2)*mHalfOfCurrentWidth : Rational( mHalfOfCurrentWidth ) );
@@ -409,8 +409,8 @@ namespace smtrat
                 else
                 {
                     Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
-                    bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
-                    if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? Rational(-vb->second.lower()) : vb->second.upper()) )
+                    bool intervalHalfOpen = vb->second.lower_bound_type() == carl::BoundType::INFTY || vb->second.upper_bound_type() == carl::BoundType::INFTY;
+                    if( intervalHalfOpen || currentWidth <= (vb->second.lower_bound_type() != carl::BoundType::INFTY ? Rational(-vb->second.lower()) : vb->second.upper()) )
                     {
                         auto ret = addToICP( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ), false );
                         if( ret.second )
@@ -430,7 +430,7 @@ namespace smtrat
                 for( const auto& varToInterval : newvarBounds )
                 {
                     const RationalInterval& vi = varToInterval.second;
-                    if( vi.lowerBoundType() == carl::BoundType::STRICT )
+                    if( vi.lower_bound_type() == carl::BoundType::STRICT )
                     {
                         auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::GREATER, vi.lower() ) ) );
                         if( res.second )
@@ -438,12 +438,12 @@ namespace smtrat
                     }
                     else
                     {
-                        assert( vi.lowerBoundType() == carl::BoundType::WEAK );
+                        assert( vi.lower_bound_type() == carl::BoundType::WEAK );
                         auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::GEQ, vi.lower() ) ) );
                         if( res.second )
                             addBound( _addedBounds, res.first );
                     }
-                    if( vi.upperBoundType() == carl::BoundType::STRICT )
+                    if( vi.upper_bound_type() == carl::BoundType::STRICT )
                     {
                         auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::LESS, vi.upper() ) ) );
                         if( res.second )
@@ -451,7 +451,7 @@ namespace smtrat
                     }
                     else
                     {
-                        assert( vi.upperBoundType() == carl::BoundType::WEAK );
+                        assert( vi.upper_bound_type() == carl::BoundType::WEAK );
                         auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( varToInterval.first, carl::Relation::LEQ, vi.upper() ) ) );
                         if( res.second )
                             addBound( _addedBounds, res.first );
@@ -470,7 +470,7 @@ namespace smtrat
             for( carl::Variable::Arg var : _allArithmeticVariables )
             {
                 auto vb = _varBounds.find( var );
-                if( (vb == _varBounds.end() || (vb->second.lowerBoundType() == carl::BoundType::INFTY && vb->second.upperBoundType() == carl::BoundType::INFTY)) )
+                if( (vb == _varBounds.end() || (vb->second.lower_bound_type() == carl::BoundType::INFTY && vb->second.upper_bound_type() == carl::BoundType::INFTY)) )
                 {
                     // Unbounded variable v. Add: mHalfONfCurrentWidth <= v < mHalfOfCurrentWidth
                     ConstraintT boundA( var, carl::Relation::LESS, Settings::exclude_negative_numbers ? Rational(2)*mHalfOfCurrentWidth : Rational( mHalfOfCurrentWidth ) );
@@ -485,8 +485,8 @@ namespace smtrat
                 else
                 {
                     Rational currentWidth = Rational(2)*mHalfOfCurrentWidth;
-                    bool intervalHalfOpen = vb->second.lowerBoundType() == carl::BoundType::INFTY || vb->second.upperBoundType() == carl::BoundType::INFTY;
-                    if( intervalHalfOpen || currentWidth <= (vb->second.lowerBoundType() != carl::BoundType::INFTY ? Rational(-vb->second.lower()) : vb->second.upper()) )
+                    bool intervalHalfOpen = vb->second.lower_bound_type() == carl::BoundType::INFTY || vb->second.upper_bound_type() == carl::BoundType::INFTY;
+                    if( intervalHalfOpen || currentWidth <= (vb->second.lower_bound_type() != carl::BoundType::INFTY ? Rational(-vb->second.lower()) : vb->second.upper()) )
                     {
                         auto res = addSubformulaToPassedFormula( FormulaT( ConstraintT( var, carl::Relation::LESS, currentWidth ) ) );
                         if( res.second )

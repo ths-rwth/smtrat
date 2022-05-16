@@ -81,8 +81,8 @@ namespace smtrat {
 		t = carl::floor((t - newRHS) / prime );
 
 		for(int i = 0; i < t; i++){
-			// newLHS.push_back(std::pair<Rational, carl::Variable>(-t, carl::freshVariable(carl::VariableType::VT_BOOL)));
-			newLHS += TermT(-t, carl::freshBooleanVariable(), 1);
+			// newLHS.push_back(std::pair<Rational, carl::Variable>(-t, carl::fresh_variable(carl::VariableType::VT_BOOL)));
+			newLHS += TermT(-t, carl::fresh_boolean_variable(), 1);
 		}
 
 		ConstraintT newConstraint(newLHS - newRHS, carl::Relation::EQ);

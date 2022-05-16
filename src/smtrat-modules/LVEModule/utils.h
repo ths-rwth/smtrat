@@ -1,7 +1,7 @@
 #pragma once
 
 #include <carl/ran/real_roots.h>
-#include <carl/core/polynomialfunctions/Substitution.h>
+#include <carl/poly/umvpoly/functions/Substitution.h>
 #include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
 #include <smtrat-common/smtrat-common.h>
@@ -15,7 +15,7 @@ Rational evaluate(carl::Variable v, const Poly& p, const Rational& r) {
 carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<Rational>& r) {
 	Model m;
 	m.assign(v, r);
-	auto res = carl::model::evaluate(p, m);
+	auto res = carl::evaluate(p, m);
 	if (res.isRational()) {
 		return carl::sgn(res.asRational());
 	} else if (res.isRAN()) {

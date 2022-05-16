@@ -93,7 +93,7 @@ private:
 
 	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower bound " << lower << " in conflict with upper bound " << upper);
-		bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
+		bool strict = carl::is_strict(lower.constr.relation()) || carl::is_strict(upper.constr.relation());
 		carl::Relation rel = (lower.neg xor upper.neg) ? (strict ? carl::Relation::GREATER : carl::Relation::GEQ) : (strict ? carl::Relation::LESS : carl::Relation::LEQ);
 		FormulasT res;
 		res.emplace_back(lower.constr.negation());
@@ -162,7 +162,7 @@ public:
 				continue;
 			}
 			
-			auto evalp = carl::model::evaluate(p, mModel);
+			auto evalp = carl::evaluate(p, mModel);
 			if (!evalp.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << p << " did not evaluate to a rational");
 				continue;
@@ -170,7 +170,7 @@ public:
 			assert(evalp.isRational());
 
 			auto q = p * mVariable - b.lhs();
-			auto evalq = carl::model::evaluate(q, mModel);
+			auto evalq = carl::evaluate(q, mModel);
 			if (!evalq.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << q << " did not evaluate to a rational");
 				continue;
@@ -246,7 +246,7 @@ public:
 		for (const Bound& lower : mLower) {
 			for (const Bound& upper : mUpper) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Combining " << lower << " and " << upper);
-				bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
+				bool strict = carl::is_strict(lower.constr.relation()) || carl::is_strict(upper.constr.relation());
 				
 				if (lower.r < upper.r) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Not in conflict");

@@ -518,7 +518,7 @@ namespace smtrat
                     }
                     ++iter_coeff;
                 }
-                carl::Variable fresh_var = carl::freshVariable( carl::VariableType::VT_INT ); 
+                carl::Variable fresh_var = carl::fresh_variable( carl::VariableType::VT_INT ); 
                 mAuxiliaries.insert( fresh_var );
                 *temp += Poly(fresh_var);
             }
@@ -734,7 +734,7 @@ namespace smtrat
         auto iter = rReceivedFormula().begin();
         while( iter != rReceivedFormula().end() )
         {
-            if( satisfiedBy( iter->formula().constraint(),temp_map ) != 1 )
+            if( carl::satisfied_by( iter->formula().constraint(),temp_map ) != 1 )
             {
                 return false;
                 #ifdef DEBUG_IntEqModule
