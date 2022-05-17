@@ -259,7 +259,7 @@ Answer GBModule<Settings>::checkCore()
                 typename Settings::Reductor red( mBasis.getGbIdeal( ), witness );
                 witness = red.fullReduce( );
                 std::cout << witness << std::endl;
-                assert( witness.is_zero( ) );
+                assert( carl::is_zero(witness) );
             }
             #endif
             mInfeasibleSubsets.emplace_back();
@@ -795,7 +795,7 @@ typename Settings::Polynomial GBModule<Settings>::callGroebnerToSDP( const Ideal
         witness = sdp.findWitness( );
     }
     std::cout << std::endl;
-    if( !witness.is_zero( ) ) std::cout << "Found witness: " << witness << std::endl;
+    if( !carl::is_zero(witness) ) std::cout << "Found witness: " << witness << std::endl;
     return witness;
 }
 #endif
