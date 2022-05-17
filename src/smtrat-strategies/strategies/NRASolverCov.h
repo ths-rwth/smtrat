@@ -10,6 +10,7 @@
 #include <smtrat-modules/STropModule/STropModule.h>
 #include <smtrat-modules/ICPModule/ICPModule.h>
 #include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/NewCoveringModule/NewCoveringModule.h>
 #include <smtrat-modules/NewCADModule/NewCADModule.h>
 
 namespace smtrat
@@ -22,11 +23,11 @@ namespace smtrat
      * @version
      *
      */
-    class NRASolver:
+    class NRASolverCov:
         public Manager
     {
         public:
-            NRASolver(): Manager()
+            NRASolverCov(): Manager()
             {
                 setStrategy(
                 {
