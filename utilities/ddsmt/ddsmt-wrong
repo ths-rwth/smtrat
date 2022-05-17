@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # This script can be called on smt2-files on which SMT-RAT returns a wrong. 
+# ddsmt-wrong in.smt2 out.smt2 solver
 
 cp $1 $2.in
 sed '/(set-info :status sat)/d' $2.in >$2.tmp
