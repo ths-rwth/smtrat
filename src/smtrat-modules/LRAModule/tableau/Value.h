@@ -250,7 +250,7 @@ namespace smtrat
                     }
                 }
                 
-                bool isZero() const
+                bool is_zero() const
                 {
                     return mMainPart == T(0) && mDeltaPart == T(0);
                 }

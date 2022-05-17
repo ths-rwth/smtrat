@@ -328,8 +328,8 @@ namespace arithmetic {
 				result = v;
 				return true;
 			} else if (ci(arguments[0], rarg)) {
-				Integer lhs = carl::toInt<Integer>(rarg);
-				Integer rhs = carl::toInt<Integer>(modulus);
+				Integer lhs = carl::to_int<Integer>(rarg);
+				Integer rhs = carl::to_int<Integer>(modulus);
 				result = carl::mod(lhs, rhs);
 				return true;
 			} else {

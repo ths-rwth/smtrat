@@ -48,7 +48,7 @@ namespace smtrat
 			const ConstraintT& constraint{formula.constraint()};
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
-			if (carl::isNegative(constraint.lhs().lcoeff()))
+			if (carl::is_negative(constraint.lhs().lcoeff()))
 				relation = carl::turn_around(relation);
 			
 			/// Purifiy and discretize the normalized left hand side to construct the linearization
@@ -184,7 +184,7 @@ namespace smtrat
 			const ConstraintT& constraint{formula.constraint()};
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
-			if (carl::isNegative(constraint.lhs().lcoeff()))
+			if (carl::is_negative(constraint.lhs().lcoeff()))
 				relation = carl::turn_around(relation);
 			
 			/// Retrieve the normalized constraint and mark the separator object as changed
@@ -409,9 +409,9 @@ namespace smtrat
 			
 			bool operator<(const Candidate& rhs) const
 			{
-				if (carl::isOne(mDirection*rhs.mDirection))
+				if (carl::is_one(mDirection*rhs.mDirection))
 					return mRadius < rhs.mRadius;
-				else if (carl::isOne(mDirection))
+				else if (carl::is_one(mDirection))
 					return mRadius < Rational(Settings::thresholdRadius);
 				else
 					return rhs.mRadius >= Rational(Settings::thresholdRadius);
@@ -438,7 +438,7 @@ namespace smtrat
 						&& (expansion.mMaximalDomain.upper_bound_type() == carl::BoundType::INFTY
 							|| expansion.mMaximalDomain.upper() > expansion.mActiveDomain.upper()))
 						direction  = 1;
-					if (!carl::isZero(direction))
+					if (!carl::is_zero(direction))
 					{
 						Rational radius{(direction*(expansion.mActiveDomain-expansion.mNucleus)).upper()};
 						if (radius <= Settings::maximalRadius)
@@ -505,7 +505,7 @@ namespace smtrat
 					else
 					{
 						carl::Relation relation{constraint.relation()};
-						if (carl::isNegative(constraint.lhs().lcoeff()))
+						if (carl::is_negative(constraint.lhs().lcoeff()))
 							relation = carl::turn_around(relation);
 						infeasibleSubset.emplace(linearization.mNormalization, relation);
 					}

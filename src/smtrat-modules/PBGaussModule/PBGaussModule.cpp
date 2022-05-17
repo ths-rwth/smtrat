@@ -178,13 +178,13 @@ template<class Settings>
 			// Compute least common multiple of all denominators
 			Rational mpl = 1;
 			for (long rid = 0; rid < r.size(); rid++) {
-				if (!carl::isInteger(r[rid])){
-					mpl = carl::lcm(mpl, carl::getDenom(r[rid]));
+				if (!carl::is_integer(r[rid])){
+					mpl = carl::lcm(mpl, carl::get_denom(r[rid]));
 				}
 			}
 			// Restore 
 			for(long j = 0; j < r.size(); j++){
-				if (carl::isZero(r[j])) continue;
+				if (carl::is_zero(r[j])) continue;
 				newLHS += TermT(Rational(mpl * r[j]) * varsVec[(std::size_t) j]);
 			}
 			subformulas.emplace_back(ConstraintT(newLHS + Rational(b[i] * -mpl), rels[std::size_t(i)]));

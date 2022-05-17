@@ -190,7 +190,7 @@ public:
 				// Derive poly wrt to each variable (variables with idx 0 to 'mainPoly.level')
 				for (std::size_t varIdx = 0; varIdx <= mainPoly.level; varIdx++) {
 					const auto derivative = carl::derivative(poly, variableOrder[varIdx]);
-					if (carl::isZero(derivative))
+					if (carl::is_zero(derivative))
 						continue;
 					nextLayer.emplace_back(derivative);
 					if (foundSomeNonEarlyVanishingDerivative)
@@ -323,7 +323,7 @@ public:
 
 		// Do early-exit tests:
 		for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
-			if (coeff.isConstant() && !carl::isZero(coeff))
+			if (coeff.isConstant() && !carl::is_zero(coeff))
 				return ShrinkResult::SUCCESS;
 		}
 
@@ -344,7 +344,7 @@ public:
 
 		for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
 			// find first non-vanishing coefficient:
-			if (carl::isZero(coeff)) continue;
+			if (carl::is_zero(coeff)) continue;
 			const auto coeffLevel = *levelOf(variableOrder, coeff); // certainly non-constant
 			if (!isPointRootOfPoly(coeffLevel, coeff)) {
 				return shrinkCellWithIrreducibleFactorsOfPoly(

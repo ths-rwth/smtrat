@@ -74,7 +74,7 @@ namespace smtrat
 		if( formula.type() == carl::FormulaType::CONSTRAINT )
         {
             std::vector<std::pair<Rational,Poly>> sosDec;
-            bool lcoeffNeg = carl::isNegative( formula.constraint().lhs().lcoeff() );
+            bool lcoeffNeg = carl::is_negative( formula.constraint().lhs().lcoeff() );
             if( lcoeffNeg ) {
                 sosDec = carl::sos_decomposition(-formula.constraint().lhs());
             }

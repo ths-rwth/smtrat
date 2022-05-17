@@ -447,7 +447,7 @@ namespace smtrat
                 if(Settings::apply_icp) {
                     // Obtain range from ICP substitute
                     carl::Variable substitute = mSubstitutes.at(_poly.poly());
-                    IntegerInterval interval = getNum(mBoundsInRestriction.getInterval(substitute));
+                    IntegerInterval interval = get_num(mBoundsInRestriction.getInterval(substitute));
                     if(interval.lower_bound_type() == carl::BoundType::WEAK && interval.upper_bound_type() == carl::BoundType::WEAK) {
                         auto shrunk = shrinkToRange(intermediate, interval);
                         blasted = shrunk.first;
@@ -553,7 +553,7 @@ namespace smtrat
         {
             const carl::Variable& variable = variableWO.element();
             bool linear = ! mNonlinearInputVariables.contains(variable);
-            IntegerInterval interval = getNum(mBoundsFromInput.getInterval(variable));
+            IntegerInterval interval = get_num(mBoundsFromInput.getInterval(variable));
 
             Poly variablePoly(variable);
             auto blastingIt = mPolyBlastings.find(variablePoly);
@@ -652,7 +652,7 @@ namespace smtrat
         for(auto variableWO : mInputVariables)
         {
             const carl::Variable& variable = variableWO.element();
-            IntegerInterval interval = getNum(mBoundsFromInput.getInterval(variable));
+            IntegerInterval interval = get_num(mBoundsFromInput.getInterval(variable));
 
             Poly variablePoly(variable);
             auto blastingIt = mPolyBlastings.find( Poly(variable) );
@@ -904,11 +904,11 @@ namespace smtrat
             Integer blastedUpperBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().upper_bound());
             auto inputBoundsIt = inputBounds.find(variable);
 
-            if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedLowerBound - 1)) {
+            if(inputBoundsIt == inputBounds.end() || get_num(inputBoundsIt->second).contains(blastedLowerBound - 1)) {
                 outsideConstraints.push_back(FormulaT(ConstraintT(variable, carl::Relation::LESS, blastedLowerBound)));
             }
 
-            if(inputBoundsIt == inputBounds.end() || getNum(inputBoundsIt->second).contains(blastedUpperBound + 1)) {
+            if(inputBoundsIt == inputBounds.end() || get_num(inputBoundsIt->second).contains(blastedUpperBound + 1)) {
                 outsideConstraints.push_back(FormulaT(ConstraintT(variable, carl::Relation::GREATER, blastedUpperBound)));
             }
         }
@@ -1173,11 +1173,11 @@ namespace smtrat
     }
 
     template<class Settings>
-    typename IntBlastModule<Settings>::IntegerInterval IntBlastModule<Settings>::getNum(const RationalInterval& _interval) const
+    typename IntBlastModule<Settings>::IntegerInterval IntBlastModule<Settings>::get_num(const RationalInterval& _interval) const
     {
         return IntegerInterval(
-            carl::getNum(_interval.lower()), _interval.lower_bound_type(),
-            carl::getNum(_interval.upper()), _interval.upper_bound_type()
+            carl::get_num(_interval.lower()), _interval.lower_bound_type(),
+            carl::get_num(_interval.upper()), _interval.upper_bound_type()
         );
     }
 
@@ -1245,7 +1245,7 @@ namespace smtrat
             IntegerInterval encodedBounds = IntegerInterval(blastedPoly.lower_bound(), blastedPoly.upper_bound());
             auto icpBoundsIt = icpBounds.find(substitute);
 
-            if(icpBoundsIt == icpBounds.end() || ! encodedBounds.contains(getNum(icpBoundsIt->second))) {
+            if(icpBoundsIt == icpBounds.end() || ! encodedBounds.contains(get_num(icpBoundsIt->second))) {
                 polysToReencode.insert(shrunkPoly);
             }
         }

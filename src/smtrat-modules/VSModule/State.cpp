@@ -334,7 +334,7 @@ namespace vs
             _nextIntTestCandidate = father().maxIntTestCandidate();
             ++_nextIntTestCandidate;
         }
-        assert( carl::isInteger( _nextIntTestCandidate ) );
+        assert( carl::is_integer( _nextIntTestCandidate ) );
         ++mCurrentIntRange;
         return true;
     }
@@ -357,7 +357,7 @@ namespace vs
                 assert( plusInfChild == NULL );
                 plusInfChild = child;
             }
-            else if( child->substitution().term().isInteger() )
+            else if( child->substitution().term().is_integer() )
             {
                 smtrat::Rational currentTc = child->substitution().term().constantPart().constantPart();
                 if( currentTc < mMinIntTestCanidate ) leastIntTc = currentTc;
@@ -887,7 +887,7 @@ namespace vs
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(), _substitution.originalConditions().end() );
                 return true;
             }
-            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().isInteger() )
+            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().is_integer() )
             {
                 smtrat::Rational intTc = _substitution.term().constantPart().constantPart();
                 if( (**child).substitution().type() == Substitution::MINUS_INFINITY )
@@ -1690,7 +1690,7 @@ namespace vs
             if( result < 1 )
             {
                 if( index().type() == carl::VariableType::VT_INT && (*child)->substitution().type() != Substitution::MINUS_INFINITY 
-                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().isInteger() )
+                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().is_integer() )
                 {
                     childWithIntTcDeleted = true;
                 }
@@ -1958,7 +1958,7 @@ namespace vs
         std::vector<State*> result;
         if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
-            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
+            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().is_integer() )
             {
                 smtrat::Rational intTC = _substitution.term().constantPart().constantPart();
                 if( intTC > mMaxIntTestCanidate )

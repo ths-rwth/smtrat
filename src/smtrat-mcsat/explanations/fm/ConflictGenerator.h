@@ -157,7 +157,7 @@ public:
 				continue;
 			}
 			auto p = b.coefficient(mVariable, 1);
-			if (carl::isZero(p)) {
+			if (carl::is_zero(p)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
 				continue;
 			}
@@ -177,7 +177,7 @@ public:
 			}
 			assert(evalq.isRational());
 
-			if (carl::isZero(evalp.asRational())) {
+			if (carl::is_zero(evalp.asRational())) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable << " after we evaluate it");
 
 				if (!carl::evaluate(Rational(0), b.relation(), evalq.asRational())) {

@@ -525,7 +525,7 @@ namespace smtrat
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
                 assert( !term->isConstant() );
-                assert( carl::isInteger( term->coeff() ) );
+                assert( carl::is_integer( term->coeff() ) );
 				carl::Variable var = term->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
                 auto nonBasicIter = mOriginalVars.find( var );
@@ -539,7 +539,7 @@ namespace smtrat
                 {
                     nonBasic = nonBasicIter->second;
                 }
-                mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::getNum( term->coeff() ) ) );
+                mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::get_num( term->coeff() ) ) );
             }
             return var;
         }
@@ -2095,7 +2095,7 @@ namespace smtrat
                 Value<T1> columnVarMargin = increaseColumnVar ?
                         (columnVar.supremum().isInfinite() ? infinityValue : (columnVar.supremum().limit() - columnVar.assignment())) :
                         (columnVar.infimum().isInfinite() ? infinityValue : (columnVar.assignment() - columnVar.infimum().limit()));
-                if( !columnVarMargin.isZero() )
+                if( !columnVarMargin.is_zero() )
                 {
                     // Calculate the change we minimally need on the column variable in order to improve the objective
                     // more than with the currently best found pivoting entry.
@@ -3421,7 +3421,7 @@ namespace smtrat
                 sumOfNonbasics += -(*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() );
             else
                 sumOfNonbasics += -(*mRows[_rowNumber]->pExpression());
-            if( !carl::isZero(sumOfNonbasics) )
+            if( !carl::is_zero(sumOfNonbasics) )
             {
                 return false;
             }

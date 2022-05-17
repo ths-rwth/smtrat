@@ -162,12 +162,12 @@ namespace smtrat
 				coeff.r += term.coeff();
 				continue;
 			}
-			if (isZero(term)) {
+			if (is_zero(term)) {
 				SMTRAT_LOG_WARN("smtrat.ice", "Term " << term << " is zero. We'll ignore it.");
 				continue;
 			}
 			if (isSemiPositive(term)) {
-				if (!carl::isZero(src)) {
+				if (!carl::is_zero(src)) {
 					SMTRAT_LOG_TRACE("smtrat.ice", "No: Already has a source, but " << term << " was found.");
 					return false;
 				}

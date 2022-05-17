@@ -34,7 +34,7 @@ namespace smtrat
 			const ConstraintT& constraint{formula.constraint()};
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
-			if (carl::isNegative(constraint.lhs().lcoeff()))
+			if (carl::is_negative(constraint.lhs().lcoeff()))
 				relation = carl::turn_around(relation);
 			
 			/// Store the normalized constraint and mark the separator object as changed
@@ -130,7 +130,7 @@ namespace smtrat
 			const ConstraintT& constraint{formula.constraint()};
 			const Poly normalization{constraint.lhs().normalize()};
 			carl::Relation relation{constraint.relation()};
-			if (carl::isNegative(constraint.lhs().lcoeff()))
+			if (carl::is_negative(constraint.lhs().lcoeff()))
 				relation = carl::turn_around(relation);
 			
 			/// Retrieve the normalized constraint and mark the separator object as changed
@@ -196,7 +196,7 @@ namespace smtrat
 				}
 				
 				/// Calculate smallest possible integer valued exponents
-				if (!carl::isZero(gcd) && !carl::isOne(gcd))
+				if (!carl::is_zero(gcd) && !carl::is_one(gcd))
 					for (Weight& weight : weights)
 						weight.mExponent /= gcd;
 				
@@ -208,8 +208,8 @@ namespace smtrat
 					clearModel();
 					for (const Weight& weight : weights)
 					{
-						Rational value{carl::isNegative(weight.mExponent) ? carl::reciprocal(base) : base};
-						carl::pow_assign(value, carl::toInt<carl::uint>(carl::abs(weight.mExponent)));
+						Rational value{carl::is_negative(weight.mExponent) ? carl::reciprocal(base) : base};
+						carl::pow_assign(value, carl::to_int<carl::uint>(carl::abs(weight.mExponent)));
 						if (weight.mSign)
 							value *= -1;
 						mModel.emplace(weight.mVariable, value);
@@ -391,7 +391,7 @@ namespace smtrat
 				for (const auto& exponent : vertex.mMonomial->exponents())
 				{
 					const auto& moment{mMoments[exponent.first]};
-					hyperplane += carl::fromInt<Rational>(exponent.second)*moment.mNormalVector;
+					hyperplane += carl::from_int<Rational>(exponent.second)*moment.mNormalVector;
 					if (exponent.second % 2 == 1)
 						signChangeSubformulas.emplace_back(moment.mSignVariant);
 				}
@@ -428,7 +428,7 @@ namespace smtrat
 			}
 			
 			/// Create the strict/weak linear saparating hyperplane
-			bool positive{carl::isPositive(vertex.mCoefficient) != negated};
+			bool positive{carl::is_positive(vertex.mCoefficient) != negated};
 			disjunctions.emplace_back(
 				FormulaT(
 					carl::FormulaType::IMPLIES,

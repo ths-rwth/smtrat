@@ -134,7 +134,7 @@ namespace smtrat
 				}
 				assert(it->second.isRAN());
 				const auto& r = it->second.asRAN();
-				if (carl::isInteger(r)) continue;
+				if (carl::is_integer(r)) continue;
 				if (mFinalCheck) {
 					branchAt(v, branching_point(r), true, true, true);
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Branching on " << v << " at " << branching_point(r));

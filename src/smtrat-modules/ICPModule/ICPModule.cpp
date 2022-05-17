@@ -1071,7 +1071,7 @@ namespace smtrat
         DoubleInterval resultA;
         DoubleInterval resultB;
         // check if derivative is already calculated
-        if(carl::isZero(_selection->derivative()))
+        if(carl::is_zero(_selection->derivative()))
             _selection->calcDerivative();
         carl::Variable variable = _selection->derivationVar();
         assert( mVariables.find( variable ) != mVariables.end() );

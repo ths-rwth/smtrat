@@ -217,7 +217,7 @@ namespace smtrat
 				return std::nullopt;
 			}
 		}
-		assert(!isZero(with_v) && !isZero(without_v));
+		assert(!is_zero(with_v) && !is_zero(without_v));
 		SMTRAT_LOG_DEBUG("smtrat.lve", "Separated " << c << " into " << with_v << " and " << without_v);
 		return eliminate_from_separated_factors(v, with_v, without_v, c.relation());
 	}

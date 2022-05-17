@@ -228,7 +228,7 @@ public:
     bool has_const_coeff(PolyRef p) const {
         auto poly = as_univariate(p);
         for (const auto& coeff :  poly.coefficients()) {
-            if (coeff.isConstant() && !carl::isZero(coeff)) return true;
+            if (coeff.isConstant() && !carl::is_zero(coeff)) return true;
         }
         return false;
     }

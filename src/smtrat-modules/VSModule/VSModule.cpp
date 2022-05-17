@@ -1680,12 +1680,12 @@ namespace smtrat
                 {
                     if( ass.second.isSqrtEx() )
                     {
-                        assert( ass.second.asSqrtEx().isConstant() && carl::isInteger( ass.second.asSqrtEx().constantPart().constantPart() ) );
+                        assert( ass.second.asSqrtEx().isConstant() && carl::is_integer( ass.second.asSqrtEx().constantPart().constantPart() ) );
                         varSolutions[ass.first.asVariable()] = ass.second.asSqrtEx().constantPart().constantPart();
                     }
                     else if( ass.second.isRAN() )
                     {
-                        assert( ass.second.asRAN().is_numeric() && carl::isInteger( ass.second.asRAN().value() ) );
+                        assert( ass.second.asRAN().is_numeric() && carl::is_integer( ass.second.asRAN().value() ) );
                         varSolutions[ass.first.asVariable()] = ass.second.asRAN().value();
                     }
                 }
@@ -1740,12 +1740,12 @@ namespace smtrat
                                 assert( varSolutions.find( *var ) != varSolutions.end() );
                                 partialVarSolutions[*var] = varSolutions[*var];
                                 Poly subPolyPartiallySubstituted = carl::substitute(substitutionPoly, partialVarSolutions );
-                                if( !carl::isZero(subPolyPartiallySubstituted) )
+                                if( !carl::is_zero(subPolyPartiallySubstituted) )
                                 {
                                     Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
-                                    assert( carl::getNum( cp ) == Rational(1) || carl::getNum( cp ) == Rational(-1) );
-                                    Rational g = carl::getDenom( cp );
-                                    if( g > Rational(0) && carl::mod( carl::toInt<Integer>( subPolyPartiallySubstituted.constantPart() ), carl::toInt<Integer>( g ) ) != 0 )
+                                    assert( carl::get_num( cp ) == Rational(1) || carl::get_num( cp ) == Rational(-1) );
+                                    Rational g = carl::get_denom( cp );
+                                    if( g > Rational(0) && carl::mod( carl::to_int<Integer>( subPolyPartiallySubstituted.constantPart() ), carl::to_int<Integer>( g ) ) != 0 )
                                     {
                                         Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
                                         Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
@@ -1762,7 +1762,7 @@ namespace smtrat
                         }
                         // Insert the (integer!) assignments of the other variables.
                         const SqrtEx& subTerm = currentState->substitution().term();
-                        if( carl::isZero(carl::substitute(subTerm.denominator(), varSolutions )) )
+                        if( carl::is_zero(carl::substitute(subTerm.denominator(), varSolutions )) )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Something is zero");
                             if( mFinalCheck )
@@ -1772,7 +1772,7 @@ namespace smtrat
                         auto result = evaluate( subTerm, varSolutions, -1 );
                         Rational evaluatedSubTerm = result.first;
                         bool assIsInteger = result.second;
-                        assIsInteger &= carl::isInteger( evaluatedSubTerm );
+                        assIsInteger &= carl::is_integer( evaluatedSubTerm );
                         if( !assIsInteger )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Assignment is not integer");

@@ -36,7 +36,7 @@ std::optional<ModelValue> get_root(carl::Variable v, const Poly& p) {
 
 ModelValue get_non_root(carl::Variable v, const Poly& p) {
 	Rational r = 0;
-	while (carl::isZero(evaluate(v, p, r))) {
+	while (carl::is_zero(evaluate(v, p, r))) {
 		r += Rational(1);
 	}
 	return r;

@@ -1327,7 +1327,7 @@ namespace smtrat
             assert( !vars.empty() );
             auto found_ex = rMap_.find(*vars.begin());
             const Rational& ass = found_ex->second;
-            if( !carl::isInteger( ass ) )
+            if( !carl::is_integer( ass ) )
             {
                 all_int = false;
                 const Poly::PolyType* gomory_poly = mTableau.gomoryCut(ass, basicVar);
@@ -1378,7 +1378,7 @@ namespace smtrat
                 continue;
             assert( var->first == map_iterator->first );
             const Rational& ass = map_iterator->second;
-            if( (var->first.type() == carl::VariableType::VT_INT || var->first.type() == carl::VariableType::VT_BOOL) && !carl::isInteger( ass ) )
+            if( (var->first.type() == carl::VariableType::VT_INT || var->first.type() == carl::VariableType::VT_BOOL) && !carl::is_integer( ass ) )
             {
                 if( mFinalCheck )
                 {
@@ -1447,7 +1447,7 @@ namespace smtrat
         rReceivedFormula().gatherVariables( inputVars );
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
         {
-            if( ass->first.type() == carl::VariableType::VT_INT && !carl::isInteger( ass->second ) && inputVars.has( ass->first ) )
+            if( ass->first.type() == carl::VariableType::VT_INT && !carl::is_integer( ass->second ) && inputVars.has( ass->first ) )
             {
                 return false;
             }

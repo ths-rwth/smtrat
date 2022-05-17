@@ -147,7 +147,7 @@ namespace smtrat
                 if( varShiftIter != mVariableShifts.end() )
                 {
                     assert( ass.second.isRational() || ass.second.isSqrtEx() || ass.second.isRAN() || ass.second.isSubstitution() );
-                    bool varWithNegCoeff = carl::isNegative( varShiftIter->second.lcoeff() );
+                    bool varWithNegCoeff = carl::is_negative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
                         mModel.assign(ass.first, (varWithNegCoeff ? Rational(-ass.second.asRational()) : ass.second.asRational()) + varShiftIter->second.constantPart());

@@ -540,7 +540,7 @@ public:
 
         // Do early-exit tests:
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
-            if (coeff.isConstant() && !carl::isZero(coeff))
+            if (coeff.isConstant() && !carl::is_zero(coeff))
                 return std::nullopt;
         }
 
@@ -563,7 +563,7 @@ public:
 
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
             // find first non-vanishing coefficient:
-            if (carl::isZero(coeff)) continue;
+            if (carl::is_zero(coeff)) continue;
             const size_t coeffLevel = *levelOf(variableOrder, coeff); // certainly non-constant
             if (!isPointRootOfPoly(coeffLevel, coeff)) {
                 return coeff;

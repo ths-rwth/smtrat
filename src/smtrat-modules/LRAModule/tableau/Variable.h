@@ -151,7 +151,7 @@ namespace smtrat
                 /**
                  * @return 
                  */
-                bool isInteger() const
+                bool is_integer() const
                 {
                     return mInteger;
                 }

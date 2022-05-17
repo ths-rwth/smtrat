@@ -95,7 +95,7 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Reusing basis from last call.");
 		}
 		
-		if (mLastBasis.size() == 1 && carl::isOne(mLastBasis[0])) {
+		if (mLastBasis.size() == 1 && carl::is_one(mLastBasis[0])) {
 			SMTRAT_LOG_DEBUG("smtrat.cocoagb", "Returning UNSAT");
 			generateTrivialInfeasibleSubset();
 			return Answer::UNSAT;

@@ -17,7 +17,7 @@ namespace projection {
  */
 template<typename Poly>
 bool doesNotVanish(const Poly& p) {
-	if (isZero(p)) return false;
+	if (is_zero(p)) return false;
 	if (p.isConstant()) return true;
 	auto def = carl::definiteness(p);
 	if (def == carl::Definiteness::POSITIVE) return true;
@@ -74,7 +74,7 @@ template<typename Poly>
 struct Reducta : std::vector<Poly> {
 	Reducta(const Poly& p) {
 		this->emplace_back(p);
-		while (!isZero(this->back())) {
+		while (!is_zero(this->back())) {
 			this->emplace_back(this->back());
 			this->back().truncate();
 		}

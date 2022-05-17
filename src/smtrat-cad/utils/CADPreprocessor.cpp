@@ -160,7 +160,7 @@ AssignmentCollector::CollectionResult AssignmentCollector::collect(std::map<Cons
 }
 
 bool ResultantRule::addPoly(const Poly& poly) {
-    if (isZero(poly)) return true;
+    if (is_zero(poly)) return true;
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     std::size_t level = 0;
     UPoly p = carl::to_univariate_polynomial(poly, mVars[level]);

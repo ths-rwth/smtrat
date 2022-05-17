@@ -46,7 +46,7 @@ namespace smtrat
         }
 
         bool hasOffset() const {
-            return ! carl::isZero(mOffset);
+            return ! carl::is_zero(mOffset);
         }
 
         BVAnnotation withOffset(Integer _newOffset) const {
@@ -577,7 +577,7 @@ return SettingsType::moduleName;
             const BlastedConstr& blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas);
             void addBoundRestrictionsToICP(carl::Variable _variable, const BVAnnotation& blastedType);
             void removeBoundRestrictionsFromICP(carl::Variable _variable);
-            IntegerInterval getNum(const RationalInterval& _interval) const;
+            IntegerInterval get_num(const RationalInterval& _interval) const;
             void addPolyParents(const ConstraintT& _constraint);
             void addPolyParent(const Poly& _child, const Poly& _parent);
             std::set<Poly> parentalClosure(std::set<Poly> _children);

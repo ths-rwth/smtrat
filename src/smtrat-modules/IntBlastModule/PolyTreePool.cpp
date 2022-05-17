@@ -36,12 +36,12 @@ namespace smtrat
         Rational coeff = term.coeff();
 
         if(term.isConstant()) {
-            return create(carl::toInt<Integer>(coeff));
+            return create(carl::to_int<Integer>(coeff));
         }
 
         const carl::Monomial::Arg monomial = term.monomial();
 
-        if(! carl::isOne(coeff)) {
+        if(! carl::is_one(coeff)) {
             return create(poly, PolyTree::Type::PRODUCT, Poly(coeff), Poly(monomial));
         }
 

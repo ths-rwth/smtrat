@@ -242,7 +242,7 @@ Answer GBModule<Settings>::checkCore()
         }
         // We have found an infeasible subset. Generate it.
         #endif
-        if( mBasis.basisIsConstant( ) || (Settings::applyNSS && !carl::isZero(witness)) )
+        if( mBasis.basisIsConstant( ) || (Settings::applyNSS && !carl::is_zero(witness)) )
         {
 			
             if( mBasis.basisIsConstant( ) )
@@ -259,7 +259,7 @@ Answer GBModule<Settings>::checkCore()
                 typename Settings::Reductor red( mBasis.getGbIdeal( ), witness );
                 witness = red.fullReduce( );
                 std::cout << witness << std::endl;
-                assert( witness.isZero( ) );
+                assert( witness.is_zero( ) );
             }
             #endif
             mInfeasibleSubsets.emplace_back();
@@ -795,7 +795,7 @@ typename Settings::Polynomial GBModule<Settings>::callGroebnerToSDP( const Ideal
         witness = sdp.findWitness( );
     }
     std::cout << std::endl;
-    if( !witness.isZero( ) ) std::cout << "Found witness: " << witness << std::endl;
+    if( !witness.is_zero( ) ) std::cout << "Found witness: " << witness << std::endl;
     return witness;
 }
 #endif

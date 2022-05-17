@@ -93,7 +93,7 @@ namespace cad {
                         for (std::size_t pid = 0; pid < size(level); pid++) {
                                 const auto& poly = getPolynomialById(level, pid); 
                                 auto psubs = carl::substitute(poly, model);
-                                if (carl::isZero(psubs)) continue;
+                                if (carl::is_zero(psubs)) continue;
 								auto polyvars = carl::variables(poly);
 								polyvars.erase(poly.mainVar());
                                 auto list = carl::real_roots(poly, *carl::get_ran_assignment(polyvars, model));

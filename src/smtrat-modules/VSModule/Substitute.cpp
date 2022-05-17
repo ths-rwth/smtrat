@@ -281,7 +281,7 @@ namespace vs
             {
                 const smtrat::ConstraintT& constraint = cc[pos];
                 std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
-                bool lcoeffNeg = carl::isNegative(constraint.lhs().lcoeff());
+                bool lcoeffNeg = carl::is_negative(constraint.lhs().lcoeff());
                 if (lcoeffNeg)
                     sosDec = carl::sos_decomposition(-constraint.lhs());
                 else

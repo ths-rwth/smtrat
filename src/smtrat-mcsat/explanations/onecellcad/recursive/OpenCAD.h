@@ -185,7 +185,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	const std::vector<carl::Variable>& variableOrder,
 	const MultiPoly poly) {
 	SMTRAT_LOG_INFO("smtrat.opencad", "Merge poly" << poly);
-	assert(!poly.isZero());
+	assert(!poly.is_zero());
 	size_t level = levelOf(poly, variableOrder);
 	// level for first variable starts at 1, but need it as index to start at 0.
 	size_t levelVariableIdx = level - 1;

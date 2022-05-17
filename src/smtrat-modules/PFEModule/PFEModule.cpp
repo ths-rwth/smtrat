@@ -127,7 +127,7 @@ namespace smtrat
 				} else if (i.is_semi_negative()) {
 					qrel = combine(qrel, carl::Relation::LEQ, it->second);
 					Pq.push_back(it);
-				} else if (i.isZero()) {
+				} else if (i.is_zero()) {
 					qrel = combine(qrel, carl::Relation::EQ, it->second);
 					Pq.push_back(it);
 				} else {

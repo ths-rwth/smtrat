@@ -121,7 +121,7 @@ namespace smtrat {
             gcd = carl::gcd(coeffs[i], gcd);
         }
 
-        if (carl::isOne(gcd)) {
+        if (carl::is_one(gcd)) {
             return constraint;
         }
 
