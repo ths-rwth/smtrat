@@ -202,7 +202,7 @@ public:
 
         // If the derivation was used in the current covering, we need to reset it and set the flag accordingly
         if (mCovering.has_value()) {
-            auto usedDerivations = mCovering.value().sampled_derivation_refs();
+            auto usedDerivations = mCovering.value().sampled_derivations();
             if (std::find(usedDerivations.begin(), usedDerivations.end(), derivation) != usedDerivations.end()) {
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Derivation to remove was used in the current covering representation");
                 // delete the current covering
@@ -228,7 +228,7 @@ public:
     void removeConstraint(const ConstraintT& constraint, const std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& derivationConstraints) {
         SMTRAT_LOG_DEBUG("smtrat.covering", "Removing constraint: " << constraint);
         if (mCovering.has_value()) {
-            auto usedDerivations = mCovering.value().sampled_derivation_refs();
+            auto usedDerivations = mCovering.value().sampled_derivations();
             if (std::find_if(usedDerivations.begin(), usedDerivations.end(), [&](const datastructures::SampledDerivationRef<PropSet>& deriv) {
                     return std::find(derivationConstraints.at(deriv).begin(), derivationConstraints.at(deriv).end(), constraint) != derivationConstraints.at(deriv).end();
                 }) != usedDerivations.end()) {
@@ -262,7 +262,7 @@ public:
 
         std::vector<ConstraintT> constraints;
         assert(mCovering.has_value());
-        for (const auto& derivation : mCovering.value().sampled_derivation_refs()) {
+        for (const auto& derivation : mCovering.value().sampled_derivations()) {
             assert(mDerivationToConstraint.find(derivation) != mDerivationToConstraint.end());
             std::vector<ConstraintT> new_constraints = mDerivationToConstraint[derivation];
             constraints.insert(constraints.end(), new_constraints.begin(), new_constraints.end());

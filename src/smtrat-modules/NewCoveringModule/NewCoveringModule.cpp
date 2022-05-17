@@ -87,7 +87,7 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
         SMTRAT_LOG_DEBUG("smtrat.covering", "Checking level " << levelConstraints.first);
         if (foundUnsatisfiedConstraint) break;
         for (const auto& constraint : levelConstraints.second) {
-            if (carl::evaluate(constraint, mLastAssignment) != true) {
+            if (carl::evaluate(constraint.constr(), mLastAssignment) != true) {
                 // This constraint is unsat with the last assignment
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Found unsatisfied constraint on level:" << levelConstraints.first);
                 foundUnsatisfiedConstraint = true;
@@ -166,7 +166,7 @@ bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 template<class Settings>
 std::optional<Answer> NewCoveringModule<Settings>::doBacktracking() {
     // This function is called when we have constraints to remove and no constraints to add
-    assert(mBacktracking);
+    // assert(mBacktracking);
     SMTRAT_STATISTICS_CALL(getStatistics().calledBacktrackingOnly());
 
     if (mLastAnswer == Answer::SAT) {
@@ -193,7 +193,7 @@ std::optional<Answer> NewCoveringModule<Settings>::doBacktracking() {
 template<typename Settings>
 std::optional<Answer> NewCoveringModule<Settings>::doIncremental() {
     // This function is called when we have constraints to add and no constraints to remove
-    assert(mIncremental);
+    // assert(mIncremental);
     SMTRAT_STATISTICS_CALL(getStatistics().calledIncrementalOnly());
 
     if (mLastAnswer == Answer::SAT) {
@@ -220,7 +220,7 @@ std::optional<Answer> NewCoveringModule<Settings>::doIncremental() {
 template<typename Settings>
 std::optional<Answer> NewCoveringModule<Settings>::doIncremtalAndBacktracking() {
     // This function is called when we have constraints to add and constraints to remove
-    assert(mBacktracking && mIncremental);
+    // assert(mBacktracking && mIncremental);
 
     SMTRAT_STATISTICS_CALL(getStatistics().calledIncrementalAndBacktracking());
 
