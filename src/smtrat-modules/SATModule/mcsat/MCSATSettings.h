@@ -159,6 +159,16 @@ struct MCSATSettingsFMICPVSOCNew {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecell::Explanation,nlsat::Explanation>;
 };
+
+struct MCSATSettingsVSOCNew {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<vs::Explanation,onecell::Explanation,nlsat::Explanation>;
+};
+struct MCSATSettingsFMOCNew {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,onecell::Explanation,nlsat::Explanation>;
+};
+
 struct MCSATSettingsFMVSOC {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
 	//using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;
