@@ -707,7 +707,10 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 				while (backtrackIt->todoConstraints.empty() && backtrackIt != branch->begin()){
 					backtrackIt--;
 				}
-				if (backtrackIt->todoConstraints.empty() && backtrackIt == branch->begin()) return branch->end();
+				if (backtrackIt->todoConstraints.empty() && backtrackIt == branch->begin()) {
+					SMTRAT_STATISTICS_CALL(stats.rootTodoEmpty());
+					return branch->end();
+				}
 				break;
 			} else if (std::string("furthest").compare(Settings::backtrackingMode) == 0 && std::distance(branch->begin(), backtrackIt) > std::distance(branch->begin(), cConstr->conflictLevel)){
 				backtrackIt = cConstr->conflictLevel;
@@ -715,6 +718,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 					backtrackIt--;
 				}
 				if (backtrackIt->todoConstraints.empty() && backtrackIt == branch->begin()) {
+					SMTRAT_STATISTICS_CALL(stats.rootTodoEmpty());
 					return branch->end();
 				}
 
