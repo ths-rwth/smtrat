@@ -117,7 +117,7 @@ void FMPlexModule<Settings>::removeCore(ModuleInput::const_iterator formula) {
 template<typename Settings>
 Answer FMPlexModule<Settings>::checkCore() {
 	SMTRAT_STATISTICS_CALL(stats.countCheckSatCalls());
-	//SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
+	SMTRAT_VALIDATION_ADD("fmplex", std::string("checkCoreCall"), (FormulaT)*mpReceivedFormula, true);
 	//std::cout << "Call " << counter << "\n";
 	//std::cout << "Formula: " << FormulaT(*mpReceivedFormula) << "\n";
 	counter++;

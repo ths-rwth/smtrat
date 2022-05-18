@@ -27,7 +27,7 @@ public:
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<FMPlexModule<FMPlexSettings5>>()
+					   addBackend<FMPlexModule<FMPlexSettings1>>()
 				   })
 
 		   });

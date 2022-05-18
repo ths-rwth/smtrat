@@ -32,12 +32,4 @@ namespace smtrat {
 		static constexpr bool incremental = true;
 		static constexpr auto backtrackingMode = "oneStep";
 	};
-
-	struct FMPlexSettings5 {
-		static constexpr auto moduleName = "FMPlexModule<FMPlexSettings5>";
-		static constexpr auto constraintHeuristic = "None";
-		static constexpr auto variableDirectionHeuristic = "None";
-		static constexpr bool incremental = false;
-		static constexpr auto backtrackingMode = "oneStep";
-	};
 }
