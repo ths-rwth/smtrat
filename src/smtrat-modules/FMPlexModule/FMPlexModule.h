@@ -33,7 +33,7 @@ namespace smtrat {
 			uint_fast64_t mLocalConflicts = 0;
 			uint_fast64_t mGeneratedConstraints = 0;
 			uint_fast64_t mCheckSatCalls = 0;
-			bool mRootTodoEmpty = false;
+			bool mUnsupportedRelation = false;
 
 		public:
 			void collect() { // called after the solving process to collect statistics
@@ -42,7 +42,7 @@ namespace smtrat {
 				Statistics::addKeyValuePair("tConflicts", mGlobalConflicts + mLocalConflicts);
 				Statistics::addKeyValuePair("generatedConstraints", mGeneratedConstraints);
 				Statistics::addKeyValuePair("checkSatCalls", mCheckSatCalls);
-				Statistics::addKeyValuePair("RootTodoEmpty", mRootTodoEmpty);
+				Statistics::addKeyValuePair("unsupportedRelation", mUnsupportedRelation);
 			}
 			void countGConflicts() { // user defined
 				++mGlobalConflicts;
@@ -56,8 +56,8 @@ namespace smtrat {
 			void countCheckSatCalls() { // user defined
 				++mCheckSatCalls;
 			}
-			void rootTodoEmpty() { // user defined
-				mRootRodoEmpty = true;
+			void unsupprelation() { // user defined
+				mUnsupportedRelation = true;
 			}
 		};
 		#endif
