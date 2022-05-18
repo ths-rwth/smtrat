@@ -61,7 +61,6 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                                     // from here on, this is technically no longer in the biggest-cell-structure
                                 } else response.ordering.add_above(*response.description.upper(), ir);
                             } else response.ordering.add_above(*response.description.upper(), ir);
-                            response.ordering.add_above(*response.description.upper(), ir);
                         }
                     }
                     it++;
