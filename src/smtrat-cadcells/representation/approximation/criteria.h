@@ -15,57 +15,57 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         std::map<Poly, std::size_t> m_poly_apx_counter;
 
         bool crit_considered_count() {
-            if (!settings::crit_considered_count_enabled) return true;
-            if (m_considered_count < settings::crit_max_considered) return true;
+            if (!apx_settings().crit_considered_count_enabled) return true;
+            if (m_considered_count < apx_settings().crit_max_considered) return true;
             #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().maxIterationsReached();
+                OCApproximationStatistics::get_instance().maxConsideredReached();
             #endif
             return false; 
         }
 
         bool crit_apx_count() {
-            if (!settings::crit_apx_count_enabled) return true;
-            if (m_apx_count < settings::crit_max_apx) return true;
+            if (!apx_settings().crit_apx_count_enabled) return true;
+            if (m_apx_count < apx_settings().crit_max_apx) return true;
             #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().maxIterationsReached(); // TODO : differentiate from considered
+                OCApproximationStatistics::get_instance().maxApxReached();
             #endif
             return false; 
         }
 
         bool crit_single_degree(datastructures::Projections& proj, const IR& ir) {
-            if (!settings::crit_single_degree_enabled) return true;
-            return proj.degree(ir.poly) >= settings::crit_degree_threshold;
+            if (!apx_settings().crit_single_degree_enabled) return true;
+            return proj.degree(ir.poly) >= apx_settings().crit_degree_threshold;
         }
 
         bool crit_pair_degree(datastructures::Projections& proj, const IR& ir_l, const IR& ir_u) {
-            if (!settings::crit_pair_degree_enabled) return true;
+            if (!apx_settings().crit_pair_degree_enabled) return true;
             std::size_t deg_l = proj.degree(ir_l.poly);
-            if (deg_l < 2) return false;
+            if (deg_l <= apx_settings().taylor_deg) return false;
             std::size_t deg_u = proj.degree(ir_u.poly);
-            if (deg_u < 2) return false;
-            return deg_l * deg_u >= settings::crit_degree_threshold;
+            if (deg_u <= apx_settings().taylor_deg) return false;
+            return deg_l * deg_u >= apx_settings().crit_degree_threshold;
         }
 
         bool crit_poly_apx_count(datastructures::Projections& proj, const IR& ir) {
-            if (!settings::crit_poly_apx_count_enabled) return true;
+            if (!apx_settings().crit_poly_apx_count_enabled) return true;
             Poly p = proj.polys()(ir.poly);
-            if (m_poly_apx_counter[p] < settings::crit_max_apx_per_poly) return true;
+            if (m_poly_apx_counter[p] < apx_settings().crit_max_apx_per_poly) return true;
             #ifdef SMTRAT_DEVOPTION_Statistics
-                if (m_poly_apx_counter[p] == settings::crit_max_apx_per_poly)
-                    OCApproximationStatistics::get_instance().involvedTooOften(); // TODO : differentiate from involved
+                if (m_poly_apx_counter[p] == apx_settings().crit_max_apx_per_poly)
+                    OCApproximationStatistics::get_instance().apxTooOften();
             #endif
             return false;
         }
 
         bool crit_involved_count(const FormulasT& constraints) {
-            if (!settings::crit_involved_count_enabled) return true;
+            if (!apx_settings().crit_involved_count_enabled) return true;
             bool res = true;
             for (const auto& c : constraints) {
                 ++m_constraint_involved_counter[c];
-                if (m_constraint_involved_counter[c] >= settings::crit_max_constraint_involved) {
+                if (m_constraint_involved_counter[c] >= apx_settings().crit_max_constraint_involved) {
                     res = false;
                     #ifdef SMTRAT_DEVOPTION_Statistics
-                        if (m_constraint_involved_counter[c] == settings::crit_max_constraint_involved)
+                        if (m_constraint_involved_counter[c] == apx_settings().crit_max_constraint_involved)
                             OCApproximationStatistics::get_instance().involvedTooOften();
                     #endif
                 }
@@ -74,7 +74,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         }
 
         bool crit_side_degree(datastructures::Projections& proj, const IR& ir, datastructures::RootMap::const_iterator start, datastructures::RootMap::const_iterator end) {
-            if (!settings::crit_side_degree_enabled) return true;
+            if (!apx_settings().crit_side_degree_enabled) return false;
             for(auto it = start; it != end; it++) {
                 for (const auto& ir_outer : it->second) {
                     if (crit_pair_degree(proj, ir, ir_outer)) return true;
@@ -91,7 +91,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
     public:
         static void inform(const Poly& p) {
             ApxCriteria& ac = getInstance();
-            ++ac.m_poly_apx_counter[p];
+            ++(ac.m_poly_apx_counter[p]);
             if (!ac.m_curr_apx) {
                 ++ac.m_apx_count;
                 ac.m_curr_apx = true;
@@ -105,13 +105,8 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         }
 
         static bool level(std::size_t lvl) {
-            if (!settings::crit_level_enabled) return true;
+            if (!apx_settings().crit_level_enabled) return true;
             return lvl > 1;
-        }
-
-        static bool side(datastructures::Projections& proj, const IR& ir, datastructures::RootMap::const_iterator start, datastructures::RootMap::const_iterator end){
-            ApxCriteria& ac = getInstance();
-            return ac.crit_single_degree(proj, ir) && ac.crit_poly_apx_count(proj, ir) && ac.crit_side_degree(proj, ir, start, end);
         }
 
         static bool poly(datastructures::Projections& proj, const IR& ir) {
@@ -122,6 +117,12 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         static bool poly_pair(datastructures::Projections& proj, const IR& ir_l, const IR& ir_u) {
             ApxCriteria& ac = getInstance();
             return ac.crit_pair_degree(proj, ir_l, ir_u) && ac.crit_poly_apx_count(proj, ir_l) && ac.crit_poly_apx_count(proj, ir_u);
+        }
+
+        static bool side(datastructures::Projections& proj, const IR& ir, datastructures::RootMap::const_iterator start, datastructures::RootMap::const_iterator end){
+            if (poly(proj, ir)) return true;
+            ApxCriteria& ac = getInstance();
+            return ac.crit_side_degree(proj, ir, start, end);
         }
 };
 

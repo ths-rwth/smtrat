@@ -1,7 +1,5 @@
 namespace smtrat::cadcells::representation::approximation {
 
-using ApxRoot = settings::ApxRoot;
-
 Rational mediant(Rational a, Rational b) {
     return Rational(a.get_num()+b.get_num(), a.get_den()+b.get_den());
 }
@@ -61,8 +59,9 @@ Rational approximate_root_above<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner
 
     // Now: outer_simple <= inner < outer <= inner_simple
     // apply stern-brocot until a sample between the two points is found
+    Rational mid;
     while(true) {
-        Rational mid = mediant(inner_simple, outer_simple);
+        mid = mediant(inner_simple, outer_simple);
         if (mid <= inner) outer_simple = mid;
         else if (mid >= outer) inner_simple = mid;
         else return mid;
@@ -89,8 +88,9 @@ Rational approximate_root_below<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner
 
     // Now: inner_simple <= outer < inner <= outer_simple
     // apply stern-brocot until a sample between the two points is found
+    Rational mid;
     while(true) {
-        Rational mid = mediant(inner_simple, outer_simple);
+        mid = mediant(inner_simple, outer_simple);
         if (mid >= inner) outer_simple = mid;
         else if (mid <= outer) inner_simple = mid;
         else return mid;
@@ -115,7 +115,7 @@ Rational approximate_root_above<ApxRoot::STERN_BROCOT>(const RAN& inner, const R
         inner_simple = inner_simple - 1;
     }
 
-    for (std::size_t i = 0; i < settings::n_sb_iterations;) {
+    for (std::size_t i = 0; i < apx_settings().n_sb_iterations;) {
         mid = mediant(inner_simple, outer_simple);
         if (mid >= outer) outer_simple = mid;
         else { // mid < outer
@@ -142,7 +142,7 @@ Rational approximate_root_below<ApxRoot::STERN_BROCOT>(const RAN& inner, const R
         inner_simple = inner_simple + 1;
     }
 
-    for (std::size_t i = 0; i < settings::n_sb_iterations;) {
+    for (std::size_t i = 0; i < apx_settings().n_sb_iterations;) {
         mid = mediant(inner_simple, outer_simple);
         if (mid <= outer) outer_simple = mid;
         else { // mid > outer
@@ -150,7 +150,7 @@ Rational approximate_root_below<ApxRoot::STERN_BROCOT>(const RAN& inner, const R
             if (inner > mid) ++i;
         }
     }
-    
+
     return mid;
 }
 
@@ -158,10 +158,9 @@ template<>
 Rational approximate_root_above<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer) {
     Rational apx_outer = approximate_RAN_below(outer);
     Rational apx_inner = approximate_RAN_above(inner);
-    Rational upper_bound = (settings::root_ratio_upper * apx_outer) + ((1 - settings::root_ratio_upper) * apx_inner);
-    Rational lower_bound = (settings::root_ratio_lower * apx_outer) + ((1 - settings::root_ratio_lower) * apx_inner);
+    Rational upper_bound = (apx_settings().root_ratio_upper * apx_outer) + ((1 - apx_settings().root_ratio_upper) * apx_inner);
+    Rational lower_bound = (apx_settings().root_ratio_lower * apx_outer) + ((1 - apx_settings().root_ratio_lower) * apx_inner);
     RationalInterval region = RationalInterval(lower_bound, upper_bound);
-    Rational res = carl::sample_stern_brocot(region, false);
     return carl::sample_stern_brocot(region, false);
 }
 
@@ -169,10 +168,9 @@ template<>
 Rational approximate_root_below<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer) {
     Rational apx_outer = approximate_RAN_above(outer);
     Rational apx_inner = approximate_RAN_below(inner);
-    Rational lower_bound = (settings::root_ratio_upper * apx_outer) + ((1 - settings::root_ratio_upper) * apx_inner);
-    Rational upper_bound = (settings::root_ratio_lower * apx_outer) + ((1 - settings::root_ratio_lower) * apx_inner);
+    Rational lower_bound = (apx_settings().root_ratio_upper * apx_outer) + ((1 - apx_settings().root_ratio_upper) * apx_inner);
+    Rational upper_bound = (apx_settings().root_ratio_lower * apx_outer) + ((1 - apx_settings().root_ratio_lower) * apx_inner);
     RationalInterval region = RationalInterval(lower_bound, upper_bound);
-    Rational res = carl::sample_stern_brocot(region, false);
     return carl::sample_stern_brocot(region, false);
 }
 

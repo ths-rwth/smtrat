@@ -64,12 +64,6 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         cell_deriv->delineate_cell();
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
-        #ifdef SMTRAT_DEVOPTION_Statistics
-            if (cell_deriv->cell().lower_unbounded()) {
-                if (cell_deriv->cell().upper_unbounded()) stats.unboundedLevel();
-                else stats.halfUnboundedLevel();
-            } else if (cell_deriv->cell().upper_unbounded()) stats.halfUnboundedLevel();
-        #endif
 
         bool apx_lvl = false;
         if (consider_approximation)
@@ -82,6 +76,16 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
             SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not compute representation");
             return std::nullopt;
         }
+
+        #ifdef SMTRAT_DEVOPTION_Statistics
+            if (cell_repr->description.is_sector()) {
+                if (!cell_repr->description.lower()) {
+                    if (!cell_repr->description.upper()) stats.unboundedLevel();
+                    else stats.halfUnboundedLevel();
+                } else if (!cell_repr->description.upper()) stats.halfUnboundedLevel();
+            }
+        #endif
+
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *cell_repr);
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
         operators::project_delineated_cell_properties<op>(*cell_repr);
@@ -93,7 +97,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
     }
     proj.clear_assignment_cache(empty_assignment);
     #ifdef SMTRAT_DEVOPTION_Statistics
-        stats.success();
+        stats.success(vars.size());
     #endif
     return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
 }
