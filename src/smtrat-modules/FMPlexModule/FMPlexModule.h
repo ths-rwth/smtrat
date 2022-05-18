@@ -57,7 +57,7 @@ namespace smtrat {
 				++mCheckSatCalls;
 			}
 			void rootTodoEmpty() { // user defined
-				mRootTodoEmpty = true;
+				mRootRodoEmpty = true;
 			}
 		};
 		#endif
