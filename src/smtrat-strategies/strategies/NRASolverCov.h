@@ -41,7 +41,7 @@ namespace smtrat
                                 {
                                     addBackend<VSModule<VSSettings234>>(
                                     {
-                                        addBackend<NewCoveringModule<NewCoveringSettings1>>({
+                                        addBackend<NewCoveringModule<NewCoveringSettings2>>({
                                             addBackend<NewCADModule<NewCADSettingsFOS>>()
                                         })
                                     })
