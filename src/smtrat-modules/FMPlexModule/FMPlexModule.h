@@ -139,8 +139,6 @@ namespace smtrat {
 					// Function to call constraint choice function based on Settings
 					void chooseNextConstraint();
 
-					// Adds a list of constraints to the connector list
-					void spliceToConnector(ConstraintList additionalConstr);
 
 					/*!
 					 * Checks for trivially true and trivially false constraints,
@@ -157,7 +155,7 @@ namespace smtrat {
 					 * @param branch The FMPlex Branch we are working on
 					 * @return An iterator on the given branch that points to the furthest backtrack level.
 					 */
-					BranchIterator analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl);
+					BranchIterator analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl, FMPlexModule* outterClass);
 
 					void sortConnectorIntoSameOppositeNone(ConstraintList& sameBounds, ConstraintList& oppositeBounds);
 

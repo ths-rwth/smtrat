@@ -43,7 +43,6 @@ bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 		//std::cout << "RELATION NOT SUPPORTED: " << formula->formula().constraint().relation() << std::endl;
 		//std::cout << "LHS: " << formula->formula().constraint().lhs();
 		assert(false);
-		SMTRAT_STATISTICS_CALL(stats.unsupprelation());
 		std::exit(44);
 	}
 	return true;
@@ -189,7 +188,7 @@ Answer FMPlexModule<Settings>::checkCore() {
 		assert(!(statusCheckResult.first && !statusCheckResult.second.empty()));
 		if(!statusCheckResult.second.empty()){
 			// Conflict
-			BranchIterator backtrackResult = currentIterator->analyzeConflict(statusCheckResult.second, &mFMPlexBranch, currentIterator);
+			BranchIterator backtrackResult = currentIterator->analyzeConflict(statusCheckResult.second, &mFMPlexBranch, currentIterator, this);
 			if (backtrackResult == mFMPlexBranch.end()) {
 				// Global Conflict, we are done
 				SMTRAT_STATISTICS_CALL(stats.countGConflicts());
@@ -679,7 +678,7 @@ std::pair<bool, std::list<typename FMPlexModule<Settings>::ConstraintList::itera
 	return std::make_pair(sat, std::move(res));
 }
 template<typename Settings>
-typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLvl::analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl) {
+typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLvl::analyzeConflict(std::list<typename ConstraintList::iterator> conflictConstraints, FMPlexBranch* branch, BranchIterator currentLvl, FMPlexModule* outterClass) {
 	BranchIterator backtrackIt = branch->end();
 	for (auto cConstr : conflictConstraints) {
 		//The following is for debugging purposes
@@ -708,7 +707,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 					backtrackIt--;
 				}
 				if (backtrackIt->todoConstraints.empty() && backtrackIt == branch->begin()) {
-					SMTRAT_STATISTICS_CALL(stats.rootTodoEmpty());
+					SMTRAT_STATISTICS_CALL(outterClass->stats.rootTodoEmpty());
 					return branch->end();
 				}
 				break;
@@ -718,7 +717,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 					backtrackIt--;
 				}
 				if (backtrackIt->todoConstraints.empty() && backtrackIt == branch->begin()) {
-					SMTRAT_STATISTICS_CALL(stats.rootTodoEmpty());
+					SMTRAT_STATISTICS_CALL(outterClass->stats.rootTodoEmpty());
 					return branch->end();
 				}
 
