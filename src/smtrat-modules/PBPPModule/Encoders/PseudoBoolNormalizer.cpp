@@ -4,7 +4,7 @@
 
 namespace smtrat {
 
-    std::pair<boost::optional<FormulaT>, ConstraintT> PseudoBoolNormalizer::normalize(const ConstraintT& constraint) {
+    std::pair<std::optional<FormulaT>, ConstraintT> PseudoBoolNormalizer::normalize(const ConstraintT& constraint) {
         bool hasPositiveCoeff = false;
 
         for (const auto& term : constraint.lhs()) {
@@ -15,7 +15,7 @@ namespace smtrat {
 
 
         ConstraintT normalizedConstraint = constraint; // initially we assume that the input is normalized
-        boost::optional<FormulaT> booleanPart = {};
+        std::optional<FormulaT> booleanPart = {};
 
         if (constraint.relation() == carl::Relation::LESS) {
             normalizedConstraint = normalizeLessConstraint(normalizedConstraint);
@@ -24,7 +24,7 @@ namespace smtrat {
         assert(constraint.relation() == carl::Relation::LEQ || constraint.relation() == carl::Relation::EQ);
 
         if (hasPositiveCoeff) {
-            std::pair<boost::optional<FormulaT>, ConstraintT> processedPositiveConstr  = removePositiveCoeff(normalizedConstraint);
+            std::pair<std::optional<FormulaT>, ConstraintT> processedPositiveConstr  = removePositiveCoeff(normalizedConstraint);
             booleanPart = processedPositiveConstr.first;
             normalizedConstraint = processedPositiveConstr.second;
         }
@@ -70,7 +70,7 @@ namespace smtrat {
 
     }
 
-    std::pair<boost::optional<FormulaT>, ConstraintT> PseudoBoolNormalizer::removePositiveCoeff(const ConstraintT& constraint) {
+    std::pair<std::optional<FormulaT>, ConstraintT> PseudoBoolNormalizer::removePositiveCoeff(const ConstraintT& constraint) {
         Poly result;
         FormulasT additionalBoolPart;
 

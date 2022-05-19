@@ -1,7 +1,7 @@
 #include "MixedSignEncoder.h"
 
 namespace smtrat {
-	boost::optional<FormulaT> MixedSignEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> MixedSignEncoder::doEncode(const ConstraintT& constraint) {
 		// first partition into positive and negative terms
 		std::vector<TermT> positiveTerms;
 		std::vector<TermT> negativeTerms;
@@ -167,19 +167,19 @@ namespace smtrat {
 		bool hasEncoded = false;
 		
 		if (mShortFormulaEncoder.canEncode(constraint)) {
-			boost::optional<FormulaT> shortEncoding = mShortFormulaEncoder.encode(constraint);
+			std::optional<FormulaT> shortEncoding = mShortFormulaEncoder.encode(constraint);
 			if (shortEncoding) {
 				chosenEncoding = *shortEncoding;
 				hasEncoded = true;
 			}
 		} else if (mCardinalityEncoder.canEncode(constraint)) {
-			boost::optional<FormulaT> cardinalityEncoding = mCardinalityEncoder.encode(constraint);
+			std::optional<FormulaT> cardinalityEncoding = mCardinalityEncoder.encode(constraint);
 			if (cardinalityEncoding) {
 				chosenEncoding = *cardinalityEncoding;
 				hasEncoded = true;
 			}
 		} else if (mLongFormulaEncoder.canEncode(constraint)) {
-			boost::optional<FormulaT> longEncoding = mLongFormulaEncoder.encode(constraint);
+			std::optional<FormulaT> longEncoding = mLongFormulaEncoder.encode(constraint);
 			if (longEncoding) {
 				chosenEncoding = *longEncoding;
 				hasEncoded = true;

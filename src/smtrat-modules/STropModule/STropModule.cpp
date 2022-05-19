@@ -259,7 +259,7 @@ namespace smtrat
 				Separator& separator{*separatorPtr};
 				
 				/// Determine the direction that shall be active
-				boost::optional<Direction> direction;
+				std::optional<Direction> direction;
 				if (!separator.mRelations.empty())
 				{
 					if (separator.mActiveDirection
@@ -276,7 +276,7 @@ namespace smtrat
 						switch (*separator.mRelations.rbegin())
 						{
 							case carl::Relation::EQ:
-								direction = boost::none;
+								direction = std::nullopt;
 								break;
 							case carl::Relation::NEQ:
 								direction = Direction::BOTH;

@@ -5,7 +5,7 @@
 #include <iterator>
 
 namespace smtrat {
-	boost::optional<FormulaT> CardinalityEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> CardinalityEncoder::doEncode(const ConstraintT& constraint) {
 		bool allCoeffPositive = true;
 		bool allCoeffNegative = true;
 		unsigned numberOfTerms = 0;
@@ -70,8 +70,8 @@ namespace smtrat {
 		return {};
 	}
 
-	boost::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
-		// if (!encodeAsBooleanFormula(constraint)) return boost::none;
+	std::optional<FormulaT> CardinalityEncoder::encodeExactly(const ConstraintT& constraint) {
+		// if (!encodeAsBooleanFormula(constraint)) return std::nullopt;
 
 		return encodeExactly(constraint.variables().as_vector(), -constraint.lhs().constantPart());
 	}
@@ -108,7 +108,7 @@ namespace smtrat {
 		return resultFormula;
 	}
 
-	boost::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
+	std::optional<FormulaT> CardinalityEncoder::encodeAtLeast(const ConstraintT& constraint) {
 		FormulasT result;
 		Rational constant = constraint.lhs().constantPart();
 		assert(constant > 0);
@@ -134,7 +134,7 @@ namespace smtrat {
 		}		
 	}
 
-	boost::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
+	std::optional<FormulaT> CardinalityEncoder::encodeAtMost(const ConstraintT& constraint) {
 		FormulasT result;
 
 		Rational constant = -constraint.lhs().constantPart();

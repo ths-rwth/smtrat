@@ -100,8 +100,8 @@ namespace cad {
 								if (list.is_nullified()) continue;
 								assert(list.is_univariate());
 
-                                boost::optional<std::pair<RAN,bool>> lower;
-                                boost::optional<std::pair<RAN,bool>> upper;
+                                std::optional<std::pair<RAN,bool>> lower;
+                                std::optional<std::pair<RAN,bool>> upper;
                                 for (const auto& root: list.roots()) {
                                         if (root < value) {
                                                 if (!lower || root > lower->first) {

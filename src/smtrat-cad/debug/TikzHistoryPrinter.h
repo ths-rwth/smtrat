@@ -2,7 +2,7 @@
 
 #include <carl-common/datastructures/carlTree.h>
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <fstream>
 #include <map>
@@ -28,7 +28,7 @@ public:
 };
 
 struct UnifiedData {
-	std::vector<boost::optional<std::string>> steps;
+	std::vector<std::optional<std::string>> steps;
 	
 	void add(std::size_t step, const std::string& data) {
 		while (steps.size() < step) steps.emplace_back();

@@ -24,7 +24,7 @@ namespace smtrat {
 
 
 		protected:
-			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
+			std::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
 		private:
 			// we need this cache because with recurring calls we might produce a tree multiple times although the set

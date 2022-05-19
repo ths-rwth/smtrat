@@ -1,7 +1,7 @@
 #include "ShortFormulaEncoder.h"
 
 namespace smtrat {
-	boost::optional<FormulaT> ShortFormulaEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> ShortFormulaEncoder::doEncode(const ConstraintT& constraint) {
 		SMTRAT_LOG_DEBUG("smtrat.pbc", "Trying to convert small formula: " << constraint);
 		assert(constraint.variables().size() == 1);
 

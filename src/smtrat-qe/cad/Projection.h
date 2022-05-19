@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <smtrat-cad/common.h>
 #include <smtrat-cad/projection/BaseProjection.h>
@@ -35,7 +35,7 @@ namespace smtrat::qe::cad {
 		friend std::ostream& operator<<(std::ostream& os, const Projection<S>& p);
 
 		std::vector<std::map<UPoly,std::size_t>> mPolynomialIDs;
-		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
+		std::vector<std::vector<std::optional<std::pair<UPoly,Origin>>>> mPolynomials;
 
 		auto& polyIDs(std::size_t level) {
 			assert(level > 0 && level <= dim());
@@ -122,7 +122,7 @@ namespace smtrat::qe::cad {
 						freeID(level, id);
 						mLiftingQueues[level - 1].erase(id);
 						removed.set(id);
-						polys(level)[id] = boost::none;
+						polys(level)[id] = std::nullopt;
 						it = polyIDs(level).erase(it);
 					} else {
 						it++;
@@ -147,7 +147,7 @@ namespace smtrat::qe::cad {
 			auto it = polyIDs(level).find(p->first);
 
 			polyIDs(level).erase(it);
-			polys(level)[id] = boost::none;
+			polys(level)[id] = std::nullopt;
 			freeID(level, id);
 
 			carl::Bitset removed;

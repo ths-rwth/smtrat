@@ -1,7 +1,7 @@
 #include"TotalizerEncoder.h"
 
 namespace smtrat {
-	boost::optional<FormulaT> TotalizerEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> TotalizerEncoder::doEncode(const ConstraintT& constraint) {
 		assert(canEncode(constraint) && "Input must be <=-cardinality constraint.");
 
 		auto treeIt = mTreeCache.find(constraint.variables().as_set());

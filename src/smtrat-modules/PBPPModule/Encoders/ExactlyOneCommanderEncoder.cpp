@@ -29,7 +29,7 @@ namespace smtrat {
 		return constraint.lhs().constantPart() == Rational(-1);
 	}
 
-	boost::optional<FormulaT> ExactlyOneCommanderEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> ExactlyOneCommanderEncoder::doEncode(const ConstraintT& constraint) {
 		assert(canEncode(constraint));
 
 		// 1. partition into groups of (mostly) equal size and introduce a group commander variable (bool)

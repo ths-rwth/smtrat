@@ -11,7 +11,7 @@
 namespace smtrat {
 namespace cad {
 namespace full_ec {
-using Polynomial = boost::optional<UPoly>;
+using Polynomial = std::optional<UPoly>;
 }
 
 template<typename Settings>

@@ -96,7 +96,7 @@ namespace smtrat
 				std::cout << "Constraint before normalization: \t" << normalizedConstraint << std::endl;
 				#endif
 				// normalize and hence hopefully simplify the formula
-				std::pair<boost::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = mNormalizer.normalize(constraint);
+				std::pair<std::optional<FormulaT>, ConstraintT> normalizedConstraintWithBoolPart = mNormalizer.normalize(constraint);
 
 				// extract the normalized constraint and pass along the rest
 				#ifdef DEBUG_PBPP
@@ -239,7 +239,7 @@ namespace smtrat
 		// 4. encode all remaining constraints as bool
 		std::set<carl::Variable> variablesInBooleanPart;
 		for (const auto& constraint : boolConstraints){
-			boost::optional<FormulaT> boolEncoding = encoderByConstraint[constraint]->encode(constraint);
+			std::optional<FormulaT> boolEncoding = encoderByConstraint[constraint]->encode(constraint);
 			if (!boolEncoding) {
 				liaConstraints.push_back(constraint);
 				continue;

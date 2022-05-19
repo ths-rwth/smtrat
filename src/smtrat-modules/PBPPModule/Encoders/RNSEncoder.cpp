@@ -4,7 +4,7 @@
 
 namespace smtrat {
 
-	boost::optional<FormulaT> RNSEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> RNSEncoder::doEncode(const ConstraintT& constraint) {
 		std::vector<Integer> base = calculateRNSBase(constraint);
 		if(base.size() != 0 && isNonRedundant(base, constraint)){
 			std::vector<FormulaT> subformulas;
