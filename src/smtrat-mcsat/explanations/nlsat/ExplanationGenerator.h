@@ -66,7 +66,7 @@ namespace helper {
 				// Note that we only add the polynomials here and don't really care about the relation
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
-				carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
+				//carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variable_comparison().defining_polynomial());
 				cons.emplace(cAtom.variable_comparison().defining_polynomial(), carl::Relation::NEQ);
 				// removed (makes no sense):
