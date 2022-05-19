@@ -10,6 +10,9 @@
 
 #include <carl/converter/CoCoAAdaptor.h>
 
+#include <carl-common/config.h>
+
+
 #ifdef USE_COCOA
 
 namespace smtrat

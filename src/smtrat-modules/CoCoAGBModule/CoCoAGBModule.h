@@ -14,6 +14,8 @@
 #include <boost/optional.hpp>
 #include <algorithm>
 
+#include <carl-common/config.h>
+
 namespace smtrat
 {
 	template<typename Settings>

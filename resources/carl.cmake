@@ -22,15 +22,6 @@ ExternalProject_Add(
 
 ExternalProject_Get_Property(CArL-EP BINARY_DIR)
 
-ExternalProject_Add(
-	CArL-EP-doxygen
-	BINARY_DIR ${BINARY_DIR}
-	DOWNLOAD_COMMAND ""
-	CONFIGURE_COMMAND ""
-	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} doxygen-build
-	INSTALL_COMMAND ""
-)
-
 include(${CMAKE_BINARY_DIR}/resources/src/CArL-EP-build/carlConfig.cmake)
 add_dependencies(carl-shared CArL-EP)
 add_dependencies(carl-static CArL-EP)
