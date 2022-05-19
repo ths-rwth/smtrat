@@ -601,7 +601,7 @@ namespace smtrat {
 				std::vector<carl::SortValue> args;
 				args.reserve(arityof(entry));
 				for(std::size_t i = 0, s = arityof(entry); i < s; ++i) {
-					const auto& term = boost::get<carl::UTerm>(argsof(entry)[i]->first);
+					const auto& term = argsof(entry)[i]->first;
 					assert(term.isUVariable());
 					const auto& var = term.asUVariable();
 					args.push_back(mModel.find(var.variable())->second.asSortValue());
