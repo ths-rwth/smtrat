@@ -11,13 +11,13 @@ namespace smtrat {
 		FormulaT lhsVar;
 
 		for (const auto& term : cLHS) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			lhsCoeff = term.coeff();
-			lhsVar = FormulaT(term.getSingleVariable());
+			lhsVar = FormulaT(term.single_variable());
 		}
 
-		Rational cRHS = -constraint.lhs().constantPart();
+		Rational cRHS = -constraint.lhs().constant_part();
 		
 		if (cRel == carl::Relation::LEQ) {
 			if(lhsCoeff > 0){

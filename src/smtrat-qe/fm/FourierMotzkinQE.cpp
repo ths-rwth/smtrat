@@ -150,7 +150,7 @@ namespace smtrat::qe::fm {
 
     bool FourierMotzkinQE::isLinearLowerBound(const ConstraintT& c, carl::Variable v) {
         assert(c.variables().has(v));
-        assert(c.coefficient(v,1).isNumber());
+        assert(c.coefficient(v,1).is_number());
 
         // is linear lower bound when the coefficient is > 0 and the relation is LEQ or LESS, or if the coefficient is < 0 and the relation is GEQ or GREATER.
         if( ((c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::LESS) && c.coefficient(v,1) < 0) ||

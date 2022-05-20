@@ -58,7 +58,7 @@ namespace constraint_type {
 	* Checks whether the constraint is constant, i.e. whether it contains no variables.
 	 */
 	template<typename T>
-	bool isConstant(const T& t) {
+	bool is_constant(const T& t) {
 		// Avoid unnecessary overhead of categorize()
 		carl::carlVariables vars;
 		carl::variables(t,vars);
@@ -84,7 +84,7 @@ namespace constraint_type {
 	 * Checks whether the constraint contains only a single unassigned variable, and this is the next one.
 	 */
 	template<typename T>
-	bool isUnivariate(const T& t, const Model& model, carl::Variable next) {
+	bool is_univariate(const T& t, const Model& model, carl::Variable next) {
 		return categorize(t, model, next) == ConstraintType::Univariate;
 	}
 	

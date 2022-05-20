@@ -180,7 +180,7 @@ public:
 
     size_t num_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
-        assert(!m_pool(p).isConstant());
+        assert(!m_pool(p).is_constant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
         }
@@ -190,7 +190,7 @@ public:
 
     std::vector<RAN> real_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
-        assert(!m_pool(p).isConstant());
+        assert(!m_pool(p).is_constant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
         }
@@ -201,8 +201,8 @@ public:
     bool is_nullified(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
         auto poly = m_pool(p);
-		assert(!poly.isConstant());
-		if (poly.isLinear()) return false;
+		assert(!poly.is_constant());
+		if (poly.is_linear()) return false;
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
         }
@@ -228,7 +228,7 @@ public:
     bool has_const_coeff(PolyRef p) const {
         auto poly = as_univariate(p);
         for (const auto& coeff :  poly.coefficients()) {
-            if (coeff.isConstant() && !carl::is_zero(coeff)) return true;
+            if (coeff.is_constant() && !carl::is_zero(coeff)) return true;
         }
         return false;
     }

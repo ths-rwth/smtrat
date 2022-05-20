@@ -524,7 +524,7 @@ namespace smtrat
                         {
                             assert( mBooleanConstraintMap[k].second != nullptr );
                             const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                            if( !abstr.reabstraction.is_true() && abstr.consistencyRelevant && (abstr.reabstraction.type() == carl::FormulaType::UEQ || abstr.reabstraction.type() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
+                            if( !abstr.reabstraction.is_true() && abstr.consistencyRelevant && (abstr.reabstraction.type() == carl::FormulaType::UEQ || abstr.reabstraction.type() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().is_consistent() != 1))
                             {
                                 excludeClause.push( mkLit( k, assigns[k] != l_False ) ); 
                             }
@@ -1601,7 +1601,7 @@ namespace smtrat
             assert( 
 				_abstr.reabstraction.type() == carl::FormulaType::UEQ ||
 				_abstr.reabstraction.type() == carl::FormulaType::BITVECTOR ||
-				(_abstr.reabstraction.type() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().isConsistent() == 2) || 
+				(_abstr.reabstraction.type() == carl::FormulaType::CONSTRAINT && _abstr.reabstraction.constraint().is_consistent() == 2) || 
 				_abstr.reabstraction.type() == carl::FormulaType::VARCOMPARE ||
 				_abstr.reabstraction.type() == carl::FormulaType::VARASSIGN
 			);
@@ -1625,7 +1625,7 @@ namespace smtrat
                 {
                     assert( mBooleanConstraintMap[k].second != nullptr );
                     const Abstraction& abstr = assigns[k] == l_False ? *mBooleanConstraintMap[k].second : *mBooleanConstraintMap[k].first;
-                    if( !abstr.reabstraction.is_true() && abstr.consistencyRelevant && (abstr.reabstraction.type() == carl::FormulaType::UEQ || abstr.reabstraction.type() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().isConsistent() != 1))
+                    if( !abstr.reabstraction.is_true() && abstr.consistencyRelevant && (abstr.reabstraction.type() == carl::FormulaType::UEQ || abstr.reabstraction.type() == carl::FormulaType::BITVECTOR || abstr.reabstraction.constraint().is_consistent() != 1))
                     {
                         if( !rPassedFormula().contains( abstr.reabstraction ) )
                         {
@@ -2708,7 +2708,7 @@ namespace smtrat
             {
                 if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                     return l_Undef;
-                // Maybe not needed here?: assert(mMCSAT.isConsistent());
+                // Maybe not needed here?: assert(mMCSAT.is_consistent());
                 return l_False;
             } 
 
@@ -2720,7 +2720,7 @@ namespace smtrat
                 {
                     if( decisionLevel() >= assumptions.size() && mNumberOfSatisfiedClauses == (size_t)clauses.size() )
                     {
-                        // Maybe not needed here?: assert(mMCSAT.isConsistent());
+                        // Maybe not needed here?: assert(mMCSAT.is_consistent());
                         return l_True;
                     }
                 }
@@ -2761,8 +2761,8 @@ namespace smtrat
 						SMTRAT_LOG_DEBUG("smtrat.sat", "Assumption " << p << " is already false");
                         if( !mReceivedFormulaPurelyPropositional && !Settings::stop_search_after_first_unknown && mExcludedAssignments )
                             return l_Undef;
-                        // Inconsistency is not possible here, even if mMCSAT.isConsistent() holds, as all theory decisions are backtracked
-                        // at this point, thus no assert(mMCSAT.isConsistent());
+                        // Inconsistency is not possible here, even if mMCSAT.is_consistent() holds, as all theory decisions are backtracked
+                        // at this point, thus no assert(mMCSAT.is_consistent());
                         return l_False;
                     }
                     else
@@ -2798,13 +2798,13 @@ namespace smtrat
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "Checking if " << v << " has been semantically propagated");
                                 assert(theoryValue(v) != l_Undef);
                                 assert(bool_value(v) != l_Undef);
-                                assert(theoryValue(v) == bool_value(v) || !mMCSAT.isConsistent(v));
+                                assert(theoryValue(v) == bool_value(v) || !mMCSAT.is_consistent(v));
                             }
                         }
                     }
 				}
 
-                if (Settings::mc_sat && next == lit_Undef && !mMCSAT.isConsistent()) {
+                if (Settings::mc_sat && next == lit_Undef && !mMCSAT.is_consistent()) {
                     SMTRAT_LOG_DEBUG("smtrat.sat", "Trail inconsistent, fixing inconsistencies...");
                     auto conflict = mMCSAT.explainInconsistency();
                     if (conflict) {
@@ -2860,7 +2860,7 @@ namespace smtrat
                                 SMTRAT_LOG_DEBUG("smtrat.sat", "Insert " << lit << " (" << assignments[i] << ") into SAT solver");
                                 newDecisionLevel();
                                 uncheckedEnqueue(lit);
-                                if (!mMCSAT.isConsistent()) {
+                                if (!mMCSAT.is_consistent()) {
                                     SMTRAT_LOG_DEBUG("smtrat.sat", "Trail got inconsistent, stopping inserting assignments");
                                     #ifdef SMTRAT_DEVOPTION_Statistics
                                     mMCSATStatistics.inconsistentTheoryDecision();
@@ -2868,7 +2868,7 @@ namespace smtrat
                                     break;
                                 }
                             }
-                            assert(mMCSAT.isConsistent() == mMCSAT.fullConsistencyCheck());
+                            assert(mMCSAT.is_consistent() == mMCSAT.fullConsistencyCheck());
                             continue;
                         } else {
                             mCurrentAssignmentConsistent = UNSAT;
@@ -2969,7 +2969,7 @@ namespace smtrat
                     if( mReceivedFormulaPurelyPropositional || mCurrentAssignmentConsistent == SAT )
                     {
                         // Model found:
-                        if (Settings::mc_sat) assert(mMCSAT.isConsistent());
+                        if (Settings::mc_sat) assert(mMCSAT.is_consistent());
                         return l_True;
                     }
                     else
@@ -3022,7 +3022,7 @@ namespace smtrat
                         return l_Undef;
                     }
                     // TODO is that needed here?!?
-                    // assert(mMCSAT.isConsistent());
+                    // assert(mMCSAT.is_consistent());
                     return l_False;
                 }
 
@@ -3738,7 +3738,7 @@ namespace smtrat
 						abstr.reabstraction.type() == carl::FormulaType::BITVECTOR ||
 						abstr.reabstraction.type() == carl::FormulaType::VARCOMPARE ||
 						abstr.reabstraction.type() == carl::FormulaType::VARASSIGN ||
-						abstr.reabstraction.constraint().isConsistent() != 1
+						abstr.reabstraction.constraint().is_consistent() != 1
 					)) 
 	            {
 	                if( ++abstr.updateInfo > 0 )

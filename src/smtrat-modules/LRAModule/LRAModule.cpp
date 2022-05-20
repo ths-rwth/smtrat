@@ -50,12 +50,12 @@ namespace smtrat
         if( _constraint.type() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
-            if( !constraint.lhs().isConstant() && constraint.lhs().isLinear() )
+            if( !constraint.lhs().is_constant() && constraint.lhs().is_linear() )
             {
                 mLinearConstraints.insert( _constraint );
                 setBound( _constraint );
             }
-            return constraint.isConsistent() != 0;
+            return constraint.is_consistent() != 0;
         }
         return true;
     }
@@ -66,7 +66,7 @@ namespace smtrat
         #ifdef DEBUG_LRA_MODULE
         std::cout << "LRAModule::deinform  " << "deinform about " << _constraint << std::endl;
         #endif
-        if( _constraint.constraint().lhs().isLinear() )
+        if( _constraint.constraint().lhs().is_linear() )
         {
             mLinearConstraints.erase( _constraint );
             mTableau.removeBound( _constraint );
@@ -103,10 +103,10 @@ namespace smtrat
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStatistics.add( constraint );
                 #endif
-				// FormulaT constructor simplifies constraint if isConsistent() != 2
-				assert(constraint.isConsistent() == 2);
+				// FormulaT constructor simplifies constraint if is_consistent() != 2
+				assert(constraint.is_consistent() == 2);
 				mAssignmentFullfilsNonlinearConstraints = false;
-				if( constraint.lhs().isLinear() )
+				if( constraint.lhs().is_linear() )
 				{
 //                        bool elementInserted = mLinearConstraints.insert( formula ).second;
 //                        if( elementInserted && mInitialized )
@@ -150,7 +150,7 @@ namespace smtrat
 						}
 						assert( constrBoundIter != mTableau.constraintToBound().end() );
 						const std::vector< const LRABound* >* bounds = constrBoundIter->second;
-//                            bool intValued = constraint.integerValued();
+//                            bool intValued = constraint.integer_valued();
 //                            if( (intValued && ((*bounds)[1]->isActive() || (*bounds)[2]->isActive()))
 //                                || (!intValued && ((*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive())) )
 						if( (*bounds)[0]->isActive() || (*bounds)[1]->isActive() || (*bounds)[2]->isActive() || (*bounds)[3]->isActive() )
@@ -199,9 +199,9 @@ namespace smtrat
             #ifdef SMTRAT_DEVOPTION_Statistics
             mStatistics.remove( constraint );
             #endif
-			// FormulaT constructor simplifies constraint if isConsistent() != 2
-			assert(constraint.isConsistent() == 2);
-			if( constraint.lhs().isLinear() )
+			// FormulaT constructor simplifies constraint if is_consistent() != 2
+			assert(constraint.is_consistent() == 2);
+			if( constraint.lhs().is_linear() )
 			{
 				// Deactivate the bounds regarding the given constraint
 				auto constrBoundIter = mTableau.constraintToBound().find( pformula );
@@ -244,7 +244,7 @@ namespace smtrat
 								const std::vector< const LRABound* >* uebounds = constrBoundIterB->second;
 								assert( uebounds != NULL );
 								assert( uebounds->size() >= 4 );
-//                                    bool intValued = (*bound)->neqRepresentation().constraint().integerValued();
+//                                    bool intValued = (*bound)->neqRepresentation().constraint().integer_valued();
 //                                    if( (intValued && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive()) ||
 //                                        (!intValued && !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive()) )
 								if( !(*uebounds)[0]->isActive() && !(*uebounds)[1]->isActive() && !(*uebounds)[2]->isActive() && !(*uebounds)[3]->isActive() )
@@ -527,14 +527,14 @@ namespace smtrat
                 }
                 else
                 {
-                    if( _formula.constraint().lhs().isLinear() && _formula.constraint().relation() != carl::Relation::NEQ )
+                    if( _formula.constraint().lhs().is_linear() && _formula.constraint().relation() != carl::Relation::NEQ )
                     {
                         auto constrBoundIter = mTableau.constraintToBound().find( _formula );
                         if( constrBoundIter != mTableau.constraintToBound().end() )
                         {
                             const LRABound& bound = *constrBoundIter->second->front();
                             const LRAVariable& lravar = bound.variable();
-                            if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().getSingleVariable() )) )
+                            if( lravar.hasBound() || (lravar.isOriginal() && receivedVariable( lravar.expression().single_variable() )) )
                             {
                                 const auto& cd = mTableau.currentDelta();
                                 if( bound.isSatisfied( cd ) )
@@ -1427,7 +1427,7 @@ namespace smtrat
         for( auto slackVar : mTableau.slackVars() )
         {
             Poly tmp = carl::substitute(*slackVar.first, _assignment );
-            assert( tmp.isConstant() );
+            assert( tmp.is_constant() );
             LRABoundType slackVarAssignment = slackVar.second->assignment().mainPart() + slackVar.second->assignment().deltaPart() * _delta;
             if( !(tmp == Poly(Rational(slackVarAssignment))) )
             {

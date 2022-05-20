@@ -150,23 +150,23 @@ namespace smtrat
                     bool varWithNegCoeff = carl::is_negative( varShiftIter->second.lcoeff() );
                     if( ass.second.isRational() )
                     {
-                        mModel.assign(ass.first, (varWithNegCoeff ? Rational(-ass.second.asRational()) : ass.second.asRational()) + varShiftIter->second.constantPart());
+                        mModel.assign(ass.first, (varWithNegCoeff ? Rational(-ass.second.asRational()) : ass.second.asRational()) + varShiftIter->second.constant_part());
                     }
                     else if( ass.second.isSubstitution() )
                     {
                         if( varWithNegCoeff )
                             ass.second.asSubstitution()->multiplyBy( -1 );
                         else
-                            ass.second.asSubstitution()->add( varShiftIter->second.constantPart() );
+                            ass.second.asSubstitution()->add( varShiftIter->second.constant_part() );
                     }
                     else if( ass.second.isSqrtEx() )
                     {
-                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*SqrtEx( Poly( -1 ) ) : ass.second.asSqrtEx()) + SqrtEx( Poly( varShiftIter->second.constantPart() ) ));
+                        mModel.assign(ass.first, (varWithNegCoeff ? ass.second.asSqrtEx()*SqrtEx( Poly( -1 ) ) : ass.second.asSqrtEx()) + SqrtEx( Poly( varShiftIter->second.constant_part() ) ));
                     }
                     else // ass.second.isRAN()
                     {
                         assert(false); // TODO: How to add a value to a RAN
-                        carl::RealAlgebraicNumber<smtrat::Rational> bound = carl::RealAlgebraicNumber<smtrat::Rational>(varShiftIter->second.constantPart());
+                        carl::RealAlgebraicNumber<smtrat::Rational> bound = carl::RealAlgebraicNumber<smtrat::Rational>(varShiftIter->second.constant_part());
 //                        ass.second = ass.second.asRAN()->add( bound );
                     }
                 }

@@ -91,11 +91,11 @@ namespace smtrat
             switch( formula.constraint().relation() )
             {
                 case carl::Relation::EQ:
-                    if( formula.constraint().lhs().hasConstantTerm() )
+                    if( formula.constraint().lhs().has_constant_term() )
                         return FormulaT( carl::FormulaType::FALSE );
                     break;
                 case carl::Relation::NEQ:
-                    if( formula.constraint().lhs().hasConstantTerm() )
+                    if( formula.constraint().lhs().has_constant_term() )
                         return FormulaT( carl::FormulaType::TRUE );
                     rel = carl::Relation::NEQ;
                     boolOp = carl::FormulaType::OR;
@@ -103,13 +103,13 @@ namespace smtrat
                 case carl::Relation::LEQ:
                     if( lcoeffNeg )
                         return FormulaT( carl::FormulaType::TRUE );
-                    else if( formula.constraint().lhs().hasConstantTerm() )
+                    else if( formula.constraint().lhs().has_constant_term() )
                         return FormulaT( carl::FormulaType::FALSE );
                     break;
                 case carl::Relation::LESS:
                     if( lcoeffNeg )
                     {
-                        if( formula.constraint().lhs().hasConstantTerm() )
+                        if( formula.constraint().lhs().has_constant_term() )
                             return FormulaT( carl::FormulaType::TRUE );
                         rel = carl::Relation::NEQ;
                         boolOp = carl::FormulaType::OR;
@@ -120,7 +120,7 @@ namespace smtrat
                 case carl::Relation::GEQ:
                     if( !lcoeffNeg )
                         return FormulaT( carl::FormulaType::TRUE );
-                    else if( formula.constraint().lhs().hasConstantTerm() )
+                    else if( formula.constraint().lhs().has_constant_term() )
                         return FormulaT( carl::FormulaType::FALSE );
                     break;
                 default:
@@ -129,7 +129,7 @@ namespace smtrat
                         return FormulaT( carl::FormulaType::FALSE );
                     else
                     {
-                        if( formula.constraint().lhs().hasConstantTerm() )
+                        if( formula.constraint().lhs().has_constant_term() )
                             return FormulaT( carl::FormulaType::TRUE );
                         rel = carl::Relation::NEQ;
                         boolOp = carl::FormulaType::OR;

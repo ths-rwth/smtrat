@@ -72,7 +72,7 @@ namespace smtrat
             const ConstraintT& constraint = negated ? ConstraintT( constraintF.constraint().lhs(), carl::inverse( constraintF.constraint().relation() ) ) : constraintF.constraint();
             const vs::Condition* condition = new vs::Condition( constraint, mpConditionIdAllocator->get() );
             mFormulaConditionMap[constraintF] = condition;
-            assert( constraint.isConsistent() == 2 );
+            assert( constraint.is_consistent() == 2 );
             for( auto var: constraint.variables() )
                 mAllVariables.insert( var );
             if( Settings::incremental_solving )
@@ -1677,8 +1677,8 @@ namespace smtrat
                 {
                     if( ass.second.isSqrtEx() )
                     {
-                        assert( ass.second.asSqrtEx().isConstant() && carl::is_integer( ass.second.asSqrtEx().constantPart().constantPart() ) );
-                        varSolutions[ass.first.asVariable()] = ass.second.asSqrtEx().constantPart().constantPart();
+                        assert( ass.second.asSqrtEx().is_constant() && carl::is_integer( ass.second.asSqrtEx().constant_part().constant_part() ) );
+                        varSolutions[ass.first.asVariable()] = ass.second.asSqrtEx().constant_part().constant_part();
                     }
                     else if( ass.second.isRAN() )
                     {
@@ -1739,13 +1739,13 @@ namespace smtrat
                                 Poly subPolyPartiallySubstituted = carl::substitute(substitutionPoly, partialVarSolutions );
                                 if( !carl::is_zero(subPolyPartiallySubstituted) )
                                 {
-                                    Rational cp = subPolyPartiallySubstituted.coprimeFactorWithoutConstant();
+                                    Rational cp = subPolyPartiallySubstituted.coprime_factor_without_constant();
                                     assert( carl::get_num( cp ) == Rational(1) || carl::get_num( cp ) == Rational(-1) );
                                     Rational g = carl::get_denom( cp );
-                                    if( g > Rational(0) && carl::mod( carl::to_int<Integer>( subPolyPartiallySubstituted.constantPart() ), carl::to_int<Integer>( g ) ) != 0 )
+                                    if( g > Rational(0) && carl::mod( carl::to_int<Integer>( subPolyPartiallySubstituted.constant_part() ), carl::to_int<Integer>( g ) ) != 0 )
                                     {
-                                        Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constantPart()) * cp;
-                                        Rational branchValue = subPolyPartiallySubstituted.constantPart() * cp;
+                                        Poly branchEx = (subPolyPartiallySubstituted - subPolyPartiallySubstituted.constant_part()) * cp;
+                                        Rational branchValue = subPolyPartiallySubstituted.constant_part() * cp;
                                         if( branchAt( branchEx, true, branchValue, std::move(getReasonsAsVector( currentState->substitution().originalConditions() )) ) )
                                         {
                                             #ifdef SMTRAT_DEVOPTION_Statistics

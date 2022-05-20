@@ -45,12 +45,12 @@ namespace smtrat
             {
                 if( !mNonLinear )
                 {
-                    if( !iter_poly->isLinear() )
+                    if( !iter_poly->is_linear() )
                     {
                         mNonLinear = true;
                     }
                 }
-                if( !iter_poly->isConstant() && mDom != INT )
+                if( !iter_poly->is_constant() && mDom != INT )
                 {
                     if( iter_poly->monomial()->begin()->first.type() == carl::VariableType::VT_INT )
                     {
@@ -159,7 +159,7 @@ namespace smtrat
                     auto iter_poly = lhsExpanded.begin();
                     while( iter_poly != lhsExpanded.end() )
                     {
-                        if( !iter_poly->isConstant() )
+                        if( !iter_poly->is_constant() )
                         {
                             if( iter_poly->getNrVariables() == 1 && iter_poly->monomial().get()->begin()->first == *iter_var )
                             {
@@ -650,7 +650,7 @@ namespace smtrat
                 auto iter_constr = rReceivedFormula().begin();
                 while( iter_constr != rReceivedFormula().end() )
                 {
-                    if( carl::satisfied_by( iter_constr->formula().constraint(),backends_solution ) == 0 || !( carl::substitute(iter_constr->formula().constraint().lhs(), backends_solution) ).isConstant() )
+                    if( carl::satisfied_by( iter_constr->formula().constraint(),backends_solution ) == 0 || !( carl::substitute(iter_constr->formula().constraint().lhs(), backends_solution) ).is_constant() )
                     {
                         #ifdef DEBUG_FouMoModule
                         std::cout << "The obtained solution is not correct!" << std::endl;
@@ -923,7 +923,7 @@ namespace smtrat
                             forbidden_fruits.insert(var);
                     }
                 }
-                if( !iter_poly->isConstant() )
+                if( !iter_poly->is_constant() )
                 {
                     if( iter_poly->getNrVariables() == 1 )
                     {
@@ -1011,7 +1011,7 @@ namespace smtrat
         auto iter_poly_upper = ucExpanded.begin();
         while( iter_poly_upper != ucExpanded.end() )
         {
-            if( !iter_poly_upper->isConstant() && iter_poly_upper->getNrVariables() == 1 )
+            if( !iter_poly_upper->is_constant() && iter_poly_upper->getNrVariables() == 1 )
             {
                 if( iter_poly_upper->monomial().get()->begin()->first == corr_var )
                 {
@@ -1026,7 +1026,7 @@ namespace smtrat
         auto iter_poly_lower = lcExpanded.begin();
         while( iter_poly_lower != lcExpanded.end() )
         {
-            if( !iter_poly_lower->isConstant() && iter_poly_lower->getNrVariables() == 1 )
+            if( !iter_poly_lower->is_constant() && iter_poly_lower->getNrVariables() == 1 )
             {
                 if( iter_poly_lower->monomial().get()->begin()->first == corr_var )
                 {
@@ -1096,7 +1096,7 @@ namespace smtrat
                 auto iter_poly_upper = tbsuExpanded.begin();
                 while( iter_poly_upper != tbsuExpanded.end() )
                 {
-                    if( !iter_poly_upper->isConstant() )
+                    if( !iter_poly_upper->is_constant() )
                     {
                         if( iter_poly_upper->monomial().get()->begin()->first != *iter_elim )
                         {
@@ -1121,27 +1121,27 @@ namespace smtrat
                     first_iter_upper = false;
                     if( mDom == INT )
                     {
-                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constantPart()/(Rational(-1)*coeff_upper)) );
+                        lowest_upper = carl::floor( Rational( to_be_substituted_upper.constant_part()/(Rational(-1)*coeff_upper)) );
                     }
                     else
                     {
-                        lowest_upper = Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper;
+                        lowest_upper = Rational(-1)*to_be_substituted_upper.constant_part()/coeff_upper;
                     }
                 }
                 else
                 {
                     if( mDom == INT )
                     {
-                        if( carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper) ) < lowest_upper )
+                        if( carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constant_part()/coeff_upper) ) < lowest_upper )
                         {
-                            lowest_upper = carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper) );
+                            lowest_upper = carl::floor( Rational( Rational(-1)*to_be_substituted_upper.constant_part()/coeff_upper) );
                         }
                     }
                     else
                     {
-                        if( Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper < lowest_upper )
+                        if( Rational(-1)*to_be_substituted_upper.constant_part()/coeff_upper < lowest_upper )
                         {
-                            lowest_upper = Rational(-1)*to_be_substituted_upper.constantPart()/coeff_upper;
+                            lowest_upper = Rational(-1)*to_be_substituted_upper.constant_part()/coeff_upper;
                         }
                     }
                 }
@@ -1174,7 +1174,7 @@ namespace smtrat
                 auto iter_poly_lower = tbslExpanded.begin();
                 while( iter_poly_lower != tbslExpanded.end() )
                 {
-                    if( !iter_poly_lower->isConstant() )
+                    if( !iter_poly_lower->is_constant() )
                     {
                         if( iter_poly_lower->monomial().get()->begin()->first != *iter_elim )
                         {
@@ -1199,27 +1199,27 @@ namespace smtrat
                     first_iter_lower = false;
                     if( mDom == INT )
                     {
-                        highest_lower = carl::ceil( Rational(to_be_substituted_lower.constantPart()/coeff_lower) );
+                        highest_lower = carl::ceil( Rational(to_be_substituted_lower.constant_part()/coeff_lower) );
                     }
                     else
                     {
-                        highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
+                        highest_lower = to_be_substituted_lower.constant_part()/coeff_lower;
                     }
                 }
                 else
                 {
                     if( mDom == INT )
                     {
-                        if( carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) ) > highest_lower )
+                        if( carl::ceil( Rational( to_be_substituted_lower.constant_part()/coeff_lower) ) > highest_lower )
                         {
-                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constantPart()/coeff_lower) );
+                            highest_lower = carl::ceil( Rational( to_be_substituted_lower.constant_part()/coeff_lower) );
                         }
                     }
                     else
                     {
-                        if( to_be_substituted_lower.constantPart()/coeff_lower > highest_lower )
+                        if( to_be_substituted_lower.constant_part()/coeff_lower > highest_lower )
                         {
-                            highest_lower = to_be_substituted_lower.constantPart()/coeff_lower;
+                            highest_lower = to_be_substituted_lower.constant_part()/coeff_lower;
                         }
                     }
                 }
@@ -1277,12 +1277,12 @@ namespace smtrat
             bool found_var = false;
             while( iter_poly != eqExpanded.end() )
             {
-                if( !iter_poly->isConstant() )
+                if( !iter_poly->is_constant() )
                 {
                     if( !found_var )
                     {
                         found_var = true;
-                        mVarAss[ iter_poly->monomial().get()->begin()->first ] = Rational(-1)*Rational( eqExpanded.constantPart() )/(Rational)iter_poly->coeff();
+                        mVarAss[ iter_poly->monomial().get()->begin()->first ] = Rational(-1)*Rational( eqExpanded.constant_part() )/(Rational)iter_poly->coeff();
                     }
                     else
                     {
@@ -1297,7 +1297,7 @@ namespace smtrat
         auto iter_constr = rReceivedFormula().begin();
         while( iter_constr != rReceivedFormula().end() )
         {
-            if( !carl::satisfied_by( iter_constr->formula().constraint(),mVarAss ) || !( carl::substitute(iter_constr->formula().constraint().lhs(), mVarAss) ).isConstant() )
+            if( !carl::satisfied_by( iter_constr->formula().constraint(),mVarAss ) || !( carl::substitute(iter_constr->formula().constraint().lhs(), mVarAss) ).is_constant() )
             {
                 #ifdef DEBUG_FouMoModule
                 std::cout << "The obtained solution is not correct!" << std::endl;
@@ -1358,7 +1358,7 @@ namespace smtrat
     std::pair< FormulaT, bool > FouMoModule<Settings>::worthInserting( FormulaOrigins& formula_map, const Poly& new_poly )
     {
         std::pair< FormulaT, bool > result( FormulaT( ConstraintT( Poly( 1 ), carl::Relation::EQ ) ), true );
-        if( new_poly.isConstant() )
+        if( new_poly.is_constant() )
         {
             return result;
         }
@@ -1366,9 +1366,9 @@ namespace smtrat
         while( iter_form != formula_map.end() )
         {
             Poly temp = iter_form->first.constraint().lhs();
-            if( temp - temp.constantPart() == new_poly - new_poly.constantPart() )
+            if( temp - temp.constant_part() == new_poly - new_poly.constant_part() )
             {
-                if( Rational(-1)*(Rational)temp.constantPart() <= Rational(-1)*(Rational)new_poly.constantPart() )
+                if( Rational(-1)*(Rational)temp.constant_part() <= Rational(-1)*(Rational)new_poly.constant_part() )
                 {
                     result.second = false;
                     return result;

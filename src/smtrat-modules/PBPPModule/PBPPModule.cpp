@@ -322,12 +322,12 @@ namespace smtrat
 
 		Poly lhs;
 		for(const auto& it : formula.lhs()){
-			if (it.isConstant()) {
+			if (it.is_constant()) {
 				lhs += it.coeff();
 				continue;
 			}
 
-			lhs = lhs + it.coeff() * mVariablesCache[it.getSingleVariable()];
+			lhs = lhs + it.coeff() * mVariablesCache[it.single_variable()];
 		}
 
 		FormulaT constraintFormula = FormulaT(lhs, formula.relation());
@@ -392,7 +392,7 @@ namespace smtrat
 		//encode = encode && constraint.variables().size() <= 3;
 
 		// this would be a simple encoding
-		//encode = encode && (constraint.relation() == carl::Relation::EQ || carl::abs(constraint.lhs().constantPart()) <= 1);
+		//encode = encode && (constraint.relation() == carl::Relation::EQ || carl::abs(constraint.lhs().constant_part()) <= 1);
 
 		encode = encode || Settings::ENCODE_IF_POSSIBLE;
 
@@ -404,7 +404,7 @@ namespace smtrat
 		bool trivial = false;
 
 		trivial = trivial || constraint.variables().size() <= 1;
-		trivial = trivial || (constraint.lhs().constantPart() == 0 && mCardinalityEncoder.canEncode(constraint));
+		trivial = trivial || (constraint.lhs().constant_part() == 0 && mCardinalityEncoder.canEncode(constraint));
 
 		return trivial;
 	}

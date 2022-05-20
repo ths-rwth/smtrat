@@ -24,7 +24,7 @@ bool hasOnlyNonConstIrreducibles(const std::vector<PolyType>& polys) {
 	if (polys.empty()) // Corner case, COCOA crashes on empty poly-vector
 		return true;
 	for (const auto& poly : polys) {
-		if (poly.isConstant())
+		if (poly.is_constant())
 			return false;
 		else if (carl::irreducibleFactors(poly, false).size() > 1)
 			return false;

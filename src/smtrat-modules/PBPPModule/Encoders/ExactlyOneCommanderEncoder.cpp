@@ -19,14 +19,14 @@ namespace smtrat {
 		if (constraint.variables().size() <= COMMANDER_GROUP_SIZE) return false;
 
 		for (const auto &term : constraint.lhs()) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			if (term.coeff() != Rational(1)) {
 				return false;
 			}
 		}
 
-		return constraint.lhs().constantPart() == Rational(-1);
+		return constraint.lhs().constant_part() == Rational(-1);
 	}
 
 	std::optional<FormulaT> ExactlyOneCommanderEncoder::doEncode(const ConstraintT& constraint) {

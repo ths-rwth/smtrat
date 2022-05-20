@@ -419,8 +419,8 @@ namespace smtrat
                 unsigned isSatisfiedBy( const EvalRationalMap& _ass ) const
                 {
                     typename Poly::PolyType polyTmp = carl::substitute(*mExpression, _ass);
-                    if( polyTmp.isConstant() )
-                        return (*mpInfimum) <= polyTmp.constantPart() && (*mpSupremum) >= polyTmp.constantPart();
+                    if( polyTmp.is_constant() )
+                        return (*mpInfimum) <= polyTmp.constant_part() && (*mpSupremum) >= polyTmp.constant_part();
 					for( auto& lb : mLowerbounds )
 					{
 						unsigned neqSatisfied = lb->neqRepresentation().satisfiedBy( _ass );
@@ -446,11 +446,11 @@ namespace smtrat
                 FormulaT inConflictWith( const EvalRationalMap& _ass ) const
                 {
                     typename Poly::PolyType polyTmp = carl::substitute(*mExpression, _ass);
-					assert( polyTmp.isConstant() );
+					assert( polyTmp.is_constant() );
                     
-					if( (*mpInfimum) > polyTmp.constantPart() )
+					if( (*mpInfimum) > polyTmp.constant_part() )
 						return mpInfimum->asConstraint();
-					else if ( (*mpSupremum) < polyTmp.constantPart() )
+					else if ( (*mpSupremum) < polyTmp.constant_part() )
 						return mpSupremum->asConstraint();
 					else
 					{

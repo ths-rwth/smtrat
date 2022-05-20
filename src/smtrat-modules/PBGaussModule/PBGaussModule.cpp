@@ -123,9 +123,9 @@ namespace smtrat
 				// if var in equation, choose coeff, otherwise 0
 				bool found = false;
 				for (const auto& term: it.lhs()) {
-					if (term.isConstant()) continue;
+					if (term.is_constant()) continue;
 
-					if (term.getSingleVariable() == var) {
+					if (term.single_variable() == var) {
 						found = true;
 						coef.push_back(term.coeff());
 						break;
@@ -137,7 +137,7 @@ namespace smtrat
 				}
 			}
 			
-			coef.push_back(-it.lhs().constantPart());
+			coef.push_back(-it.lhs().constant_part());
 		}
 		
 		std::size_t rows = mEquations.size();
@@ -239,7 +239,7 @@ template<class Settings>
 				auto elem = std::find_if(iLHS.begin(), iLHS.end(), 
 					[&] (const TermT& elem){
 						std::cout << elem << std::endl;
-						return !elem.isConstant() && elem.getSingleVariable() == j;
+						return !elem.is_constant() && elem.single_variable() == j;
 					});
 				if(elem != iLHS.end()){
 					ineqCoef.push_back(elem->coeff());
@@ -247,7 +247,7 @@ template<class Settings>
 					ineqCoef.push_back(0);
 				}
 			}
-			ineqCoef.push_back(i.lhs().constantPart());
+			ineqCoef.push_back(i.lhs().constant_part());
 		}
 
 

@@ -377,11 +377,11 @@ public:
 	/**
 	 * Checks if any inconsistency was detected.
 	 */
-	bool isConsistent() {
+	bool is_consistent() {
 		return mInconsistentVariables.empty();
 	}
 
-	bool isConsistent(Minisat::Var v) {
+	bool is_consistent(Minisat::Var v) {
 		return std::find(mInconsistentVariables.begin(), mInconsistentVariables.end(), v) == mInconsistentVariables.end();
 	}
 
@@ -392,7 +392,7 @@ public:
 	 * Returns std::nullopt if consistent and an explanation.
 	 */
 	std::optional<Explanation> explainInconsistency() {
-		if (isConsistent()) {
+		if (is_consistent()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is still consistent");
 			return std::nullopt;
 		} else {

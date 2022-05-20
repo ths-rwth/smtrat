@@ -158,7 +158,7 @@ namespace smtrat
 		if (invert) p = -p;
 
 		for (const auto& term: p) {
-			if (term.isConstant()) {
+			if (term.is_constant()) {
 				coeff.r += term.coeff();
 				continue;
 			}

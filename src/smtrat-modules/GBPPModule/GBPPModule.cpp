@@ -105,7 +105,7 @@ namespace smtrat
 		auto reduced = reductor.fullReduce();
 		SMTRAT_LOG_DEBUG("smtrat.gbpp", "Reduced " << c.lhs() << " to " << reduced);
 		
-		if (reduced.nrTerms() >= c.lhs().nrTerms()) return formula;
+		if (reduced.nr_terms() >= c.lhs().nr_terms()) return formula;
 		return FormulaT(ConstraintT(Poly(reduced), c.relation()));
 	}
 }

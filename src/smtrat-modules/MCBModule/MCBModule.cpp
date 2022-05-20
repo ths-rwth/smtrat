@@ -57,7 +57,7 @@ namespace smtrat
 			return ModelValue(selection->second);
 		}
 		virtual bool dependsOn(const ModelVariable& var) const {
-			if (!var.isVariable()) return false;
+			if (!var.is_variable()) return false;
 			return mAssignments.find(var.asVariable()) != mAssignments.end();
 		}
 		virtual void print(std::ostream& os) const {
@@ -130,8 +130,8 @@ namespace smtrat
 		if (cb.empty()) return;
 			
 		for (const auto& poly: cb) {
-			if (!poly.first.isVariable()) continue;
-			AVar var = poly.first.getSingleVariable();
+			if (!poly.first.is_variable()) continue;
+			AVar var = poly.first.single_variable();
 			std::vector<std::pair<Rational,FormulaT>> choices;
 			for (const auto& entry: poly.second) {
 				if (entry.second.first != carl::Relation::EQ) break;

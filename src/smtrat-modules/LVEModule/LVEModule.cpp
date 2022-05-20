@@ -120,9 +120,9 @@ namespace smtrat
 
 	template<class Settings>
 	FormulaT LVEModule<Settings>::eliminate_from_separated_strict_inequality(carl::Variable v, const Poly& with, const Poly& without, carl::Relation rel) {
-		if (without.isConstant()) {
+		if (without.is_constant()) {
 			SMTRAT_LOG_DEBUG("smtrat.lve", "Remaining part " << without << " is constant, we choose a proper value for " << v);
-			carl::Sign target = sign_of(rel, without.constantPart() < 0);
+			carl::Sign target = sign_of(rel, without.constant_part() < 0);
 			auto val = lve::get_value_for_sgn(v, with, target);
 			if (val) {
 				SMTRAT_LOG_DEBUG("smtrat.lve", "Found proper value " << v << " = " << *val << " such that " << with << " " << rel << " 0");
@@ -235,8 +235,8 @@ namespace smtrat
 		// Now consider a * v ~ b
 		SMTRAT_LOG_DEBUG("smtrat.lve", "Considering " << a << " * " << v << " " << rel << " " << b);
 
-		if (a.isConstant()) {
-			if (a.constantPart() < 0) {
+		if (a.is_constant()) {
+			if (a.constant_part() < 0) {
 				switch (rel) {
 					case carl::Relation::EQ:		rel = carl::Relation::EQ; break;
 					case carl::Relation::NEQ:		rel = carl::Relation::NEQ; break;
@@ -246,7 +246,7 @@ namespace smtrat
 					case carl::Relation::GEQ:		rel = carl::Relation::LEQ; break;
 				}
 			}
-			b = b / a.constantPart();
+			b = b / a.constant_part();
 			// Now we have v ~ b
 			SMTRAT_LOG_DEBUG("smtrat.lve", "Transformed to " << v << " " << rel << " " << b);
 			switch (rel) {

@@ -230,7 +230,7 @@ namespace smtrat
         extraVariablesForOddExponenet.push_front(Variable);
 
         // get linear monomial
-        while (!newMonomial->isLinear()) {
+        while (!newMonomial->is_linear()) {
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 std::cout << "entering while" << "\n";
             }
@@ -247,7 +247,7 @@ namespace smtrat
         }
 
         // create newMonomial by multiplying newMonomial with the list extraVariablesForOddExponenet
-        if(newMonomial->isLinear()) {
+        if(newMonomial->is_linear()) {
             carl::Variable variableOfNewMonomial =  newMonomial->begin()->first;
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 std::cout << "new monomial is linear" << "\n";
@@ -293,7 +293,7 @@ namespace smtrat
         }
 
 
-        if (monomial->nrVariables() == 1 && monomial->isLinear()) {
+        if (monomial->nrVariables() == 1 && monomial->is_linear()) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 std::cout << "final Linear Monomial: " << monomial << " tDeg: " << monomial->tdeg();
@@ -355,12 +355,12 @@ namespace smtrat
         std::size_t indexCount = 0;
 
         //size of array
-        std::vector<Poly> op(poly.getTerms().size());
+        std::vector<Poly> op(poly.terms().size());
 
         // loops over each term and create linear polynomials
-        for( auto& term : poly.getTerms() ) {
+        for( auto& term : poly.terms() ) {
 
-            if (!term.isConstant() && term.isLinear()) { //if the term is already linear and not a constant
+            if (!term.is_constant() && term.is_linear()) { //if the term is already linear and not a constant
 
                 Poly p(term);
                 op[indexCount] = p;
@@ -371,7 +371,7 @@ namespace smtrat
                     std::cout << "\n";
                 }
 
-            } else if (!term.isConstant()) { //if the term is a product of two or more variables
+            } else if (!term.is_constant()) { //if the term is a product of two or more variables
 
                 //get monomial
                 carl::Monomial::Arg monomial = term.monomial();

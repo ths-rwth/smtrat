@@ -41,7 +41,7 @@ namespace smtrat
             return mSigned;
         }
 
-        bool isConstant() const {
+        bool is_constant() const {
             return mBounds.lower() == mBounds.upper();
         }
 
@@ -179,7 +179,7 @@ namespace smtrat
         mIsConstant(false), mConstant(), mTerm(_term), mConstraints(_constraints)
         { }
 
-        bool isConstant() const {
+        bool is_constant() const {
             return mIsConstant;
         }
 
@@ -214,7 +214,7 @@ namespace smtrat
         }
 
         friend std::ostream& operator<<( std::ostream& _out, const BlastedPoly& _poly ) {
-            if(_poly.isConstant()) {
+            if(_poly.is_constant()) {
                 return (_out << _poly.constant() << " (const)");
             } else {
                 return (_out << _poly.term());
@@ -270,8 +270,8 @@ namespace smtrat
         ConstrTree(const ConstraintT& _constraint) :
         mRelation(_constraint.relation()), mpLeftPoly(nullptr), mpRightPoly(nullptr), mConstraint(_constraint)
         {
-            Poly rightPoly(- _constraint.lhs().constantPart());
-            Poly leftPoly(_constraint.lhs() - _constraint.lhs().constantPart());
+            Poly rightPoly(- _constraint.lhs().constant_part());
+            Poly leftPoly(_constraint.lhs() - _constraint.lhs().constant_part());
 
             if(leftPoly.lcoeff() < 0) {
                 rightPoly *= Rational(-1);

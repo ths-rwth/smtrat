@@ -108,9 +108,9 @@ namespace smtrat
         if( _constraint.type() == carl::FormulaType::CONSTRAINT )
         {
             const ConstraintT& constraint = _constraint.constraint();
-            if( !constraint.integerValued() )
+            if( !constraint.integer_valued() )
                 mDefaultSplittingSize = 1000;
-            unsigned constraintConsistency = constraint.isConsistent();
+            unsigned constraintConsistency = constraint.is_consistent();
             if( constraintConsistency == 2 && _constraint.constraint().relation() != carl::Relation::NEQ )
                 addConstraint( _constraint );
             return constraintConsistency != 0;
@@ -182,7 +182,7 @@ namespace smtrat
                     }
                 }
                 // activate associated nonlinear contraction candidates
-                if( !constr.lhs().isLinear() )
+                if( !constr.lhs().is_linear() )
                     activateNonlinearConstraint( _formula->formula() );
                 // lookup corresponding linearization - in case the constraint is already linear, mReplacements holds the constraint as the linearized one
                 auto replacementIt = mLinearizations.find( _formula->formula() );
@@ -226,7 +226,7 @@ namespace smtrat
         #ifdef ICP_MODULE_DEBUG_1
         std::cout << "[ICP] Remove Formula " << constr << std::endl;
         #endif
-        assert( constr.isConsistent() == 2 );
+        assert( constr.is_consistent() == 2 );
         if( constr.relation() == carl::Relation::NEQ ) {
             mNotEqualConstraints.erase(_formula->formula());
             return;
@@ -461,7 +461,7 @@ namespace smtrat
     void ICPModule<Settings>::addConstraint( const FormulaT& _formula )
     {
         assert( _formula.type() == carl::FormulaType::CONSTRAINT );
-        assert( _formula.constraint().isConsistent() == 2 );
+        assert( _formula.constraint().is_consistent() == 2 );
         const ConstraintT& constraint = _formula.constraint();
         auto linearization = mLinearizations.find( _formula );
         if( linearization == mLinearizations.end() ) // If this constraint has not been added before
@@ -481,7 +481,7 @@ namespace smtrat
             }
             // actual preprocessing
             FormulaT linearFormula = FormulaT( carl::FormulaType::TRUE );
-            if( constr.isLinear() )
+            if( constr.is_linear() )
                 linearFormula = _formula;
             else
             {
@@ -490,7 +490,7 @@ namespace smtrat
                 assert( !temporaryMonomes.empty() );
                 Poly lhs = createNonlinearCCs( _formula.constraint(), temporaryMonomes );
                 linearFormula = FormulaT( lhs, constraint.relation() );
-                assert( linearFormula.constraint().lhs().isLinear() );
+                assert( linearFormula.constraint().lhs().is_linear() );
                 #ifdef ICP_MODULE_DEBUG_1
                 std::cout << "linearize constraint to   " << linearFormula.constraint() << std::endl;
                 #endif
@@ -507,7 +507,7 @@ namespace smtrat
             #ifdef ICP_MODULE_DEBUG_1
             std::cout << "[mLRA] inform: " << linearizedConstraint << std::endl;
             #endif
-            if( !carl::is_bound(linearizedConstraint) || (Settings::original_polynomial_contraction && !_formula.constraint().lhs().isLinear()) )
+            if( !carl::is_bound(linearizedConstraint) || (Settings::original_polynomial_contraction && !_formula.constraint().lhs().is_linear()) )
                 createLinearCCs( linearFormula, _formula );
             // set the lra variables for the icp variables regarding variables (introduced and original ones)
             // TODO: Refactor this last part - it seems to be too complicated
@@ -685,7 +685,7 @@ namespace smtrat
                 candidate->setPayoff(mRelativeContraction);
                 candidate->calcRWA();
                 // only add nonlinear CCs as linear CCs should only be used once
-                if( !candidate->isLinear() )
+                if( !candidate->is_linear() )
                     addCandidateToRelevant(candidate); // TODO: Improve - no need to add irrelevant candidates (see below)
                 assert(mIntervals.find(candidate->derivationVar()) != mIntervals.end() );
 				/// TODO: compare against mRelativeContraction or candidate->RWA()
@@ -900,7 +900,7 @@ namespace smtrat
          *      a_1*x_1 + .. + a_k*x_k ~ b, with b and a_i being rationals and x_i being variables
          */
         assert( _constraint.type() == carl::FormulaType::CONSTRAINT );
-        assert( _constraint.constraint().lhs().isLinear() );
+        assert( _constraint.constraint().lhs().is_linear() );
         const icp::LRAVariable* slackvariable = mLRA.getSlackVariable( _constraint );
         assert( slackvariable != nullptr );
         if( mLinearConstraints.find( slackvariable ) == mLinearConstraints.end() )
@@ -934,7 +934,7 @@ namespace smtrat
             for( auto var = variables.begin(); var != variables.end(); ++var )
             {
                 // create a contraction candidate for a_1'*x_1 + .. + a_k'*x_k - v regarding the variable x_i/v
-                icp::ContractionCandidate* newCandidate = mCandidateManager.createCandidate( newVar, rhs, tmpConstr, *var, iter->second, Settings::use_propagation && (!Settings::original_polynomial_contraction || _original.constraint().lhs().isLinear()) );
+                icp::ContractionCandidate* newCandidate = mCandidateManager.createCandidate( newVar, rhs, tmpConstr, *var, iter->second, Settings::use_propagation && (!Settings::original_polynomial_contraction || _original.constraint().lhs().is_linear()) );
                 ccs.insert( ccs.end(), newCandidate );
                 newCandidate->setLinear();
             }
@@ -1167,7 +1167,7 @@ namespace smtrat
     void ICPModule<Settings>::setContraction( const FormulaT& _constraint, icp::IcpVariable& _icpVar, const DoubleInterval& _contractedInterval, bool _allCCs )
     {
         icp::ContractionCandidate* foundCC = nullptr;
-        if( _constraint.constraint().lhs().isLinear() )
+        if( _constraint.constraint().lhs().is_linear() )
         {
             auto iter = mLinearConstraints.find( mLRA.getSlackVariable( _constraint ) );
             assert( iter != mLinearConstraints.end() );
@@ -2350,8 +2350,8 @@ namespace smtrat
             {
                 assert( rf.formula().type() == carl::FormulaType::CONSTRAINT );
                 const ConstraintT& cons = rf.formula().constraint();
-                assert( !cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ || carl::satisfied_by( cons,sol ) == 1 );
-                if( (!cons.lhs().isLinear() || cons.relation() == carl::Relation::NEQ) && carl::satisfied_by( cons,sol ) != 1 )
+                assert( !cons.lhs().is_linear() || cons.relation() == carl::Relation::NEQ || carl::satisfied_by( cons,sol ) == 1 );
+                if( (!cons.lhs().is_linear() || cons.relation() == carl::Relation::NEQ) && carl::satisfied_by( cons,sol ) != 1 )
                 {
                     solutionFound = false;
                     break;
@@ -2833,7 +2833,7 @@ namespace smtrat
                     std::pair<ConstraintT, ConstraintT> boundaries = icp::intervalToConstraint(Poly(variablesIt->second->lraVar()->expression()), _map.at(tmpSymbol));
                     if( boundaries.second != ConstraintT() )
                     {
-                        assert( boundaries.second.isConsistent() == 2 );
+                        assert( boundaries.second.is_consistent() == 2 );
                         FormulaT rightBound = FormulaT(boundaries.second);
                         addedBoundaries.push_back(rightBound);
                         #ifdef ICP_MODULE_DEBUG_2
@@ -2842,7 +2842,7 @@ namespace smtrat
                     }
                     if( boundaries.first != ConstraintT() )
                     {
-                        assert( boundaries.first.isConsistent() == 2 );
+                        assert( boundaries.first.is_consistent() == 2 );
                         FormulaT leftBound = FormulaT(boundaries.first);
                         addedBoundaries.push_back(leftBound);
                         #ifdef ICP_MODULE_DEBUG_2
@@ -2863,7 +2863,7 @@ namespace smtrat
 //                    if( boundaries.second != ConstraintT() &&
 //                        (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::RIGHT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::LEFT) )
 //                    {
-//                        assert( boundaries.second.isConsistent() == 2 );
+//                        assert( boundaries.second.is_consistent() == 2 );
 //                        FormulaT rightBound = FormulaT(boundaries.second);
 //                        (*variablesIt).second->setInternalRightBound(rightBound);
 //                        addedBoundaries.push_back(rightBound);
@@ -2874,7 +2874,7 @@ namespace smtrat
 //                    if( boundaries.first != ConstraintT() &&
 //                        (inBoundsUpdated == icp::Updated::BOTH || inBoundsUpdated == icp::Updated::LEFT || inBoundsSet == icp::Updated::NONE || inBoundsSet == icp::Updated::RIGHT) )
 //                    {
-//                        assert( boundaries.first.isConsistent() == 2 );
+//                        assert( boundaries.first.is_consistent() == 2 );
 //                        FormulaT leftBound = FormulaT(boundaries.first);
 //                        (*variablesIt).second->setInternalLeftBound(leftBound);
 //                        addedBoundaries.push_back(leftBound);
@@ -3047,7 +3047,7 @@ namespace smtrat
         std::cout << "******************* active linear variables *******************" << std::endl;
         for (auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )
         {
-            if ( (*variableIt).second->isLinear() )
+            if ( (*variableIt).second->is_linear() )
                 std::cout << (*variableIt).first << ", ";
         }
         std::cout << std::endl;
@@ -3071,7 +3071,7 @@ namespace smtrat
         std::cout << "***************** active nonlinear variables ******************" << std::endl;
         for (auto variableIt = mVariables.begin(); variableIt != mVariables.end(); ++variableIt )
         {
-            if ( (*variableIt).second->isLinear() )
+            if ( (*variableIt).second->is_linear() )
                 std::cout << (*variableIt).first << ", ";
         }
         std::cout << std::endl;

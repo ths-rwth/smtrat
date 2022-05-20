@@ -92,7 +92,7 @@ namespace smtrat
             const Poly& poly = constraint.lhs();
             carl::Variables variablesInFormula = carl::arithmetic_variables(formula).as_set();
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
-                if(termIt->getNrVariables() > 1 || ! termIt->isLinear()) {
+                if(termIt->getNrVariables() > 1 || ! termIt->is_linear()) {
                     carl::variables(*termIt, nonlinearVariablesInFormula);
                 }
             }
@@ -231,11 +231,11 @@ namespace smtrat
     template<class Settings>
     BlastedPoly IntBlastModule<Settings>::blastSum(const BlastedPoly& _summand1, const BlastedPoly& _summand2)
     {
-        if(_summand1.isConstant() && _summand2.isConstant()) {
+        if(_summand1.is_constant() && _summand2.is_constant()) {
             return BlastedPoly(_summand1.constant() + _summand2.constant());
-        } else if(_summand1.isConstant() || _summand2.isConstant()) {
-            const BlastedPoly& constantSummand = (_summand1.isConstant() ? _summand1 : _summand2);
-            const BlastedPoly& termSummand     = (_summand1.isConstant() ? _summand2 : _summand1);
+        } else if(_summand1.is_constant() || _summand2.is_constant()) {
+            const BlastedPoly& constantSummand = (_summand1.is_constant() ? _summand1 : _summand2);
+            const BlastedPoly& termSummand     = (_summand1.is_constant() ? _summand2 : _summand1);
             const BVAnnotation& termType        = termSummand.term().type();
 
             return BlastedPoly(AnnotatedBVTerm(termType.withOffset(termType.offset() + constantSummand.constant()), termSummand.term().term()));
@@ -260,11 +260,11 @@ namespace smtrat
     template<class Settings>
     BlastedPoly IntBlastModule<Settings>::blastProduct(const BlastedPoly& _factor1, const BlastedPoly& _factor2)
     {
-        if(_factor1.isConstant() && _factor2.isConstant()) {
+        if(_factor1.is_constant() && _factor2.is_constant()) {
             return BlastedPoly(_factor1.constant() * _factor2.constant());
-        } else if(_factor1.isConstant() || _factor2.isConstant()) {
-            const BlastedPoly& constantFactor = (_factor1.isConstant() ? _factor1 : _factor2);
-            const BlastedPoly& variableFactor = (_factor1.isConstant() ? _factor2 : _factor1);
+        } else if(_factor1.is_constant() || _factor2.is_constant()) {
+            const BlastedPoly& constantFactor = (_factor1.is_constant() ? _factor1 : _factor2);
+            const BlastedPoly& variableFactor = (_factor1.is_constant() ? _factor2 : _factor1);
             const BVAnnotation& variableType   = variableFactor.term().type();
 
             bool constantNegative = constantFactor.constant() < 0;
@@ -320,18 +320,18 @@ namespace smtrat
         BlastedConstr blasted;
         bool simpleBlast = false;
 
-        if(left.isConstant() && right.isConstant()) {
+        if(left.is_constant() && right.is_constant()) {
             blasted = BlastedConstr(evaluateRelation(_constraint.relation(), left.constant(), right.constant()));
             simpleBlast = true;
         } else {
-            assert(left.isConstant() || right.isConstant()); // Our ConstrTree is constructed like that
+            assert(left.is_constant() || right.is_constant()); // Our ConstrTree is constructed like that
 
-            const BlastedPoly& constantPol = left.isConstant() ? left : right;
-            const BlastedPoly& variablePol = left.isConstant() ? right : left;
+            const BlastedPoly& constantPol = left.is_constant() ? left : right;
+            const BlastedPoly& variablePol = left.is_constant() ? right : left;
             const Integer& constant = constantPol.constant();
 
             // Assuming "variable op constant" now (i.e., constant is on the right side)
-            carl::Relation relation = left.isConstant() ? carl::turn_around(_constraint.relation()) : _constraint.relation();
+            carl::Relation relation = left.is_constant() ? carl::turn_around(_constraint.relation()) : _constraint.relation();
 
             if(relation == carl::Relation::EQ || relation == carl::Relation::NEQ) {
                 // is the constant outside the range of the variable?
@@ -484,7 +484,7 @@ namespace smtrat
         assert(_input.lower_bound() <= _interval.lower() && _input.upper_bound() >= _interval.upper());
 
         if(_interval.is_point_interval()) {
-            if(_input.isConstant()) {
+            if(_input.is_constant()) {
                 return std::make_pair(_input, false);
             } else {
                 FormulasT constraints(_input.constraints());
@@ -706,7 +706,7 @@ namespace smtrat
     template<class Settings>
     FormulaT IntBlastModule<Settings>::encodeConstraintToBV(const FormulaT& _original, FormulasT* _collectedBitvectorConstraints)
     {
-        if(_original.type() == carl::FormulaType::CONSTRAINT && _original.constraint().integerValued())
+        if(_original.type() == carl::FormulaType::CONSTRAINT && _original.constraint().integer_valued())
         {
             ConstrTree constraintTree(_original.constraint());
             const BlastedConstr& blastedConstraint = blastConstrTree(constraintTree, *_collectedBitvectorConstraints);
@@ -718,7 +718,7 @@ namespace smtrat
     template<class Settings>
     bool IntBlastModule<Settings>::reblastingNeeded(const BlastedPoly& _previousBlasting, const IntegerInterval& _interval, bool _linear) const
     {
-        if(_previousBlasting.isConstant()) {
+        if(_previousBlasting.is_constant()) {
             return ! _interval.is_point_interval() || _interval.lower() != _previousBlasting.constant();
         }
 
@@ -846,7 +846,7 @@ namespace smtrat
     {
         auto& blastedVariable = mPolyBlastings.at(Poly(_variable));
 
-        if(! blastedVariable.isConstant()) {
+        if(! blastedVariable.is_constant()) {
             const BVAnnotation& blastedType = blastedVariable.term().type();
 
             removeFormulaFromICP(FormulaT(ConstraintT(_variable, carl::Relation::GEQ, blastedType.lower_bound())), mConstraintFromBounds);
@@ -900,8 +900,8 @@ namespace smtrat
         for(auto& variableWithOrigins : mInputVariables) {
             const carl::Variable& variable = variableWithOrigins.element();
             auto& blastedVar = mPolyBlastings.at(Poly(variable));
-            Integer blastedLowerBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().lower_bound());
-            Integer blastedUpperBound = (blastedVar.isConstant() ? blastedVar.constant() : blastedVar.term().type().upper_bound());
+            Integer blastedLowerBound = (blastedVar.is_constant() ? blastedVar.constant() : blastedVar.term().type().lower_bound());
+            Integer blastedUpperBound = (blastedVar.is_constant() ? blastedVar.constant() : blastedVar.term().type().upper_bound());
             auto inputBoundsIt = inputBounds.find(variable);
 
             if(inputBoundsIt == inputBounds.end() || get_num(inputBoundsIt->second).contains(blastedLowerBound - 1)) {
@@ -1148,7 +1148,7 @@ namespace smtrat
             const carl::Variable& variable = inputVariable.element();
             const BlastedPoly& blasting = mPolyBlastings.at(Poly(variable));
 
-            if(blasting.isConstant()) {
+            if(blasting.is_constant()) {
                 auto modelValue = carl::RealAlgebraicNumber<Rational>(blasting.constant());
                 mModel.emplace(ModelVariable(variable), ModelValue(modelValue));
             } else {

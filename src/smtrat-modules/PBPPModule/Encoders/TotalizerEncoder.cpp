@@ -15,7 +15,7 @@ namespace smtrat {
 
 		// traverse non-leaf nodes and construct formula
 		FormulaT sumPropagation = mSumPropagationFormulaCache[constraint.variables().as_set()];
-		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.lhs().constantPart()));
+		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.lhs().constant_part()));
 
 		return FormulaT(carl::FormulaType::AND, sumPropagation, cardinalityRestriction);
 	}
@@ -88,7 +88,7 @@ namespace smtrat {
 		bool allCoeffNegative = true;
 
 		for (const auto& it : constraint.lhs()) {
-			if (it.isConstant()) continue;
+			if (it.is_constant()) continue;
 
 			encodable = encodable && (it.coeff() == 1 || it.coeff() == -1);
 			if (it.coeff() < 0) allCoeffPositive = false;

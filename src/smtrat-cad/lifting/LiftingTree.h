@@ -175,7 +175,7 @@ namespace cad {
 		}
 		
 		bool liftSample(Iterator sample, const UPoly& p, std::size_t pid) {
-			assert(isConsistent());
+			assert(is_consistent());
 			auto m = extractSampleMap(sample);
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
@@ -261,9 +261,9 @@ namespace cad {
 			}
 		}
 		
-		bool isConsistent() const {
-			if (!mCheckingQueue.isConsistent()) return false;
-			if (!mLiftingQueue.isConsistent()) return false;
+		bool is_consistent() const {
+			if (!mCheckingQueue.is_consistent()) return false;
+			if (!mLiftingQueue.is_consistent()) return false;
 			return true;
 		}
 

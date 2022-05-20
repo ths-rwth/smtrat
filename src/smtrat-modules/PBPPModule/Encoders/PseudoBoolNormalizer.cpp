@@ -8,7 +8,7 @@ namespace smtrat {
         bool hasPositiveCoeff = false;
 
         for (const auto& term : constraint.lhs()) {
-            if ( term.isConstant() ) continue;
+            if ( term.is_constant() ) continue;
 
             if (term.coeff() > Rational(0)) hasPositiveCoeff = true; 
         }
@@ -39,10 +39,10 @@ namespace smtrat {
     }
 
      bool PseudoBoolNormalizer::trimmable(const ConstraintT& constraint) {
-        Rational constantPart = constraint.lhs().constantPart();
+        Rational constantPart = constraint.lhs().constant_part();
 
         for (const auto& term : constraint.lhs()) {
-            if ( term.isConstant() ) continue;
+            if ( term.is_constant() ) continue;
 
             if (carl::abs(term.coeff()) > constantPart && constantPart >= Rational(1)) return true;
         }
@@ -51,14 +51,14 @@ namespace smtrat {
      }
 
     ConstraintT PseudoBoolNormalizer::trim(const ConstraintT& constraint) {
-        Rational constant = constraint.lhs().constantPart();
+        Rational constant = constraint.lhs().constant_part();
 
         Poly result;
         for (const auto& term : constraint.lhs()) {
-            if (term.isConstant()) continue;
+            if (term.is_constant()) continue;
 
             if (constant >= Rational(1) && term.coeff() < Rational(0) && carl::abs(term.coeff()) > constant) {
-                result -= constant*term.getSingleVariable();
+                result -= constant*term.single_variable();
             } else {
                 result += term;
             }
@@ -75,14 +75,14 @@ namespace smtrat {
         FormulasT additionalBoolPart;
 
         for (const auto& term : constraint.lhs()) {
-            if (term.isConstant()) {
+            if (term.is_constant()) {
                 result += term.coeff();
                 continue;
             }
 
             if (term.coeff() > Rational(0)) {
                 // substitute the variable by negative coefficient and the new variable
-                carl::Variable currentVariable = term.getSingleVariable();
+                carl::Variable currentVariable = term.single_variable();
                 if (mVariablesCache.find(currentVariable) == mVariablesCache.end()) {
                     // we have not seen this variable before. Add new variable for substitution and add to booleanPart
                     mVariablesCache[currentVariable] = carl::fresh_boolean_variable();
@@ -105,9 +105,9 @@ namespace smtrat {
 
     ConstraintT PseudoBoolNormalizer::gcd(const ConstraintT& constraint) {
         std::vector<Rational> coeffs;
-        Rational constant = constraint.lhs().constantPart();
+        Rational constant = constraint.lhs().constant_part();
         for (const auto& term : constraint.lhs()) {
-            if (term.isConstant()) continue;
+            if (term.is_constant()) continue;
 
             coeffs.push_back(term.coeff());
         }

@@ -186,7 +186,7 @@ namespace smtrat
             {
                 const Rational coeff = _constraint.lhs().lterm().coeff();
                 carl::Relation rel = _constraint.relation();
-                Rational* limit = new Rational( -_constraint.lhs().constantPart()/coeff );
+                Rational* limit = new Rational( -_constraint.lhs().constant_part()/coeff );
                 std::pair< typename Variable<T>::BoundSet::iterator, bool> result;
                 if( rel == carl::Relation::EQ )
                 {
@@ -230,7 +230,7 @@ namespace smtrat
                 (*result.first)->activate( _origin );
                 return *result.first;
             }
-//            else if( _constraint.lhs().nrTerms() == 1 || (_constraint.lhs().nrTerms() == 2 && _constraint.lhs().hasConstantTerm()) )
+//            else if( _constraint.lhs().nr_terms() == 1 || (_constraint.lhs().nr_terms() == 2 && _constraint.lhs().has_constant_term()) )
 //            {
 //                // TODO: Retrieve bounds from constraints of the form x^n+b~0
 //            }
@@ -597,7 +597,7 @@ namespace smtrat
 		template<typename T>
         RationalInterval VariableBounds<T>::getInterval( const TermT& _term ) const
         {
-			if (_term.isConstant()) return RationalInterval(_term.coeff());
+			if (_term.is_constant()) return RationalInterval(_term.coeff());
 			return getInterval(_term.monomial()) * _term.coeff();
 		}
 		

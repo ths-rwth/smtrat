@@ -91,7 +91,7 @@ namespace vs
         if( degreeWeight <= 1 )
         {
             smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.maxDegree() );
-            if( coeff.isConstant() )
+            if( coeff.is_constant() )
             {
                 if( _consideredVariable.type() == carl::VariableType::VT_INT && (coeff == Poly(1) || coeff == Poly(-1)) )
                 {
@@ -104,8 +104,8 @@ namespace vs
         }
         else if( degreeWeight == 2 )
         {
-            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.maxDegree() ).isConstant();
-            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).isConstant() )
+            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.maxDegree() ).is_constant();
+            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).is_constant() )
                 lCoeffWeight = 1;
             else if( hasRationalLeadingCoefficient )
                 lCoeffWeight = 2;
@@ -127,7 +127,7 @@ namespace vs
 #else
 	typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
 #endif
-	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (!carl::is_zero(constraint().lhs().constantPart()) && polyExpanded.nrTerms() > 1) ) )
+	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nr_terms() == 1 || (!carl::is_zero(constraint().lhs().constant_part()) && polyExpanded.nr_terms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;

@@ -44,7 +44,7 @@ namespace smtrat
         if( _subformula->formula().type() == carl::FormulaType::CONSTRAINT && !_subformula->formula().property_holds( carl::PROP_CONTAINS_REAL_VALUED_VARS ) )
         {
             const ConstraintT& constraint = _subformula->formula().constraint();
-            if( constraint.lhs().isLinear() && constraint.relation() != carl::Relation::NEQ && constraint.relation() != carl::Relation::EQ )
+            if( constraint.lhs().is_linear() && constraint.relation() != carl::Relation::NEQ && constraint.relation() != carl::Relation::EQ )
             {
                 auto iter = mCubifications.find( _subformula->formula() );
                 if( iter == mCubifications.end() )
@@ -71,9 +71,9 @@ namespace smtrat
                     #endif
                     // Find the 1-norm of the left-hand side's coefficients.
                     Rational norm = 0;
-                    for( auto& term : realRelax.getTerms() )
+                    for( auto& term : realRelax.terms() )
                     {
-                        if( !term.isConstant() )
+                        if( !term.is_constant() )
                         {
                             norm += carl::abs( term.coeff() );
                         }

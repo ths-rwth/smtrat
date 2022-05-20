@@ -22,7 +22,7 @@ namespace smtrat
         Poly poly(_poly);
         poly.makeOrdered();
 
-        std::size_t nrTerms = poly.nrTerms();
+        std::size_t nrTerms = poly.nr_terms();
 
         if(nrTerms == 0) {
             return create(Integer(0));
@@ -35,7 +35,7 @@ namespace smtrat
         const TermT& term = poly[0];
         Rational coeff = term.coeff();
 
-        if(term.isConstant()) {
+        if(term.is_constant()) {
             return create(carl::to_int<Integer>(coeff));
         }
 
@@ -49,7 +49,7 @@ namespace smtrat
 
         if(monomial->nrVariables() > 1) {
             carl::Monomial::Arg head = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second);
-            carl::Monomial::Arg tail = monomial->dropVariable(variableAndExponent.first);
+            carl::Monomial::Arg tail = monomial->drop_variable(variableAndExponent.first);
             return create(poly, PolyTree::Type::PRODUCT, Poly(head), Poly(tail));
         }
 

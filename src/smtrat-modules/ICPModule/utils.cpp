@@ -21,7 +21,7 @@ namespace smtrat
             {
                 if( termIt->monomial() )
                 {
-                    if( !termIt->monomial()->isLinear() )
+                    if( !termIt->monomial()->is_linear() )
                     {
 #ifdef __VS
                         result.emplace_back(Poly(Poly::PolyType(termIt->monomial()))*_expr.coefficient());

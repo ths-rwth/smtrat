@@ -162,16 +162,16 @@ namespace smtrat
         Variable<T1,T2>* Tableau<Settings,T1,T2>::getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue )
         {
             Variable<T1, T2>* result;
-            if( _lhs.nrTerms() == 1 || ( _lhs.nrTerms() == 2 && _lhs.hasConstantTerm() ) )
+            if( _lhs.nr_terms() == 1 || ( _lhs.nr_terms() == 2 && _lhs.has_constant_term() ) )
             {
                 // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
                 const typename Poly::PolyType& expandedPoly = _lhs.polynomial();
                 auto term = expandedPoly.begin();
                 for( ; term != expandedPoly.end(); ++term )
-                    if( !term->isConstant() ) break;
+                    if( !term->is_constant() ) break;
 				carl::Variable var = term->monomial()->begin()->first;
                 _factor = T1( term->coeff() ) * _lhs.coefficient();
-                _boundValue = T1( -_lhs.constantPart() )/_factor;
+                _boundValue = T1( -_lhs.constant_part() )/_factor;
                 auto basicIter = mOriginalVars.find( var );
                 // constraint not found, add new nonbasic variable
                 if( basicIter == mOriginalVars.end() )
@@ -187,14 +187,14 @@ namespace smtrat
             }
             else
             {
-                T1 constantPart( _lhs.constantPart() );
+                T1 constantPart( _lhs.constant_part() );
                 bool negative = (_lhs.lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
                 typename Poly::PolyType* linearPart;
                 if( negative )
                     linearPart = new typename Poly::PolyType( -_lhs + (Rational)constantPart );
                 else
                     linearPart = new typename Poly::PolyType( _lhs - (Rational)constantPart );
-                _factor = linearPart->coprimeFactor();
+                _factor = linearPart->coprime_factor();
                 assert( _factor > 0 );
                 constantPart *= _factor;
                 (*linearPart) *= _factor;
@@ -203,7 +203,7 @@ namespace smtrat
                 typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
-                    result = newBasicVariable( linearPart, _lhs.integerValued() );
+                    result = newBasicVariable( linearPart, _lhs.integer_valued() );
                     mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, result ) );
                 }
                 else
@@ -220,7 +220,7 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         Variable<T1,T2>* Tableau<Settings,T1,T2>::getObjectiveVariable( const Poly& _lhs )
         {
-            return newBasicVariable( new typename Poly::PolyType( _lhs ), _lhs.integerValued() );
+            return newBasicVariable( new typename Poly::PolyType( _lhs ), _lhs.integer_valued() );
         }
 
         template<class Settings, typename T1, typename T2>
@@ -231,7 +231,7 @@ namespace smtrat
                 return std::make_pair( *ctbIter->second->begin(), false );
             assert( _constraint.type() == carl::FormulaType::CONSTRAINT );
             const ConstraintT& constraint = _constraint.constraint();
-            assert( constraint.isConsistent() == 2 );
+            assert( constraint.is_consistent() == 2 );
             T1 factor( 0 );
             T1 boundValue( 0 );
             Variable<T1, T2>* newVar = getVariable( constraint.lhs(), factor, boundValue );
@@ -261,7 +261,7 @@ namespace smtrat
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
                     // create the complement
-                    Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    Value<T1>* vc = constraint.integer_valued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
@@ -285,7 +285,7 @@ namespace smtrat
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
                     // create the complement
-                    Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    Value<T1>* vc = constraint.integer_valued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
@@ -350,7 +350,7 @@ namespace smtrat
                 case carl::Relation::NEQ:
                 {
                     FormulaT constraintLess = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::LESS ) );
-                    Value<T1>* valueA = constraint.integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    Value<T1>* valueA = constraint.integer_valued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     auto resultLess = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintLess, nullptr ) );
                     if( ctbInsertRes.second )
@@ -359,7 +359,7 @@ namespace smtrat
                         boundVector->push_back( resultLess.first );
                         ctbInsertRes.first->second = boundVector;
                     }
-//                    if( !constraint.integerValued() )
+//                    if( !constraint.integer_valued() )
                         resultLess.first->setNeqRepresentation( _constraint );
 
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
@@ -394,7 +394,7 @@ namespace smtrat
                     boundVectorB->push_back( resultGeq.first );
 
                     FormulaT constraintGreater = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::GREATER ) );
-                    Value<T1>* valueD = constraint.integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    Value<T1>* valueD = constraint.integer_valued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     auto resultGreater = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
                     ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintGreater, nullptr ) );
                     if( ctbInsertRes.second )
@@ -403,7 +403,7 @@ namespace smtrat
                         boundVector->push_back( resultGreater.first );
                         ctbInsertRes.first->second = boundVector;
                     }
-//                    if( !constraint.integerValued() )
+//                    if( !constraint.integer_valued() )
                         resultGreater.first->setNeqRepresentation( _constraint );
 
                     boundVectorB->push_back( resultGreater.first );
@@ -524,7 +524,7 @@ namespace smtrat
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger, mVariableIdAllocator.get() );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
-                assert( !term->isConstant() );
+                assert( !term->is_constant() );
                 assert( carl::is_integer( term->coeff() ) );
 				carl::Variable var = term->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
@@ -814,7 +814,7 @@ namespace smtrat
                 {
                     T1 value = var->assignment().mainPart();
                     value += (var->assignment().deltaPart() * mCurDelta);
-                    result.insert( std::pair<const carl::Variable,T1>( var->expression().getSingleVariable(), value ) );
+                    result.insert( std::pair<const carl::Variable,T1>( var->expression().single_variable(), value ) );
                 }
             }
             for( auto var : mRows )
@@ -823,7 +823,7 @@ namespace smtrat
                 {
                     T1 value = var->assignment().mainPart();
                     value += (var->assignment().deltaPart() * mCurDelta);
-                    result.insert( std::pair<const carl::Variable,T1>( var->expression().getSingleVariable(), value ) );
+                    result.insert( std::pair<const carl::Variable,T1>( var->expression().single_variable(), value ) );
                 }
             }
             return result;

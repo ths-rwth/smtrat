@@ -60,7 +60,7 @@ namespace smtrat
 				bool hasRealVariables{false};
 				for (TermT term : normalization)
 				{
-					if (!term.isConstant())
+					if (!term.is_constant())
 					{
 						size_t realVariables{0};
 						for (const auto& exponent : term.monomial()->exponents())
@@ -72,7 +72,7 @@ namespace smtrat
 							hasRealVariables = true;
 						}
 						
-						if (!term.isLinear())
+						if (!term.is_linear())
 						{
 							Purification& purification{mPurifications[term.monomial()]};
 							purifications.emplace_back(&purification);
@@ -80,7 +80,7 @@ namespace smtrat
 						}
 						else if (realVariables)
 						{
-							const carl::Variable variable{term.getSingleVariable()};
+							const carl::Variable variable{term.single_variable()};
 							auto expansionIter{mExpansions.firstFind(variable)};
 							if (expansionIter == mExpansions.end())
 								expansionIter = mExpansions.emplace(variable);
@@ -354,7 +354,7 @@ namespace smtrat
 						expansion.mPurifications.emplace_back(&hintIter->second);
 						monomial->divide(variable, monomial);
 						if (monomial->isAtMostLinear())
-							hintIter->second.mReduction = mExpansions.firstAt(monomial->getSingleVariable()).mQuotients[0];
+							hintIter->second.mReduction = mExpansions.firstAt(monomial->single_variable()).mQuotients[0];
 						else
 						{
 							auto temp{mPurifications.emplace_hint(hintIter, std::piecewise_construct, std::make_tuple(monomial), std::make_tuple())};

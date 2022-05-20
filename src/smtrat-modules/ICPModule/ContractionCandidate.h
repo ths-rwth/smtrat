@@ -186,7 +186,7 @@ namespace smtrat
                 mIsLinear = false;
             }
 
-            bool isLinear() const
+            bool is_linear() const
             {
                 return mIsLinear;
             }

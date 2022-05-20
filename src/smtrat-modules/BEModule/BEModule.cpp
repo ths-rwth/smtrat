@@ -68,11 +68,11 @@ namespace smtrat
 			return FormulaT(carl::FormulaType::AND, std::move(f));
 		} else {
 			for (const auto& poly: cb) {
-				if (!poly.first.isVariable()) continue;
+				if (!poly.first.is_variable()) continue;
 				std::vector<Choice> choices;
 				for (const auto& entry: poly.second) {
 					if (entry.second.first != carl::Relation::EQ) break;
-					choices.emplace_back(poly.first.getSingleVariable(), entry.second.second);
+					choices.emplace_back(poly.first.single_variable(), entry.second.second);
 				}
 				if (choices.size() != poly.second.size()) continue;
 				for (const auto& c: choices) {

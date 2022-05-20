@@ -22,7 +22,7 @@ These references can be used with `@cite label`, for example like this:
  * @see @cite GCL92, page 39
  * @return If polynomial is normal.
  */
-bool isNormal() const;
+bool is_normal() const;
 @endcode 
 
 ## Code comments

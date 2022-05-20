@@ -30,8 +30,8 @@ private:
 	std::vector<FormulaT> mMVBounds;
 	
 	/// Checks whether a formula is univariate, meaning it contains mVar and only variables from mModel otherwise.
-	bool isUnivariate(const FormulaT& f) const {
-		return mcsat::constraint_type::isUnivariate(f, mModel, mVar);
+	bool is_univariate(const FormulaT& f) const {
+		return mcsat::constraint_type::is_univariate(f, mModel, mVar);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "is " << f << " univariate in " << mVar << "?");
 		carl::Variables vars = carl::arithmetic_variables(f).as_set();
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Collected " << vars);
@@ -152,7 +152,7 @@ public:
 	
 	bool addMVBound(const FormulaT& f) {
 		assert(f.type() == carl::FormulaType::VARCOMPARE);
-		if (!isUnivariate(f)) {
+		if (!is_univariate(f)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Ignoring non-univariate bound " << f);
 			return true;
 		}

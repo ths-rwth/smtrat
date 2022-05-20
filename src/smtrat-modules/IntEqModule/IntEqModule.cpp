@@ -409,9 +409,9 @@ namespace smtrat
             Rational smallest_abs_value = (Rational)(*iter_coeff).coeff();
             carl::Variable corr_var;
             bool value_negative = false;
-            if( (*iter_coeff).isConstant() )
+            if( (*iter_coeff).is_constant() )
             {
-                corr_var = (*(++iter_coeff)).getSingleVariable(); 
+                corr_var = (*(++iter_coeff)).single_variable(); 
                 Rational coeff = (Rational)(*iter_coeff).coeff();
                 if( coeff < 0 )
                 {
@@ -421,7 +421,7 @@ namespace smtrat
             }
             else
             {
-                corr_var = (*(iter_coeff)).getSingleVariable(); 
+                corr_var = (*(iter_coeff)).single_variable(); 
                 if( smallest_abs_value < 0 )
                 {
                     value_negative = true;
@@ -430,10 +430,10 @@ namespace smtrat
             }
             while( iter_coeff !=  ccExpanded.end())
             {
-                if( !(*iter_coeff).isConstant() )
+                if( !(*iter_coeff).is_constant() )
                 {
                     Rational coeff = (Rational)(*iter_coeff).coeff();
-                    carl::Variable var = (*iter_coeff).getSingleVariable();
+                    carl::Variable var = (*iter_coeff).single_variable();
                     if( carl::abs(coeff) < smallest_abs_value )
                     {
                         if( coeff < 0 )
@@ -464,11 +464,11 @@ namespace smtrat
             {
                 while( iter_coeff != ccExpanded.end() )
                 {
-                    if( !(*iter_coeff).isConstant() )
+                    if( !(*iter_coeff).is_constant() )
                     {
-                        if( (*iter_coeff).getSingleVariable() != corr_var )
+                        if( (*iter_coeff).single_variable() != corr_var )
                         {
-                            carl::Variable var = (*iter_coeff).getSingleVariable();
+                            carl::Variable var = (*iter_coeff).single_variable();
                             *temp += Poly(var)*Poly(Rational(-1)*sign*(Rational)(*iter_coeff).coeff());
                         }                          
                     }
@@ -490,11 +490,11 @@ namespace smtrat
                 {
                     Rational coeff = (Rational)(*iter_coeff).coeff();
                     bool positive = (Rational)(*iter_coeff).coeff() > 0;
-                    if( !(*iter_coeff).isConstant() )
+                    if( !(*iter_coeff).is_constant() )
                     {
-                        if( (*iter_coeff).getSingleVariable() != corr_var )
+                        if( (*iter_coeff).single_variable() != corr_var )
                         {
-                            carl::Variable var = (*iter_coeff).getSingleVariable();        
+                            carl::Variable var = (*iter_coeff).single_variable();        
                             if( positive )
                             {
                                 *temp -= sign*Poly( Rational( carl::floor( carl::div( coeff, smallest_abs_value ) ) ) )*Poly(var);
@@ -694,8 +694,8 @@ namespace smtrat
             #endif
             Poly value = iter_vars->second;
             value = carl::substitute(value, temp_map);
-            assert( value.isConstant() );
-            temp_map[ iter_vars->first ] = (Rational)value.constantPart();
+            assert( value.is_constant() );
+            temp_map[ iter_vars->first ] = (Rational)value.constant_part();
             ModelValue assignment = carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>( value );
             mTemp_Model.emplace(iter_vars->first, assignment);
             if( iter_vars != mSubstitutions.begin() )

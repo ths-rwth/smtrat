@@ -49,7 +49,7 @@ std::vector<carl::Variable> triangular_ordering(const std::vector<Poly>& polys) 
 		for (auto var: carl::variables(polys[i])) { 
 			maxdeg[i][var] = polys[i].degree(var);
 			data.max_deg[var] = std::max(data.max_deg[var], maxdeg[i][var]);
-			data.max_tdeg[var] = std::max(data.max_tdeg[var], polys[i].lcoeff(var).totalDegree());
+			data.max_tdeg[var] = std::max(data.max_tdeg[var], polys[i].lcoeff(var).total_degree());
 		}
 	}
 	for (auto var: vars) {

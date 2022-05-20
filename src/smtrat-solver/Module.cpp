@@ -283,7 +283,7 @@ namespace smtrat
             {
                 for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
                 {
-                    if( iter->first.isVariable() )
+                    if( iter->first.is_variable() )
                     {
                         auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
                         if( tmp == receivedVariables.end() )
@@ -319,7 +319,7 @@ namespace smtrat
         std::list<std::vector<carl::Variable>> res;
         for( auto& it : this->mModel )
         {
-            if( it.first.isVariable() )
+            if( it.first.is_variable() )
             {
                 carl::Variable v = it.first.asVariable();
                 ModelValue a = it.second;
@@ -436,7 +436,7 @@ namespace smtrat
 #endif
     {
         if( mpManager == nullptr ) return false;
-        assert( _branchingPolynomial.constantPart() == 0 );
+        assert( _branchingPolynomial.constant_part() == 0 );
         auto iter = mLastBranches.begin();
         for( ; iter != mLastBranches.end(); ++iter )
         {
@@ -487,7 +487,7 @@ namespace smtrat
     bool Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase, bool _useReceivedFormulaAsPremise )
     {
         assert( !_useReceivedFormulaAsPremise || _premise.empty() );
-        assert( !_polynomial.hasConstantTerm() );
+        assert( !_polynomial.has_constant_term() );
         ConstraintT constraintA;
         ConstraintT constraintB;
         if( _integral )
@@ -521,7 +521,7 @@ namespace smtrat
                 constraintB = ConstraintT( std::move(constraintLhs), Relation::GEQ );   
             }
         }
-        if( constraintA.isConsistent() == 2 )
+        if( constraintA.is_consistent() == 2 )
         {
             // Create splitting variables
             FormulaT s1, s2;
@@ -567,7 +567,7 @@ namespace smtrat
             mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             return true;
         }
-        assert( constraintB.isConsistent() != 2  );
+        assert( constraintB.is_consistent() != 2  );
         return false;
     }
     
@@ -907,7 +907,7 @@ namespace smtrat
 				}
 			} else {
 				carl::Variable v;
-				if (it->first.isVariable()) v = it->first.asVariable();
+				if (it->first.is_variable()) v = it->first.asVariable();
 				else if (it->first.isBVVariable()) v = it->first.asBVVariable().variable();
 				else if (it->first.isUVariable()) v = it->first.asUVariable().variable();
 				if (!variables.has(v)) {

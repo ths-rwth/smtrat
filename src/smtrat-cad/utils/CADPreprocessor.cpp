@@ -129,7 +129,7 @@ AssignmentCollector::CollectionResult AssignmentCollector::simplify(std::map<Con
 			changed = true;
 			c.second = tmp;
 		}
-        if (c.second.isConsistent() == 0) {
+        if (c.second.is_consistent() == 0) {
             SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplification found conflict in " << c.first << " (" << c.second << ")");
             return c.first;
         }
@@ -175,7 +175,7 @@ bool ResultantRule::addPoly(const Poly& poly) {
 }
 
 bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vector<FormulaT>& origin) {
-    if (poly.isNumber()) return true;
+    if (poly.is_number()) return true;
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     Poly mp(poly);
     UPoly p = poly;
@@ -194,7 +194,7 @@ bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vec
     mOrigins.add(FormulaT(mp, carl::Relation::EQ), origin);
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
     mNewECs.emplace_back(cons);
-    if (cons.isConsistent() == 0) return false;
+    if (cons.is_consistent() == 0) return false;
     return true;
 }
 
@@ -383,7 +383,7 @@ bool CADPreprocessor::preprocess() {
     }
     for (auto& c: mInequalities) {
         carl::substitute_inplace(c.second, mModel);
-        if (c.second.isConsistent() == 0) {
+        if (c.second.is_consistent() == 0) {
             mConflict = { FormulaT(c.first) };
             SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
             return false;

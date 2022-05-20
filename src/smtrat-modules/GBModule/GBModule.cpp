@@ -60,7 +60,7 @@ bool GBModule<Settings>::addCore( ModuleInput::const_iterator _formula )
     {
         return true;
     }
-    assert(!_formula->formula().constraint().lhs().isConstant());
+    assert(!_formula->formula().constraint().lhs().is_constant());
 
     #ifdef SMTRAT_DEVOPTION_Statistics
     const ConstraintT& constraint = _formula->formula().constraint( );
@@ -228,7 +228,7 @@ Answer GBModule<Settings>::checkCore()
 		mBasis.getIdeal().print();
 #endif
         mRecalculateGB = false;
-        if( Settings::iterativeVariableRewriting && !mBasis.basisIsConstant( ) )
+        if( Settings::iterativeVariableRewriting && !mBasis.basisis_constant( ) )
         {
             iterativeVariableRewriting();
         }
@@ -236,16 +236,16 @@ Answer GBModule<Settings>::checkCore()
         #ifdef USE_NSS
         // If the system is constant, we already have a witness for unsatisfiability.
         // On linear systems, all solutions lie in Q. So we do not have to check for a solution.        
-        if( Settings::applyNSS && !mBasis.isConstant( ) && !mBasis.getGbIdeal( ).isLinear( ) )
+        if( Settings::applyNSS && !mBasis.is_constant( ) && !mBasis.getGbIdeal( ).is_linear( ) )
         {
             witness = callGroebnerToSDP(mBasis.getGbIdeal());
         }
         // We have found an infeasible subset. Generate it.
         #endif
-        if( mBasis.basisIsConstant( ) || (Settings::applyNSS && !carl::is_zero(witness)) )
+        if( mBasis.basisis_constant( ) || (Settings::applyNSS && !carl::is_zero(witness)) )
         {
 			
-            if( mBasis.basisIsConstant( ) )
+            if( mBasis.basisis_constant( ) )
             {
                 #ifdef SMTRAT_DEVOPTION_Statistics
                 mStats.constantGB();
@@ -412,19 +412,19 @@ bool GBModule<Settings>::iterativeVariableRewriting()
 
         for(typename std::list<GBPolynomial>::iterator it = polynomials.begin(); it != polynomials.end();)
         {
-            if( it->nrTerms() == 1 && it->lterm().tdeg()==1 )
+            if( it->nr_terms() == 1 && it->lterm().tdeg()==1 )
             {
                 //TODO optimization, this variable does not appear in the gb.
-                ruleVar = it->lterm().getSingleVariable();
+                ruleVar = it->lterm().single_variable();
                 ruleTerm = TermT(Rational(0));
                 ruleReasons = it->getReasons();
                 newRuleFound = true;
             }
-            else if( it->nrTerms() == 2 )
+            else if( it->nr_terms() == 2 )
             {
                 if(it->lterm().tdeg() == 1 )
                 {
-                    ruleVar = it->lterm().getSingleVariable();
+                    ruleVar = it->lterm().single_variable();
                     if( it->trailingTerm().has(ruleVar) )
                     {
                         // TODO deduce a factorisation.
@@ -439,7 +439,7 @@ bool GBModule<Settings>::iterativeVariableRewriting()
                 }
                 else if(it->trailingTerm().tdeg() == 1 )
                 {
-                    ruleVar = it->trailingTerm().getSingleVariable();
+                    ruleVar = it->trailingTerm().single_variable();
                     if( it->lterm().has(ruleVar) )
                     {
                         // TODO deduce a factorisation
@@ -530,7 +530,7 @@ bool GBModule<Settings>::iterativeVariableRewriting()
             typename Settings::Reductor reduction( mBasis.getGbIdeal( ), reduce );
             reduce = reduction.fullReduce( );
 
-            if( reduce.isConstant() )
+            if( reduce.is_constant() )
             {
                 // TODO handle 0 and 1.
                 // TODO handle other cases
@@ -911,7 +911,7 @@ void GBModule<Settings>::passGB( )
         assert(!originals.empty());
         // We now add polynomial = 0 as a constraint to the passed formula.
         // We use the originals set calculated before as reason set.
-        assert(!simplIt->isConstant());
+        assert(!simplIt->is_constant());
         auto res = addSubformulaToPassedFormula( FormulaT( Poly(typename smtrat::Poly::PolyType((*simplIt))), carl::Relation::EQ ), FormulaT( carl::FormulaType::AND, originals ) );
         if( res.second )
             mGbEqualities.push_back(res.first->formula());

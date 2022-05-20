@@ -5,13 +5,13 @@ namespace smtrat {
 		const auto& cLHS = constraint.lhs();
 		carl::Relation cRel = constraint.relation();
 		std::set<carl::Variable> cVars = constraint.variables().as_set();
-		Rational cRHS = -constraint.lhs().constantPart();
+		Rational cRHS = -constraint.lhs().constant_part();
 		bool positive = true;
 		bool negative = true;
 		Rational sum = 0;
 
 		for(const auto& it : cLHS){
-			if (it.isConstant()) continue;
+			if (it.is_constant()) continue;
 
 			if(it.coeff() < 0){
 				positive = false;
@@ -98,7 +98,7 @@ namespace smtrat {
 		bool negative = true;
 		bool onlyOnes = true;
 		for (const auto& term : constraint.lhs()) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			if (carl::abs(term.coeff()) > 1) {
 				onlyOnes = false;

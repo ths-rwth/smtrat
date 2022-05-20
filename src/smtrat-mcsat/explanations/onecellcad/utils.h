@@ -176,7 +176,7 @@ inline std::vector<TagPoly> nonConstIrreducibleFactors(
     for (const Poly& factor : carl::irreducibleFactors(poly, false)) {
         factors.emplace_back(TagPoly{tag, factor, *levelOf(variableOrder, factor)}); // inherit poly's tag
         //SMTRAT_LOG_DEBUG("smtrat.cad", "factor " << factor);
-        assert(!factor.isConstant());
+        assert(!factor.is_constant());
     }
 
     return factors;
@@ -188,7 +188,7 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
     std::vector<TagPoly> factors = nonConstIrreducibleFactors(variableOrder, poly, tag);
     // to do carl::normalize()
     for (const auto& factor : factors) {
-        if (!factor.poly.isConstant()) {
+        if (!factor.poly.is_constant()) {
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCStatistics& mStatistics = getStatistic();
                 // change this to en-/disable mMaxDegree Statistic
@@ -500,8 +500,8 @@ public:
             const std::size_t polyLevel,
             const Poly& poly) {
         // precondition:
-        assert(!poly.isConstant());
-        if (poly.isLinear())
+        assert(!poly.is_constant());
+        if (poly.is_linear())
             return false; // cannot vanish early
 
         const carl::Variable mainVariable = variableOrder[polyLevel];
@@ -540,7 +540,7 @@ public:
 
         // Do early-exit tests:
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
-            if (coeff.isConstant() && !carl::is_zero(coeff))
+            if (coeff.is_constant() && !carl::is_zero(coeff))
                 return std::nullopt;
         }
 

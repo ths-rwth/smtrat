@@ -851,7 +851,7 @@ namespace smtrat {
 
         if (smtrat::LOG::getInstance().isDebugEnabled()) {
             std::cout << "The bPrimeInterval is: " << bPrimeInterval << std::endl;
-            if (bPrimeInterval.isConsistent())
+            if (bPrimeInterval.is_consistent())
                 std::cout << "isConsistent: " << std::endl;
             if (!bPrimeInterval.is_empty())
                 std::cout << "Not Empty: " << std::endl;

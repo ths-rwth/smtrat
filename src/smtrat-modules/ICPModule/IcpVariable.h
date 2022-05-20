@@ -114,7 +114,7 @@ namespace icp
                 if( res.second )
                 {
                     (*res.first)->addICPVariable( this );
-                    mLinear &= !(*res.first)->isLinear();
+                    mLinear &= !(*res.first)->is_linear();
                 }
             }
 
@@ -124,7 +124,7 @@ namespace icp
                 {
                     assert( mCandidates.find( cc ) == mCandidates.end() );
                     cc->addICPVariable( this );
-                    mLinear &= !cc->isLinear();
+                    mLinear &= !cc->is_linear();
                 }
                 mCandidates.insert( _candidates.begin(), _candidates.end() );
             }
@@ -184,7 +184,7 @@ namespace icp
                 --mActivity;
             }
             
-            bool isLinear()
+            bool is_linear()
             {
                 return mLinear;
             }
