@@ -56,6 +56,7 @@ namespace smtrat::cadcells::representation {
             auto min_ders = compute_min_ders(ders);
 
             datastructures::Delineation delineation;
+            util::PolyDelineations poly_delins;
             std::vector<std::size_t> ord_idx;
             for (auto& iter : min_ders) {
                 result.cells.emplace_back(iter);
@@ -67,45 +68,22 @@ namespace smtrat::cadcells::representation {
                     delineation.add_root((iter)->cell().lower()->first,cell_result.description.section_defining());
                 } else {
                     ord_idx.push_back(result.cells.size()-1);
-
                     if (!(iter)->delin().nullified().empty()) return std::nullopt;
-
-                    // for each cell, only the roots of a poly below and above the cell are relevant
-                    if (!(iter)->cell().lower_unbounded()) {
-                        boost::container::flat_set<datastructures::PolyRef> ignoring;
-                        auto it = (iter)->cell().lower();
-                        while(true) {
-                            for (const auto& ir : it->second) {
-                                if (ignoring.contains(ir.poly)) continue;
-                                delineation.add_root(it->first,ir);
-                                ignoring.insert(ir.poly);
-                            }
-                            if (it != (iter)->delin().roots().begin()) it--;
-                            else break;
-                        }
-                    }
-                    if (!(iter)->cell().upper_unbounded()) {
-                        boost::container::flat_set<datastructures::PolyRef> ignoring;
-                        auto it = (iter)->cell().upper();
-                        while(it != (iter)->delin().roots().end()) {
-                            for (const auto& ir : it->second) {
-                                if (ignoring.contains(ir.poly)) continue;
-                                delineation.add_root(it->first,ir);
-                                ignoring.insert(ir.poly);
-                            }
-                            it++;
-                        }
-                    }
+                    util::decompose((iter)->delin(), (iter)->cell(), delineation, poly_delins);
                 }
             }
 
             assert (ord_idx.size() > 0); 
             auto& proj = (*min_ders.begin())->proj();
-            auto ordering = *util::simplest_delineation_ordering(proj, delineation);
-            for (std::size_t idx : ord_idx) {
-                result.cells[idx].ordering = ordering;
+            auto res = util::simplest_chain_ordering(proj, delineation);
+            if (!res) return std::nullopt;
+            result.ordering = *res;
+            for (const auto& poly_delin : poly_delins.data) {
+                add_chain_ordering(result.ordering, poly_delin.first, poly_delin.second);
             }
-            result.ordering = ordering;
+            for (std::size_t idx : ord_idx) {
+                result.cells[idx].ordering = result.ordering;
+            }
             return result;
         }
     };

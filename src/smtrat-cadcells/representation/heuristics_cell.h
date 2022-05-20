@@ -34,34 +34,21 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
     static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell());
-
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            if (!der->delin().nullified().empty()) return std::nullopt;
-
-            if (!der->cell().lower_unbounded()) {
-                auto it = der->cell().lower();
-                while(true) {
-                    for (const auto& ir : it->second) {
-                        if (ir != response.description.lower().value()) {
-                            response.ordering.add_leq(ir, response.description.lower().value());
-                        } 
-                    }
-                    if (it != der->delin().roots().begin()) it--;
-                    else break;
-                }
-            }
-            if (!der->cell().upper_unbounded()) {
-                auto it = der->cell().upper();
-                while(it != der->delin().roots().end()) {
-                    for (const auto& ir : it->second) {
-                        if (ir != response.description.upper().value()) {
-                            response.ordering.add_leq(response.description.upper().value(), ir);
-                        }
-                    }
-                    it++;
-                }
+            // auto res = simplest_biggest_cell_ordering(der->proj(), der->delin(), der->cell(), response.description);
+            // if (!res) return std::nullopt;
+            // response.ordering = *res;
+            datastructures::Delineation reduced_delineation;
+            util::PolyDelineations poly_delins;
+            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            auto res = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description);
+            if (!res) return std::nullopt;
+            response.ordering = *res;
+            for (const auto& poly_delin : poly_delins.data) {
+                add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
         }
         maintain_connectedness(der, response);
@@ -81,50 +68,14 @@ struct cell<CellHeuristic::CHAIN_EQ> {
         } else { // sector
             if (!der->delin().nullified().empty()) return std::nullopt;
 
-            if (!der->cell().lower_unbounded()) {
-                boost::container::flat_set<datastructures::PolyRef> ignoring;
-                auto it = der->cell().lower();
-                auto barrier = response.description.lower().value();
-                while(true) {
-                    auto simplest = util::simplest_bound(der->proj(), it->second, ignoring);
-                    if (simplest) {
-                        if (*simplest != response.description.lower().value()) {
-                            response.ordering.add_leq(*simplest, barrier);
-                        }
-                        for (const auto& ir : it->second) {
-                            if (ignoring.contains(ir.poly)) continue;
-                            if (ir != *simplest) {
-                                response.ordering.add_leq(ir, *simplest);
-                            } 
-                            ignoring.insert(ir.poly);
-                        }
-                        barrier = *simplest;
-                    }
-                    if (it != der->delin().roots().begin()) it--;
-                    else break;
-                }
-            }
-            if (!der->cell().upper_unbounded()) {
-                boost::container::flat_set<datastructures::PolyRef> ignoring;
-                auto it = der->cell().upper();
-                auto barrier = response.description.upper().value();
-                while(it != der->delin().roots().end()) {
-                    auto simplest = util::simplest_bound(der->proj(), it->second, ignoring);
-                    if (simplest) {
-                        if (*simplest != response.description.upper().value()) {
-                            response.ordering.add_leq(barrier, *simplest);
-                        }
-                        for (const auto& ir : it->second) {
-                            if (ignoring.contains(ir.poly)) continue;
-                            if (ir != *simplest) {
-                                response.ordering.add_leq(*simplest, ir);
-                            } 
-                            ignoring.insert(ir.poly);
-                        }
-                        barrier = *simplest;
-                    }
-                    it++;
-                }
+            datastructures::Delineation reduced_delineation;
+            util::PolyDelineations poly_delins;
+            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            auto res = util::simplest_chain_ordering(der->proj(), reduced_delineation);
+            if (!res) return std::nullopt;
+            response.ordering = *res;
+            for (const auto& poly_delin : poly_delins.data) {
+                add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
         }
         maintain_connectedness(der, response);
@@ -134,10 +85,15 @@ struct cell<CellHeuristic::CHAIN_EQ> {
 
 template<typename T>
 inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response, bool section) {
+    datastructures::Delineation reduced_delineation;
+    util::PolyDelineations poly_delins;
+    util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+    auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+    
     while(section) {
         auto old_size = response.equational.size();
 
-        auto it = der->cell().lower();
+        auto it = reduced_cell.lower();
         while(true) {
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->poly == response.description.section_defining().poly) continue;
@@ -146,12 +102,12 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
                     response.equational.insert(ir->poly);
                 }
             }
-            if (it != der->delin().roots().begin()) it--;
+            if (it != reduced_delineation.roots().begin()) it--;
             else break;
         }
 
-        it = der->cell().upper();
-        while(it != der->delin().roots().end()) {
+        it = reduced_cell.upper();
+        while(it != reduced_delineation.roots().end()) {
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->poly)) continue;
@@ -167,62 +123,59 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
         }
     }
 
-    if (!der->cell().lower_unbounded())  {
-        boost::container::flat_set<datastructures::PolyRef> ignoring;
-        auto it = der->cell().lower();
+    if (!reduced_cell.lower_unbounded())  {
+        auto it = reduced_cell.lower();
         auto barrier = response.description.lower().value();
         while(true) {
             auto old_barrier = barrier;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
-                if (ignoring.contains(ir->poly)) continue;
                 if (section && response.equational.contains(ir->poly)) continue;
                 if (util::compare_simplest(der->proj(),ir->poly,barrier.poly)) {
                     barrier = *ir;
                 }
             }
-            assert(it != der->cell().lower() || barrier == response.description.lower().value());
+            assert(it != reduced_cell.lower() || barrier == response.description.lower().value());
             if (barrier != old_barrier) {
                 response.ordering.add_leq(barrier, old_barrier);
             }
             for (const auto& ir : it->second) {
-                if (ignoring.contains(ir.poly)) continue;
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
                     response.ordering.add_leq(ir, barrier);
                 } 
-                ignoring.insert(ir.poly);
             }
-            if (it != der->delin().roots().begin()) it--;
+            if (it != reduced_delineation.roots().begin()) it--;
             else break;
         }
     }
-    if (!der->cell().upper_unbounded()) {
-        boost::container::flat_set<datastructures::PolyRef> ignoring;
-        auto it = der->cell().upper();
+    if (!reduced_cell.upper_unbounded()) {
+        auto it = reduced_cell.upper();
         auto barrier = response.description.upper().value();
-        while(it != der->delin().roots().end()) {
+        while(it != reduced_delineation.roots().end()) {
             auto old_barrier = barrier;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
-                if (ignoring.contains(ir->poly)) continue;
                 if (section && response.equational.contains(ir->poly)) continue;
                 if (util::compare_simplest(der->proj(),ir->poly,barrier.poly)) {
                     barrier = *ir;
                 }
             }
-            assert(it != der->cell().upper() || barrier == response.description.upper().value());
+            assert(it != reduced_cell.upper() || barrier == response.description.upper().value());
             if (barrier != old_barrier) {
                 response.ordering.add_leq(old_barrier, barrier);
             }
             for (const auto& ir : it->second) {
-                if (ignoring.contains(ir.poly)) continue;
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
                     response.ordering.add_leq(barrier, ir);
                 } 
-                ignoring.insert(ir.poly);
             }
             it++;
         }
+    }
+
+    for (const auto& poly_delin : poly_delins.data) {
+        if (section && response.equational.contains(poly_delin.first)) continue;
+        add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
     }
 }
 
