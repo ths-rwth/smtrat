@@ -311,6 +311,15 @@ public:
         }
     }
 
+    void setEndpoints(bool l_flag, bool u_flag) {
+        if(l_flag) {
+            m_cell.value().set_lower_inclusive();
+        }
+        if(u_flag) {
+            m_cell.value().set_upper_inclusive();
+        }
+    }
+
     const Assignment& sample() const { return m_sample; };
     const RAN& main_var_sample() const { return m_sample.at(m_delineated->main_var()); };
 

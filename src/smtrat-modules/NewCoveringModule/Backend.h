@@ -233,6 +233,7 @@ public:
 					assignment[mVariableOrdering[i]] = mCurrentAssignment[mVariableOrdering[i]];
 				}
 				intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, assignment);
+				SMTRAT_LOG_DEBUG("smtrat.covering", "Checking constraint " << constraint << " for unsat intervals yields " << intervals);
 			}
 			for (const auto& interval : intervals) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
@@ -309,6 +310,7 @@ public:
 					return Answer::UNKNOWN;
 				}
 
+				// Bounds should be set already
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Found new derivation: " << new_derivation.value()->cell());
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new derivation to Covering Information");
 				mCoveringInformation[level].addDerivation(std::move(new_derivation.value()));

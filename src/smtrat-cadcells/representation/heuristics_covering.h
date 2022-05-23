@@ -35,15 +35,53 @@ namespace smtrat::cadcells::representation {
     struct covering<CoveringHeuristic::DEFAULT_COVERING> {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
-            datastructures::CoveringRepresentation<T> result;
-            auto min_ders = compute_min_ders(ders);
-            for (auto& iter : min_ders) {
+            datastructures::CoveringRepresentation<T> result_smallest;
+            datastructures::CoveringRepresentation<T> result_all_closed;
+            std::vector<datastructures::SampledDerivationRef<T>> ders_all_closed;
+
+            SMTRAT_LOG_DEBUG("smtrat.covering","Extracting pure closed cells.");
+            for (auto& der : ders) {
+                bool lower_considtion = der->cell().lower_unbounded() || der->cell().lower_inclusive();
+                bool upper_considtion = der->cell().upper_unbounded() || der->cell().upper_inclusive();
+
+                if(lower_considtion && upper_considtion) {
+                    SMTRAT_LOG_DEBUG("smtrat.covering"," :: " << der->cell());
+                    ders_all_closed.emplace_back(der);
+                }
+            }
+
+            // First: Test for all closed cover
+            bool valid_all_closed = !ders_all_closed.empty();
+            if(valid_all_closed) {
+                auto min_ders_all_closed = compute_min_ders(ders_all_closed);
+                for (auto& iter : min_ders_all_closed) {
+                    std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
+                    if (!cell_result) {
+                        valid_all_closed = false;
+                        break;
+                    }
+                    result_all_closed.cells.emplace_back(*cell_result);
+                }
+            }
+
+            if(valid_all_closed) {
+                result_all_closed.ordering = compute_default_ordering(result_all_closed.cells);
+                valid_all_closed = valid_all_closed && result_all_closed.is_valid();
+            }
+
+            SMTRAT_LOG_DEBUG("smtrat.covering","Can use pure closed intervals (containing open derivation (-oo;oo)): " << valid_all_closed);
+            if(valid_all_closed) return result_all_closed;
+
+            // Second: Default cover
+            auto min_ders_smallest = compute_min_ders(ders);
+            for (auto& iter : min_ders_smallest) {
                 std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
                 if (!cell_result) return std::nullopt;
-                result.cells.emplace_back(*cell_result);
+                result_smallest.cells.emplace_back(*cell_result);
             }
-            result.ordering = compute_default_ordering(result.cells);
-            return result;
+            result_smallest.ordering = compute_default_ordering(result_smallest.cells);
+
+            return result_smallest;
         }
     };
 

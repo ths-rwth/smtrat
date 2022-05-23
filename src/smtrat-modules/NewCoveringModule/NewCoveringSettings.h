@@ -23,7 +23,7 @@ namespace smtrat
 		static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::GreedyMaxUnivariate;
 		static constexpr smtrat::cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::DEFAULT_COVERING;
 		static constexpr smtrat::cadcells::operators::op op = cadcells::operators::op::mccallum;
-		static constexpr smtrat::SamplingAlgorithm sampling_algorithm = smtrat::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
-		static constexpr smtrat::IsSampleOutsideAlgorithm is_sample_outside_algorithm = smtrat::IsSampleOutsideAlgorithm::DEFAULT;
+		static constexpr smtrat::SamplingAlgorithm sampling_algorithm = smtrat::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS;
+		static constexpr smtrat::IsSampleOutsideAlgorithm is_sample_outside_algorithm = smtrat::IsSampleOutsideAlgorithm::BOUND_FOCUS;
 	};
 }

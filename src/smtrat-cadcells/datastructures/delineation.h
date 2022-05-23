@@ -18,7 +18,14 @@ class DelineationInterval {
     RootMap::const_iterator m_upper;
     RootMap::const_iterator m_end;
 
-    DelineationInterval(RootMap::const_iterator&& lower, RootMap::const_iterator&& upper, RootMap::const_iterator&& end) : m_lower(lower), m_upper(upper), m_end(end) {};
+    bool is_inclusive_l;
+    bool is_inclusive_u;
+
+    DelineationInterval(RootMap::const_iterator&& lower, RootMap::const_iterator&& upper, RootMap::const_iterator&& end) : m_lower(lower), m_upper(upper), m_end(end) {
+        // Default: Only sections have closed bounds
+        is_inclusive_l = is_section();
+        is_inclusive_u = is_section();
+    };
 
     friend class Delineation;
 
@@ -46,20 +53,49 @@ public:
     bool upper_unbounded() const {
         return m_upper == m_end;
     }
+
+    bool lower_inclusive() const {
+        return is_inclusive_l;
+    }
+    bool upper_inclusive() const {
+        return is_inclusive_u;
+    }
+
+    void set_lower_inclusive() {
+        if(is_sector()) {
+            is_inclusive_l = true;
+        }
+    }
+    void set_upper_inclusive() {
+        if(is_sector()) {
+            is_inclusive_u = true;
+        }
+    }
 };    
 inline std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
-    if (data.is_section()) {
+    if (data.is_section()) { // Redundant, but for readability
         os << "[" << *data.lower() << ", " << *data.upper() << "]";
-    } else if (!data.lower_unbounded() && !data.upper_unbounded()) {
+    } else if (!data.lower_unbounded() && !data.upper_unbounded() && data.lower_inclusive() && data.upper_inclusive()) {
+        os << "[" << *data.lower() << ", " << *data.upper() << "]";
+    } else if (!data.lower_unbounded() && !data.upper_unbounded() && data.lower_inclusive() && !data.upper_inclusive()) {
+        os << "[" << *data.lower() << ", " << *data.upper() << ")";
+    } else if (!data.lower_unbounded() && !data.upper_unbounded() && !data.lower_inclusive() && data.upper_inclusive()) {
+        os << "(" << *data.lower() << ", " << *data.upper() << "]";
+    } else if (!data.lower_unbounded() && !data.upper_unbounded() && !data.lower_inclusive() && !data.upper_inclusive()) {
         os << "(" << *data.lower() << ", " << *data.upper() << ")";
-    } else if (!data.lower_unbounded()) {
+    } else if (!data.lower_unbounded() && !data.lower_inclusive()) {
         os << "(" << *data.lower() << ", oo)";
-    } else if (!data.upper_unbounded()) {
+    } else if (!data.lower_unbounded() && data.lower_inclusive()) {
+        os << "[" << *data.lower() << ", oo)";
+    } else if (!data.upper_unbounded() && !data.upper_inclusive()) {
         os << "(-oo, " << *data.upper() << ")";
+    } else if (!data.upper_unbounded() && data.upper_inclusive()) {
+        os << "(-oo, " << *data.upper() << "]";
     } else {
         os << "(-oo, oo)";
     }
     return os;
+
 }
 
 /**
@@ -162,7 +198,7 @@ inline std::ostream& operator<<(std::ostream& os, const Delineation& data) {
 inline bool lower_lt_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();
     else if (del2.lower_unbounded()) return false;
-    else if (del1.lower()->first == del2.lower()->first) return del1.is_section() && del2.is_sector();
+    else if (del1.lower()->first == del2.lower()->first) return del1.lower_inclusive() && !del2.lower_inclusive(); // Now a sector is no guarantee for containing a lower value
     else return del1.lower()->first < del2.lower()->first;
 }
 
@@ -172,7 +208,7 @@ inline bool lower_lt_lower(const DelineationInterval& del1, const DelineationInt
 inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
     else if (del1.lower_unbounded() != del2.lower_unbounded()) return false;
-    else if (del1.lower()->first == del2.lower()->first) return del1.is_section() == del2.is_section();
+    else if (del1.lower()->first == del2.lower()->first) return del1.lower_inclusive() == del2.lower_inclusive();
     else return false;
 }
 
@@ -182,7 +218,7 @@ inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInt
 inline bool upper_lt_upper(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.upper_unbounded()) return false;
     else if (del2.upper_unbounded()) return true;
-    else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
+    else if (del1.upper()->first == del2.upper()->first) return !del1.upper_inclusive() && del2.upper_inclusive(); // Now a sector is no guarantee for containing a lower value
     else return del1.upper()->first < del2.upper()->first;
 }
 
@@ -193,7 +229,7 @@ inline bool upper_lt_lower(const DelineationInterval& del1, const DelineationInt
     if (del1.upper_unbounded()) return false;
     if (del2.lower_unbounded()) return false;
     if (del1.upper()->first < del2.lower()->first) return true;
-    if (del1.upper()->first == del2.lower()->first && del1.is_sector() && del2.is_sector()) return true;
+    if (del1.upper()->first == del2.lower()->first && (!del1.upper_inclusive() && !del2.lower_inclusive())) return true;
     return false;
 }
 

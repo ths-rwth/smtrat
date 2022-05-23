@@ -135,7 +135,7 @@ public:
 			return true;
 		}
 		// The cells cover the numberline -> Compute the covering representation
-		std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end());
+		std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end()); // The used cells
 		mCovering = representation::covering<covering_heuristic>::compute(derivationsVector);
 		if (!mCovering.has_value()) {
 			SMTRAT_LOG_DEBUG("smtrat.covering", "Covering with " << representation::get_name(covering_heuristic) << " failed");
@@ -307,6 +307,16 @@ public:
 		operators::project_basic_properties<op>(*new_deriv->delineated());
 		operators::delineate_properties<op>(*new_deriv->delineated());
 		new_deriv->delineate_cell();
+
+		// Update bounds
+		if(fullCovering.is_fully_bounded()) {
+			bool l = !new_deriv->cell().lower_unbounded();
+			bool u = !new_deriv->cell().upper_unbounded();
+			
+			new_deriv->setEndpoints(l, u);
+		}
+
+		// Need to update cell bounds
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());
 
 		// The origin of the new derivation are all constraints used in the last full covering
