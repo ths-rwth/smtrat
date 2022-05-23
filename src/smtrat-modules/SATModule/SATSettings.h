@@ -150,31 +150,31 @@ namespace smtrat
         // using VarScheduler = VarSchedulerFixedRandom;
     };
 struct SATSettingsMCSATOC : SATSettingsMCSAT {
-    static constexpr auto muduleName = "SATModule<MCSATOC>";
+    static constexpr auto moduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;
 };
 
 struct SATSettingsMCSATFMICPVSOC : SATSettingsMCSAT {
-    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOC>";
+    static constexpr auto moduleName = "SATModule<MCSATFMICPVSOC>";
     using MCSATSettings = mcsat::MCSATSettingsFMICPVSOC;
 };
 
 struct SATSettingsMCSATFMICPOC : SATSettingsMCSAT {
-    static constexpr auto muduleName = "SATModule<SATSettingsMCSATFMICPOC>";
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATFMICPOC>";
     using MCSATSettings = mcsat::MCSATSettingsFMICPOC;
 };
 
 struct SATSettingsMCSATOCNew : SATSettingsMCSAT {
-    static constexpr auto muduleName = "SATModule<MCSATOCNew>";
+    static constexpr auto moduleName = "SATModule<MCSATOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsOCNew;
 };
 struct SATSettingsMCSATFMICPVSOCNew : SATSettingsMCSAT {
-    static constexpr auto muduleName = "SATModule<SATSettingsMCSATFMICPVSOCNew>";
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATFMICPVSOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNew;
 };
 
 struct SATSettingsMCSATFMICPVSOCLWH12 : SATSettingsMCSAT {
-    static constexpr auto muduleName = "SATModule<MCSATFMICPVSOCLWH12>";
+    static constexpr auto moduleName = "SATModule<MCSATFMICPVSOCLWH12>";
     using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCLWH12;
 };
 
