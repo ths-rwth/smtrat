@@ -33,3 +33,4 @@ Typically, logging looks like this:
 	}
 
 Logging is enabled (or disabled) by the `LOGGING` macro in CMake.
+The log levels for each channel can be configured in the `configure_logging()` method in `cli/smtratSolver.cpp`.
