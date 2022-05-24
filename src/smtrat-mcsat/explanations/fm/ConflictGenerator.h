@@ -129,7 +129,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " && " << expl[2].negated() << " && " << expl[3].negated() << " -> " << expl[4]);
 		expl.emplace_back(sideCondition(ineq).negation());
 		expl.emplace_back(sideConditionLoUp(lower).negation());
-		expl.emplace_back(sideConditionLoUp(upper).negation()); // TODO move to struct member
+		expl.emplace_back(sideConditionLoUp(upper).negation());
 		return expl;
 	}
 
@@ -152,7 +152,7 @@ public:
 				continue;
 			}
 
-			if (b.varInfo(mVariable).maxDegree() > 1) {
+			if (b.var_info(mVariable).max_degree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << mVariable << " occurs nonlinearly");
 				continue;
 			}

@@ -50,7 +50,7 @@ namespace vs
     {
         if( !constraint().variables().has( _consideredVariable ) )
             return 0;
-        const smtrat::VarPolyInfo& varInfo = constraint().varInfo( _consideredVariable );
+        const smtrat::VarPolyInfo& varInfo = constraint().var_info( _consideredVariable );
         double maximum = 0;
         if( _maxNumberOfVars < 4 )
             maximum = 16;
@@ -82,7 +82,7 @@ namespace vs
                 return 0;
         }
         //Check the degree of the variable.
-        double degreeWeight = (double)varInfo.maxDegree();
+        double degreeWeight = (double)varInfo.max_degree();
         if( maximum <= degreeWeight )
             degreeWeight = maximum - 1;
         //Check the leading coefficient of the given variable.
@@ -90,7 +90,7 @@ namespace vs
         unsigned lCoeffWeightB = 2;
         if( degreeWeight <= 1 )
         {
-            smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.maxDegree() );
+            smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.max_degree() );
             if( coeff.is_constant() )
             {
                 if( _consideredVariable.type() == carl::VariableType::VT_INT && (coeff == Poly(1) || coeff == Poly(-1)) )
@@ -104,8 +104,8 @@ namespace vs
         }
         else if( degreeWeight == 2 )
         {
-            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.maxDegree() ).is_constant();
-            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).is_constant() )
+            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.max_degree() ).is_constant();
+            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.max_degree() - 1 ).is_constant() )
                 lCoeffWeight = 1;
             else if( hasRationalLeadingCoefficient )
                 lCoeffWeight = 2;
@@ -115,7 +115,7 @@ namespace vs
         // Check the number of variables.
         //double numberOfVariableWeight = (double) constraint().variables().size();
         // Check how in how many monomials the variable occurs.
-        double numberOfVariableOccurencesWeight = (double)varInfo.occurence();
+        double numberOfVariableOccurencesWeight = (double)varInfo.num_occurences();
         if( maximum <= numberOfVariableOccurencesWeight )
             numberOfVariableOccurencesWeight = maximum - 1;
         // If variable occurs only in one monomial, give a bonus if all other monomials are either positive or negative.

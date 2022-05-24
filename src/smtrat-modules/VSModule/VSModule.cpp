@@ -865,7 +865,7 @@ namespace smtrat
                 #ifdef VS_DEBUG
                 std::cout << "Eliminate for " << *factor << std::endl;
                 #endif
-                VarPolyInfo varInfo = factor->getVarInfo<true>( _eliminationVar );
+                VarPolyInfo varInfo = carl::var_info(*factor, _eliminationVar, true);
                 const auto& coeffs = varInfo.coeffs();
                 assert( !coeffs.empty() );
                 // Generate test candidates for the chosen variable considering the chosen constraint.

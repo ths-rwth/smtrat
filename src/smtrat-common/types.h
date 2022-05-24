@@ -2,7 +2,7 @@
 
 #include <carl/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl/core/Variable.h>
-#include <carl/poly/umvpoly/functions/VariableInformation.h>
+#include <carl/poly/VarInfo.h>
 #include <carl-formula/formula/Formula.h>
 #include <carl-formula/formula/Logic.h>
 #include <carl-common/util/streamingOperators.h>
@@ -44,7 +44,7 @@ using FormulasMultiT = std::multiset<FormulaT>;
 
 using EvalRationalMap = std::map<carl::Variable, Rational>;
 
-using VarPolyInfo = carl::VariableInformation<true, Poly>;
+using VarPolyInfo = carl::VarInfo<Poly>;
 
 // Pair of priority and module id (within the respective strategy graph)
 using thread_priority = std::pair<std::size_t, std::size_t>;
