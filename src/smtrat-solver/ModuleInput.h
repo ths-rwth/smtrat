@@ -312,7 +312,7 @@ namespace smtrat
          *         2, if it cannot be determined cheaply, whether the given assignment conflicts or satisfies 
          *            the conjunction of the stored formulas.
          */
-        unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
+        unsigned satisfiedBy( const RationalAssignment& _assignment ) const;
 
 		const auto& back() const {
 			return super::back();

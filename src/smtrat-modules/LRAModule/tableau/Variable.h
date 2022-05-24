@@ -416,7 +416,7 @@ namespace smtrat
                  * @param _ass
                  * @return 
                  */
-                unsigned isSatisfiedBy( const EvalRationalMap& _ass ) const
+                unsigned isSatisfiedBy( const RationalAssignment& _ass ) const
                 {
                     typename Poly::PolyType polyTmp = carl::substitute(*mExpression, _ass);
                     if( polyTmp.is_constant() )
@@ -443,7 +443,7 @@ namespace smtrat
                  * @param _ass
                  * @return 
                  */
-                FormulaT inConflictWith( const EvalRationalMap& _ass ) const
+                FormulaT inConflictWith( const RationalAssignment& _ass ) const
                 {
                     typename Poly::PolyType polyTmp = carl::substitute(*mExpression, _ass);
 					assert( polyTmp.is_constant() );

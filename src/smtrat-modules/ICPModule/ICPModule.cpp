@@ -1495,7 +1495,7 @@ namespace smtrat
             {
                 if( !mLRAFoundSolution )
                     Module::getBackendsModel();
-                EvalRationalMap rationalAssignment = mLRA.getRationalModel();
+                RationalAssignment rationalAssignment = mLRA.getRationalModel();
                 for( auto assignmentIt = rationalAssignment.begin(); assignmentIt != rationalAssignment.end(); ++assignmentIt )
                 {
                     auto varIt = mVariables.find((*assignmentIt).first);
@@ -2345,7 +2345,7 @@ namespace smtrat
             std::cout << "LRA: " << _answer << std::endl;
             #endif
             bool solutionFound = true;
-            EvalRationalMap sol = mLRA.getRationalModel();
+            RationalAssignment sol = mLRA.getRationalModel();
             for( const auto& rf : rReceivedFormula() )
             {
                 assert( rf.formula().type() == carl::FormulaType::CONSTRAINT );

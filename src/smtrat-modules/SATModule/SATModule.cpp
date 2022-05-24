@@ -875,7 +875,7 @@ namespace smtrat
     }
     
     template<class Settings>
-    void SATModule<Settings>::addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const
+    void SATModule<Settings>::addBooleanAssignments( RationalAssignment& _rationalAssignment ) const
     {
         for( BooleanVarMap::const_iterator bVar = mBooleanVarMap.begin(); bVar != mBooleanVarMap.end(); ++bVar )
         {

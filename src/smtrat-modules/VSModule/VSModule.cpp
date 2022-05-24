@@ -756,7 +756,7 @@ namespace smtrat
             assert( !mRanking.empty() );
             carl::Variables allVarsInRoot;
             mpStateTree->variables( allVarsInRoot );
-            EvalRationalMap rationalAssignments;
+            RationalAssignment rationalAssignments;
             const State* state = mRanking.begin()->second;
             while( !state->isRoot() )
             {
@@ -865,7 +865,7 @@ namespace smtrat
                 #ifdef VS_DEBUG
                 std::cout << "Eliminate for " << *factor << std::endl;
                 #endif
-                VarPolyInfo varInfo = carl::var_info(*factor, _eliminationVar, true);
+                auto varInfo = carl::var_info(*factor, _eliminationVar, true);
                 const auto& coeffs = varInfo.coeffs();
                 assert( !coeffs.empty() );
                 // Generate test candidates for the chosen variable considering the chosen constraint.
@@ -1669,7 +1669,7 @@ namespace smtrat
 			SMTRAT_LOG_DEBUG("smtrat.vs", "Ranking is not empty");
             std::vector<carl::Variable> varOrder;
             State* currentState = mRanking.begin()->second;
-            EvalRationalMap varSolutions;
+            RationalAssignment varSolutions;
             if( currentState->cannotBeSolved( mLazyMode ) )
             {
                 Model bmodel = backendsModel();
@@ -1730,7 +1730,7 @@ namespace smtrat
                         if( trySplitting && Settings::branch_and_bound_at_origin )
                         {
 							SMTRAT_LOG_DEBUG("smtrat.vs", "Try splitting for B&B");
-                            EvalRationalMap partialVarSolutions;
+                            RationalAssignment partialVarSolutions;
                             const Poly& substitutionPoly = (*currentState->substitution().originalConditions().begin())->constraint().lhs();
                             for( auto var = varOrder.rbegin(); var != varOrder.rend(); ++var )
                             {

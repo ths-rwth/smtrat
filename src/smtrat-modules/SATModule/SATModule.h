@@ -744,7 +744,7 @@ namespace smtrat
              * Note: Assignments in the given map are not overwritten.
              * @param _rationalAssignment The assignments to add the Boolean assignments to.
              */
-            void addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const;
+            void addBooleanAssignments( RationalAssignment& _rationalAssignment ) const;
 
             /**
              * Prints everything.

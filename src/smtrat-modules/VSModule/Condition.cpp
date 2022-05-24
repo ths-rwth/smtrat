@@ -50,7 +50,7 @@ namespace vs
     {
         if( !constraint().variables().has( _consideredVariable ) )
             return 0;
-        const smtrat::VarPolyInfo& varInfo = constraint().var_info( _consideredVariable );
+        const auto& varInfo = constraint().var_info( _consideredVariable );
         double maximum = 0;
         if( _maxNumberOfVars < 4 )
             maximum = 16;

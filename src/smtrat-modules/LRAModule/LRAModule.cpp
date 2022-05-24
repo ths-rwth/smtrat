@@ -488,7 +488,7 @@ namespace smtrat
             assert( solverState() != UNSAT );
             if( mAssignmentFullfilsNonlinearConstraints )
             {
-                const EvalRationalMap& rationalAssignment = getRationalModel();
+                const RationalAssignment& rationalAssignment = getRationalModel();
                 for( auto ratAss = rationalAssignment.begin(); ratAss != rationalAssignment.end(); ++ratAss )
                     mModel.insert(mModel.end(), std::make_pair(ratAss->first, ratAss->second) );
             }
@@ -499,7 +499,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    const EvalRationalMap& LRAModule<Settings>::getRationalModel() const
+    const RationalAssignment& LRAModule<Settings>::getRationalModel() const
     {
         if( !mRationalModelComputed )
         {
@@ -600,7 +600,7 @@ namespace smtrat
                     mModelComputed = false;
                     mOptimumComputed = false;
                     updateModel();
-                    const EvalRationalMap& ratModel = getRationalModel();
+                    const RationalAssignment& ratModel = getRationalModel();
                     Rational opti = carl::evaluate(optVar->expression(), ratModel );
                     #ifdef DEBUG_LRA_MODULE
                     std::cout << std::endl; mTableau.print(); std::cout << std::endl; std::cout << "Optimum: " << opti << std::endl;
@@ -622,7 +622,7 @@ namespace smtrat
     {
         // If there are unresolved notequal-constraints and the found satisfying assignment
         // conflicts this constraint, resolve it by creating the lemma (p<0 or p>0) <-> p!=0 ) and return UNKNOWN.
-        const EvalRationalMap& ass = getRationalModel();
+        const RationalAssignment& ass = getRationalModel();
         for( auto iter = mActiveUnresolvedNEQConstraints.begin(); iter != mActiveUnresolvedNEQConstraints.end(); ++iter )
         {
             //unsigned consistency = iter->first.satisfiedBy( ass );
@@ -1318,7 +1318,7 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::gomoryCut()
     {
-        const EvalRationalMap& rMap_ = getRationalModel();
+        const RationalAssignment& rMap_ = getRationalModel();
         bool all_int = true;
         for( LRAVariable* basicVar : mTableau.rows() )
         {
@@ -1366,7 +1366,7 @@ namespace smtrat
     template<class Settings>
     bool LRAModule<Settings>::mostInfeasibleVar( bool _tryGomoryCut, carl::Variables& _varsToExclude )
     {
-        const EvalRationalMap& _rMap = getRationalModel();
+        const RationalAssignment& _rMap = getRationalModel();
         auto branch_var = mTableau.originalVars().begin();
         Rational ass_;
         bool result = false;
@@ -1422,7 +1422,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    bool LRAModule<Settings>::assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const
+    bool LRAModule<Settings>::assignmentConsistentWithTableau( const RationalAssignment& _assignment, const LRABoundType& _delta ) const
     {
         for( auto slackVar : mTableau.slackVars() )
         {
@@ -1442,7 +1442,7 @@ namespace smtrat
     {
         if( solverState() == UNSAT ) return true;
         if( !mAssignmentFullfilsNonlinearConstraints ) return true;
-        const EvalRationalMap& rmodel = getRationalModel();
+        const RationalAssignment& rmodel = getRationalModel();
         carl::carlVariables inputVars(carl::variable_type_filter::arithmetic());
         rReceivedFormula().gatherVariables( inputVars );
         for( auto ass = rmodel.begin(); ass != rmodel.end(); ++ass )
@@ -1521,7 +1521,7 @@ namespace smtrat
     template<class Settings>
     void LRAModule<Settings>::printRationalModel( std::ostream& _out, const std::string _init ) const
     {
-        const EvalRationalMap& rmodel = getRationalModel();
+        const RationalAssignment& rmodel = getRationalModel();
         _out << _init << "Rational model:" << std::endl;
         for( auto assign = rmodel.begin(); assign != rmodel.end(); ++assign )
         {

@@ -786,7 +786,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        EvalRationalMap Tableau<Settings,T1,T2>::getRationalAssignment() const
+        RationalAssignment Tableau<Settings,T1,T2>::getRationalAssignment() const
         {
             T1 minDelta = -1;
             mCurDelta = T1(0);
@@ -806,7 +806,7 @@ namespace smtrat
                 }
             }
             mCurDelta = minDelta < 0 ? T1(1) : minDelta;
-            EvalRationalMap result;
+            RationalAssignment result;
             // Calculate the rational assignment of all original variables.
             for( auto var : mColumns )
             {
