@@ -156,7 +156,7 @@ void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastruc
 }
 
 template<typename P>
-void cell_analytic_submanifold(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval&) {
+void cell_analytic_submanifold([[maybe_unused]] datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval&) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "an_sub(" << deriv.level() << ")");
 }
 
