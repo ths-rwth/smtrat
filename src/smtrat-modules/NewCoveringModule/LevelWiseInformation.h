@@ -100,7 +100,7 @@ public:
      */
     bool computeCovering() {
 
-        auto startTime = SMTRAT_TIME_START();
+        SMTRAT_TIME_START(startTime);
 
         // If there is an already existing covering which is also full, we are done
         if (isFullCovering()) {
@@ -283,7 +283,7 @@ public:
      * @note: This represents Section 4.6 in the paper https://arxiv.org/pdf/2003.05633.pdf
      */
     std::optional<datastructures::SampledDerivationRef<PropSet>> constructDerivation(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& mDerivationToConstraint) {
-        auto startTime = SMTRAT_TIME_START();
+        SMTRAT_TIME_START(startTime);
 
         assert(mCovering.has_value());
         assert(isFullCovering());

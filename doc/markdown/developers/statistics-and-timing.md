@@ -74,7 +74,7 @@ The following code will measure the total running time of the code block as well
 
     SMTRAT_STATISTICS_INIT(myModule::MyStatistics, myStatistics, "MyModuleName")
 
-    auto start = SMTRAT_TIME_START();
+    SMTRAT_TIME_START(start);
 	// expensive code
 	SMTRAT_TIME_FINISH(myStatistics.timer(), start);
 
