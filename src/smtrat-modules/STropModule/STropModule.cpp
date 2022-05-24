@@ -88,6 +88,7 @@ namespace smtrat
 							FormulaT(normalization, carl::Relation::LESS),
 							FormulaT(normalization, carl::Relation::GEQ)
 						});
+					[[fallthrough]];
 				case carl::Relation::LEQ:
 					if (separator.mRelations.count(carl::Relation::GREATER))
 						mInfeasibleSubsets.push_back({
@@ -106,6 +107,7 @@ namespace smtrat
 							FormulaT(normalization, carl::Relation::GREATER),
 							FormulaT(normalization, carl::Relation::LEQ)
 						});
+					[[fallthrough]];
 				case carl::Relation::GEQ:
 					if (separator.mRelations.count(carl::Relation::LESS))
 						mInfeasibleSubsets.push_back({
