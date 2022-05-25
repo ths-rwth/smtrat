@@ -11,7 +11,7 @@ target_include_dirs_from(smtrat-mcsat-objects "" PUBLIC smtrat-common-shared)
 target_link_libraries(smtrat-mcsat-shared
 	smtrat-common-shared
 	smtrat-solver-shared
-	smtrat-module-LRAModule-shared
+	smtrat-module-LRAModule-LRASettings1-shared
 	smtrat-cadcells-shared
 	rt
 )
