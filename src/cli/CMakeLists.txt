@@ -85,8 +85,8 @@ target_link_libraries(smtrat-static
 )
 
 if(CLI_ENABLE_PREPROCESSOR)
-	target_link_libraries(smtrat-shared smtrat-module-FPPModule-shared)
-	target_link_libraries(smtrat-static smtrat-module-FPPModule-static)
+	target_link_libraries(smtrat-shared smtrat-module-FPPModule-FPPSettings1-shared)
+	target_link_libraries(smtrat-static smtrat-module-FPPModule-FPPSettings1-static)
 endif()
 if(CLI_ENABLE_QE)
 	target_link_libraries(smtrat-shared smtrat-qe-shared)

@@ -18,7 +18,7 @@ target_link_libraries(smtrat-mcsat-shared
 target_link_libraries(smtrat-mcsat-static
 	smtrat-common-static
 	smtrat-solver-static
-	smtrat-module-LRAModule-static
+	smtrat-module-LRAModule-LRASettings1-static
 	smtrat-cadcells-static
 	rt
 )
