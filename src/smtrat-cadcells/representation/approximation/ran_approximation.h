@@ -9,6 +9,11 @@ Rational approximate_RAN(const RAN& r) {
     return carl::branching_point(r);
 }
 
+Rational approximate_RAN_sb(const RAN& r) {
+    if (r.is_numeric()) return r.value();
+    return carl::sample_stern_brocot(r.interval(), false);
+}
+
 Rational approximate_RAN_below(const RAN& r) {
     if (r.is_numeric()) return r.value();
     Rational res = carl::branching_point(r);
@@ -44,60 +49,39 @@ Rational approximate_root_below<ApxRoot::SAMPLE_MID>(const RAN& inner, const RAN
 
 template<>
 Rational approximate_root_above<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner, const RAN& outer) {
+    assert(inner < outer);
     Rational inner_simple, outer_simple;
 
     if (outer.is_integral()) outer_simple = outer.value() - 1;
     else if (outer.is_numeric()) outer_simple = carl::floor(outer.value());
     else outer_simple = carl::floor(outer.interval().lower());
-
     // If an integer is between inner and outer, return the closest to outer
     if (outer_simple > inner) return outer_simple; // TODO: add option to choose another integer
 
-    if (inner.is_integral()) inner_simple = inner.value() + 1;
-    else if (inner.is_numeric()) inner_simple = carl::ceil(inner.value());
-    else inner_simple = carl::ceil(inner.interval().upper());
-
-    // Now: outer_simple <= inner < outer <= inner_simple
-    // apply stern-brocot until a sample between the two points is found
-    Rational mid;
-    while(true) {
-        mid = mediant(inner_simple, outer_simple);
-        if (mid <= inner) outer_simple = mid;
-        else if (mid >= outer) inner_simple = mid;
-        else return mid;
-    }
-
-    assert(false); // unreachable
-    return carl::sample_between(inner, outer);
+    inner_simple = approximate_RAN_above(inner);
+    outer_simple = approximate_RAN_below(outer);
+    assert(inner_simple < outer_simple);
+    RationalInterval region = RationalInterval(inner_simple, carl::BoundType::STRICT, outer_simple, carl::BoundType::STRICT);
+    return carl::sample_stern_brocot(region, false);
 }
 
 template<>
 Rational approximate_root_below<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner, const RAN& outer) {
+    assert(inner > outer);
     Rational inner_simple, outer_simple;
 
     if (outer.is_integral()) outer_simple = outer.value() + 1;
     else if (outer.is_numeric()) outer_simple = carl::ceil(outer.value());
     else outer_simple = carl::ceil(outer.interval().upper());
-
     // If an integer is between inner and outer, return the closest to outer
     if (outer_simple < inner) return outer_simple; // TODO: add option to choose another integer
 
-    if (inner.is_integral()) inner_simple = inner.value() - 1;
-    else if (inner.is_numeric()) inner_simple = carl::floor(inner.value());
-    else inner_simple = carl::floor(inner.interval().lower());
+    inner_simple = approximate_RAN_below(inner);
+    outer_simple = approximate_RAN_above(outer);
 
-    // Now: inner_simple <= outer < inner <= outer_simple
-    // apply stern-brocot until a sample between the two points is found
-    Rational mid;
-    while(true) {
-        mid = mediant(inner_simple, outer_simple);
-        if (mid >= inner) outer_simple = mid;
-        else if (mid <= outer) inner_simple = mid;
-        else return mid;
-    }
-    
-    assert(false); // unreachable
-    return carl::sample_between(outer, inner);
+    assert(inner_simple > outer_simple);
+    RationalInterval region = RationalInterval(outer_simple, carl::BoundType::STRICT, inner_simple, carl::BoundType::STRICT);
+    return carl::sample_stern_brocot(region, false);
 }
 
 template<>
@@ -160,7 +144,7 @@ Rational approximate_root_above<ApxRoot::FIXED_RATIO>(const RAN& inner, const RA
     Rational apx_inner = approximate_RAN_above(inner);
     Rational upper_bound = (apx_settings().root_ratio_upper * apx_outer) + ((1 - apx_settings().root_ratio_upper) * apx_inner);
     Rational lower_bound = (apx_settings().root_ratio_lower * apx_outer) + ((1 - apx_settings().root_ratio_lower) * apx_inner);
-    RationalInterval region = RationalInterval(lower_bound, upper_bound);
+    RationalInterval region = RationalInterval(lower_bound, carl::BoundType::STRICT, upper_bound, carl::BoundType::STRICT);
     return carl::sample_stern_brocot(region, false);
 }
 
@@ -170,7 +154,7 @@ Rational approximate_root_below<ApxRoot::FIXED_RATIO>(const RAN& inner, const RA
     Rational apx_inner = approximate_RAN_below(inner);
     Rational lower_bound = (apx_settings().root_ratio_upper * apx_outer) + ((1 - apx_settings().root_ratio_upper) * apx_inner);
     Rational upper_bound = (apx_settings().root_ratio_lower * apx_outer) + ((1 - apx_settings().root_ratio_lower) * apx_inner);
-    RationalInterval region = RationalInterval(lower_bound, upper_bound);
+    RationalInterval region = RationalInterval(lower_bound, carl::BoundType::STRICT, upper_bound, carl::BoundType::STRICT);
     return carl::sample_stern_brocot(region, false);
 }
 
