@@ -43,7 +43,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             if (deg_l <= apx_settings().taylor_deg) return false;
             std::size_t deg_u = proj.degree(ir_u.poly);
             if (deg_u <= apx_settings().taylor_deg) return false;
-            return deg_l * deg_u >= apx_settings().crit_degree_threshold;
+            return deg_l * deg_u >= 2*apx_settings().crit_degree_threshold;
         }
 
         bool crit_poly_apx_count(datastructures::Projections& proj, const IR& ir) {
@@ -77,6 +77,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             if (!apx_settings().crit_side_degree_enabled) return false;
             for(auto it = start; it != end; it++) {
                 for (const auto& ir_outer : it->second) {
+                    if (ir.poly == ir_outer.poly) continue;
                     if (crit_pair_degree(proj, ir, ir_outer)) return true;
                 }
             }
