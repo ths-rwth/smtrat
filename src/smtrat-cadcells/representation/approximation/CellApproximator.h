@@ -61,7 +61,6 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, b
     sample_root[var()] = bound; // TODO : can choose other points here (like the actual sample)
     auto sample_new_root = sample();
     sample_new_root[var()] = RAN(approximate_root<ApxSettings::root>(main_sample(), bound, below));
-
     #ifdef SMTRAT_DEVOPTION_Statistics
         std::size_t leftOutVars = 0;
         for (const auto& [var, val] : sample_new_root) {
@@ -69,22 +68,33 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, b
         }
         OCApproximationStatistics::get_instance().taylorIgnoredVars(leftOutVars, dim);
     #endif
+    auto apx_sample = sample_root;
+    //for (const auto& [key, value] : sample_root) apx_sample[key] = approximate_RAN_sb(value);
 
-    auto one_step_differentiate = [&var_order, &sample_root, &sample_new_root, dim] (const Poly& poly, Poly& result, std::vector<Poly>& jacobian) {
-        Rational evaluated_deriv;
+    auto one_step_differentiate = [&var_order, &apx_sample, &sample_new_root, dim] (const Poly& poly, Poly& result, std::vector<Poly>& jacobian) {
+        Rational evaluated_deriv = 0;
         for (std::size_t i = 0; i < dim; i++) {
             // Skip variables with irrational assignment, since (x_i - s_i) cannot be used
             if (!sample_new_root[var_order[i]].is_numeric()) continue;
             jacobian[i] = carl::derivative(poly, var_order[i]);
-            evaluated_deriv = approximate_RAN(*carl::evaluate(jacobian[i], sample_root));
-            result = result + Poly(evaluated_deriv) * (Poly(var_order[i]) - Poly(approximate_RAN(sample_new_root[var_order[i]])));
+            evaluated_deriv = approximate_RAN(*carl::evaluate(jacobian[i], apx_sample));
+            if (evaluated_deriv.get_den() != 1) {
+                // find approximate value with smaller representation
+                Rational ub = evaluated_deriv * (Rational(10001)/Rational(10000));
+                Rational lb = evaluated_deriv * (Rational(9999)/Rational(10000));
+                Rational c = carl::ceil(evaluated_deriv);
+                Rational f = carl::floor(evaluated_deriv);
+                if (c < ub) evaluated_deriv = c;
+                else if (lb < f) evaluated_deriv = f;
+                else evaluated_deriv = carl::sample_stern_brocot(RationalInterval(lb,ub), false);
+            }            
+            result = result + Poly(evaluated_deriv) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value()));
         }
         // return the sign of the main variable derivative
         if (carl::isZero(evaluated_deriv)) return 0;
         else if (evaluated_deriv > 0) return 1;
         else return -1;
     };
-
     std::vector<Poly> jacobian(dim);
     Poly result;
     // first order taylor approximation
@@ -106,28 +116,16 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, b
             std::vector<Poly> hessian_row(dim);
             Poly res_i;
             hessian_sign = one_step_differentiate(jacobian[i], res_i, hessian_row);
-            result = result + (Poly(Rational(1)/Rational(2)) * (Poly(var_order[i]) - Poly(approximate_RAN(sample_new_root[var_order[i]]))) * res_i); 
+            result = result + (Poly(Rational(1)/Rational(2)) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value())) * res_i); 
         }
-        auto restricted_sample = sample();
-        restricted_sample.erase(var());
-        auto roots = carl::real_roots(carl::to_univariate_polynomial(result, var()), restricted_sample);
-        
         if (hessian_sign == 0 && jacobian_sign == 0) {
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCApproximationStatistics::get_instance().taylorFailure();
             #endif
             return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
         } else if (hessian_sign*jacobian_sign == 1) {
-            assert(roots.is_univariate());
-            assert(roots.roots()[1] == sample_new_root[var()]);
-            if (below) assert(roots.roots()[1] > bound && roots.roots()[1] < main_sample());
-            else assert(roots.roots()[1] < bound && roots.roots()[1] > main_sample());
             return IR(proj().polys()(result), 2);
         }
-        assert(roots.is_univariate());
-        assert(roots.roots()[0] == sample_new_root[var()]);
-        if (below) assert(roots.roots()[0] > bound && roots.roots()[0] < main_sample());
-        else assert(roots.roots()[0] < bound && roots.roots()[0] > main_sample());
     }
     return IR(proj().polys()(result), 1);
 }
@@ -278,7 +276,6 @@ IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound,
         outer = extra_root;
         extra_root = approximate_root<ApxRoot::FIXED_RATIO>(inner, outer, below);
     }
-
     return IR(proj().polys()(Poly(var()) - outer), 1);
 }
 
