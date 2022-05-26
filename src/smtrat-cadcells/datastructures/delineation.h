@@ -21,10 +21,14 @@ class DelineationInterval {
     bool is_inclusive_l;
     bool is_inclusive_u;
 
+    bool all_parents_strict;
+
     DelineationInterval(RootMap::const_iterator&& lower, RootMap::const_iterator&& upper, RootMap::const_iterator&& end) : m_lower(lower), m_upper(upper), m_end(end) {
         // Default: Only sections have closed bounds
         is_inclusive_l = is_section();
         is_inclusive_u = is_section();
+        // Default: Constraints are considered to be weak
+        all_parents_strict = false;
     };
 
     friend class Delineation;
@@ -70,6 +74,13 @@ public:
         if(is_sector()) {
             is_inclusive_u = true;
         }
+    }
+    
+    bool get_strictness_of_ancestor_intervals() const {
+        return all_parents_strict;
+    }
+    void set_strictness_of_ancestor_intervals() {
+        all_parents_strict = true;
     }
 };    
 inline std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {

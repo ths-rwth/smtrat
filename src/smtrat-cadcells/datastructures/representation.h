@@ -85,21 +85,13 @@ struct CoveringRepresentation {
         return true;
     }
 
-    bool is_fully_bounded() {
+    bool is_fully_flagged() {
         for(auto it = std::begin(cells); it != std::end(cells); it++) {
-            // (-oo;oo) --> cannot infer as closed
-            if(it->derivation->cell().lower_unbounded() && it->derivation->cell().upper_unbounded()) {
+            // Ancestor leaves do not consist of strict ancestors only.
+            if(!it->derivation->cell().get_strictness_of_ancestor_intervals()) {
                 return false;
             }
-            // (a;.) a != -oo
-            if(!it->derivation->cell().lower_unbounded() && !it->derivation->cell().lower_inclusive()) {
-                return false;
-            }
-            // (.;b) b != oo
-            if(!it->derivation->cell().upper_unbounded() && !it->derivation->cell().upper_inclusive()) {
-                return false;
-            }
-            // Note that intervals (-oo;b] and [a;oo) are okay.
+            // Note that deduction is independent from the finiteness of the endpoints in the covering
         }
         return true;
     }

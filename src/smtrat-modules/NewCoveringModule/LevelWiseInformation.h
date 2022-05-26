@@ -309,11 +309,12 @@ public:
 		new_deriv->delineate_cell();
 
 		// Update bounds
-		if(fullCovering.is_fully_bounded()) {
+		if(fullCovering.is_fully_flagged()) {
 			bool l = !new_deriv->cell().lower_unbounded();
 			bool u = !new_deriv->cell().upper_unbounded();
 			
 			new_deriv->setEndpoints(l, u);
+			new_deriv->set_strictness_of_ancestor_intervals();
 		}
 
 		// Need to update cell bounds

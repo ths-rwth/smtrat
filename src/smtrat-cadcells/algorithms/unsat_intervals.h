@@ -28,14 +28,18 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         tmp_sample.insert_or_assign(current_var, RAN(0));
         if (!carl::evaluate(c, tmp_sample)) {
             results.emplace_back(datastructures::make_sampled_derivation<typename operators::PropertiesSet<op>::type>(deriv,RAN(0)));
+            if(carl::isStrict(c.relation())) {
+                results.back()->set_strictness_of_ancestor_intervals();
+            }
             SMTRAT_LOG_DEBUG("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
             assert(results.back()->cell().lower_unbounded());
             assert(results.back()->cell().upper_unbounded());
         }
     } else {
         if (carl::isStrict(c.relation())) { // Still needed for strict constraints, because root might be disconnected
-            for (auto root = roots.begin(); root != roots.end(); root++) { // Now: roots are own intervals
+            for (auto root = roots.begin(); root != roots.end(); root++) { // Now: roots are own intervals, endpoints automatically closed
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, root->first));
+                results.back()->set_strictness_of_ancestor_intervals();
                 SMTRAT_LOG_DEBUG("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_section());
             }
@@ -47,8 +51,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
-                if(carl::isStrict(c.relation()) && !results.back()->cell().upper_unbounded()) {
-                    results.back()->setEndpoints(false,true);
+                if(carl::isStrict(c.relation())) {
+                    results.back()->set_strictness_of_ancestor_intervals();
+                    if(!results.back()->cell().upper_unbounded()){
+                        results.back()->setEndpoints(false,true);
+                    }
                 }
                 SMTRAT_LOG_DEBUG("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());
@@ -62,6 +69,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
                 if(carl::isStrict(c.relation())) {
+                    results.back()->set_strictness_of_ancestor_intervals();
                     results.back()->setEndpoints(true,true);
                 }
                 SMTRAT_LOG_DEBUG("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
@@ -77,8 +85,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             tmp_sample.insert_or_assign(current_var, current_sample);
             if (c.relation() == carl::Relation::EQ || (c.relation() != carl::Relation::NEQ && !carl::evaluate(c, tmp_sample))) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, current_sample));
-                if(carl::isStrict(c.relation()) && !results.back()->cell().lower_unbounded()) {
-                    results.back()->setEndpoints(true,false);
+                if(carl::isStrict(c.relation())) {
+                    results.back()->set_strictness_of_ancestor_intervals();
+                    if(!results.back()->cell().lower_unbounded()) {
+                        results.back()->setEndpoints(true,false);
+                    }
                 }
                 SMTRAT_LOG_DEBUG("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
                 assert(results.back()->cell().is_sector());

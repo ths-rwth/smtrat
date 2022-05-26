@@ -320,6 +320,10 @@ public:
         }
     }
 
+    void set_strictness_of_ancestor_intervals() {
+        m_cell.value().set_strictness_of_ancestor_intervals();
+    }
+
     const Assignment& sample() const { return m_sample; };
     const RAN& main_var_sample() const { return m_sample.at(m_delineated->main_var()); };
 

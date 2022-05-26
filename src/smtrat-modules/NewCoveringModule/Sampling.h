@@ -208,7 +208,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 		SMTRAT_LOG_DEBUG("smtrat.covering","Current Intervals");
 		auto iter2 = derivationsSet.begin();
 		while (iter2 != derivationsSet.end()) {
-			SMTRAT_LOG_DEBUG("smtrat.covering","-- " << (*iter2)->cell());
+			SMTRAT_LOG_DEBUG("smtrat.covering","-- " << (*iter2)->cell() << " " << (*iter2)->cell().get_strictness_of_ancestor_intervals());
 			iter2++;
 		}
 

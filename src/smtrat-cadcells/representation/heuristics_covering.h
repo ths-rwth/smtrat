@@ -36,44 +36,52 @@ namespace smtrat::cadcells::representation {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
             datastructures::CoveringRepresentation<T> result_smallest;
-            datastructures::CoveringRepresentation<T> result_all_closed;
-            std::vector<datastructures::SampledDerivationRef<T>> ders_all_closed;
+            datastructures::CoveringRepresentation<T> result_all_flagged;
+            std::vector<datastructures::SampledDerivationRef<T>> ders_all_flagged;
 
-            SMTRAT_LOG_DEBUG("smtrat.covering","Extracting pure closed cells.");
+            SMTRAT_LOG_DEBUG("smtrat.covering","Extracting pure flagged cells.");
             for (auto& der : ders) {
-                bool lower_considtion = der->cell().lower_unbounded() || der->cell().lower_inclusive();
-                bool upper_considtion = der->cell().upper_unbounded() || der->cell().upper_inclusive();
-
-                if(lower_considtion && upper_considtion) {
+                SMTRAT_LOG_DEBUG("smtrat.covering","Checking " << der->cell() << " with flag " << der->cell().get_strictness_of_ancestor_intervals());
+            }
+            for (auto& der : ders) {
+                if(der->cell().get_strictness_of_ancestor_intervals()) {
                     SMTRAT_LOG_DEBUG("smtrat.covering"," :: " << der->cell());
-                    ders_all_closed.emplace_back(der);
+                    ders_all_flagged.emplace_back(der);
                 }
             }
 
-            // First: Test for all closed cover
-            bool valid_all_closed = !ders_all_closed.empty();
-            if(valid_all_closed) {
-                auto min_ders_all_closed = compute_min_ders(ders_all_closed);
-                for (auto& iter : min_ders_all_closed) {
+            // First: Test for all flagged cover
+            bool valid_all_flagged = !ders_all_flagged.empty();
+            if(valid_all_flagged) {
+                auto min_ders_all_flagged = compute_min_ders(ders_all_flagged);
+                SMTRAT_LOG_DEBUG("smtrat.covering","Can flagged intervals cover the real line: ");
+                for (auto& iter : min_ders_all_flagged) {
+                    SMTRAT_LOG_DEBUG("smtrat.covering",iter->cell());
+                }
+                for (auto& iter : min_ders_all_flagged) {
                     std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
                     if (!cell_result) {
-                        valid_all_closed = false;
+                        valid_all_flagged = false;
                         break;
                     }
-                    result_all_closed.cells.emplace_back(*cell_result);
+                    result_all_flagged.cells.emplace_back(*cell_result);
                 }
             }
 
-            if(valid_all_closed) {
-                result_all_closed.ordering = compute_default_ordering(result_all_closed.cells);
-                valid_all_closed = valid_all_closed && result_all_closed.is_valid();
+            if(valid_all_flagged) {
+                result_all_flagged.ordering = compute_default_ordering(result_all_flagged.cells);
+                valid_all_flagged = valid_all_flagged && result_all_flagged.is_valid();
             }
 
-            SMTRAT_LOG_DEBUG("smtrat.covering","Can use pure closed intervals (containing open derivation (-oo;oo)): " << valid_all_closed);
-            if(valid_all_closed) return result_all_closed;
+            SMTRAT_LOG_DEBUG("smtrat.covering","Can pure flagged intervals cover the real line: " << valid_all_flagged);
+            if(valid_all_flagged) return result_all_flagged;
 
             // Second: Default cover
             auto min_ders_smallest = compute_min_ders(ders);
+            SMTRAT_LOG_DEBUG("smtrat.covering","Can all intervals cover the real line: ");
+            for (auto& iter : min_ders_smallest) {
+                SMTRAT_LOG_DEBUG("smtrat.covering",iter->cell());
+            }
             for (auto& iter : min_ders_smallest) {
                 std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
                 if (!cell_result) return std::nullopt;
