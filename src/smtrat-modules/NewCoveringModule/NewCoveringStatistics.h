@@ -26,6 +26,8 @@ private:
 	std::string mOperatorType = "";
 	std::string mSamplingAlgorithm = "";
 	std::string mIsSampleOutsideAlgorithm = "";
+	std::size_t mTotalSamples = 0;
+	std::size_t mBoundSamples = 0;
 	carl::statistics::timer mTimerComputeCovering;
 	carl::statistics::timer mTimerConstructDerivation;
 
@@ -43,7 +45,18 @@ public:
 		Statistics::addKeyValuePair("operator_type", mOperatorType);
 		Statistics::addKeyValuePair("sampling_algorithm", mSamplingAlgorithm);
 		Statistics::addKeyValuePair("is_sample_outside_algorithm", mIsSampleOutsideAlgorithm);
+		Statistics::addKeyValuePair("total_samples", mTotalSamples);
+		Statistics::addKeyValuePair("bound_samples", mBoundSamples);
 	}
+
+	void calledSample() {
+		mTotalSamples++;
+	}
+	void calledBoundSample() {
+		calledSample();
+		mBoundSamples++;
+	}
+
 	void called() {
 		mTotalCalls++;
 	}
