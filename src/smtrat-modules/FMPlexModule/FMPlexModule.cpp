@@ -151,7 +151,8 @@ Answer FMPlexModule<Settings>::checkCore() {
 				if (mModel.find(var) == mModel.end()) {
 					mModelFit = false;
 					break;
-				} else if (checkConstr.lcoeff(var) != 0) {
+				} else /*if (checkConstr.lcoeff(var) != 0)*/ {
+					// if statement is quickfix for now. there are terms in some multivariate polynomials that evaluate to 0 but have not been removed for some reason
 					substitute_inplace(checkConstr, var, Poly(mModel.find(var)->second.asRational()));
 				}
 			}
