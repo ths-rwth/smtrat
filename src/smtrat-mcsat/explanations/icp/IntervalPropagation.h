@@ -2,9 +2,9 @@
 
 #include "Dependencies.h"
 
-#include <carl/interval/Interval.h>
-#include <carl/intervalcontraction/Contractor.h>
-#include <carl/interval/sampling.h>
+#include <carl-arith/interval/Interval.h>
+#include <carl-arith/intervalcontraction/Contractor.h>
+#include <carl-arith/interval/sampling.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/utils/Bookkeeping.h>
 

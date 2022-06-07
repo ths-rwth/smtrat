@@ -6,9 +6,9 @@
  * for CAD properties, preconditions and invariants.
  */
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
 #include <smtrat-common/smtrat-common.h>
 
 #include <algorithm>

@@ -18,15 +18,15 @@
 #include <unordered_map>
 #include <vector>
 
-#include <carl/converter/CoCoAAdaptor.h>
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/poly/umvpoly/functions/Resultant.h>
-#include <carl/poly/umvpoly/UnivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/core/VariablePool.h>
-#include <carl/ran/real_roots.h>
-#include <carl/ran/ran.h>
-#include <carl/ran/RealAlgebraicPoint.h>
+#include <carl-arith/converter/CoCoAAdaptor.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/UnivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/core/VariablePool.h>
+#include <carl-arith/ran/real_roots.h>
+#include <carl-arith/ran/ran.h>
+#include <carl-arith/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-common/smtrat-common.h>
 

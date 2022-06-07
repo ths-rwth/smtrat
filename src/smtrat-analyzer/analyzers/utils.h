@@ -2,7 +2,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 
-#include <carl/poly/umvpoly/functions/Degree.h>
+#include <carl-arith/poly/umvpoly/functions/Degree.h>
 
 namespace smtrat::analyzer {
 

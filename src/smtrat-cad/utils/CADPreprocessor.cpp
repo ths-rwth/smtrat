@@ -1,6 +1,6 @@
 #include "CADPreprocessor.h"
 
-#include <carl/constraint/Substitution.h>
+#include <carl-arith/constraint/Substitution.h>
 #include <carl-formula/formula/functions/Complexity.h>
 
 namespace smtrat::cad {

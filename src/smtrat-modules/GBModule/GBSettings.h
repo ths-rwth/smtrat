@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat

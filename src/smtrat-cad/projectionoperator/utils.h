@@ -1,10 +1,10 @@
 #pragma once
 
-#include <carl/poly/umvpoly/functions/Factorization.h>
-#include <carl/poly/umvpoly/functions/PrimitivePart.h>
-#include <carl/poly/umvpoly/functions/Resultant.h>
-#include <carl/poly/umvpoly/functions/SquareFreePart.h>
-#include <carl/poly/umvpoly/functions/to_univariate_polynomial.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/PrimitivePart.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/SquareFreePart.h>
+#include <carl-arith/poly/umvpoly/functions/to_univariate_polynomial.h>
 
 namespace smtrat {
 namespace cad {

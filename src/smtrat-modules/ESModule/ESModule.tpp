@@ -9,7 +9,7 @@
 #include "ESModule.h"
 #include <smtrat-solver/Manager.h>
 
-#include <carl/constraint/Substitution.h>
+#include <carl-arith/constraint/Substitution.h>
 #include <carl-formula/formula/functions/Substitution.h>
 
 

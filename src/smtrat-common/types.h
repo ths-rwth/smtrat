@@ -1,8 +1,8 @@
 #pragma once
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/poly/VarInfo.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/poly/VarInfo.h>
 #include <carl-formula/formula/Formula.h>
 #include <carl-formula/formula/Logic.h>
 #include <carl-common/util/streamingOperators.h>

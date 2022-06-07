@@ -1,6 +1,6 @@
 #include "RNSEncoder.h"
 
-#include <carl/numbers/PrimeFactory.h>
+#include <carl-arith/numbers/PrimeFactory.h>
 
 namespace smtrat {
 

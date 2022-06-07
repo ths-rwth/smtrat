@@ -9,10 +9,10 @@
 #include <cmath>
 #include <limits>
 
-#include <carl/poly/umvpoly/functions/Derivative.h>
-#include <carl/poly/umvpoly/functions/SoSDecomposition.h>
-#include <carl/constraint/IntervalEvaluation.h>
-#include <carl/vs/Substitution.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/umvpoly/functions/SoSDecomposition.h>
+#include <carl-arith/constraint/IntervalEvaluation.h>
+#include <carl-arith/vs/Substitution.h>
 
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;

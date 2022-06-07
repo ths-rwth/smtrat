@@ -11,7 +11,7 @@
 
 #pragma once
 
-#include <carl/numbers/PrimeFactory.h>
+#include <carl-arith/numbers/PrimeFactory.h>
 #include <boost/math/common_factor.hpp>
 
 #include "Encoders/CardinalityEncoder.h"

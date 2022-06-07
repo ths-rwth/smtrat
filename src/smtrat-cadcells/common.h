@@ -2,7 +2,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
-#include <carl/ran/ran.h>
+#include <carl-arith/ran/ran.h>
 
 namespace smtrat::cadcells {
 

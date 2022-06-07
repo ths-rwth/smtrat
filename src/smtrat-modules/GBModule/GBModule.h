@@ -15,7 +15,7 @@
 #pragma once
 
 // Datastructures from carl
-#include <carl/groebner/groebner.h>
+#include <carl-arith/groebner/groebner.h>
 
 // General Module interface
 #include <smtrat-solver/Module.h>

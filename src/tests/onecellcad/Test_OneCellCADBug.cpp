@@ -7,8 +7,8 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
 #include <carl-formula/model/evaluation/ModelEvaluation.h>
 
 #include <smtrat-mcsat/explanations/onecellcad/Explanation.h>

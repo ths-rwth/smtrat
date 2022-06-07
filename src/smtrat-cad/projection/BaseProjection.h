@@ -3,7 +3,7 @@
 #include <functional>
 #include <vector>
 
-#include <carl/poly/umvpoly/functions/IntervalEvaluation.h>
+#include <carl-arith/poly/umvpoly/functions/IntervalEvaluation.h>
 
 #include "../common.h"
 #include "../utils/CADConstraints.h"

@@ -6,7 +6,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 #include <carl-formula/model/Assignment.h>
-#include <carl/ran/real_roots.h>
+#include <carl-arith/ran/real_roots.h>
 
 #include <algorithm>
 

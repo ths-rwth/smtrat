@@ -10,7 +10,7 @@
 #include "../common.h"
 #include "../Settings.h"
 #include "../debug/DotHelper.h"
-#include <carl/constraint/IntervalEvaluation.h>
+#include <carl-arith/constraint/IntervalEvaluation.h>
 
 namespace smtrat {
 namespace cad {

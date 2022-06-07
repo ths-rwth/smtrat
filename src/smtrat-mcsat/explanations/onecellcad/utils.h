@@ -1,10 +1,10 @@
 #pragma once
 
-#include <carl/poly/umvpoly/functions/Derivative.h>
-#include <carl/poly/umvpoly/functions/Factorization.h>
-#include <carl/poly/umvpoly/functions/Resultant.h>
-#include <carl/poly/umvpoly/functions/Definiteness.h>
-#include <carl/poly/umvpoly/functions/Representation.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/Definiteness.h>
+#include <carl-arith/poly/umvpoly/functions/Representation.h>
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
@@ -18,7 +18,7 @@
 #include <variant>
 #include <vector>
 
-#include <carl/ran/ran.h>
+#include <carl-arith/ran/ran.h>
 #include "RealAlgebraicPoint.h"
 
 #include "OCStatistics.h"

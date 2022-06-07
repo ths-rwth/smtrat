@@ -2,7 +2,7 @@
 
 #include "utils.h"
 
-#include <carl/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
 
 namespace smtrat {
 namespace cad {

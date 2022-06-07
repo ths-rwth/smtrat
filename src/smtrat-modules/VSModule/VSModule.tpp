@@ -8,8 +8,8 @@
 
 #include "VSModule.h"
 
-#include <carl/vs/Substitution.h>
-#include <carl/vs/Evaluation.h>
+#include <carl-arith/vs/Substitution.h>
+#include <carl-arith/vs/Evaluation.h>
 
 #ifdef VS_STATE_DEBUG_METHODS
 //#define VS_DEBUG_METHODS

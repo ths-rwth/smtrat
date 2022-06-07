@@ -8,7 +8,7 @@
 
 #include "LVEModule.h"
 
-#include <carl/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
 #include <carl-formula/model/substitutions/ModelConditionalSubstitution.h>
 
 #include "utils.h"

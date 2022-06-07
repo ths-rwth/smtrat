@@ -6,8 +6,8 @@
 
 #include "polynomials.h"
 
-#include <carl/poly/umvpoly/functions/Factorization.h>
-#include <carl/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
 
 namespace smtrat::cadcells::datastructures {
 

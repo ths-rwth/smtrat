@@ -16,13 +16,15 @@ ExternalProject_Add(
 	CArL-EP
 	DOWNLOAD_COMMAND ""
 	CONFIGURE_COMMAND ""
-	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} resources carl carl-covering carl-extpolys carl-io carl-logging carl-model carl-settings carl-statistics
+	BUILD_COMMAND ${CMAKE_MAKE_PROGRAM} resources libs
 	INSTALL_COMMAND ${CMAKE_MAKE_PROGRAM} install/fast
 )
 
 ExternalProject_Get_Property(CArL-EP BINARY_DIR)
 
 include(${CMAKE_BINARY_DIR}/resources/src/CArL-EP-build/carlConfig.cmake)
-add_dependencies(carl-shared CArL-EP)
-add_dependencies(carl-static CArL-EP)
-add_dependencies(resources carl-shared carl-static)
+add_dependencies(carl-arith-shared CArL-EP)
+add_dependencies(carl-arith-static CArL-EP)
+add_dependencies(carl-formula-shared CArL-EP)
+add_dependencies(carl-formula-static CArL-EP)
+add_dependencies(resources CArL-EP)

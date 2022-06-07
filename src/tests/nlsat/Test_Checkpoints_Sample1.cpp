@@ -4,7 +4,7 @@
 
 #if false
 
-#include <carl/core/VariablePool.h>
+#include <carl-arith/core/VariablePool.h>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {

@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-#include <carl/constraint/Substitution.h>
+#include <carl-arith/constraint/Substitution.h>
 
 namespace smtrat::cad {
 
