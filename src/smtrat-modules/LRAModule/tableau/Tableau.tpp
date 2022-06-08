@@ -1521,7 +1521,7 @@ namespace smtrat
                     }
 
                     // Abort computation of candidates after finding one with progress (atleast mFullCandidateSearch times all canidates are evaluated, then the amount increases depending on state of computation)
-                    if(mPivotingSteps > mFullCandidateSearch && column > mPivotingSteps/5.0){
+                    if(mPivotingSteps > mFullCandidateSearch && column > (double)mPivotingSteps/5.0){
                         if(found_improvement){
                             break;
                         }
@@ -1799,7 +1799,7 @@ namespace smtrat
                 }
             }
             SMTRAT_LOG_DEBUG("smtrat", "Found multiline-conflict:");
-            for(auto c: conflict){
+            for([[maybe_unused]] auto c: conflict){
                 SMTRAT_LOG_DEBUG("smtrat", *c->origins().begin());
             }
             return conflict;
@@ -2683,7 +2683,7 @@ namespace smtrat
                     }
                 }
             }
-            return std::move(conflicts);
+            return conflicts;
         }
 
         template<class Settings, typename T1, typename T2>

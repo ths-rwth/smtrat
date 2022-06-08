@@ -641,7 +641,7 @@ namespace smtrat
             }
         }
         // TODO: This is a rather unfortunate hack, because I couldn't fix the efficient neq-constraint-handling with integer-valued constraints
-        if(true || _result != UNKNOWN && !rReceivedFormula().is_real_constraint_conjunction() )
+        if(true || (_result != UNKNOWN && !rReceivedFormula().is_real_constraint_conjunction()) )
         {
             for( auto iter = mActiveResolvedNEQConstraints.begin(); iter != mActiveResolvedNEQConstraints.end(); ++iter )
             {

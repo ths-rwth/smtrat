@@ -2065,7 +2065,7 @@ namespace smtrat
     }
 
     template<class Settings>
-    void VSModule<Settings>::logConditions( const State& _state, bool _assumption, const std::string& _description, bool _logAsDeduction ) const
+    void VSModule<Settings>::logConditions( const State& _state, [[maybe_unused]] bool _assumption, const std::string& _description, bool _logAsDeduction ) const
     {
         if( !_state.conditions().empty() )
         {
