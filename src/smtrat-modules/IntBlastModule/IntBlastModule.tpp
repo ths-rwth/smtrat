@@ -92,7 +92,7 @@ namespace smtrat
             const Poly& poly = constraint.lhs();
             carl::Variables variablesInFormula = carl::arithmetic_variables(formula).as_set();
             for(auto termIt = poly.begin();termIt != poly.end();++termIt) {
-                if(termIt->getNrVariables() > 1 || ! termIt->is_linear()) {
+                if(termIt->num_variables() > 1 || ! termIt->is_linear()) {
                     carl::variables(*termIt, nonlinearVariablesInFormula);
                 }
             }

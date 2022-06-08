@@ -93,7 +93,7 @@ namespace smtrat
                     auto iter_poly = _subformula->formula().constraint().lhs().begin();
                     while( iter_poly != _subformula->formula().constraint().lhs().end() )
                     {
-                        if( iter_poly->getNrVariables() > 1 )
+                        if( iter_poly->num_variables() > 1 )
                         {
                             auto temp = carl::variables(*iter_poly);
                             if( temp.has( *iter_var ) )
@@ -161,7 +161,7 @@ namespace smtrat
                     {
                         if( !iter_poly->is_constant() )
                         {
-                            if( iter_poly->getNrVariables() == 1 && iter_poly->monomial().get()->begin()->first == *iter_var )
+                            if( iter_poly->num_variables() == 1 && iter_poly->monomial().get()->begin()->first == *iter_var )
                             {
                                 if( (Rational)iter_poly->coeff() > 0 )
                                 {
@@ -899,7 +899,7 @@ namespace smtrat
             {
                 if( mNonLinear )
                 {
-                    if( iter_poly->getNrVariables() == 1 )
+                    if( iter_poly->num_variables() == 1 )
                     {
                         const carl::Monomial* temp = iter_poly->monomial().get();
                         if( forbidden_fruits.find( temp->begin()->first ) == forbidden_fruits.end() )
@@ -925,7 +925,7 @@ namespace smtrat
                 }
                 if( !iter_poly->is_constant() )
                 {
-                    if( iter_poly->getNrVariables() == 1 )
+                    if( iter_poly->num_variables() == 1 )
                     {
                         if( forbidden_fruits.end() == forbidden_fruits.find( iter_poly->monomial().get()->begin()->first ) )
                         {
@@ -1011,7 +1011,7 @@ namespace smtrat
         auto iter_poly_upper = ucExpanded.begin();
         while( iter_poly_upper != ucExpanded.end() )
         {
-            if( !iter_poly_upper->is_constant() && iter_poly_upper->getNrVariables() == 1 )
+            if( !iter_poly_upper->is_constant() && iter_poly_upper->num_variables() == 1 )
             {
                 if( iter_poly_upper->monomial().get()->begin()->first == corr_var )
                 {
@@ -1026,7 +1026,7 @@ namespace smtrat
         auto iter_poly_lower = lcExpanded.begin();
         while( iter_poly_lower != lcExpanded.end() )
         {
-            if( !iter_poly_lower->is_constant() && iter_poly_lower->getNrVariables() == 1 )
+            if( !iter_poly_lower->is_constant() && iter_poly_lower->num_variables() == 1 )
             {
                 if( iter_poly_lower->monomial().get()->begin()->first == corr_var )
                 {

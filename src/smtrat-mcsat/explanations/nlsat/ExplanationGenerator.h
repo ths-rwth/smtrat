@@ -121,7 +121,7 @@ private:
 			const auto& poly = mProjection.getPolynomialById(level, pid);
 			if (carl::is_zero(carl::substitute(poly, model))) continue;
 			auto polyvars = carl::variables(poly);
-			polyvars.erase(poly.mainVar());
+			polyvars.erase(poly.main_var());
 			auto list = carl::real_roots(poly, *carl::get_ran_assignment(polyvars, mModel));
 			if (list.is_nullified()) continue;
 			assert(list.is_univariate());

@@ -58,7 +58,7 @@ namespace smtrat::qe::cad {
 			assert(level > 0 && level <= dim());
 			if (smtrat::cad::projection::canBeRemoved(p)) return carl::Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			assert(p.mainVar() == var(level));
+			assert(p.main_var() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				assert(polys(level)[it->second]);
@@ -101,7 +101,7 @@ namespace smtrat::qe::cad {
 		}
 
 		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
-			assert(p.mainVar() == var(1));
+			assert(p.main_var() == var(1));
 			return addToProjection(1, p, Origin::BaseType(0, cid));
 		}
 		void removePolynomial(const UPoly&, std::size_t cid, bool) override {

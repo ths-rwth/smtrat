@@ -135,7 +135,7 @@ namespace vs
             {
                 if( term->has( _consideredVariable ) )
                 {
-                    if( term->getNrVariables() > 1 )
+                    if( term->num_variables() > 1 )
                     {
                         allOtherMonomialsPos = false;
                         allOtherMonomialsNeg = false;

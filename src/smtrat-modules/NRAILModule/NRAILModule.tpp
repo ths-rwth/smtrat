@@ -293,7 +293,7 @@ namespace smtrat
         }
 
 
-        if (monomial->nrVariables() == 1 && monomial->is_linear()) {
+        if (monomial->num_variables() == 1 && monomial->is_linear()) {
 
             if (smtrat::LOG::getInstance().isDebugEnabled()) {
                 std::cout << "final Linear Monomial: " << monomial << " tDeg: " << monomial->tdeg();

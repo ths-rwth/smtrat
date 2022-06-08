@@ -179,7 +179,7 @@ bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vec
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     Poly mp(poly);
     UPoly p = poly;
-    assert(p.mainVar() == mVars[level]);
+    assert(p.main_var() == mVars[level]);
     while (carl::is_constant(p)) {
         ++level;
         p = carl::to_univariate_polynomial(mp, mVars[level]);

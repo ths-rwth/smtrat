@@ -47,7 +47,7 @@ namespace smtrat
 
         auto variableAndExponent = *(monomial->begin());
 
-        if(monomial->nrVariables() > 1) {
+        if(monomial->num_variables() > 1) {
             carl::Monomial::Arg head = carl::MonomialPool::getInstance().create(variableAndExponent.first, variableAndExponent.second);
             carl::Monomial::Arg tail = monomial->drop_variable(variableAndExponent.first);
             return create(poly, PolyTree::Type::PRODUCT, Poly(head), Poly(tail));

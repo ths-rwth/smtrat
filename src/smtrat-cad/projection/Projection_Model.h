@@ -95,7 +95,7 @@ namespace cad {
                                 auto psubs = carl::substitute(poly, model);
                                 if (carl::is_zero(psubs)) continue;
 								auto polyvars = carl::variables(poly);
-								polyvars.erase(poly.mainVar());
+								polyvars.erase(poly.main_var());
                                 auto list = carl::real_roots(poly, *carl::get_ran_assignment(polyvars, model));
 								if (list.is_nullified()) continue;
 								assert(list.is_univariate());
@@ -132,7 +132,7 @@ namespace cad {
                                 return;
 			} 
                         SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			assert(p.mainVar() == var(level));
+			assert(p.main_var() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				// We already have this polynomial.
@@ -153,7 +153,7 @@ namespace cad {
 				return addToProjection(level + 1, carl::switch_main_variable(p, var(level+1)), origin);
 			} 
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			assert(p.mainVar() == var(level));
+			assert(p.main_var() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				// We already have this polynomial.
@@ -198,7 +198,7 @@ namespace cad {
 		 */
 		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " from constraint " << cid);
-			assert(p.mainVar() == var(1));
+			assert(p.main_var() == var(1));
 			return addToProjection(1, p, cid);
 		}
 		/**
@@ -246,7 +246,7 @@ namespace cad {
 						}
                         
                         for(const auto& it: polys(level)) {
-                            assert(it.first.mainVar() == var(level));
+                            assert(it.first.main_var() == var(level));
                             
                             mOperator(Settings::projectionOperator, it.first, var(level + 1), 
                                 [&](const UPoly& np){ addToCorrectLevel(level + 1, np, it.second); }

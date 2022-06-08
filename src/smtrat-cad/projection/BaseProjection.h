@@ -60,7 +60,7 @@ namespace cad {
 			if (Settings::simplifyProjectionByBounds) {
 				carl::Interval<Rational> res;
 				const auto& map = mConstraints.bounds().getEvalIntervalMap();
-				if (map.count(p.mainVar()) > 0) {
+				if (map.count(p.main_var()) > 0) {
 					res = carl::evaluate(p, map);
 				} else {
 					res = carl::evaluate(Poly(p), map);

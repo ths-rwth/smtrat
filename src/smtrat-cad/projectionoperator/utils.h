@@ -95,7 +95,7 @@ template<typename Poly, typename Callback>
 void returnPoly(const Poly& p, Callback&& cb) {
 	if (true) {
 		for (const auto& fact: carl::factorization(carl::MultivariatePolynomial<Rational>(p), false)) {
-			auto uf = carl::to_univariate_polynomial(fact.first, p.mainVar());
+			auto uf = carl::to_univariate_polynomial(fact.first, p.main_var());
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << uf);
 			cb(uf);
 		}
