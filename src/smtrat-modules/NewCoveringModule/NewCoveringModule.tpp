@@ -56,9 +56,13 @@ void NewCoveringModule<Settings>::removeCore(ModuleInput::const_iterator _subfor
 
 template<class Settings>
 void NewCoveringModule<Settings>::updateModel() const {
+    carl::carlVariables vars(carl::variable_type_filter::real());
+    rReceivedFormula().gatherVariables(vars);
     clearModel();
     for (const auto& pair : mLastAssignment) {
-        mModel.assign(pair.first, pair.second);
+        if (vars.has(pair.first)) {
+            mModel.assign(pair.first, pair.second);
+        }
     }
 }
 
@@ -402,6 +406,19 @@ Answer NewCoveringModule<Settings>::checkCore() {
         // remove all stored information in the backend
         backend.resetStoredData(0);
         mLastAssignment.clear(); // There is no satisfying assignment
+
+        // run complete backend
+        for(auto iter_recv = rReceivedFormula().begin(); iter_recv != rReceivedFormula().end();  ++iter_recv) {
+            addReceivedSubformulaToPassedFormula(iter_recv);
+        }
+        auto result = runBackends();
+        assert(result == Answer::SAT || result == Answer::UNSAT);
+        if (result == Answer::SAT) {
+            getBackendsModel();
+        } else if (result == Answer::UNSAT) {
+            getInfeasibleSubsets();
+        }
+        return result;
     }
 
     updateModel(); // Update the model according to the last assignment from the backend
