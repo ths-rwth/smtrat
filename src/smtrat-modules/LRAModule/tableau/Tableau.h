@@ -323,6 +323,16 @@ namespace smtrat
                             mpEntries( _iter.pEntries() )
                         {}
 
+                        void operator=(const Iterator& _iter ) {
+                            mEntryID = _iter.entryID();
+                            mpEntries = _iter.pEntries();
+                        }
+
+                        void operator=(Iterator&& _iter ) {
+                            mEntryID = _iter.entryID();
+                            mpEntries = std::move(_iter.pEntries());
+                        }
+
                         /**
                          * @return 
                          */

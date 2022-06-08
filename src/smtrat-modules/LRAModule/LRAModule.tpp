@@ -169,6 +169,7 @@ namespace smtrat
 							mActiveUnresolvedNEQConstraints.insert( std::pair< FormulaT, Context >( formula, std::move(context) ) );
 						}
 					}
+                    return true;
 				}
 				else
 				{
