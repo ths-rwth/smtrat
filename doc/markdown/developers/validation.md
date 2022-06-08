@@ -31,3 +31,7 @@ To combine the two steps above, use:
 By appending the command line parameter `--validation.export-smtlib`, the formulas are stored to an smtlib file (by default `validation.smt2`, can be customized using `--validation.smtlib-filename`).
 
 Note that all channels of interest need to be activated explicitly with  `--validation.channel channel1 --validation.channel channel2 ...`. Furthermore, `--validation.channel path.to` will activate all channels starting with `path.to`, i.e. `path.to.channel1`, `path.to.channel2` etc.
+
+### Segmentation faults
+
+Note that the formulas are only written to a file if smtrat terminates without an segmentation fault. If there is an assertion failing, set `DEVELOPER=OFF` in cmake. 
