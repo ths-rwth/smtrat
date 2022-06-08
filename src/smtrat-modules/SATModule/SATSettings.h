@@ -172,6 +172,10 @@ struct SATSettingsMCSATFMICPVSOCNew : SATSettingsMCSAT {
     static constexpr auto moduleName = "SATModule<SATSettingsMCSATFMICPVSOCNew>";
     using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNew;
 };
+struct SATSettingsMCSATFMICPVSOCNewOC : SATSettingsMCSAT {
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATFMICPVSOCNewOC>";
+    using MCSATSettings = mcsat::MCSATSettingsFMICPVSOCNewOC;
+};
 
 struct SATSettingsMCSATFMICPVSOCLWH12 : SATSettingsMCSAT {
     static constexpr auto moduleName = "SATModule<MCSATFMICPVSOCLWH12>";
