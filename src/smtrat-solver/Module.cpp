@@ -20,9 +20,6 @@
 #include <limits.h>
 #include <cmath>
 
-// Flag activating some informative and not exaggerated output about module calls.
-//#define DEBUG_MODULE_CALLS_IN_SMTLIB
-
 using namespace carl;
 
 namespace smtrat
@@ -97,12 +94,6 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Statistics
 		++mStatistics.check_count;
         #endif
-        #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
-        std::cout << "(assert (and";
-        for( auto& subformula : *mpReceivedFormula )
-            std::cout << " " << subformula.formula();
-        std::cout << "))\n";
-        #endif
         clearLemmas();
         if( rReceivedFormula().empty() )
         {
@@ -115,7 +106,7 @@ namespace smtrat
         assert( result != UNSAT || hasValidInfeasibleSubset() );
         if( result != UNKNOWN && !mpReceivedFormula->empty() )
         {
-            SMTRAT_VALIDATION_ADD("smtrat.module.theory_call",moduleName(),(FormulaT)*mpReceivedFormula,result);
+            SMTRAT_VALIDATION_ADD("smtrat.module.theory_call",moduleName(),(FormulaT)*mpReceivedFormula,result==SAT);
         }
         
 		receivedFormulaChecked();
