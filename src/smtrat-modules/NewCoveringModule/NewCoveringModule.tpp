@@ -238,17 +238,7 @@ std::optional<Answer> NewCoveringModule<Settings>::doIncremtalAndBacktracking() 
     std::sort(mRemoveConstraints.begin(), mRemoveConstraints.end());
     std::sort(mUnknownConstraints.begin(), mUnknownConstraints.end());
     std::set_intersection(mUnknownConstraints.begin(), mUnknownConstraints.end(), mRemoveConstraints.begin(), mRemoveConstraints.end(), std::back_inserter(intersection));
-
-    if (intersection.size() > 0) {
-        // There is an intersection between the two vectors
-        // This means that we need to remove the intersection from the remove constraints
-        // NOTE: This is a rare case, but it can happen
-        // We remove the intersection from the remove constraints
-        SMTRAT_LOG_DEBUG("smtrat.covering", "Intersection between unknown and remove constraints: " << intersection);
-        for (const auto& constraint : intersection) {
-            mRemoveConstraints.erase(std::remove(mRemoveConstraints.begin(), mRemoveConstraints.end(), constraint), mRemoveConstraints.end());
-        }
-    }
+    assert(intersection.size() == 0);
 
     if (mLastAnswer == Answer::SAT) {
         // first trivially remove the constraints
@@ -349,7 +339,6 @@ Answer NewCoveringModule<Settings>::checkCore() {
             // BACKTRACKING CALL ONLY
 
             if (Settings::backtracking) {
-
                 auto ans = doBacktracking();
                 // check if we can trivially deduce the answer
                 if (ans) {
@@ -396,6 +385,14 @@ Answer NewCoveringModule<Settings>::checkCore() {
         // we have to delete all stored information and completely re-initialize the backend
         backend.resetStoredData(0);
         backend.resetDerivationToConstraintMap();
+        for (auto& constraint : mUnknownConstraints) {
+            backend.addConstraint(constraint.constraint());
+        }
+        mUnknownConstraints.clear();
+        for (auto& constraint : mRemoveConstraints) {
+            backend.removeConstraint(constraint.constraint());
+        }
+        mRemoveConstraints.clear();
     }
 
     // As getUnsatCover is recursive we always have to start at level 0
@@ -418,7 +415,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
             addReceivedSubformulaToPassedFormula(iter_recv);
         }
         auto result = runBackends();
-        assert(result == Answer::SAT || result == Answer::UNSAT);
+        //assert(result == Answer::SAT || result == Answer::UNSAT);
         if (result == Answer::SAT) {
             getBackendsModel();
         } else if (result == Answer::UNSAT) {
