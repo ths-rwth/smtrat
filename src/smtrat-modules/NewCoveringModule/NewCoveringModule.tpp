@@ -319,6 +319,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
         if (mUnknownConstraints.empty() && mRemoveConstraints.empty()) {
             // We dont have any new constraints and can just return the last value derived by the backend
             // Why does this even happen??
+            processAnswer();
             return mLastAnswer;
         }
 
@@ -330,6 +331,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
                 auto ans = doIncremental();
                 // check if we can trivially deduce the answer
                 if (ans) {
+                    mLastAnswer = *ans;
+                    processAnswer();
                     return *ans;
                 }
             } else {
@@ -350,6 +353,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
                 auto ans = doBacktracking();
                 // check if we can trivially deduce the answer
                 if (ans) {
+                    mLastAnswer = *ans;
+                    processAnswer();
                     return *ans;
                 }
             } else {
@@ -369,6 +374,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
                 auto ans = doIncremtalAndBacktracking();
                 // check if we can trivially deduce the answer
                 if (ans) {
+                    mLastAnswer = *ans;
+                    processAnswer();
                     return *ans;
                 }
             } else {
@@ -396,13 +403,8 @@ Answer NewCoveringModule<Settings>::checkCore() {
 
     SMTRAT_LOG_DEBUG("smtrat.covering", "Check Core returned: " << mLastAnswer);
 
-    if (mLastAnswer == Answer::UNSAT) {
-        mInfeasibleSubsets.push_back(backend.getInfeasibleSubset());
-        SMTRAT_LOG_DEBUG("smtrat.covering", "Infeasible Subset: " << mInfeasibleSubsets.back());
-        mLastAssignment.clear(); // There is no satisfying assignment
-
-    } else if (mLastAnswer == Answer::SAT) {
-        mLastAssignment = backend.getCurrentAssignment();
+    if (mLastAnswer == Answer::UNSAT || mLastAnswer == Answer::SAT) {
+        processAnswer();
     } else {
         // Answer is UNKNOWN and something went wrong
         SMTRAT_LOG_DEBUG("smtrat.covering", "Backend encountered an error: " << mLastAnswer);
@@ -425,9 +427,21 @@ Answer NewCoveringModule<Settings>::checkCore() {
         return result;
     }
 
-    updateModel(); // Update the model according to the last assignment from the backend
-
     return mLastAnswer;
 }
+
+template<typename Settings>
+void NewCoveringModule<Settings>::processAnswer() {
+    if (mLastAnswer == Answer::UNSAT) {
+        mInfeasibleSubsets.push_back(backend.getInfeasibleSubset());
+        SMTRAT_LOG_DEBUG("smtrat.covering", "Infeasible Subset: " << mInfeasibleSubsets.back());
+        mLastAssignment.clear(); // There is no satisfying assignment
+
+    } else if (mLastAnswer == Answer::SAT) {
+        mLastAssignment = backend.getCurrentAssignment();
+    }
+    updateModel(); // Update the model according to the last assignment from the backend
+}
+
 } // namespace smtrat
 

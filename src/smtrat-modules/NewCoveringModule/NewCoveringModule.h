@@ -113,6 +113,12 @@ public:
      */
     Answer checkCore();
 
+    /**
+     * Processes the current answer, i.e. computes a model or adds the infeasible subset.
+     * 
+     */
+    void processAnswer();
+
     // ----Backend Interfaces for addition and removal of constraints if the previous call was SAT ----
 
     /**
