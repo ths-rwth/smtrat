@@ -42,6 +42,8 @@ bool NewCoveringModule<Settings>::addCore(ModuleInput::const_iterator _subformul
     // Incremental call
     assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
     mUnknownConstraints.push_back(_subformula->formula());
+    //std::erase(mRemoveConstraints,_subformula->formula());
+    mRemoveConstraints.erase(std::remove(mRemoveConstraints.begin(), mRemoveConstraints.end(), _subformula->formula()), mRemoveConstraints.end());
     SMTRAT_LOG_DEBUG("smtrat.covering", "Adding new unknown constraint: " << _subformula->formula().constraint());
     return true;
 }
@@ -51,6 +53,8 @@ void NewCoveringModule<Settings>::removeCore(ModuleInput::const_iterator _subfor
     // Backtracking
     assert(_subformula->formula().type() == carl::FormulaType::CONSTRAINT);
     mRemoveConstraints.push_back(_subformula->formula());
+    //std::erase(mUnknownConstraints,_subformula->formula());
+    mUnknownConstraints.erase(std::remove(mUnknownConstraints.begin(), mUnknownConstraints.end(), _subformula->formula()), mUnknownConstraints.end());
     SMTRAT_LOG_DEBUG("smtrat.covering", "Adding to remove constraint: " << _subformula->formula().constraint());
 }
 
