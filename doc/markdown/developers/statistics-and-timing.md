@@ -38,6 +38,8 @@ public:
 #endif
 ```
 
+Note that neither the key nor the value are allowed to contain spaces, `(` or `)`.
+
 This is then instantiated by calling
 
     #ifdef SMTRAT_DEVOPTION_Statistics
