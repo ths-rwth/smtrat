@@ -15,6 +15,7 @@
 #include <carl-arith/poly/umvpoly/functions/RootBounds.h>
 #include <carl-arith/poly/umvpoly/functions/RootCounting.h>
 #include <carl-arith/constraint/IntervalEvaluation.h>
+#include <carl-arith/poly/umvpoly/functions/Evaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -2467,8 +2468,8 @@ namespace vs
                 smtrat::RationalInterval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
                 int numberOfRoots = carl::count_real_roots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
-                smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
-                smtrat::Rational imageOfRightBound = rup.evaluate( rightBound );
+                smtrat::Rational imageOfLeftBound = carl::evaluate(rup, leftBound);
+                smtrat::Rational imageOfRightBound = carl::evaluate(rup, rightBound);
                 if( imageOfLeftBound == Rational(0) )
                     ++numberOfRoots;
                 if( imageOfRightBound == Rational(0) )

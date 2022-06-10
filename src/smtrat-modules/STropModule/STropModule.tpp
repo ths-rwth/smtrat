@@ -374,6 +374,7 @@ namespace smtrat
 				);
 			default:
 				assert(false);
+				return FormulaT();
 		}
 	}
 	
