@@ -23,7 +23,7 @@ FMPlexModule<Settings>::FMPlexModule(const ModuleInput* _formula, Conditionals& 
 template<typename Settings>
 bool FMPlexModule<Settings>::addCore(ModuleInput::const_iterator formula) {
 	//assert(formula->formula().getType() == carl::CONSTRAINT);
-	assert(formula->formula().constraint().maxDegree() <= 1);
+	assert(formula->formula().constraint().max_degree() <= 1);
 	if (formula->formula().constraint().relation() == carl::Relation::LEQ) {
 		auto formulaPtr = std::make_shared<BasicConstraint>(formula->formula().constraint().lhs(), carl::Relation::LEQ);
 		mAllConstraints.push_back(formulaPtr);
@@ -316,7 +316,7 @@ void FMPlexModule<Settings>::updateModel() const {
 							substitute_inplace(lhs, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 						}
 					}
-					Rational varValue = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
+					Rational varValue = (Rational(-1) * lhs.constant_part()) / lhs.lcoeff(itr->varToEliminate.get()).constant_part();
 					mModel.assign(var, varValue);
 				} else {
 					// We cannot put it on the bound as the inequality is strict
@@ -328,7 +328,7 @@ void FMPlexModule<Settings>::updateModel() const {
 							}
 
 						}
-						Rational glb = (Rational(-1) * glbLhs.constantPart()) / glbLhs.lcoeff(itr->varToEliminate.get()).constantPart();
+						Rational glb = (Rational(-1) * glbLhs.constant_part()) / glbLhs.lcoeff(itr->varToEliminate.get()).constant_part();
 						// So now we need to find the sub
 						Rational sub;
 						bool set = false;
@@ -339,7 +339,7 @@ void FMPlexModule<Settings>::updateModel() const {
 									substitute_inplace(lhs, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 								}
 							}
-							Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
+							Rational bound = (Rational(-1) * lhs.constant_part()) / lhs.lcoeff(itr->varToEliminate.get()).constant_part();
 							if (!set || bound < sub) {
 								sub = bound;
 								set = true;
@@ -354,7 +354,7 @@ void FMPlexModule<Settings>::updateModel() const {
 								substitute_inplace(subLhs, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 							}
 						}
-						Rational sub = (Rational(-1) * subLhs.constantPart()) / subLhs.lcoeff(itr->varToEliminate.get()).constantPart();
+						Rational sub = (Rational(-1) * subLhs.constant_part()) / subLhs.lcoeff(itr->varToEliminate.get()).constant_part();
 						// So now we need to find the glb
 						Rational glb;
 						bool set = false;
@@ -366,7 +366,7 @@ void FMPlexModule<Settings>::updateModel() const {
 								}
 
 							}
-							Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
+							Rational bound = (Rational(-1) * lhs.constant_part()) / lhs.lcoeff(itr->varToEliminate.get()).constant_part();
 							if (!set || bound > glb) {
 								glb = bound;
 								set = true;
@@ -390,7 +390,7 @@ void FMPlexModule<Settings>::updateModel() const {
 								substitute_inplace(lhs, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 							}
 						}
-						Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
+						Rational bound = (Rational(-1) * lhs.constant_part()) / lhs.lcoeff(itr->varToEliminate.get()).constant_part();
 						// subtract 1 in case it's a strict bound
 						if (c.constraint.relation() == carl::Relation::LESS) bound = bound - Rational(1);
 						if (!set || bound < sub) {
@@ -411,7 +411,7 @@ void FMPlexModule<Settings>::updateModel() const {
 								substitute_inplace(lhs, modelValuation.first.asVariable(), Poly(modelValuation.second.asRational()));
 							}
 						}
-						Rational bound = (Rational(-1) * lhs.constantPart()) / lhs.lcoeff(itr->varToEliminate.get()).constantPart();
+						Rational bound = (Rational(-1) * lhs.constant_part()) / lhs.lcoeff(itr->varToEliminate.get()).constant_part();
 						// add 1 in case it's a strict bound
 						if (c.constraint.relation() == carl::Relation::LESS) bound = bound + Rational(1);
 						if (!set || bound > glb) {
@@ -463,7 +463,7 @@ typename FMPlexModule<Settings>::ConstraintWithInfo FMPlexModule<Settings>::comb
 
 	// Determine needed factor, conflict level and relation of the new constraint
 	BranchIterator cl;
-	Rational factor = abs(elimineePolynomial.lcoeff(var).constantPart()) / abs(eliminatorPolynomial.lcoeff(var).constantPart());
+	Rational factor = abs(elimineePolynomial.lcoeff(var).constant_part()) / abs(eliminatorPolynomial.lcoeff(var).constant_part());
 	carl::Relation rel;
 	if (sameBound) {
 		// Factor has to be negative
@@ -689,7 +689,7 @@ typename FMPlexModule<Settings>::BranchIterator FMPlexModule<Settings>::FmplexLv
 			sum = sum + Rational(devCoeff.second) * devCoeff.first.get()->lhs();
 			//std::cout << "og constraint (" << devCoeff.first.get()->lhs()  << devCoeff.first.get()->relation() << "0 ) * " << Rational(devCoeff.second) << "\n";
 		}
-		assert(cConstr->constraint.lhs().constantPart() == sum.constantPart());*/
+		assert(cConstr->constraint.lhs().constant_part() == sum.constant_part());*/
 
 		bool posFound = false;
 		bool negFound = false;
@@ -736,7 +736,7 @@ void FMPlexModule<Settings>::FmplexLvl::sortConnectorIntoSameOppositeNone(Constr
 	for (typename ConstraintList::iterator c = connector.begin(); c != connector.end(); c++) {
 		auto vars = carl::variables(c->constraint.lhs());
 		if (std::find(vars.begin(), vars.end(), varToEliminate.get()) != vars.end()){
-			Rational coeff = c->constraint.lhs().lcoeff(varToEliminate.get()).constantPart();
+			Rational coeff = c->constraint.lhs().lcoeff(varToEliminate.get()).constant_part();
 			if (eliminateViaLB == (coeff < Rational(0))){
 				// Eliminator and Eliminee are the same kind of bound
 				sameBounds.push_back(*c);
@@ -757,4 +757,3 @@ void FMPlexModule<Settings>::FmplexLvl::sortConnectorIntoSameOppositeNone(Constr
 }
 
 }
-#include "Instantiation.h"

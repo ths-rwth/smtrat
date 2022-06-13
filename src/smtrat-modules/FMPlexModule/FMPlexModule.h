@@ -11,8 +11,9 @@
 #include <smtrat-solver/Module.h>
 #include <utility>
 #include <smtrat-common/statistics/Statistics.h>
-#include <carl/constraint/BasicConstraint.h>
+#include <carl-arith/constraint/BasicConstraint.h>
 #include "FMPlexSettings.h"
+#include <boost/optional/optional.hpp>
 
 namespace smtrat {
 	template<typename Settings>
