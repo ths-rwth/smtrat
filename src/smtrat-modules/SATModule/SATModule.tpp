@@ -99,7 +99,6 @@ namespace smtrat
         qhead( 0 ),
         simpDB_assigns( -1 ),
         simpDB_props( 0 ),
-        order_heap( VarOrderLt( activity ) ),
         var_scheduler( *this ),
         progress_estimate( 0 ),
         remove_satisfied( Settings::remove_satisfied ),
@@ -372,7 +371,6 @@ namespace smtrat
         processLemmas();
 		
 		if (Settings::mc_sat) {
-            assert(Settings::use_new_var_scheduler);
 			#ifdef DEBUG_SATMODULE
 			std::cout << "### Processing clause" << std::endl;
 			print(std::cout, "###");
@@ -442,11 +440,7 @@ namespace smtrat
                     activity[pos] /= highestActivity;
                 }
             }
-            if (Settings::use_new_var_scheduler) {
-                var_scheduler.rebuildActivities();
-            } else {
-                rebuildOrderHeap();
-            }
+            var_scheduler.rebuildActivities();
         }
         Minisat::lbool result = l_Undef;
         mUpperBoundOnMinimal = passedFormulaEnd();
@@ -2112,9 +2106,7 @@ namespace smtrat
                 }
             }
         }
-        if (Settings::use_new_var_scheduler) {
-            var_scheduler.attachClause(cr);
-        }
+        var_scheduler.attachClause(cr);
     }
 
     template<class Settings>
@@ -2165,9 +2157,7 @@ namespace smtrat
                 }
             }
 		}
-        if (Settings::use_new_var_scheduler) {
-            var_scheduler.detachClause(cr);
-        }
+        var_scheduler.detachClause(cr);
     }
 
     template<class Settings>
@@ -3169,24 +3159,18 @@ namespace smtrat
     template<class Settings>
     bool SATModule<Settings>::fullAssignment()
     {
-        if (Settings::use_new_var_scheduler) {
-            return var_scheduler.empty();
-        } else {
-            Var next;
-            while( !order_heap.empty() && ((next = order_heap[0]) == var_Undef || value( next ) != l_Undef || !decision[next]) )
-                order_heap.removeMin();
-            return order_heap.empty();
-        }
+        return var_scheduler.empty();
     }
         
     template<class Settings>
     Lit SATModule<Settings>::pickBranchLit()
     {
-        Var next = var_Undef;
+        
 
         if( /*!mReceivedFormulaPurelyPropositional &&*/ Settings::check_active_literal_occurrences && false)
         {
-            while( next == var_Undef && !mPropagationFreeDecisions.empty() )
+            Var next_var = var_Undef;
+            while( next_var == var_Undef && !mPropagationFreeDecisions.empty() )
             {
                 Lit l = mPropagationFreeDecisions.back();
                 mPropagationFreeDecisions.pop_back();
@@ -3194,156 +3178,14 @@ namespace smtrat
                     return l;
             }
         }
-        if( mReceivedFormulaPurelyPropositional || Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED || mCurrentAssignmentConsistent != SAT )
-        {
-            SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
-            if (Settings::use_new_var_scheduler) {
-                Lit next = var_scheduler.pop();
-                assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
-                assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.type() != carl::FormulaType::VARASSIGN);
-                SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
-                return next;
-            } else {
-                while( next == var_Undef || bool_value( next ) != l_Undef || !decision[next] )
-                {
-                    if( order_heap.empty() )
-                    {
-                        SMTRAT_LOG_TRACE("smtrat.sat", "Empty.");
-                        next = var_Undef;
-                        break;
-                    }
-                    else
-                        next = order_heap.removeMin();
-                    SMTRAT_LOG_TRACE("smtrat.sat", "Current " << next);
-                }
-                SMTRAT_LOG_DEBUG("smtrat.sat", "Got " << next);
-                return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
-            }
-        }
-        else {
-            return bestBranchLit();
-        }
+        SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
+        Lit next = var_scheduler.pop();
+        assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
+        assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.type() != carl::FormulaType::VARASSIGN);
+        SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
+        return next;
         assert(false);
         return lit_Undef;
-    }
-    
-    template<class Settings>
-    Lit SATModule<Settings>::bestBranchLit()
-    {
-        #ifdef DEBUG_SATMODULE_1_HEURISTIC
-        std::cout << __func__ << std::endl;
-        #endif
-        Var next = var_Undef;
-        vec<Var> varsToRestore;
-        #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-        Model bModel = backendsModel();
-        std::cout << "Backend's model: " << std::endl << bModel << std::endl;
-        #endif
-        while( next == var_Undef || value( next ) != l_Undef || !decision[next] )
-        {
-            if( order_heap.empty() )
-            {
-                #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-                std::cout << "heap empty" << std::endl;
-                #endif
-                next = var_Undef;
-                break;
-            }
-            else
-            {
-                next = order_heap.removeMin();
-                #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-                std::cout << "consider variable " << next << std::endl;
-                std::cout << "value( next ) == l_Undef: " << (value( next ) == l_Undef) << std::endl;
-                std::cout << "decision[next] = " << (decision[next] ? "true" : "false") << std::endl;
-                #endif
-                if( value( next ) == l_Undef && decision[next] )
-                {
-                    const auto& abstrPair = mBooleanConstraintMap[next];
-                    if( abstrPair.first != nullptr )
-                    {
-                        assert( abstrPair.second != nullptr );
-                        if( Settings::check_active_literal_occurrences && false)
-                        {
-//                            const auto& litActOccs = mLiteralsActivOccurrences[(size_t)next];
-//                            takeNegation = litActOccs.second > litActOccs.first;
-                        }
-                        const Abstraction& abstr = *abstrPair.first;
-                        #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-                        std::cout << "corresponds to constraint: " << abstr.reabstraction << std::endl;
-                        #endif
-                        unsigned consistency = currentlySatisfiedByBackend( abstr.reabstraction );
-                        #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-                        std::cout << "consistency = " << consistency << std::endl;
-                        #endif
-                        bool skipVariable = false;
-                        switch( Settings::theory_conflict_guided_decision_heuristic )
-                        {
-                            case TheoryGuidedDecisionHeuristicLevel::CONFLICT_FIRST:
-                            {
-                                switch( consistency )
-                                {
-                                    case 0:
-                                        polarity[next] = false;
-                                        break;
-                                    case 1:
-                                        polarity[next] = true;
-                                        break;
-                                    default:
-                                        skipVariable = true;
-                                        break;
-                                }
-                                break;
-                            }
-                            case TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST:
-                            {
-                                switch( consistency )
-                                {
-                                    case 0:
-                                        polarity[next] = true;
-                                        break;
-                                    case 1:
-                                        polarity[next] = false;
-                                        break;
-                                    default:
-                                        skipVariable = true;
-                                        break;
-                                }
-                                break;
-                            }
-                            default:
-                                assert( Settings::theory_conflict_guided_decision_heuristic == TheoryGuidedDecisionHeuristicLevel::DISABLED );
-                                break;
-                        }
-                        if( skipVariable )
-                        {
-                            #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-                            std::cout << "store variable for restorage" << std::endl;
-                            #endif
-                            varsToRestore.push(next);
-                            next = var_Undef;
-                        }
-                    }
-                }
-            }
-        }
-        for( int pos = 0; pos < varsToRestore.size(); ++pos )
-        {
-            #ifdef DEBUG_SATMODULE_DECISION_HEURISTIC
-            std::cout << "restore to heap: " << varsToRestore[pos] << std::endl;
-            #endif
-            insertVarOrder( varsToRestore[pos] );
-        }
-        if( next == var_Undef )
-        {
-            if( !order_heap.empty() )
-            {
-                next = order_heap.removeMin();
-                assert( value( next ) == l_Undef );
-                assert( decision[next] );
-            }
-        }
-        return next == var_Undef ? lit_Undef : mkLit( next, polarity[next] );
     }
     
     template<class Settings>
@@ -3975,18 +3817,6 @@ NextClause:
     }
 
     template<class Settings>
-    void SATModule<Settings>::rebuildOrderHeap()
-    {
-        assert(!Settings::use_new_var_scheduler);
-        
-        vec<Var> vs;
-        for( Var v = 0; v < nVars(); v++ )
-            if( decision[v] && value( v ) == l_Undef )
-                vs.push( v );
-        order_heap.build( vs );
-    }
-
-    template<class Settings>
     void SATModule<Settings>::simplify()
     {
         assert( decisionLevel() == assumptions.size() );
@@ -4011,11 +3841,7 @@ NextClause:
                 removeSatisfied( clauses );
             // @todo: free somehow splitting variables, which are assigned in decision level 0 (aka assumption.size())
             checkGarbage();
-            if (Settings::use_new_var_scheduler) {
-                var_scheduler.rebuild();
-            } else {
-                rebuildOrderHeap();
-            }
+            var_scheduler.rebuild();
             simpDB_assigns = nAssigns();
 //            simpDB_props   = (int64_t)(clauses_literals + learnts_literals);    // (shouldn't depend on stats really, but it will do for now)
             processLemmas();
@@ -4205,9 +4031,7 @@ NextClause:
             }
         }
 
-        if (Settings::use_new_var_scheduler) {
-            var_scheduler.relocateClauses([&](Minisat::CRef& cl) { ca.reloc(cl, to); });
-        }
+        var_scheduler.relocateClauses([&](Minisat::CRef& cl) { ca.reloc(cl, to); });
         
         // All watchers:
         //
@@ -4275,11 +4099,7 @@ NextClause:
     {
 		_out << _init << std::endl;
 		_out << _init << " ";
-        if (Settings::use_new_var_scheduler) {
-            var_scheduler.print();
-        } else {
-            order_heap.print();
-        }
+        var_scheduler.print();
 		_out << _init << std::endl;
         printBooleanConstraintMap( _out, _init );
 		_out << _init << std::endl;
