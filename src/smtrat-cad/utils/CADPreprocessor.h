@@ -186,11 +186,11 @@ public:
 	preprocessor::ConstraintUpdate result(const Map& oldC) const {
 		std::set<ConstraintT> newC;
 		for (const auto& c: mInequalities) {
-			if (c.second.isConsistent() == 1) continue;
+			if (c.second.is_consistent() == 1) continue;
 			newC.insert(c.second);
 		}
 		for (const auto& c: mDerivedEqualities) {
-			if (c.second.isConsistent() == 1) continue;
+			if (c.second.is_consistent() == 1) continue;
 			newC.insert(c.second);
 		}
 

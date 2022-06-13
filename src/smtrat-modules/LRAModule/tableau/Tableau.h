@@ -323,6 +323,16 @@ namespace smtrat
                             mpEntries( _iter.pEntries() )
                         {}
 
+                        void operator=(const Iterator& _iter ) {
+                            mEntryID = _iter.entryID();
+                            mpEntries = _iter.pEntries();
+                        }
+
+                        void operator=(Iterator&& _iter ) {
+                            mEntryID = _iter.entryID();
+                            mpEntries = std::move(_iter.pEntries());
+                        }
+
                         /**
                          * @return 
                          */
@@ -655,7 +665,7 @@ namespace smtrat
                  * 
                  * @return 
                  */
-                EvalRationalMap getRationalAssignment() const;
+                RationalAssignment getRationalAssignment() const;
                 
                 void adaptDelta( const Variable<T1,T2>& _variable, bool _upperBound, T1& _minDelta ) const;
                 

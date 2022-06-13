@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/ran/ran.h>
+#include <carl-arith/ran/ran.h>
 
 namespace smtrat {
 namespace cad {

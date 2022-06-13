@@ -352,7 +352,7 @@ BOOST_AUTO_TEST_CASE(Test_getExplanation_degreeTooHigh) {
 	varModel.emplace(x, Rational(0));
 
 	mcsat::vs::ExplanationGenerator<mcsat::vs::DefaultSettings> generator(constraints, ordering, y, varModel);
-	boost::optional<mcsat::Explanation> result = generator.getExplanation();
+	std::optional<mcsat::Explanation> result = generator.getExplanation();
 	BOOST_CHECK(!result);	
 }
 BOOST_AUTO_TEST_CASE(Test_getExplanation_substitution) {
@@ -372,7 +372,7 @@ BOOST_AUTO_TEST_CASE(Test_getExplanation_substitution) {
 	varModel.emplace(x, Rational(0));
 
 	mcsat::vs::ExplanationGenerator<mcsat::vs::DefaultSettings> generator(constraints, ordering, y, varModel);
-	boost::optional<mcsat::Explanation> result = generator.getExplanation();
+	std::optional<mcsat::Explanation> result = generator.getExplanation();
 	BOOST_CHECK(result);
 	std::stringstream ss;
 	ss << result.value();

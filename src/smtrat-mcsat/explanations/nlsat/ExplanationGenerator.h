@@ -5,7 +5,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
-#include <carl/core/Common.h>
+#include <carl-arith/core/Common.h>
 
 namespace smtrat {
 namespace mcsat {
@@ -66,7 +66,7 @@ namespace helper {
 				// Note that we only add the polynomials here and don't really care about the relation
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
-				carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
+				//carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variable_comparison().defining_polynomial());
 				cons.emplace(cAtom.variable_comparison().defining_polynomial(), carl::Relation::NEQ);
 				// removed (makes no sense):
@@ -119,9 +119,9 @@ private:
 
 		for (std::size_t pid = 0; pid < mProjection.size(level); pid++) {
 			const auto& poly = mProjection.getPolynomialById(level, pid);
-			if (carl::isZero(carl::substitute(poly, model))) continue;
+			if (carl::is_zero(carl::substitute(poly, model))) continue;
 			auto polyvars = carl::variables(poly);
-			polyvars.erase(poly.mainVar());
+			polyvars.erase(poly.main_var());
 			auto list = carl::real_roots(poly, *carl::get_ran_assignment(polyvars, mModel));
 			if (list.is_nullified()) continue;
 			assert(list.is_univariate());

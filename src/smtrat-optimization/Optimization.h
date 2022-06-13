@@ -25,7 +25,7 @@ private:
 	carl::Variable mOptimizationVarReal;
 
 	const carl::Variable& objectiveVariable(const Objective& objective) const {
-		return objective.function.integerValued() ? mOptimizationVarInt : mOptimizationVarReal;
+		return objective.function.integer_valued() ? mOptimizationVarInt : mOptimizationVarReal;
 	} 
 
 public:

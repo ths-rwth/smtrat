@@ -10,14 +10,14 @@ To build and use SMT-RAT, you need the following other software:
 - `git` to checkout the git repository.
 - `g++` or `clang` to compile.
 - `cmake` to generate the make files.
-- `boost` for several additional libraries (automatically built locally if necessary).
-- `gmp` for calculations with large numbers (automatically built locally if necessary).
-- `carl` from http://smtrat.github.io/carl/ (automatically built locally if necessary).
 
 Optional dependencies
 - `ccmake` to set cmake flags.
-- `doxygen` to build the documentation.
-- `ginac` to enable the usage of polynomial factorization.
+- `doxygen` and `doxygen-latex` to build the documentation.
+
+Additionally, SMT-RAT requires a few external libraries, which are installed automatically by CMake if no local version is available:
+- `carl` from http://smtrat.github.io/carl/ (automatically built locally if necessary).
+- `boost` (the boost version from CArL is used).
 
 When installing the dependencies, make sure that you meet the following version requirements:
 - `g++` \f$>=\f$ 7
@@ -27,10 +27,6 @@ When installing the dependencies, make sure that you meet the following version 
 
 Here are archived versions of SMT-RAT for download:
 - [latest](https://github.com/ths-rwth/smtrat/releases)
-
-We mirror our master branch to github.com. If you want to use the newest bleeding edge version, you can checkout from https://github.com/ths-rwth/smtrat.
-Although we try to keep the master branch stable, there is a chance that the current revision is broken.
-You can check [here](https://travis-ci.org/smtrat/smtrat/builds) if the current revision compiles.
 
 ## Configuration
 

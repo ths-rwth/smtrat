@@ -67,8 +67,8 @@ namespace smtrat
 
             bool is_positive() const;
             bool is_negative() const;
-            bool isZero() const;
-            bool isInteger() const;
+            bool is_zero() const;
+            bool is_integer() const;
         };
 
         Numeric abs( const Numeric& );

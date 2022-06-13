@@ -75,9 +75,9 @@ public:
         PolyRef ref;
         ref.level = helper::level_of(m_var_order, npoly);
         if (ref.level == 0) {
-            assert(poly.isConstant());
-            if (carl::isZero(poly)) return zero_poly_ref();
-            else if (carl::isNegative(poly.constantPart())) return negative_poly_ref();
+            assert(poly.is_constant());
+            if (carl::is_zero(poly)) return zero_poly_ref();
+            else if (carl::is_negative(poly.constant_part())) return negative_poly_ref();
             else return positive_poly_ref();
         }
         assert(ref.level <= m_polys.size() && ref.level > 0);

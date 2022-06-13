@@ -6,9 +6,9 @@
  * for CAD properties, preconditions and invariants.
  */
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
 #include <smtrat-common/smtrat-common.h>
 
 #include <algorithm>
@@ -24,7 +24,7 @@ bool hasOnlyNonConstIrreducibles(const std::vector<PolyType>& polys) {
 	if (polys.empty()) // Corner case, COCOA crashes on empty poly-vector
 		return true;
 	for (const auto& poly : polys) {
-		if (poly.isConstant())
+		if (poly.is_constant())
 			return false;
 		else if (carl::irreducibleFactors(poly, false).size() > 1)
 			return false;

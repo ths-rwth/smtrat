@@ -7,14 +7,16 @@
 #include "level_covering.h"
 #include "delineation.h"
 
+#include <carl-formula/formula/functions/Visit.h>
+
 namespace smtrat::cadcells::algorithms {
 
 // constexpr auto cell_heuristic = representation::BIGGEST_CELL;
 // constexpr auto cell_heuristic = representation::CHAIN_EQ;
 // constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS_EQ;
 constexpr auto cell_heuristic = representation::LOWEST_DEGREE_BARRIERS;
-// constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
-constexpr auto covering_heuristic = representation::CHAIN_COVERING;
+constexpr auto covering_heuristic = representation::DEFAULT_COVERING;
+// constexpr auto covering_heuristic = representation::CHAIN_COVERING;
 constexpr auto op = operators::op::mccallum;
 constexpr bool use_delineation = false; 
 
@@ -69,7 +71,39 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
     }
     proj.clear_assignment_cache(empty_assignment);
 
-    return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
+    // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak
+    auto description_formula = FormulaT(carl::FormulaType::AND, std::move(description));
+    bool constraints_all_strict = std::find_if(constraints.begin(), constraints.end(), [](const auto& f) {
+        if (f.type()==carl::FormulaType::CONSTRAINT) return !carl::is_strict(f.constraint().relation());
+        else if (f.type()==carl::FormulaType::VARCOMPARE) return !carl::is_strict(f.variable_comparison().relation());
+        assert(false);
+        return false;
+    }) == constraints.end();
+    if (constraints_all_strict) {
+        description_formula = carl::visit_result(description_formula, [](const auto& f) {
+            if (f.type() == carl::FormulaType::CONSTRAINT) {
+                if (f.constraint().relation() == carl::Relation::LESS) {
+                    return FormulaT(ConstraintT(f.constraint().lhs(),carl::Relation::LEQ));
+                } else if (f.constraint().relation() == carl::Relation::GREATER) {
+                    return FormulaT(ConstraintT(f.constraint().lhs(),carl::Relation::GEQ));
+                } else {
+                    return f;
+                }
+            } else if (f.type() == carl::FormulaType::VARCOMPARE) {
+                if (f.variable_comparison().relation() == carl::Relation::LESS) {
+                    return FormulaT(VariableComparisonT(f.variable_comparison().var(),f.variable_comparison().value(),carl::Relation::LEQ,f.variable_comparison().negated()));
+                } else if (f.variable_comparison().relation() == carl::Relation::GREATER) {
+                    return FormulaT(VariableComparisonT(f.variable_comparison().var(),f.variable_comparison().value(),carl::Relation::GEQ,f.variable_comparison().negated()));
+                } else {
+                    return f;
+                }
+            } else {
+                return f;
+            }
+        });
+    }
+
+    return std::make_pair(constraints, description_formula);
 }
 
 }

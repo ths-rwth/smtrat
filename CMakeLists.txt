@@ -1,6 +1,13 @@
 cmake_minimum_required (VERSION 3.7 FATAL_ERROR)
 
+#set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
 project(smtrat CXX)
+
+if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+   message(SEND_ERROR "In-source builds are not allowed.")
+endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -31,8 +38,7 @@ option( LOGGING "Enable logging within the carl library" OFF )
 option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
-option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
-option( USE_COCOA "Use CoCoALib" ON )
+option( USE_MIMALLOC "Build mimalloc" OFF )
 
 # Strategy
 set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
@@ -127,9 +133,9 @@ include(resources/resources.cmake)
 # C.5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
 
-if (TARGET Doxygen::doxygen)
-	add_subdirectory(doc EXCLUDE_FROM_ALL)
-endif()
+# if (TARGET Doxygen::doxygen)
+ 	add_subdirectory(doc EXCLUDE_FROM_ALL)
+# endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # D. Writen information files

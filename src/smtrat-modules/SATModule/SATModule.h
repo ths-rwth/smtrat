@@ -493,9 +493,7 @@ namespace smtrat
             int64_t simpDB_props;
             /// Current set of assumptions provided to solve by the user.
             Minisat::vec<Minisat::Lit> assumptions;
-            /// A priority queue of variables ordered with respect to the variable activity.
-            Minisat::Heap<VarOrderLt> order_heap;
-            /// Alternative approach to order_heap
+            /// A priority queue of variables.
             VarScheduler var_scheduler;
             /// Set by 'search()'.
             double progress_estimate;
@@ -744,7 +742,7 @@ namespace smtrat
              * Note: Assignments in the given map are not overwritten.
              * @param _rationalAssignment The assignments to add the Boolean assignments to.
              */
-            void addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const;
+            void addBooleanAssignments( RationalAssignment& _rationalAssignment ) const;
 
             /**
              * Prints everything.
@@ -1177,12 +1175,7 @@ namespace smtrat
                     }
                 }
 
-                if (Settings::use_new_var_scheduler) {
-                    var_scheduler.insert(x);
-                } else {
-                    if( !order_heap.inHeap( x ) && decision[x] )
-                        order_heap.insert( x );
-                }
+                var_scheduler.insert(x);
             }
             
             /**
@@ -1213,11 +1206,6 @@ namespace smtrat
 					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
 				}
 			}
-            
-            /**
-             * @return The best decision variable under consideration of the decision heuristic.
-             */
-            Minisat::Lit bestBranchLit();
             
             /**
              * Begins a new decision level.
@@ -1463,12 +1451,7 @@ namespace smtrat
                 if ((activity[v] += inc) > 1e100) {
                     rescale = true;
                 }
-                if (Settings::use_new_var_scheduler) {
-                    var_scheduler.increaseActivity(v);
-                } else {
-                    if( order_heap.inHeap( v ) )
-                        order_heap.decrease( v );
-                }
+                var_scheduler.increaseActivity(v);
 
                 if( rescale )
                 {

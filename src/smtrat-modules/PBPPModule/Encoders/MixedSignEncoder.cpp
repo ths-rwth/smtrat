@@ -1,13 +1,13 @@
 #include "MixedSignEncoder.h"
 
 namespace smtrat {
-	boost::optional<FormulaT> MixedSignEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> MixedSignEncoder::doEncode(const ConstraintT& constraint) {
 		// first partition into positive and negative terms
 		std::vector<TermT> positiveTerms;
 		std::vector<TermT> negativeTerms;
 
 		for (const auto& term : constraint.lhs()) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 			
 			if (term.coeff() > 0) {
 				positiveTerms.push_back(term);
@@ -43,7 +43,7 @@ namespace smtrat {
 			FormulasT conjunction;
 			for (const auto& sum : subsetsums) {
 				ConstraintT lhsImplication(lhs - sum, carl::Relation::GEQ); // poly lhs + constantPart >= bi
-				ConstraintT rhsImplication(rhs - sum - constraint.lhs().constantPart(), carl::Relation::GEQ); // rhs >= bi
+				ConstraintT rhsImplication(rhs - sum - constraint.lhs().constant_part(), carl::Relation::GEQ); // rhs >= bi
 
 
 				FormulaT chosenLhsEncoding = findSubEncoding(mNormalizer.trim(lhsImplication));
@@ -72,7 +72,7 @@ namespace smtrat {
 			FormulasT conjunction;
 			for (const auto& sum : subsetsumsPositive) {
 				ConstraintT lhsImplication(lhs - sum, carl::Relation::EQ);
-				ConstraintT rhsImplication(rhs - sum - constraint.lhs().constantPart(), carl::Relation::EQ);
+				ConstraintT rhsImplication(rhs - sum - constraint.lhs().constant_part(), carl::Relation::EQ);
 
 				FormulaT chosenLhsEncoding = findSubEncoding(mNormalizer.trim(lhsImplication));
 				FormulaT chosenRhsEncoding = findSubEncoding(mNormalizer.trim(rhsImplication));
@@ -81,7 +81,7 @@ namespace smtrat {
 			}
 
 			for (const auto& sum : subsetsumsNegative) {
-				ConstraintT lhsImplication(lhs - constraint.lhs().constantPart() - sum, carl::Relation::EQ);
+				ConstraintT lhsImplication(lhs - constraint.lhs().constant_part() - sum, carl::Relation::EQ);
 				ConstraintT rhsImplication(rhs - sum, carl::Relation::EQ);
 
 				FormulaT chosenLhsEncoding = findSubEncoding(mNormalizer.trim(lhsImplication));
@@ -101,7 +101,7 @@ namespace smtrat {
 		bool negativeSign = false;
 
 		for (const auto& term: constraint.lhs()) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			if (term.coeff() > 0) {
 				positiveSign = true;
@@ -121,7 +121,7 @@ namespace smtrat {
 		std::vector<TermT> positiveTerms;
 		std::vector<TermT> negativeTerms;
 		for (const auto& term: constraint.lhs()) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			if (term.coeff() > 0) {
 				positiveTerms.push_back(term);
@@ -167,19 +167,19 @@ namespace smtrat {
 		bool hasEncoded = false;
 		
 		if (mShortFormulaEncoder.canEncode(constraint)) {
-			boost::optional<FormulaT> shortEncoding = mShortFormulaEncoder.encode(constraint);
+			std::optional<FormulaT> shortEncoding = mShortFormulaEncoder.encode(constraint);
 			if (shortEncoding) {
 				chosenEncoding = *shortEncoding;
 				hasEncoded = true;
 			}
 		} else if (mCardinalityEncoder.canEncode(constraint)) {
-			boost::optional<FormulaT> cardinalityEncoding = mCardinalityEncoder.encode(constraint);
+			std::optional<FormulaT> cardinalityEncoding = mCardinalityEncoder.encode(constraint);
 			if (cardinalityEncoding) {
 				chosenEncoding = *cardinalityEncoding;
 				hasEncoded = true;
 			}
 		} else if (mLongFormulaEncoder.canEncode(constraint)) {
-			boost::optional<FormulaT> longEncoding = mLongFormulaEncoder.encode(constraint);
+			std::optional<FormulaT> longEncoding = mLongFormulaEncoder.encode(constraint);
 			if (longEncoding) {
 				chosenEncoding = *longEncoding;
 				hasEncoded = true;

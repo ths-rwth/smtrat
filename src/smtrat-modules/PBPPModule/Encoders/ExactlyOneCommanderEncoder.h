@@ -19,7 +19,7 @@ namespace smtrat {
 			std::string name() { return "ExactlyOneCommanderEncoder"; }
 
 		protected:
-			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
+			std::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
 		private:
 			std::map<carl::Variable, std::vector<carl::Variable>> partition(carl::Variables);

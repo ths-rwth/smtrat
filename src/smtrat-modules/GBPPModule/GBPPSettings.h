@@ -8,9 +8,9 @@
 
 #pragma once
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/groebner/GBProcedure.h>
-#include <carl/groebner/gb-buchberger/Buchberger.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/groebner/GBProcedure.h>
+#include <carl-arith/groebner/gb-buchberger/Buchberger.h>
 
 namespace smtrat
 {

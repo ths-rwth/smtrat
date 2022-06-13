@@ -3,6 +3,8 @@
 
 #include <smtrat-mcsat/explanations/nlsat/ExplanationGenerator.h>
 
+#include <carl-common/config.h>
+
 namespace smtrat {
 namespace mcsat {
 namespace onecellcad {

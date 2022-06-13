@@ -7,14 +7,15 @@
 
 #include "State.h"
 //#include <smtrat-modules/Module.h>
-#include <carl/interval/set_theory.h>
-#include <carl/poly/umvpoly/functions/SturmSequence.h>
+#include <carl-arith/interval/set_theory.h>
+#include <carl-arith/poly/umvpoly/functions/SturmSequence.h>
 #include <cmath>
 #include <float.h>
 #include <numeric>
-#include <carl/poly/umvpoly/functions/RootBounds.h>
-#include <carl/poly/umvpoly/functions/RootCounting.h>
-#include <carl/constraint/IntervalEvaluation.h>
+#include <carl-arith/poly/umvpoly/functions/RootBounds.h>
+#include <carl-arith/poly/umvpoly/functions/RootCounting.h>
+#include <carl-arith/constraint/IntervalEvaluation.h>
+#include <carl-arith/poly/umvpoly/functions/Evaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -334,7 +335,7 @@ namespace vs
             _nextIntTestCandidate = father().maxIntTestCandidate();
             ++_nextIntTestCandidate;
         }
-        assert( carl::isInteger( _nextIntTestCandidate ) );
+        assert( carl::is_integer( _nextIntTestCandidate ) );
         ++mCurrentIntRange;
         return true;
     }
@@ -357,9 +358,9 @@ namespace vs
                 assert( plusInfChild == NULL );
                 plusInfChild = child;
             }
-            else if( child->substitution().term().isInteger() )
+            else if( child->substitution().term().is_integer() )
             {
-                smtrat::Rational currentTc = child->substitution().term().constantPart().constantPart();
+                smtrat::Rational currentTc = child->substitution().term().constant_part().constant_part();
                 if( currentTc < mMinIntTestCanidate ) leastIntTc = currentTc;
                 if( currentTc > mMaxIntTestCanidate ) greatestIntTc = currentTc;
             }
@@ -621,7 +622,7 @@ namespace vs
                                 size_t nValuation = (*iter)->valuation();
                                 bool nFlag = (*iter)->flag();
                                 smtrat::ConstraintT nConstraint = smtrat::ConstraintT( constr.lhs(), stricterRelation );
-                                unsigned nConstraintConsistency = nConstraint.isConsistent();
+                                unsigned nConstraintConsistency = nConstraint.is_consistent();
                                 if( nConstraintConsistency == 2 )
                                 {
                                     if( _stateConditions )
@@ -640,7 +641,7 @@ namespace vs
                                     }
                                     redundantConditionSet.insert( *iter );
                                 }
-                                else if( nConstraint.isConsistent() == 0 )
+                                else if( nConstraint.is_consistent() == 0 )
                                 {
                                     auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().as_set() );
                                     carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end());
@@ -729,7 +730,7 @@ namespace vs
                         }
                         else
                             assert( false );
-                        unsigned nConstraintConsistency = nConstraint.isConsistent();
+                        unsigned nConstraintConsistency = nConstraint.is_consistent();
                         if( nConstraintConsistency == 2 )
                         {
                             if( _stateConditions )
@@ -747,7 +748,7 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                         }
-                        else if( nConstraint.isConsistent() == 0 )
+                        else if( nConstraint.is_consistent() == 0 )
                         {
                             carl::PointerSet<Condition> condSet;
                             condSet.insert( condA );
@@ -887,9 +888,9 @@ namespace vs
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(), _substitution.originalConditions().end() );
                 return true;
             }
-            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().isInteger() )
+            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().is_integer() )
             {
-                smtrat::Rational intTc = _substitution.term().constantPart().constantPart();
+                smtrat::Rational intTc = _substitution.term().constant_part().constant_part();
                 if( (**child).substitution().type() == Substitution::MINUS_INFINITY )
                 {
                     if( intTc < (mMinIntTestCanidate - Rational(1)) )
@@ -1437,7 +1438,7 @@ namespace vs
     void State::addCondition( const smtrat::ConstraintT& _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
-        unsigned constraintConsistency = _constraint.isConsistent();
+        unsigned constraintConsistency = _constraint.is_consistent();
         assert( constraintConsistency != 0 );
         if( constraintConsistency != 1 )
         {
@@ -1690,7 +1691,7 @@ namespace vs
             if( result < 1 )
             {
                 if( index().type() == carl::VariableType::VT_INT && (*child)->substitution().type() != Substitution::MINUS_INFINITY 
-                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().isInteger() )
+                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().is_integer() )
                 {
                     childWithIntTcDeleted = true;
                 }
@@ -1958,9 +1959,9 @@ namespace vs
         std::vector<State*> result;
         if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
-            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
+            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().is_integer() )
             {
-                smtrat::Rational intTC = _substitution.term().constantPart().constantPart();
+                smtrat::Rational intTC = _substitution.term().constant_part().constant_part();
                 if( intTC > mMaxIntTestCanidate )
                 {
                     mMaxIntTestCanidate = intTC;
@@ -2350,7 +2351,7 @@ namespace vs
         else
         {
             smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
-            smtrat::DoubleInterval solutionSpaceConst = carl::evaluate( substitution().term().constantPart(), intervals );
+            smtrat::DoubleInterval solutionSpaceConst = carl::evaluate( substitution().term().constant_part(), intervals );
             smtrat::DoubleInterval solutionSpaceFactor = carl::evaluate( substitution().term().factor(), intervals );
             smtrat::DoubleInterval solutionSpaceRadicand = carl::evaluate( substitution().term().radicand(), intervals );
             smtrat::DoubleInterval solutionSpaceSqrt = carl::sqrt(solutionSpaceRadicand);
@@ -2427,7 +2428,7 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         const smtrat::ConstraintT& cons = _condition->constraint();
         smtrat::EvalDoubleIntervalMap intervals;
-        if( cons.lhs().isUnivariate() )
+        if( cons.lhs().is_univariate() )
         {
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
             smtrat::Rational cb = carl::cauchyBound(carl::to_univariate_polynomial(cons.lhs()));
@@ -2467,8 +2468,8 @@ namespace vs
                 smtrat::RationalInterval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
                 int numberOfRoots = carl::count_real_roots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
-                smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
-                smtrat::Rational imageOfRightBound = rup.evaluate( rightBound );
+                smtrat::Rational imageOfLeftBound = carl::evaluate(rup, leftBound);
+                smtrat::Rational imageOfRightBound = carl::evaluate(rup, rightBound);
                 if( imageOfLeftBound == Rational(0) )
                     ++numberOfRoots;
                 if( imageOfRightBound == Rational(0) )

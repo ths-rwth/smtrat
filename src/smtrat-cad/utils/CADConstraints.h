@@ -10,7 +10,7 @@
 #include "../common.h"
 #include "../Settings.h"
 #include "../debug/DotHelper.h"
-#include <carl/constraint/IntervalEvaluation.h>
+#include <carl-arith/constraint/IntervalEvaluation.h>
 
 namespace smtrat {
 namespace cad {
@@ -25,7 +25,7 @@ public:
 protected:
 	struct ConstraintComparator {
 		std::size_t complexity(const ConstraintT& c) const {
-			return c.maxDegree() * variables(c).size() * c.lhs().size();
+			return c.max_degree() * variables(c).size() * c.lhs().size();
 		}
 		bool operator()(const ConstraintT& lhs, const ConstraintT& rhs) const {
 			auto cl = complexity(lhs);

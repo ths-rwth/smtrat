@@ -1,10 +1,10 @@
 #pragma once
 
-#include <carl/poly/umvpoly/functions/Derivative.h>
-#include <carl/poly/umvpoly/functions/Factorization.h>
-#include <carl/poly/umvpoly/functions/Resultant.h>
-#include <carl/poly/umvpoly/functions/Definiteness.h>
-#include <carl/poly/umvpoly/functions/Representation.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/Definiteness.h>
+#include <carl-arith/poly/umvpoly/functions/Representation.h>
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
@@ -18,7 +18,7 @@
 #include <variant>
 #include <vector>
 
-#include <carl/ran/ran.h>
+#include <carl-arith/ran/ran.h>
 #include "RealAlgebraicPoint.h"
 
 #include "OCStatistics.h"
@@ -176,7 +176,7 @@ inline std::vector<TagPoly> nonConstIrreducibleFactors(
     for (const Poly& factor : carl::irreducibleFactors(poly, false)) {
         factors.emplace_back(TagPoly{tag, factor, *levelOf(variableOrder, factor)}); // inherit poly's tag
         //SMTRAT_LOG_DEBUG("smtrat.cad", "factor " << factor);
-        assert(!factor.isConstant());
+        assert(!factor.is_constant());
     }
 
     return factors;
@@ -188,7 +188,7 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
     std::vector<TagPoly> factors = nonConstIrreducibleFactors(variableOrder, poly, tag);
     // to do carl::normalize()
     for (const auto& factor : factors) {
-        if (!factor.poly.isConstant()) {
+        if (!factor.poly.is_constant()) {
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCStatistics& mStatistics = getStatistic();
                 // change this to en-/disable mMaxDegree Statistic
@@ -500,8 +500,8 @@ public:
             const std::size_t polyLevel,
             const Poly& poly) {
         // precondition:
-        assert(!poly.isConstant());
-        if (poly.isLinear())
+        assert(!poly.is_constant());
+        if (poly.is_linear())
             return false; // cannot vanish early
 
         const carl::Variable mainVariable = variableOrder[polyLevel];
@@ -540,7 +540,7 @@ public:
 
         // Do early-exit tests:
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
-            if (coeff.isConstant() && !carl::isZero(coeff))
+            if (coeff.is_constant() && !carl::is_zero(coeff))
                 return std::nullopt;
         }
 
@@ -563,7 +563,7 @@ public:
 
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
             // find first non-vanishing coefficient:
-            if (carl::isZero(coeff)) continue;
+            if (carl::is_zero(coeff)) continue;
             const size_t coeffLevel = *levelOf(variableOrder, coeff); // certainly non-constant
             if (!isPointRootOfPoly(coeffLevel, coeff)) {
                 return coeff;

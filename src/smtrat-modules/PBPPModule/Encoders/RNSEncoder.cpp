@@ -1,10 +1,10 @@
 #include "RNSEncoder.h"
 
-#include <carl/numbers/PrimeFactory.h>
+#include <carl-arith/numbers/PrimeFactory.h>
 
 namespace smtrat {
 
-	boost::optional<FormulaT> RNSEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> RNSEncoder::doEncode(const ConstraintT& constraint) {
 		std::vector<Integer> base = calculateRNSBase(constraint);
 		if(base.size() != 0 && isNonRedundant(base, constraint)){
 			std::vector<FormulaT> subformulas;
@@ -41,7 +41,7 @@ namespace smtrat {
 		}
 
 		for(Rational i = 0; i < max; i++){
-			product *= pFactory.nextPrime();
+			product *= pFactory.next_prime();
 		}
 
 		if(sum > product){
@@ -53,18 +53,18 @@ namespace smtrat {
 
 	FormulaT RNSEncoder::rnsTransformation(const ConstraintT& formula, const Integer& prime) {
 		const auto& cLHS = formula.lhs();
-		assert(carl::isInteger(formula.lhs().constantPart()));
-		Integer cRHS = carl::getNum(formula.lhs().constantPart());
+		assert(carl::is_integer(formula.lhs().constant_part()));
+		Integer cRHS = carl::get_num(formula.lhs().constant_part());
 		Poly newLHS;
 		Rational newRHS = carl::mod(cRHS, prime);
 
 
 		for(const auto& it : cLHS){
 			// TODO actually, we only modify the coefficient. Is it enough to modify the coefficient?
-			assert(carl::isInteger(it.coeff()));
-			Integer newCoeff = carl::mod(carl::getNum(it.coeff()), prime);
+			assert(carl::is_integer(it.coeff()));
+			Integer newCoeff = carl::mod(carl::get_num(it.coeff()), prime);
 			if(newCoeff != 0){
-				newLHS += TermT(newCoeff, it.getSingleVariable(), 1);
+				newLHS += TermT(newCoeff, it.single_variable(), 1);
 			}
 		}
 
@@ -99,13 +99,13 @@ namespace smtrat {
 		std::vector<Integer> base;
 
 		for(auto it : cLHS){
-			assert(carl::isInteger(it.coeff()));
-			sum += carl::getNum(it.coeff());
+			assert(carl::is_integer(it.coeff()));
+			sum += carl::get_num(it.coeff());
 		}
 
 		for(auto it : cLHS){
-			assert(carl::isInteger(it.coeff()));
-			std::vector<Integer> v = integerFactorization(carl::getNum(it.coeff()));
+			assert(carl::is_integer(it.coeff()));
+			std::vector<Integer> v = integerFactorization(carl::get_num(it.coeff()));
 			std::sort(v.begin(), v.end());
 			v.erase( unique( v.begin(), v.end() ), v.end() );
 
@@ -157,7 +157,7 @@ namespace smtrat {
 
 	std::vector<Integer> RNSEncoder::integerFactorization(const Integer& coeff) {
 		if(coeff <= 100){
-			return mPrimesTable[carl::toInt<carl::uint>(coeff)];
+			return mPrimesTable[carl::to_int<carl::uint>(coeff)];
 		}
 
 		std::vector<Integer> primes;
@@ -183,14 +183,14 @@ namespace smtrat {
 
 			if(first > 1){
 				if(first <= 100){
-					std::vector<Integer> v = mPrimesTable[carl::toInt<carl::uint>(first)];
+					std::vector<Integer> v = mPrimesTable[carl::to_int<carl::uint>(first)];
 					primes.insert(primes.end(), v.begin(), v.end());
 
 				}else{
 					carl::PrimeFactory<Integer> pFactory;
 					Integer prime = pFactory[24];
 					while(prime < first){
-						prime = pFactory.nextPrime();
+						prime = pFactory.next_prime();
 					}
 					if(prime == first){
 						//first is a big prime number
@@ -205,13 +205,13 @@ namespace smtrat {
 
 			if(second > 1){
 				if(second <= 100){
-					std::vector<Integer> v = mPrimesTable[carl::toInt<carl::uint>(second)];
+					std::vector<Integer> v = mPrimesTable[carl::to_int<carl::uint>(second)];
 					primes.insert(primes.end(), v.begin(), v.end());
 				}else{
 					carl::PrimeFactory<Integer> pFactory;
 					Integer prime = pFactory[24];
 					while(prime < second){
-						prime = pFactory.nextPrime();
+						prime = pFactory.next_prime();
 					}
 					if(prime == second){
 						//second is a big prime number

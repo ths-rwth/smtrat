@@ -4,7 +4,7 @@
 
 #include <algorithm>
 
-#include <carl/constraint/Substitution.h>
+#include <carl-arith/constraint/Substitution.h>
 
 namespace smtrat::cad {
 
@@ -20,7 +20,7 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 			auto tmp = carl::substitute(cur, m);
 			if (tmp != cur) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << cur << " -> " << tmp << " with " << *it);
-				if (tmp.isConsistent() != 1) {
+				if (tmp.is_consistent() != 1) {
 					toAdd.emplace_back(tmp);
 				}
 				Origins o({cur, it->first});
@@ -35,7 +35,7 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 }
 
 void Preprocessor::resolve_conflict() {
-	assert(mTrail[mTrailID].first.isConsistent() == 0);
+	assert(mTrail[mTrailID].first.is_consistent() == 0);
 	mConflict = std::set<FormulaT>();
 	std::transform(mTrail[mTrailID].second.begin(), mTrail[mTrailID].second.end(), std::inserter(*mConflict, mConflict->begin()), [](const ConstraintT& c) { return FormulaT(c); });
 	postprocessConflict(*mConflict);
@@ -91,7 +91,7 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 			if (tmp != *it) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << *it << " -> " << tmp);
 				if (mCurrent.find(tmp) == mCurrent.end()) {
-					if (tmp.isConsistent() != 1) {
+					if (tmp.is_consistent() != 1) {
 						toAdd.emplace_back(tmp);
 					}
 					Origins o({cur, *it});
@@ -119,7 +119,7 @@ void Preprocessor::compute_resultants(const ConstraintT& cur) {
 		if (mainvar == main_variable_of(c)) {
 			auto q = carl::to_univariate_polynomial(c.lhs(), mainvar);
 			auto r = projection::resultant(mainvar, p, q);
-			if (!r.isNumber()) {
+			if (!r.is_number()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant of " << p << " and " << q << " is " << r);
 				toAdd.emplace_back(Poly(r), carl::Relation::EQ);
 				Origins o({cur, c});
@@ -172,7 +172,7 @@ void Preprocessor::removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replace " << cur.first << " by " << cur.second);
 			mCurrent.erase(it);
 			mCurrent.insert(cur.second.begin(), cur.second.end());
-		} else if (cur.first.isConsistent() == 1) {
+		} else if (cur.first.is_consistent() == 1) {
 			for (const auto& o: cur.second) {
 				auto it = std::find(removals.begin(), removals.end(), o);
 				if (it != removals.end()) {
@@ -220,7 +220,7 @@ bool Preprocessor::preprocess() {
 	mConflict = std::nullopt;
 	while (mTrailID < mTrail.size()) {
 		auto cur = mTrail[mTrailID].first;
-		if (cur.isConsistent() == 0) {
+		if (cur.is_consistent() == 0) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found conflict in " << mTrail[mTrailID]);
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After preprocessing:" << std::endl << *this);
 			resolve_conflict();

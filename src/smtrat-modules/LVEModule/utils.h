@@ -1,7 +1,7 @@
 #pragma once
 
-#include <carl/ran/real_roots.h>
-#include <carl/poly/umvpoly/functions/Substitution.h>
+#include <carl-arith/ran/real_roots.h>
+#include <carl-arith/poly/umvpoly/functions/Substitution.h>
 #include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
 #include <smtrat-common/smtrat-common.h>
@@ -9,8 +9,8 @@
 namespace smtrat::lve {
 
 Rational evaluate(carl::Variable v, const Poly& p, const Rational& r) {
-	assert(carl::substitute(p, v, Poly(r)).isConstant());
-	return carl::substitute(p, v, Poly(r)).constantPart();
+	assert(carl::substitute(p, v, Poly(r)).is_constant());
+	return carl::substitute(p, v, Poly(r)).constant_part();
 }
 carl::Sign sgn(carl::Variable v, const Poly& p, const carl::RealAlgebraicNumber<Rational>& r) {
 	Model m;
@@ -36,7 +36,7 @@ std::optional<ModelValue> get_root(carl::Variable v, const Poly& p) {
 
 ModelValue get_non_root(carl::Variable v, const Poly& p) {
 	Rational r = 0;
-	while (carl::isZero(evaluate(v, p, r))) {
+	while (carl::is_zero(evaluate(v, p, r))) {
 		r += Rational(1);
 	}
 	return r;

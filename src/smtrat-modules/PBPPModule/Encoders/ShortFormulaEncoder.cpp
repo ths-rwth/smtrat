@@ -1,7 +1,7 @@
 #include "ShortFormulaEncoder.h"
 
 namespace smtrat {
-	boost::optional<FormulaT> ShortFormulaEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> ShortFormulaEncoder::doEncode(const ConstraintT& constraint) {
 		SMTRAT_LOG_DEBUG("smtrat.pbc", "Trying to convert small formula: " << constraint);
 		assert(constraint.variables().size() == 1);
 
@@ -11,13 +11,13 @@ namespace smtrat {
 		FormulaT lhsVar;
 
 		for (const auto& term : cLHS) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			lhsCoeff = term.coeff();
-			lhsVar = FormulaT(term.getSingleVariable());
+			lhsVar = FormulaT(term.single_variable());
 		}
 
-		Rational cRHS = -constraint.lhs().constantPart();
+		Rational cRHS = -constraint.lhs().constant_part();
 		
 		if (cRel == carl::Relation::LEQ) {
 			if(lhsCoeff > 0){

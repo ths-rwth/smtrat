@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <smtrat-variablebounds/VariableBounds.h>
 #include <smtrat-solver/Manager.h>
 #include <smtrat-solver/Module.h>

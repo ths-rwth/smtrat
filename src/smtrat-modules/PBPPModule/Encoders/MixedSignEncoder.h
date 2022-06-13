@@ -18,7 +18,7 @@ namespace smtrat {
 
 
 		protected:
-			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
+			std::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
 		private:
 			LongFormulaEncoder mLongFormulaEncoder;

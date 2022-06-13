@@ -10,7 +10,7 @@
 //#define CCPRINTORIGINS
 
 //#include "ContractionCandidateManager.h"
-#include <carl/intervalcontraction/Contraction.h>
+#include <carl-arith/intervalcontraction/Contraction.h>
 #include <smtrat-common/model.h>
 
 namespace smtrat
@@ -186,7 +186,7 @@ namespace smtrat
                 mIsLinear = false;
             }
 
-            bool isLinear() const
+            bool is_linear() const
             {
                 return mIsLinear;
             }

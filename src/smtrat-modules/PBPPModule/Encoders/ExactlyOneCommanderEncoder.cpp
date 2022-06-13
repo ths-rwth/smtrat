@@ -19,17 +19,17 @@ namespace smtrat {
 		if (constraint.variables().size() <= COMMANDER_GROUP_SIZE) return false;
 
 		for (const auto &term : constraint.lhs()) {
-			if (term.isConstant()) continue;
+			if (term.is_constant()) continue;
 
 			if (term.coeff() != Rational(1)) {
 				return false;
 			}
 		}
 
-		return constraint.lhs().constantPart() == Rational(-1);
+		return constraint.lhs().constant_part() == Rational(-1);
 	}
 
-	boost::optional<FormulaT> ExactlyOneCommanderEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> ExactlyOneCommanderEncoder::doEncode(const ConstraintT& constraint) {
 		assert(canEncode(constraint));
 
 		// 1. partition into groups of (mostly) equal size and introduce a group commander variable (bool)

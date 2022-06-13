@@ -1,0 +1,7 @@
+#include "${Prefix}Module.tpp"
+
+namespace smtrat {
+
+${INSTANTIATIONS}
+
+}

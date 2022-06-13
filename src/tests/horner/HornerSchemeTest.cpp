@@ -2,8 +2,8 @@
 #include <stdio.h>
 //#include "../lib/modules/ICPModule/ContractionCandidateManager.h"
 #include <carl-io/StringParser.h>
-#include <carl/poly/umvpoly/functions/horner/MultivariateHorner.h>
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/functions/horner/MultivariateHorner.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
 
 
 int main( int argc, const char* argv[] )

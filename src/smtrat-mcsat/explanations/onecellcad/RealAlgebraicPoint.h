@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include <carl/ran/ran.h>
+#include <carl-arith/ran/ran.h>
 
 namespace smtrat::mcsat::onecellcad {
 

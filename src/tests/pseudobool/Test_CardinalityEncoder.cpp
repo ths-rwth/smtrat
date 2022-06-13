@@ -24,7 +24,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Single_Literal_False )
 	
 	ConstraintT constraint = ConstraintT(Poly(x), carl::Relation::EQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -43,7 +43,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Multi_Literal_False )
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ )
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::EQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -80,7 +80,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_1 )
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) + Rational(-1), carl::Relation::EQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -102,7 +102,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2 )
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) + Rational(-2), carl::Relation::EQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -124,7 +124,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_3_2_Negative )
 
 	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-2), carl::Relation::EQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_EQ_FALSE )
 	
 	ConstraintT constraint = ConstraintT(-Poly(x) - Poly(y) - Poly(z) - Rational(-4), carl::Relation::EQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -168,7 +168,7 @@ BOOST_AUTO_TEST_CASE( CardinalityEncoder_Simple_LEQ_Coeff_LESS_CONST )
 
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Poly(z) - Rational(4), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -187,7 +187,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_Simple_LEQ)
 	
 	ConstraintT constraint = ConstraintT(Poly(x) + Poly(y) + Rational(-1), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -211,7 +211,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost)
 	// x1 + x2 + x3 + x4 <= 2
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Rational(-2), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -243,7 +243,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_Strict)
 	// x1 + x2 + x3 < 3
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Rational(-3), carl::Relation::LESS);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -273,7 +273,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_True)
 	// x1 + x2 + x3 + x4 <= 10
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(-10), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_PositiveCoeff_AtMost_False)
 	// x1 + x2 + x3 + x4 <= -1
 	ConstraintT constraint = ConstraintT(Poly(x1) + Poly(x2) + Poly(x3) + Poly(x4) + Rational(1), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -313,7 +313,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast_False)
 
 	ConstraintT constraint = ConstraintT(-Poly(x1) - Poly(x2) - Poly(x3) - Rational(-4), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -332,7 +332,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast)
 
 	ConstraintT constraint = ConstraintT(-Poly(x1) - Poly(x2) - Poly(x3) - Rational(-1), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");
@@ -354,7 +354,7 @@ BOOST_AUTO_TEST_CASE(CardinalityEncoder_AtLeast_2)
 
 	ConstraintT constraint = ConstraintT(-Poly(x1) - Poly(x2) - Poly(x3) - Rational(-2), carl::Relation::LEQ);
 
-	boost::optional<FormulaT> result = encoder.encode(constraint);
+	std::optional<FormulaT> result = encoder.encode(constraint);
 
 	if (!result) {
 		BOOST_FAIL("result != {} expected, but got {}.");

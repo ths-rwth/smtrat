@@ -18,15 +18,15 @@
 #include <unordered_map>
 #include <vector>
 
-#include <carl/converter/CoCoAAdaptor.h>
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/poly/umvpoly/functions/Resultant.h>
-#include <carl/poly/umvpoly/UnivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/core/VariablePool.h>
-#include <carl/ran/real_roots.h>
-#include <carl/ran/ran.h>
-#include <carl/ran/RealAlgebraicPoint.h>
+#include <carl-arith/converter/CoCoAAdaptor.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/UnivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/core/VariablePool.h>
+#include <carl-arith/ran/real_roots.h>
+#include <carl-arith/ran/ran.h>
+#include <carl-arith/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-common/smtrat-common.h>
 
@@ -185,7 +185,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	const std::vector<carl::Variable>& variableOrder,
 	const MultiPoly poly) {
 	SMTRAT_LOG_INFO("smtrat.opencad", "Merge poly" << poly);
-	assert(!poly.isZero());
+	assert(!carl::is_zero(poly));
 	size_t level = levelOf(poly, variableOrder);
 	// level for first variable starts at 1, but need it as index to start at 0.
 	size_t levelVariableIdx = level - 1;

@@ -12,7 +12,7 @@
 // Main smtrat namespace.
 namespace smtrat
 {   
-    unsigned ModuleInput::satisfiedBy( const EvalRationalMap& _assignment ) const
+    unsigned ModuleInput::satisfiedBy( const RationalAssignment& _assignment ) const
     {
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )

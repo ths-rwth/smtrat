@@ -51,7 +51,7 @@ namespace cad {
 			return it;
 		}
 		
-		bool isConsistent() const {
+		bool is_consistent() const {
 			for (const auto& it: mQueue) {
 				if (!it.isValid()) return false;
 			}

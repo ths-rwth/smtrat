@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include <smtrat-common/smtrat-common.h>
 
@@ -16,7 +16,7 @@ namespace smtrat {
 			 * Encodes an arbitrary constraint
 			 * @return encoded formula
 			 */
-			boost::optional<FormulaT> encode(const ConstraintT& constraint);
+			std::optional<FormulaT> encode(const ConstraintT& constraint);
 			std::size_t problem_size;
 
 			virtual Rational encodingSize(const ConstraintT& constraint);
@@ -25,7 +25,7 @@ namespace smtrat {
 			virtual std::string name() { return "unspecified PseudoBoolEncoder"; }
 
 		protected:
-			virtual boost::optional<FormulaT> doEncode(const ConstraintT& constraint) = 0;
+			virtual std::optional<FormulaT> doEncode(const ConstraintT& constraint) = 0;
 
 			FormulaT generateVarChain(const std::set<carl::Variable>& vars, carl::FormulaType type);
 

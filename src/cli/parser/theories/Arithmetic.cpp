@@ -248,7 +248,7 @@ namespace arithmetic {
                         }
                     }   
                 }
-		carl::Variable auxVar = thenpoly.integerValued() && elsepoly.integerValued() ? carl::fresh_integer_variable() : carl::fresh_real_variable();
+		carl::Variable auxVar = thenpoly.integer_valued() && elsepoly.integer_valued() ? carl::fresh_integer_variable() : carl::fresh_real_variable();
 		state->artificialVariables.emplace_back(auxVar);
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 		result = Poly(auxVar);
@@ -328,8 +328,8 @@ namespace arithmetic {
 				result = v;
 				return true;
 			} else if (ci(arguments[0], rarg)) {
-				Integer lhs = carl::toInt<Integer>(rarg);
-				Integer rhs = carl::toInt<Integer>(modulus);
+				Integer lhs = carl::to_int<Integer>(rarg);
+				Integer rhs = carl::to_int<Integer>(modulus);
 				result = carl::mod(lhs, rhs);
 				return true;
 			} else {

@@ -2,9 +2,9 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <carl/poly/umvpoly/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/ran/RealAlgebraicPoint.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-mcsat/explanations/onecellcad/OpenCAD.h>
 

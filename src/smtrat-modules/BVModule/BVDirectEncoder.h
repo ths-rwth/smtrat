@@ -73,8 +73,8 @@ namespace smtrat
             FormulaSetT mCurrentEncodings;
 
             // Encoding state (remember currently encoded constraint/term)
-            boost::optional<BitVecConstr> mCurrentConstraint;
-            boost::optional<BitVecTerm> mCurrentTerm;
+            std::optional<BitVecConstr> mCurrentConstraint;
+            std::optional<BitVecTerm> mCurrentTerm;
 
             /*
             Bit mConst0;
@@ -698,7 +698,7 @@ namespace smtrat
                 }
 
                 mTermBits[_term] = out;
-                mCurrentTerm = boost::none;
+                mCurrentTerm = std::nullopt;
 
                 #ifdef SMTRAT_BV_ENCODER_DEBUG
                 std::cerr << "Encoded into:";
@@ -772,7 +772,7 @@ namespace smtrat
                 }
 
                 mConstraintBits[_constraint] = out;
-                mCurrentConstraint = boost::none;
+                mCurrentConstraint = std::nullopt;
 
                 #ifdef SMTRAT_BV_ENCODER_DEBUG
                 std::cerr << "Encoded into: <" << out << ">" << std::endl;
