@@ -65,6 +65,10 @@ public:
         return *m_value;
     }
 
+    void set_weak() {
+        if (is_strict()) m_type = Type::weak;
+    }
+
     bool operator==(const Bound& other) const {
         return m_type == other.m_type && m_value == other.m_value;
     }
@@ -127,6 +131,11 @@ public:
         if (!m_lower.is_infty()) result.insert(m_lower.value().poly);
         if (!m_upper.is_infty()) result.insert(m_upper.value().poly);
         return result;
+    }
+
+    void set_to_closure() {
+        m_lower.set_weak();
+        m_upper.set_weak();
     }
 };
 inline std::ostream& operator<<(std::ostream& os, const SymbolicInterval& data) {

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "../datastructures/roots.h"
-#include "../datastructures/polynomials.h"
+#include "common.h"
+#include "datastructures/roots.h"
+#include "datastructures/polynomials.h"
 
-namespace smtrat::cadcells::algorithms::helper {
+namespace smtrat::cadcells::helper {
 
 /**
  * Converts an @ref datastructures::IndexedRoot to a @ref MultivariateRootT.
@@ -17,7 +18,7 @@ inline MultivariateRootT as_multivariate_root(const datastructures::PolyPool& po
 /**
  * Converts a @ref datastructures::SymbolicInterval to a @ref FormulaT.
  */
-FormulaT to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::SymbolicInterval& c) {
+FormulaT to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, const datastructures::SymbolicInterval& c) {
     if (c.is_section()) {
         return FormulaT(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.section_defining()), carl::Relation::EQ));
     } else {
