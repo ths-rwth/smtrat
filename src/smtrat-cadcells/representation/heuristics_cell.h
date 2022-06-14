@@ -2,8 +2,6 @@
 
 namespace smtrat::cadcells::representation {
 
-// TODO how to deal with trivial relations (indexed root expressions of the same polynomial) and implicitly guaranteed relations as we add resultants of polynomials? part of heuristics?
-
 template<typename T>
 inline void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
     for (const auto& poly : der->delin().nullified()) {
@@ -123,6 +121,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
         }
     }
 
+    boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> resultants;
     if (!reduced_cell.lower_unbounded())  {
         auto it = reduced_cell.lower();
         auto barrier = response.description.lower().value();
@@ -137,20 +136,27 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             assert(it != reduced_cell.lower() || barrier == response.description.lower().value());
             if (barrier != old_barrier) {
                 response.ordering.add_leq(barrier, old_barrier);
+                resultants.try_emplace(barrier.poly).first->second.insert(old_barrier.poly);
+                resultants.try_emplace(old_barrier.poly).first->second.insert(barrier.poly);
             }
             for (const auto& ir : it->second) {
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
                     response.ordering.add_leq(ir, barrier);
+                    resultants.try_emplace(ir.poly).first->second.insert(barrier.poly);
+                    resultants.try_emplace(barrier.poly).first->second.insert(ir.poly);
                 } 
             }
             if (it != reduced_delineation.roots().begin()) it--;
             else break;
         }
     }
+
+    std::vector<datastructures::IndexedRoot> reached;
     if (!reduced_cell.upper_unbounded()) {
         auto it = reduced_cell.upper();
         auto barrier = response.description.upper().value();
+        reached.push_back(barrier);
         while(it != reduced_delineation.roots().end()) {
             auto old_barrier = barrier;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
@@ -161,12 +167,32 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             }
             assert(it != reduced_cell.upper() || barrier == response.description.upper().value());
             if (barrier != old_barrier) {
-                response.ordering.add_leq(old_barrier, barrier);
+                bool rchd = false;
+                for (const auto r : reached) {
+                    if(resultants.try_emplace(barrier.poly).first->second.contains(r.poly)) {
+                        response.ordering.add_leq(r, barrier);
+                        rchd = true;
+                    }
+                }
+                if (!rchd) {
+                    response.ordering.add_leq(old_barrier, barrier);
+                }
+                reached.push_back(barrier);
             }
             for (const auto& ir : it->second) {
                 if (section && response.equational.contains(ir.poly)) continue;
                 if (ir != barrier) {
-                    response.ordering.add_leq(barrier, ir);
+                    bool rchd = false;
+                    for (const auto r : reached) {
+                        if(resultants.try_emplace(ir.poly).first->second.contains(r.poly)) {
+                            response.ordering.add_leq(r, ir);
+                            rchd = true;
+                        }
+                    }
+                    if (!rchd) {
+                        response.ordering.add_leq(barrier, ir);
+                    }
+                    reached.push_back(ir);
                 } 
             }
             it++;
