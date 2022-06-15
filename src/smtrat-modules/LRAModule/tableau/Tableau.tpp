@@ -1099,7 +1099,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
+        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const std::size_t i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
             const Variable<T1,T2>& nVar = *mColumns[i];
 
             // consider possible leaving variables
@@ -1521,7 +1521,7 @@ namespace smtrat
                     }
 
                     // Abort computation of candidates after finding one with progress (atleast mFullCandidateSearch times all canidates are evaluated, then the amount increases depending on state of computation)
-                    if(mPivotingSteps > mFullCandidateSearch && column > (double)mPivotingSteps/5.0){
+                    if(mPivotingSteps > mFullCandidateSearch && (double)column > (double)mPivotingSteps/5.0){
                         if(found_improvement){
                             break;
                         }
