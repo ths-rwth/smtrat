@@ -37,7 +37,7 @@ inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Pr
     }
 }
 
-inline std::optional<datastructures::IndexedRootOrdering> simplest_biggest_cell_ordering(datastructures::Projections& proj, datastructures::Delineation& delin, datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
+inline std::optional<datastructures::IndexedRootOrdering> simplest_biggest_cell_ordering(datastructures::Projections& /*proj*/, datastructures::Delineation& delin, datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
     // assumes that interval is the simplest cell
 
     datastructures::IndexedRootOrdering ordering;
