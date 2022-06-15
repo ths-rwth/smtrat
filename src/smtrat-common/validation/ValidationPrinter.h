@@ -30,16 +30,16 @@ std::ostream& operator<<(std::ostream& os, ValidationPrinter<ValidationOutputFor
 		int id = 0;
 		for (const auto& kv: s->formulas()) {
 			sls.reset();
-			sls.comment(s->identifier() + " #" + std::to_string(id));
-			sls.echo(s->identifier() + " #" + std::to_string(id));
+			sls.comment(s->identifier() + " #" + std::to_string(id) + " (" + std::get<2>(kv) + ")");
+			sls.echo(s->identifier() + " #" + std::to_string(id) + " (" + std::get<2>(kv) + ")");
 			sls.setOption("interactive-mode", "true");
-			sls.setInfo("status", (kv.second ? "sat" : "unsat"));
+			sls.setInfo("status", (std::get<1>(kv) ? "sat" : "unsat"));
 			#ifndef VALIDATION_STORE_STRINGS
-			sls.declare(kv.first.logic());
-			sls.declare(carl::variables(kv.first));
-			sls.assertFormula(kv.first);
+			sls.declare(std::get<0>(kv).logic());
+			sls.declare(carl::variables(std::get<0>(kv)));
+			sls.assertFormula(std::get<0>(kv));
 			#else
-			sls << kv.first;
+			sls << std::get<0>(kv);
 			#endif
 			sls.getAssertions();
 			sls.checkSat();
