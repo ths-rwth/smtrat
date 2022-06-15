@@ -738,7 +738,7 @@ namespace smtrat
                 * @param i : Index if entering (nonbasic ) variable.
                 * @param leaving_candidates : Used as storage object for update candidates.
                 */
-                void computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates);
+                void computeLeavingCandidates(const std::size_t i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates);
                 
                 /**
                  * Updates a nonbasic variable by the assignment stored in mpTheta and triggers updates of depending basic variables. 
