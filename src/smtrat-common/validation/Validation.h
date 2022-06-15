@@ -21,7 +21,7 @@ namespace smtrat {
         #define SMTRAT_VALIDATION_ADD(channel, name, formula, consistent) { SMTRAT_VALIDATION_INIT_STATIC(channel,tmp); SMTRAT_VALIDATION_ADD_TO(tmp,name,formula,consistent); }
     #else
         #define SMTRAT_VALIDATION_INIT(channel, variable)
-        #define SMTRAT_VALIDATION_INIT_STATIC(channel, name)
+        #define SMTRAT_VALIDATION_INIT_STATIC(channel, variable)
         #define SMTRAT_VALIDATION_ADD_TO(variable, name, formula, consistent)
         #define SMTRAT_VALIDATION_ADD(channel, name, formula, consistent)
     #endif
