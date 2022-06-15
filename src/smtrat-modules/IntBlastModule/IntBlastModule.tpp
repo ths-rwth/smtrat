@@ -400,6 +400,7 @@ namespace smtrat
             case carl::Relation::GEQ:     return _first >= _second;
         }
         assert(false);
+        return false;
     }
 
     template<class Settings>
