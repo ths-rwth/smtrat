@@ -1366,7 +1366,7 @@ namespace smtrat
                 assert(mInfeasibilityRow == getInfeasibilityRow());
                 #endif
                 // leaving rule: minimizes d_Violation
-                std::vector< std::tuple <int, Value<T1>, Variable<T1,T2>* > > update_candidates;
+                std::vector< std::tuple <std::size_t, Value<T1>, Variable<T1,T2>* > > update_candidates;
 
                 // check conflicts
                 std::pair<EntryID,bool> conflictPair = hasConflict();
@@ -1571,10 +1571,10 @@ namespace smtrat
                 s.str("");
                 #endif
 
-                std::tuple <int, Value<T1>, Variable<T1,T2>* >* min_pair;
+                std::tuple <std::size_t, Value<T1>, Variable<T1,T2>* >* min_pair;
                 Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
                 for(std::size_t candidate_index = 0; candidate_index < update_candidates.size(); candidate_index++){ 
-                    std::tuple<int, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
+                    std::tuple<std::size_t, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
                     // compute sign(dVio)* abs(mInfeasibilityRow[v_j])
                     const Variable<T1,T2>& nVar = *mColumns[std::get<0>(*candidate)];
                     Value<T1> vio_sum = dViolationSum(&nVar, std::get<1>(*candidate));
