@@ -43,10 +43,11 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
     // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak
     bool constraints_all_strict = std::find_if(constraints.begin(), constraints.end(), [](const auto& f) {
         if (f.type()==carl::FormulaType::CONSTRAINT) return !carl::is_strict(f.constraint().relation());
-        else if (f.type()==carl::FormulaType::VARCOMPARE) return !carl::is_strict(f.variable_comparison().relation());
+        else if (f.type()==carl::FormulaType::VARCOMPARE) return (!carl::is_strict(f.variable_comparison().relation()) && !f.variable_comparison().negated()) || (carl::is_strict(f.variable_comparison().relation()) && f.variable_comparison().negated());
         assert(false);
         return false;
     }) == constraints.end();
+    SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "constraints_all_strict = " << constraints_all_strict);
 
     std::optional<cadcells::datastructures::SampledDerivationRef<typename cadcells::operators::PropertiesSet<op>::type>> derivation;
     if (use_delineation) {
