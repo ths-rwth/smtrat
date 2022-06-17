@@ -164,6 +164,7 @@ template<typename P>
 void poly_irreducible_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), using EC");
     assert(cell.is_section());
+    assert(deriv.proj().is_nullified(deriv.underlying_sample(), poly));
     assert(deriv.contains(properties::poly_pdel{ cell.section_defining().poly }));
     assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(cell.section_defining().poly) }));
     deriv.insert(properties::cell_connected{ poly.level-1 });
@@ -225,6 +226,7 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
 template<typename P>
 void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    assert(!deriv.proj().is_nullified(deriv.underlying_sample(), poly));
     assert(deriv.contains(properties::poly_pdel{ poly }));
     deriv.insert(properties::cell_connected{ poly.level-1 });
     if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {

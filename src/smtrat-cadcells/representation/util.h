@@ -142,6 +142,13 @@ inline void decompose(const datastructures::Delineation& delin, const datastruct
         }
     }
 
+    for (const auto& poly : delin.nullified()) {
+        delin_out.add_poly_nullified(poly);
+    }
+
+    for (const auto& poly : delin.nonzero()) {
+        delin_out.add_poly_nonzero(poly);
+    }
 }
 
 inline void add_chain_ordering(datastructures::IndexedRootOrdering& out, const datastructures::PolyRef& poly, const PolyDelineation& poly_delin) {

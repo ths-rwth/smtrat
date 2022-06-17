@@ -76,7 +76,7 @@ class Delineation {
     /// The set of all nullified polynomials.
     boost::container::flat_set<PolyRef> m_polys_nullified;
     /// The set of all polynomials without a root.
-    boost::container::flat_set<PolyRef> m_polys_noroot;
+    boost::container::flat_set<PolyRef> m_polys_nonzero;
 
 public: 
     Delineation() {}
@@ -97,10 +97,10 @@ public:
      * The set of polynomials without roots.
      */
     const auto& nonzero() const {
-        return m_polys_noroot;
+        return m_polys_nonzero;
     }
     bool empty() const {
-        return m_roots.empty() && m_polys_nullified.empty() && m_polys_noroot.empty();
+        return m_roots.empty() && m_polys_nullified.empty() && m_polys_nonzero.empty();
     }
 
     /**
@@ -143,8 +143,8 @@ public:
         }
     }
 
-    void add_poly_noroot(PolyRef poly) {
-        m_polys_noroot.insert(poly);
+    void add_poly_nonzero(PolyRef poly) {
+        m_polys_nonzero.insert(poly);
     }
 
     void add_poly_nullified(PolyRef poly) {

@@ -147,7 +147,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             deriv->delin().add_poly_nullified(poly);
         } else if (proj.num_roots(sample, poly) == 0) {
             deriv->insert(operators::properties::poly_pdel{ poly });
-            deriv->delin().add_poly_noroot(poly);
+            deriv->delin().add_poly_nonzero(poly);
         } else {
             assert(proj.num_roots(sample, poly) > 0 && proj.num_roots(sample, poly) < std::get<MultivariateRootT>(c.value()).k());
             deriv->insert(operators::properties::poly_pdel{ poly });
