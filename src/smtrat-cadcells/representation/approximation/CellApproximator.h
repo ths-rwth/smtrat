@@ -362,7 +362,7 @@ IR CellApproximator::approximate_bound(const IR& p, const RAN& bound, bool below
         OCApproximationStatistics::get_instance().approximated(proj().degree(p.poly));
     #endif
     IR result = apx_bound<ApxSettings::bound>(p, bound, below);
-    ApxCriteria::inform(proj().polys()(result.poly));
+    ApxCriteria::inform(proj().polys()(result.poly), result.index);
     return result;
 }
 

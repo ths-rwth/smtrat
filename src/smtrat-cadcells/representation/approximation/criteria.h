@@ -12,7 +12,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         std::size_t m_apx_count = 0;
         bool m_curr_apx = false;
         std::unordered_map<FormulaT, std::size_t> m_constraint_involved_counter;
-        std::map<Poly, std::size_t> m_poly_apx_counter;
+        std::map<std::pair<Poly,  std::size_t>, std::size_t> m_poly_apx_counter;
         FormulasT m_curr_constraints;
 
         bool crit_considered_count() {
@@ -49,7 +49,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
 
         bool crit_poly_apx_count(datastructures::Projections& proj, const IR& ir) {
             if (!apx_settings().crit_poly_apx_count_enabled) return true;
-            Poly p = proj.polys()(ir.poly);
+            auto p = std::make_pair(proj.polys()(ir.poly), ir.index);
             if (m_poly_apx_counter[p] < apx_settings().crit_max_apx_per_poly) return true;
             #ifdef SMTRAT_DEVOPTION_Statistics
                 if (m_poly_apx_counter[p] == apx_settings().crit_max_apx_per_poly)
@@ -92,9 +92,10 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
 
 
     public:
-        static void inform(const Poly& p) {
+        static void inform(const Poly& p, std::size_t root_index) {
             ApxCriteria& ac = getInstance();
-            ++(ac.m_poly_apx_counter[p]);
+            auto pr = std::make_pair(p, root_index);
+            ++(ac.m_poly_apx_counter[pr]);
             if (!ac.m_curr_apx) {
                 ++ac.m_apx_count;
                 ac.m_curr_apx = true;
