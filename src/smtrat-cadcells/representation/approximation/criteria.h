@@ -13,6 +13,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         bool m_curr_apx = false;
         std::unordered_map<FormulaT, std::size_t> m_constraint_involved_counter;
         std::map<Poly, std::size_t> m_poly_apx_counter;
+        FormulasT m_curr_constraints;
 
         bool crit_considered_count() {
             if (!apx_settings().crit_considered_count_enabled) return true;
@@ -61,13 +62,13 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             if (!apx_settings().crit_involved_count_enabled) return true;
             bool res = true;
             for (const auto& c : constraints) {
-                ++m_constraint_involved_counter[c];
+                //++m_constraint_involved_counter[c];
                 if (m_constraint_involved_counter[c] >= apx_settings().crit_max_constraint_involved) {
                     res = false;
-                    #ifdef SMTRAT_DEVOPTION_Statistics
+                    /*#ifdef SMTRAT_DEVOPTION_Statistics
                         if (m_constraint_involved_counter[c] == apx_settings().crit_max_constraint_involved)
                             OCApproximationStatistics::get_instance().involvedTooOften();
-                    #endif
+                    #endif*/
                 }
             }
             return res;
@@ -84,7 +85,8 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             return false;
         }
 
-        void new_cell() {
+        void new_cell(const FormulasT& constraints) {
+            m_curr_constraints = constraints;
             m_curr_apx = false;
         }
 
@@ -96,12 +98,19 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             if (!ac.m_curr_apx) {
                 ++ac.m_apx_count;
                 ac.m_curr_apx = true;
+                for (const auto& c : ac.m_curr_constraints) {
+                    ++ac.m_constraint_involved_counter[c];
+                    #ifdef SMTRAT_DEVOPTION_Statistics
+                        if (ac.m_constraint_involved_counter[c] == apx_settings().crit_max_constraint_involved)
+                            OCApproximationStatistics::get_instance().involvedTooOften();
+                    #endif
+                }
             }
         }
 
         static bool cell(const FormulasT& constraints) {
             ApxCriteria& ac = getInstance();
-            ac.new_cell();
+            ac.new_cell(constraints);
             return ac.crit_considered_count() && ac.crit_apx_count() && ac.crit_involved_count(constraints);
         }
 
