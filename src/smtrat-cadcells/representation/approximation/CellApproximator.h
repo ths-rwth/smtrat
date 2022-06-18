@@ -84,6 +84,9 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, b
                 Rational lb = evaluated_deriv * (Rational(9999)/Rational(10000));
                 Rational c = carl::ceil(evaluated_deriv);
                 Rational f = carl::floor(evaluated_deriv);
+                if (lb > ub) {
+                    std::swap(lb,ub);
+                }
                 if (c < ub) evaluated_deriv = c;
                 else if (lb < f) evaluated_deriv = f;
                 else evaluated_deriv = carl::sample_stern_brocot(RationalInterval(lb,ub), false);
@@ -125,6 +128,76 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, b
             return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
         } else if (hessian_sign*jacobian_sign == 1) {
             return IR(proj().polys()(result), 2);
+        }
+    }
+    return IR(proj().polys()(result), 1);
+}
+
+template<>
+IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RAN& bound, bool below) {
+    assert(apx_settings().taylor_deg < proj().degree(p.poly));
+    assert(apx_settings().taylor_deg <= 2);
+    std::size_t dim = sample().size();
+    VariableOrdering var_order = proj().polys().var_order();
+    auto sample_root = sample();
+    sample_root[var()] = bound; // TODO : can choose other points here (like the actual sample)
+    auto sample_new_root = sample();
+    sample_new_root[var()] = RAN(approximate_root<ApxSettings::root>(main_sample(), bound, below));
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        std::size_t leftOutVars = 0;
+        for (const auto& [var, val] : sample_new_root) {
+            if (!val.is_numeric()) ++leftOutVars;
+        }
+        OCApproximationStatistics::get_instance().taylorIgnoredVars(leftOutVars, dim);
+    #endif
+    auto apx_sample = sample_root;
+    for (const auto& [key, value] : sample_root) apx_sample[key] = approximate_RAN_sb(value);
+
+    auto one_step_differentiate = [&var_order, &apx_sample, &sample_new_root] (const Poly& poly, Poly& result, std::vector<Poly>& jacobian, std::size_t d) {
+        Rational evaluated_deriv = 0;
+        for (std::size_t i = 0; i < d; i++) {
+            // Skip variables with irrational assignment, since (x_i - s_i) cannot be used
+            if (!sample_new_root[var_order[i]].is_numeric()) continue;
+            jacobian[i] = carl::derivative(poly, var_order[i]);
+            evaluated_deriv = approximate_RAN(*carl::evaluate(jacobian[i], apx_sample));
+            if (evaluated_deriv.get_den() != 1) {
+                // find approximate value with smaller representation
+                Rational ub = evaluated_deriv * (Rational(10001)/Rational(10000));
+                Rational lb = evaluated_deriv * (Rational(9999)/Rational(10000));
+                Rational c = carl::ceil(evaluated_deriv);
+                Rational f = carl::floor(evaluated_deriv);
+                if (lb > ub) {
+                    std::swap(lb,ub);
+                }
+                if (c < ub) evaluated_deriv = c;
+                else if (lb < f) evaluated_deriv = f;
+                else evaluated_deriv = carl::sample_stern_brocot(RationalInterval(lb,ub), false);
+            }            
+            result = result + Poly(evaluated_deriv) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value()));
+        }
+        // return the sign of the main variable derivative
+        if (carl::isZero(evaluated_deriv)) return 0;
+        else if (evaluated_deriv > 0) return 1;
+        else return -1;
+    };
+    std::vector<Poly> jacobian(dim);
+    Poly result;
+    // first order taylor approximation
+    int jacobian_sign = one_step_differentiate(proj().polys()(p.poly), result, jacobian, dim);
+    if ((jacobian_sign == 0)) {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+            OCApproximationStatistics::get_instance().taylorFailure();
+        #endif
+        return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
+    }
+    // second order
+    if (apx_settings().taylor_deg == 2) {
+        for (std::size_t i = 0; i < dim-1; i++) {
+            if (!sample_new_root[var_order[i]].is_numeric()) continue;
+            std::vector<Poly> hessian_row(dim-1);
+            Poly res_i;
+            one_step_differentiate(jacobian[i], res_i, hessian_row, dim-1);
+            result = result + (Poly(Rational(1)/Rational(2)) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value())) * res_i); 
         }
     }
     return IR(proj().polys()(result), 1);
