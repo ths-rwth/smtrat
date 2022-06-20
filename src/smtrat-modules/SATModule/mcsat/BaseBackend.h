@@ -93,15 +93,15 @@ public:
 		std::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
-			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", "explanation", validation_point);
+			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", validation_point);
 			if (std::holds_alternative<FormulaT>(*res)) {
 				// Checking validity: forall x. phi(x) = ~exists x. ~phi(x)
-				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<FormulaT>(*res).negated(), false);
+				SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", std::get<FormulaT>(*res).negated(), false);
 			} else {
 				// Tseitin: phi(x) = exists t. phi'(x,t)
 				// Checking validity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
 				// this is kind of ugly, so we just resolve the clause chain
-				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).resolve().negated(), false);
+				SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", std::get<ClauseChain>(*res).resolve().negated(), false);
 			}
 			return *res;
 		} else {

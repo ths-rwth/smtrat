@@ -11,6 +11,7 @@
 #include <smtrat-modules/ICPModule/ICPModule.h>
 #include <smtrat-modules/LRAModule/LRAModule.h>
 #include <smtrat-modules/NewCADModule/NewCADModule.h>
+#include <smtrat-modules/NewCoveringModule/NewCoveringModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/VSModule/VSModule.h>
 #include <smtrat-modules/STropModule/STropModule.h>
@@ -76,7 +77,9 @@ namespace smtrat
                                 {
                                     addBackend<VSModule<VSSettings234>>(
                                     {
-                                        addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                        addBackend<NewCoveringModule<NewCoveringSettings2>>({
+                                            addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                        })
                                     })
                                 })
                             })
@@ -93,7 +96,9 @@ namespace smtrat
                             {
                                 addBackend<VSModule<VSSettings234>>(
                                 {
-                                    addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                    addBackend<NewCoveringModule<NewCoveringSettings2>>({
+                                        addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                    })
                                 })
                             })
                         })

@@ -1099,7 +1099,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
+        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const std::size_t i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
             const Variable<T1,T2>& nVar = *mColumns[i];
 
             // consider possible leaving variables
@@ -1181,7 +1181,7 @@ namespace smtrat
             Value<T1> delta_new;
             Value<T1> new_dVio;
             T1 beta = mInfeasibilityRow[nVar.position()];
-            int candidate_index = 0;
+            std::size_t candidate_index = 0;
             if(candidates.empty())
                 return dVio_map;
             // beta_0 has to be adjusted for the delta_0 values
@@ -1366,7 +1366,7 @@ namespace smtrat
                 assert(mInfeasibilityRow == getInfeasibilityRow());
                 #endif
                 // leaving rule: minimizes d_Violation
-                std::vector< std::tuple <int, Value<T1>, Variable<T1,T2>* > > update_candidates;
+                std::vector< std::tuple <std::size_t, Value<T1>, Variable<T1,T2>* > > update_candidates;
 
                 // check conflicts
                 std::pair<EntryID,bool> conflictPair = hasConflict();
@@ -1399,7 +1399,7 @@ namespace smtrat
                 SMTRAT_LOG_DEBUG("smtrat", "Iteration over "<<mColumns.size()<<" columns");
 
                 bool found_improvement;
-                for(int column = 0; column < mColumns.size(); column++){
+                for(std::size_t column = 0; column < mColumns.size(); column++){
                     assert( mColumns[column] != NULL ); // non_basic variable must exist 
 
                     const Variable<T1,T2>& nVar = *mColumns[column];
@@ -1479,7 +1479,7 @@ namespace smtrat
                     std::pair<Value<T1>,Variable<T1,T2>*>* min_pair;
                     Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
                     SMTRAT_LOG_DEBUG("smtrat",  "Size leaving candidates is "<< leaving_candidates.size());
-                    for(int candidate_index = 0; candidate_index < leaving_candidates.size(); candidate_index++){ // can be optimized to only consider positive/negative values
+                    for(std::size_t candidate_index = 0; candidate_index < leaving_candidates.size(); candidate_index++){ // can be optimized to only consider positive/negative values
                         std::pair< Value<T1>, Variable<T1,T2>* >* candidate = &leaving_candidates[candidate_index]; // rename for easier access
                         if(leaving_dVio.find(candidate->first) == leaving_dVio.end()){
                             // doesnt need to be considered
@@ -1521,7 +1521,7 @@ namespace smtrat
                     }
 
                     // Abort computation of candidates after finding one with progress (atleast mFullCandidateSearch times all canidates are evaluated, then the amount increases depending on state of computation)
-                    if(mPivotingSteps > mFullCandidateSearch && column > (double)mPivotingSteps/5.0){
+                    if(mPivotingSteps > mFullCandidateSearch && (double)column > (double)mPivotingSteps/5.0){
                         if(found_improvement){
                             break;
                         }
@@ -1532,7 +1532,7 @@ namespace smtrat
                     mOldVioSum = Value<T1>(-1);
                     mOld_dVioSum = Value<T1>(1);
                     std::vector<Variable<T1, T2>*> errorVars;
-                    for(int row = 0; row < mRows.size(); row++){
+                    for(std::size_t row = 0; row < mRows.size(); row++){
                         assert( mRows[row] != NULL ); // non_basic variable must exist
 
                         const Variable<T1,T2>& bVar = *mRows[row];
@@ -1571,10 +1571,10 @@ namespace smtrat
                 s.str("");
                 #endif
 
-                std::tuple <int, Value<T1>, Variable<T1,T2>* >* min_pair;
+                std::tuple <std::size_t, Value<T1>, Variable<T1,T2>* >* min_pair;
                 Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
-                for(int candidate_index = 0; candidate_index < update_candidates.size(); candidate_index++){ 
-                    std::tuple<int, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
+                for(std::size_t candidate_index = 0; candidate_index < update_candidates.size(); candidate_index++){ 
+                    std::tuple<std::size_t, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
                     // compute sign(dVio)* abs(mInfeasibilityRow[v_j])
                     const Variable<T1,T2>& nVar = *mColumns[std::get<0>(*candidate)];
                     Value<T1> vio_sum = dViolationSum(&nVar, std::get<1>(*candidate));
@@ -1698,7 +1698,7 @@ namespace smtrat
 
         template<class Settings, typename T1, typename T2>
         bool Tableau<Settings,T1,T2>::hasMultilineConflict(){
-            for(int column = 0; column < mColumns.size(); column++){
+            for(std::size_t column = 0; column < mColumns.size(); column++){
                 assert( mColumns[column] != NULL ); // non_basic variable must exist 
 
                 const Variable<T1,T2>& nVar = *mColumns[column];
@@ -1719,7 +1719,7 @@ namespace smtrat
 
             // rebuild set of error variables
             std::vector<Variable<T1, T2>*> errorVars;
-            for(int row = 0; row < mRows.size(); row++){
+            for(std::size_t row = 0; row < mRows.size(); row++){
                 assert( mRows[row] != NULL ); // non_basic variable must exist 
 
                 const Variable<T1,T2>& bVar = *mRows[row];
@@ -1755,7 +1755,7 @@ namespace smtrat
 
             std::vector<T2> infeas_row = getInfeasibilityRow();
             //add lower or upper bounds depending on infeasibility row
-            for(int nonbasic_index = 0; nonbasic_index<infeas_row.size(); nonbasic_index++){
+            for(std::size_t nonbasic_index = 0; nonbasic_index<infeas_row.size(); nonbasic_index++){
                 if(infeas_row[nonbasic_index] > 0 && !mColumns[nonbasic_index]->pInfimum()->isInfinite()){
                     conflict.push_back(mColumns[nonbasic_index]->pInfimum());
                 }
@@ -1766,7 +1766,7 @@ namespace smtrat
 
             // rebuild set of error variables
             std::vector<Variable<T1, T2>*> errorVars;
-            for(int row = 0; row < mRows.size(); row++){
+            for(std::size_t row = 0; row < mRows.size(); row++){
                 assert( mRows[row] != NULL ); // non_basic variable must exist 
 
                 const Variable<T1,T2>& bVar = *mRows[row];

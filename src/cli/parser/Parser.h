@@ -155,6 +155,7 @@ public:
 	}
 	void getValue(const std::vector<types::TermType>& vars) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
+		// TODO callHandler(&InstructionHandler::getValue, vars);
 	}
 	void addObjective(const types::TermType& t, OptimizationType ot) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(" << ot << " " << t << ")");

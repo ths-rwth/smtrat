@@ -1,5 +1,5 @@
 #include "Explanation.h"
-#include <smtrat-cadcells/algorithms/onecell.h>
+#include "onecell.h"
 #include <carl-formula/formula/functions/Negations.h>
 
 namespace smtrat::mcsat::onecell {
@@ -32,7 +32,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
     }
 
     SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << reason << " with " << vars << " and " << ass);
-    auto result = cadcells::algorithms::onecell(reason, vars, ass);
+    auto result = onecell(reason, vars, ass); 
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");
