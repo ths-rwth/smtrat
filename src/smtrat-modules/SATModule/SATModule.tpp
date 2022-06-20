@@ -3045,7 +3045,6 @@ namespace smtrat
 		SMTRAT_CHECKPOINT("nlsat", "backtrack", backtrack_level);
        
         if(Settings::mc_sat) {
-            // TODO testing necessary
             cancelUntil( backtrack_level, true );
         } else {
             cancelUntil( backtrack_level );
