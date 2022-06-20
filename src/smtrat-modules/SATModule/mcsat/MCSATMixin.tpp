@@ -39,11 +39,11 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
-		/*if (computeTheoryLevel(*vit) != level()) {
+		if (computeTheoryLevel(*vit) != level()) {
 			++vit;
 			continue;
-		}*/
-		if (mGetter.isTheoryAbstraction(*vit)) {
+		}
+		/*if (mGetter.isTheoryAbstraction(*vit)) {
 			const auto& f = mGetter.reabstractVariable(*vit);
 			auto evalres = carl::evaluate(f, model());
 			if (!evalres.isBool()) {
@@ -53,7 +53,7 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found inconsistent variable " << *vit);
 				mInconsistentVariables.push_back(*vit);
 			}
-		}
+		}*/
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Associating " << *vit << " with " << current().variable << " at " << level());
 		current().decidedVariables.push_back(*vit);
 		mTheoryLevels[varid(*vit)] = level();
@@ -96,10 +96,13 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << lit);
 	const FormulaT& f = mGetter.reabstractLiteral(lit);
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
+	if (computeTheoryLevel(f) > level()) return l_Undef;
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
 	auto res = carl::evaluate(f, mBackend.getModel());
 	if (res.isBool()) {
 		return res.asBool() ? l_True : l_False;
 	}
+	assert(false);
 	return l_Undef;
 }
 

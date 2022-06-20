@@ -3062,32 +3062,6 @@ namespace smtrat
 			Minisat::sort(learnt_clause, lemma_lt(*this));
 		}
 		
-		if (false && Settings::mc_sat) {
-			while (true) {
-				bool isConflicting = true;
-				// Check whether the asserting clause is conflicting in the current decision level.
-				SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Current model: " << mMCSAT.model());
-				for (int i = 0; i < learnt_clause.size(); i++) {
-					auto lit = learnt_clause[i];
-					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
-					assert(abstrptr != nullptr);
-					auto res = carl::evaluate(abstrptr->reabstraction, mMCSAT.model());
-					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Evaluated " << abstrptr->reabstraction << " to " << res);
-					if (!res.isBool() || res.asBool()) {
-						isConflicting = false;
-						break;
-					}
-				}
-				if (isConflicting) {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Asserting clause is still conflicting, backtracking to " << (decisionLevel() - 1));
-					assert(decisionLevel() > 0);
-					cancelUntil( decisionLevel() - 1 );
-				} else {
-					break;
-				}
-			}
-		}
-
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Conflict clause " << _confl);
         assert( value( learnt_clause[0] ) == l_Undef );
