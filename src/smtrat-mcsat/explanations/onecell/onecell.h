@@ -33,17 +33,17 @@ constexpr bool use_delineation = false;
  * 
  * @param constraints Atoms of the same level such that @ref sample cannot be extended for the highest variable without making one atom false. Note that this property is not checked.
  * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
- * @return A pair of a set of constraints causign the conflict and a formula describing the cell.
+ * @return A set of constraints whose conjunction describes an unsatisfying cell that can be concluded from the input constraints.
  */
-std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constraints, const cadcells::VariableOrdering& vars, const cadcells::Assignment& sample) {
+std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::VariableOrdering& vars, const cadcells::Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << vars << ", " << sample);
     cadcells::datastructures::PolyPool pool(vars);
     cadcells::datastructures::Projections proj(pool);
 
     // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak
     bool constraints_all_strict = std::find_if(constraints.begin(), constraints.end(), [](const auto& f) {
-        if (f.type()==carl::FormulaType::CONSTRAINT) return !carl::is_strict(f.constraint().relation());
-        else if (f.type()==carl::FormulaType::VARCOMPARE) return (!carl::is_strict(f.variable_comparison().relation()) && !f.variable_comparison().negated()) || (carl::is_strict(f.variable_comparison().relation()) && f.variable_comparison().negated());
+        if (std::holds_alternative<cadcells::Constraint>(f)) return !carl::is_strict(std::get<cadcells::Constraint>(f).relation());
+        else if (std::holds_alternative<cadcells::VariableComparison>(f)) return (!carl::is_strict(std::get<cadcells::VariableComparison>(f).relation()) && !std::get<cadcells::VariableComparison>(f).negated()) || (carl::is_strict(std::get<cadcells::VariableComparison>(f).relation()) && std::get<cadcells::VariableComparison>(f).negated());
         assert(false);
         return false;
     }) == constraints.end();
@@ -59,7 +59,7 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         return std::nullopt;
     }
 
-    FormulasT description;
+    std::vector<cadcells::Atom> description;
     while ((*derivation)->level() > 0) {
         auto lvl = cadcells::algorithms::get_interval<op, cell_heuristic>(*derivation);
         if (!lvl) {
@@ -68,14 +68,15 @@ std::optional<std::pair<FormulasT, FormulaT>> onecell(const FormulasT& constrain
         if (constraints_all_strict) {
             lvl->second.set_to_closure();
         }
-        description.emplace_back(cadcells::helper::to_formula(proj.polys(), lvl->first, lvl->second));
+        auto res = cadcells::helper::to_formula(proj.polys(), lvl->first, lvl->second);
+        description.insert(description.end(), res.begin(), res.end());
         proj.clear_assignment_cache((*derivation)->sample());
         (*derivation) = (*derivation)->underlying().sampled_ref();
         proj.clear_cache((*derivation)->level()+2);
     }
     proj.clear_assignment_cache(cadcells::empty_assignment);
 
-    return std::make_pair(constraints, FormulaT(carl::FormulaType::AND, std::move(description)));
+    return description;
 }
 
 }

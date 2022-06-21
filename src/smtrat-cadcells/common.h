@@ -10,6 +10,12 @@ using RAN = carl::RealAlgebraicNumber<Rational>;
 using Assignment = carl::Assignment<RAN>;
 using VariableOrdering = std::vector<carl::Variable>;
 
+using Polynomial = Poly;
+using Constraint = carl::BasicConstraint<Poly>;
+using MultivariateRoot = carl::MultivariateRoot<Poly>;
+using VariableComparison = carl::VariableComparison<Poly>;
+using Atom = std::variant<Constraint, VariableComparison>;
+
 static const Assignment empty_assignment;
 
 }

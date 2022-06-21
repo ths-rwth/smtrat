@@ -70,7 +70,7 @@ public:
 
     const VariableOrdering& var_order() const { return m_var_order; }
 
-    PolyRef insert(const Poly& poly) {
+    PolyRef insert(const Polynomial& poly) {
         auto npoly = poly.normalize();
         PolyRef ref;
         ref.level = helper::level_of(m_var_order, npoly);
@@ -92,11 +92,11 @@ public:
         return ref;
     }
 
-    PolyRef operator()(const Poly& poly){
+    PolyRef operator()(const Polynomial& poly){
         return insert(poly);
     }
 
-    const Poly& get(const PolyRef& ref) const {
+    const Polynomial& get(const PolyRef& ref) const {
         assert(ref.level <= m_polys.size());
         if (ref.level == 0) {
             assert(ref.id <=2);
@@ -108,11 +108,11 @@ public:
         return m_polys[ref.level-1][ref.id];
     }
 
-    const Poly& operator()(const PolyRef& ref) const{
+    const Polynomial& operator()(const PolyRef& ref) const{
         return get(ref);
     }
 
-    bool known(const Poly& poly) const {
+    bool known(const Polynomial& poly) const {
         auto npoly = poly.normalize();
         auto level = helper::level_of(m_var_order, npoly);
         auto res = m_poly_ids[level-1].find(npoly);

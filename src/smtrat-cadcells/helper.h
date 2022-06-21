@@ -19,7 +19,7 @@ namespace smtrat::cadcells::helper {
  * Preconditions:
  * - 'variables(poly)' must be a subset of 'order'.
  */
-static size_t level_of(const VariableOrdering& order, const Poly& poly) {
+static size_t level_of(const VariableOrdering& order, const Polynomial& poly) {
     // assert(isSubset(asVector(variables(poly)), order));
     auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {
@@ -34,7 +34,7 @@ static size_t level_of(const VariableOrdering& order, const Poly& poly) {
     return 0;
 }
 
-static carl::Variable main_var(const VariableOrdering& order, const Poly& poly) {
+static carl::Variable main_var(const VariableOrdering& order, const Polynomial& poly) {
     // assert(isSubset(asVector(variables(poly)), order));
     auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {

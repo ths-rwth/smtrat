@@ -70,6 +70,7 @@ public:
 
 private:
     auto as_univariate(PolyRef p) const {
+        // TODO @Philip: for LPPoly, just return the polynomial itself here 
         return carl::to_univariate_polynomial(m_pool(p), main_var(p));
     }
 
@@ -129,7 +130,7 @@ public:
         return (bool) cache(p).disc;
     }
 
-    bool known(const Poly& p) const {
+    bool known(const Polynomial& p) const {
         return m_pool.known(p);
     } 
 
@@ -233,11 +234,11 @@ public:
         return false;
     }
 
-    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Poly&,const Poly&)> compare) const {
+    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) const {
         std::optional<Poly> result;
         auto poly = as_univariate(p);
         for (const auto& coeff : poly.coefficients()) {
-            auto mv = carl::evaluate(carl::BasicConstraint<Poly>(coeff, carl::Relation::NEQ), sample);
+            auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);
             assert(!indeterminate(mv));
             if (mv) {
                 if (!result || compare(coeff,*result)) {
