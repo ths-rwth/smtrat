@@ -18,7 +18,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size() + 1).delineated_ref();
 
     deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
-    operators::project_basic_properties<op>(*deriv);
+    if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
     operators::delineate_properties<op>(*deriv);
 
     std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> results;

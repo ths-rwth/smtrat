@@ -46,6 +46,15 @@ public:
     bool upper_unbounded() const {
         return m_upper == m_end;
     }
+    bool contains(const RAN& sample) const {
+        if (is_section()) {
+            return sample == lower()->first;
+        } else {
+            if (!lower_unbounded() && sample <= lower()->first) return false;
+            if (!upper_unbounded() && sample >= upper()->first) return false;
+            return true;
+        }
+    }
 };    
 inline std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
     if (data.is_section()) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "properties.h"
+#include "delineation.h"
 #include "../datastructures/derivation.h"
 
 /**
@@ -108,6 +109,29 @@ void poly_ord_inv(datastructures::SampledDerivation<P>& deriv, datastructures::P
             poly_irrecubile_ord_inv(deriv, factor);
         }
     }   
+}
+
+template<typename P>
+void poly_irrecubile_ord_inv(datastructures::BaseDerivation<P>& deriv, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ord_inv(" << poly << "), " << poly << " irreducible");
+    if (deriv.proj().is_const(poly)) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << " const");
+    } else {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(" << poly << ")");
+        deriv.insert(properties::poly_pdel{ poly });
+        deriv.insert(properties::cell_connected{ poly.level });
+        deriv.insert(properties::poly_irreducible_sgn_inv{ poly });
+    }
+}
+
+template<typename P>
+void poly_ord_inv(datastructures::BaseDerivation<P>& deriv, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ord_inv(" << poly << ")");
+    auto factors = deriv.proj().factors_nonconst(poly);
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= ord_inv(factors(" << poly << ")) <=> ord_inv(" << factors << ")");
+    for (const auto& factor : factors) {
+        poly_irrecubile_ord_inv(deriv, factor);
+    }
 }
 
 template<typename P>
@@ -222,6 +246,199 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
     }
 }
 
+namespace filter_util {
+    template<typename P>
+    std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const std::vector<datastructures::PolyRef>& polys) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
+        auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
+        for (const auto& poly : polys) {
+            subderiv->insert(properties::poly_pdel{ poly });
+            subderiv->insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
+        }
+        for(const auto& prop : subderiv->template properties<properties::poly_pdel>()) {
+            if (!rules::poly_pdel(*subderiv, prop.poly)) return std::nullopt;
+        }
+        for(const auto& prop : subderiv->template properties<properties::poly_ord_inv>()) {
+            rules::poly_ord_inv(*subderiv, prop.poly);
+        }
+        for(const auto& prop : subderiv->template properties<properties::poly_sgn_inv>()) {
+            rules::poly_sgn_inv(*subderiv->delineated(), prop.poly);
+        }
+        for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
+            delineation::delineate(*subderiv->delineated(), prop);
+        }
+        subderiv->delineate_cell();
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval end");
+
+        if (subderiv->cell().is_section()) {
+            return carl::Interval<RAN>(subderiv->cell().lower()->first);
+        } else {
+            return carl::Interval<RAN>(subderiv->cell().lower_unbounded() ? RAN(0) : subderiv->cell().lower()->first, subderiv->cell().lower_unbounded() ? carl::BoundType::INFTY : carl::BoundType::STRICT, subderiv->cell().upper_unbounded() ? RAN(0) : subderiv->cell().upper()->first, subderiv->cell().upper_unbounded() ? carl::BoundType::INFTY : carl::BoundType::STRICT);
+        }
+    }
+
+    template<typename P>
+    void filter_resultant(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly1, const datastructures::PolyRef poly2, std::function<bool(const RAN&)> filter_condition) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_resultant start");
+        auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).sampled_ref();
+        subderiv->insert(properties::poly_ord_inv{ deriv.proj().res(poly1, poly2) });
+        for(const auto& prop : subderiv->template properties<properties::poly_ord_inv>()) {
+            // this will make all polynomials projectively delineable.
+            // TODO later: we need to defer making a poly projectively delineable to the point for the case we want to apply equational constraints 
+            // TODO later: do we need this even for polys without a relevant root?
+            rules::poly_ord_inv(*subderiv->base(), prop.poly);
+        }
+        for(const auto& prop : subderiv->template properties<properties::poly_sgn_inv>()) {
+            rules::poly_sgn_inv(*subderiv->delineated(), prop.poly);
+        }
+        for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
+            delineation::delineate(*subderiv->delineated(), prop);
+        }
+
+        for (const auto& entry : subderiv->delin().roots()) {
+            if (filter_condition(entry.first)) {
+                for (const auto root : entry.second) {
+                    deriv.insert(properties::root_inv{ root });
+                }
+            }
+        }
+
+        deriv.underlying().sampled_ref()->merge_with(*subderiv->underlying().sampled_ref());
+
+        // TODO later: can we ignore the following?
+        for (const auto& p : subderiv->delin().nonzero()) {
+            deriv.insert(properties::poly_irreducible_sgn_inv{ p });
+        }
+        for (const auto& p : subderiv->delin().nullified()) {
+            deriv.insert(properties::poly_irreducible_sgn_inv{ p });
+        }
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_resultant end");
+    }
+
+    template<typename P>
+    auto projection_root(const datastructures::SampledDerivation<P>& deriv, const RAN& root) {
+        Assignment ass = deriv.underlying_sample();
+        ass.emplace(deriv.main_var(), root);
+        return ass;
+    }
+
+    bool has_common_real_root(datastructures::Projections& proj, Assignment ass, const datastructures::PolyRef& poly1, const datastructures::PolyRef& poly2) {
+        auto roots1 = proj.real_roots(ass,poly1);
+        auto roots2 = proj.real_roots(ass,poly2);
+        auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
+        return common_zero != roots1.end();
+    }
+}
+
+template<typename P>
+bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
+    deriv.insert(properties::cell_connected{ deriv.level() });
+
+    boost::container::flat_map<datastructures::PolyRef,boost::container::flat_map<datastructures::PolyRef,std::vector<std::pair<datastructures::IndexedRoot, datastructures::IndexedRoot>>>> decomposed;
+
+    for (const auto& rel : ordering.data()) {
+        if (rel.first.poly != rel.second.poly) {
+            if (rel.first.poly < rel.second.poly) {
+                decomposed.try_emplace(rel.first.poly).first->second.try_emplace(rel.second.poly).first->second.push_back(rel);
+            } else {
+                decomposed.try_emplace(rel.second.poly).first->second.try_emplace(rel.first.poly).first->second.push_back(rel);
+            }
+        }
+    }
+
+    for (const auto& d1 : decomposed) {
+        const auto& poly1 = d1.first;
+        for (const auto& d2 : d1.second) {
+            const auto& poly2 = d2.first;
+            assert(deriv.contains(properties::poly_pdel{ poly1 }));
+            assert(deriv.contains(properties::poly_pdel{ poly2 }));
+            auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
+            if (!delineable_interval) return false;
+            filter_util::filter_resultant(deriv, poly1, poly2, [&](const RAN& ran) {
+                Assignment ass = filter_util::projection_root(deriv, ran);
+                if (!delineable_interval->contains(ran)) {
+                    return filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2);
+                } else {
+                    auto roots1 = deriv.proj().real_roots(ass,poly1);
+                    auto roots2 = deriv.proj().real_roots(ass,poly2);
+                    for (const auto& pair : d2.second) {
+                        auto index1 = pair.first.poly == poly1 ? pair.first.index : pair.second.index;
+                        auto index2 = pair.first.poly == poly1 ? pair.second.index : pair.first.index;
+                        assert(index1 <= roots1.size());
+                        assert(index2 <= roots2.size());
+                        if (roots1[index1-1] == roots2[index2-1]) {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+            });
+        }
+    }
+    return true;
+}
+
+namespace poly_irreducible_sgn_inv_util {
+    inline boost::container::flat_set<datastructures::PolyRef> resultant_polys(const datastructures::PolyRef& poly, const datastructures::IndexedRootOrdering& ordering) {
+        boost::container::flat_set<datastructures::PolyRef> result;
+        for (const auto& rel : ordering.data()) {
+            if (rel.first.poly == poly) {
+                result.insert(rel.second.poly);
+            } else if (rel.second.poly == poly) {
+                result.insert(rel.first.poly);
+            }
+        }
+        return result;
+    }
+            
+    template<typename P>
+    inline std::optional<datastructures::IndexedRoot> protect_lower(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, const datastructures::PolyRef& poly, const boost::container::flat_set<datastructures::PolyRef>& res_polys) {
+        if (poly == cell.lower().value().poly) return cell.lower().value();
+
+        // check if a res_poly has a well defined root below
+        for (const auto& res_poly : res_polys) {
+            if (res_poly == cell.lower().value().poly) {
+                return cell.lower().value();
+            } else {
+                auto res_lower_root = ordering.leq_transitive(res_poly, cell.lower().value());
+                if (res_lower_root) {
+                    if (deriv.contains(properties::root_well_def{*res_lower_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_lower_root)) {
+                        return res_lower_root;
+                    }
+                }
+            }
+        }
+
+        auto lower_root = ordering.leq_transitive(poly, cell.lower().value());
+        if (lower_root) return lower_root;
+        return std::nullopt;
+    }
+
+    template<typename P>
+    inline std::optional<datastructures::IndexedRoot> protect_upper(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, const datastructures::PolyRef& poly, const boost::container::flat_set<datastructures::PolyRef>& res_polys) {
+        if (poly == cell.upper().value().poly) return cell.upper().value();
+
+        // check if a res_poly has a well defined root above
+        for (const auto& res_poly : res_polys) {
+            if (res_poly == cell.upper().value().poly) {
+                return cell.upper().value();
+            } else {
+                auto res_upper_root = ordering.leq_transitive(cell.upper().value(), res_poly);
+                if (res_upper_root) {
+                    if (deriv.contains(properties::root_well_def{*res_upper_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_upper_root)) {
+                        return res_upper_root;
+                    }
+                }
+            }
+        }
+
+        auto upper_root = ordering.leq_transitive(cell.upper().value(), poly);
+        if (upper_root) return upper_root;
+        return std::nullopt;
+    }
+}
+
 template<typename P>
 void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
@@ -236,80 +453,100 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const
             deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
         } else {
             assert(cell.is_section() || (cell.lower().is_strict() && cell.upper().is_strict()));
-            auto lower_root = ordering.leq_transitive(poly, cell.lower().value());
-            auto upper_root = ordering.leq_transitive(cell.upper().value(), poly);
 
             // compute set of polynomials that have a resultant with the current polynomials (according to the given ordering)
-            boost::container::flat_set<datastructures::PolyRef> res_polys;
-            for (const auto& rel : ordering.data()) {
-                if (rel.first.poly == poly) {
-                    res_polys.insert(rel.second.poly);
-                } else if (rel.second.poly == poly) {
-                    res_polys.insert(rel.first.poly);
-                }
-            }
+            boost::container::flat_set<datastructures::PolyRef> res_polys = poly_irreducible_sgn_inv_util::resultant_polys(poly, ordering);
             
-            // compute protection for lower bound
-            auto protect_lower = [&]() {
-                if (poly == cell.lower().value().poly) return true;
-
-                if (upper_root) {
-                    // check if a res_poly has a well defined root below
-                    for (const auto& res_poly : res_polys) {
-                        if (res_poly == cell.lower().value().poly) {
-                            return true;
-                        } else {
-                            auto res_lower_root = ordering.leq_transitive(res_poly, cell.lower().value());
-                            if (res_lower_root) {
-                                if (deriv.contains(properties::root_well_def{*res_lower_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_lower_root)) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (lower_root) {
-                    deriv.insert(properties::root_well_def{*lower_root});
-                    return true;
-                }
-
-                return false;
-            };
-
-            // compute protection for upper bound
-            auto protect_upper = [&]() {
-                if (poly == cell.upper().value().poly) return true;
-
-                if (lower_root) {
-                    // check if a res_poly has a well defined root above
-                    for (const auto& res_poly : res_polys) {
-                        if (res_poly == cell.upper().value().poly) {
-                            return true;
-                        } else {
-                            auto res_upper_root = ordering.leq_transitive(cell.upper().value(), res_poly);
-                            if (res_upper_root) {
-                                if (deriv.contains(properties::root_well_def{*res_upper_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_upper_root)) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                if (upper_root) {
-                    deriv.insert(properties::root_well_def{*upper_root});
-                    return true;
-                }
-
-                return false;
-            };
+            auto lower = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
+            auto upper = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
             
-            if (!protect_lower() || !protect_upper()) {
+            if (!lower || !upper) {
                 deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
+            } else {
+                deriv.insert(properties::root_well_def{*lower});
+                if (lower->poly != poly) {
+                    assert(deriv.contains(properties::poly_ord_inv{ deriv.proj().res(lower->poly, poly) }));
+                }
+                deriv.insert(properties::root_well_def{*upper});
+                if (upper->poly != poly) {
+                    assert(deriv.contains(properties::poly_ord_inv{ deriv.proj().res(upper->poly, poly) }));
+                }
             }
         }
     }
+}
+
+template<typename P>
+bool poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    assert(!deriv.proj().is_nullified(deriv.underlying_sample(), poly));
+    assert(deriv.contains(properties::poly_pdel{ poly }));
+    deriv.insert(properties::cell_connected{ poly.level-1 });
+    if (cell.is_section() && deriv.proj().is_zero(deriv.sample(), poly)) {
+        // ok by indexed root ordering!
+    } else {
+        assert(!deriv.proj().is_zero(deriv.sample(), poly));
+        if (!cell.is_section() && (cell.lower().is_infty() || cell.upper().is_infty())) {
+            deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
+        } else {
+            assert(cell.is_section() || (cell.lower().is_strict() && cell.upper().is_strict()));
+
+            // compute set of polynomials that have a resultant with the current polynomials (according to the given ordering)
+            boost::container::flat_set<datastructures::PolyRef> res_polys = poly_irreducible_sgn_inv_util::resultant_polys(poly, ordering);
+            
+            auto lower = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
+            auto upper = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
+            
+            if (!lower || !upper) {
+                deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
+            } else {
+                deriv.insert(properties::root_well_def{*lower});
+                if (lower->poly != poly) {
+                    auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ cell.lower().value().poly }));
+                    if (!delineable_interval) return false;
+                    filter_util::filter_resultant(deriv, lower->poly, poly, [&](const RAN& ran) {
+                        Assignment ass = filter_util::projection_root(deriv, ran);
+                        if (!delineable_interval->contains(ran)) {
+                            auto roots1 = deriv.proj().real_roots(ass,lower->poly);
+                            auto roots2 = deriv.proj().real_roots(ass,poly);
+                            auto root_lo = deriv.proj().real_roots(ass,cell.lower().value().poly).at(cell.lower().value().index-1);
+                            auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
+                            return (common_zero != roots1.end() && *common_zero <= ran);
+                        } else {
+                            return filter_util::has_common_real_root(deriv.proj(),ass,lower->poly, poly);
+                        }
+
+                                             
+                    });
+                }
+                deriv.insert(properties::root_well_def{*upper});
+                if (upper->poly != poly) {
+                    auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ cell.upper().value().poly }));
+                    if (!delineable_interval) return false;
+                    filter_util::filter_resultant(deriv, upper->poly, poly, [&](const RAN& ran) {
+                        Assignment ass = filter_util::projection_root(deriv, ran);
+                        if (!delineable_interval->contains(ran)) {
+                            auto roots1 = deriv.proj().real_roots(ass,upper->poly);
+                            auto roots2 = deriv.proj().real_roots(ass,poly);
+                            auto root_up = deriv.proj().real_roots(ass, cell.upper().value().poly).at(cell.upper().value().index-1);
+                            auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
+                            return (common_zero != roots1.end() && *common_zero >= ran);
+                        } else {
+                            return filter_util::has_common_real_root(deriv.proj(),ass,upper->poly, poly);
+                        }                     
+                    });
+                }
+            }
+        }
+    }
+    return true;
+}
+
+template<typename P>
+void root_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::IndexedRoot root) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv(" << root << ")");
+    assert(deriv.contains(properties::poly_pdel{ root.poly }));
+    // guaranteed by ordering
 }
 
 template<typename P>

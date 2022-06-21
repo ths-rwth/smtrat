@@ -19,11 +19,8 @@ std::optional<std::pair<carl::Variable, datastructures::SymbolicInterval>> get_i
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties");
-    if (!operators::project_cell_properties<op>(*cell_deriv)) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Could not project properties");
-        return std::nullopt;
-    }
-    operators::project_basic_properties<op>(*cell_deriv->delineated());
+    if (!operators::project_cell_properties<op>(*cell_deriv)) return std::nullopt;
+    if (!operators::project_basic_properties<op>(*cell_deriv->delineated())) return std::nullopt;
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
     operators::delineate_properties<op>(*cell_deriv->delineated());
     cell_deriv->delineate_cell();
@@ -37,7 +34,7 @@ std::optional<std::pair<carl::Variable, datastructures::SymbolicInterval>> get_i
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *cell_repr);
     if (cell_deriv->level() > 1) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
-        operators::project_delineated_cell_properties<op>(*cell_repr);
+        if (!operators::project_delineated_cell_properties<op>(*cell_repr)) return std::nullopt;
     }
 
     return std::make_pair(cell_deriv->main_var(),cell_repr->description);

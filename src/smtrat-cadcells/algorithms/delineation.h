@@ -36,7 +36,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
         assert(cadcells::helper::level_of(vars, p) == sample.size()+1);
         deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(p) });
     }
-    operators::project_basic_properties<op>(*deriv);
+    if (!operators::project_basic_properties<op>(*deriv)) return std::nullopt;
     operators::delineate_properties<op>(*deriv);
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing delineation representation");
@@ -47,7 +47,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *delineation_repr);
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute delineation projection");
-    operators::project_delineation_properties<op>(*delineation_repr);
+    if (!operators::project_delineation_properties<op>(*delineation_repr)) return std::nullopt;
     
     return deriv->underlying().sampled_ref();
 }

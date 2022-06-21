@@ -4,7 +4,9 @@
 #include <smtrat-cadcells/common.h>
 #include <smtrat-cadcells/helper_formula.h>
 
-#include <smtrat-cadcells/operators/operator_mccallum.h>
+// including both lead to compiler error due to redefinition
+//#include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
 #include <smtrat-cadcells/algorithms/level_covering.h>
@@ -21,7 +23,8 @@ namespace smtrat::mcsat::onecell {
 constexpr auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
 constexpr auto covering_heuristic = cadcells::representation::DEFAULT_COVERING;
 // constexpr auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
-constexpr auto op = cadcells::operators::op::mccallum;
+// constexpr auto op = cadcells::operators::op::mccallum;
+constexpr auto op = cadcells::operators::op::mccallum_filtered;
 constexpr bool use_delineation = false; 
 
 /**
