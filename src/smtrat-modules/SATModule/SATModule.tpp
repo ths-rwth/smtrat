@@ -2172,7 +2172,7 @@ namespace smtrat
         ca.free( cr );
     }
 
-    template<class Settings> // TODO REFACTOR can be replaced by bool_satisfied?
+    template<class Settings>
     bool SATModule<Settings>::satisfied( const Clause& c ) const
     {
         for( int i = 0; i < c.size(); i++ )

@@ -494,7 +494,6 @@ public:
 	std::size_t computeTheoryLevel(const FormulaT& f) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
 		if constexpr(!Settings::early_evaluation) {
-			// TODO implement more efficiently
 			auto poly_variables = f.variables();
 			if (poly_variables.empty()) {
 				return 0;
