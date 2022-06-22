@@ -498,7 +498,7 @@ public:
 		if (poly_variables.empty()) {
 			return 0;
 		}
-		for (std::size_t level = 1; level <= mTheoryStack.size(); ++level) {
+		for (std::size_t level = 1; level < mTheoryStack.size(); ++level) {
 			poly_variables.erase(mTheoryStack[level].variable);
 			if (poly_variables.empty()) return level;
 		}
