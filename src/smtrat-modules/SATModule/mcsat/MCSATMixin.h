@@ -69,7 +69,7 @@ private:
 	std::vector<Minisat::Var> mUndecidedVariables;
 
 	/// Variables that are inconsistent in the current theory level
-	std::vector<Minisat::Var> mInconsistentVariables; // TODO can be removed
+	std::vector<Minisat::Var> mInconsistentVariables;
 
 	/// Semantically propagated variables that are not yet inserted into the trail
 	std::set<Minisat::Var> mSemanticPropagations;
@@ -492,18 +492,43 @@ public:
 	}
 	
 	std::size_t computeTheoryLevel(const FormulaT& f) const {
-		// TODO implement more efficiently
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
-		auto poly_variables = f.variables();
-		if (poly_variables.empty()) {
+		if constexpr(!Settings::early_evaluation) {
+			// TODO implement more efficiently
+			auto poly_variables = f.variables();
+			if (poly_variables.empty()) {
+				return 0;
+			}
+			for (std::size_t level = 1; level < mTheoryStack.size(); ++level) {
+				poly_variables.erase(mTheoryStack[level].variable);
+				if (poly_variables.empty()) return level;
+			}
+			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
+			return std::numeric_limits<std::size_t>::max();
+		} else {
+			carl::carlVariables vars;
+			carl::variables(f,vars);
+			if (vars.empty()) {
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
+				return 0;
+			}
+			
+			Model m = model();
+			if (!carl::evaluate(f, m).isBool()) {
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
+				return std::numeric_limits<std::size_t>::max();
+			}
+			for (std::size_t lvl = level(); lvl > 0; lvl--) {
+				if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+				m.erase(variable(lvl));
+				if (!vars.has(variable(lvl))) continue;
+				if (!carl::evaluate(f, m).isBool()) {
+					return lvl;
+				}
+			}
+			assert(false);
 			return 0;
 		}
-		for (std::size_t level = 1; level < mTheoryStack.size(); ++level) {
-			poly_variables.erase(mTheoryStack[level].variable);
-			if (poly_variables.empty()) return level;
-		}
-		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
-		return std::numeric_limits<std::size_t>::max();
 	}
 	
 	Minisat::Lit getDecisionLiteral(Minisat::Var var) const {
@@ -551,14 +576,14 @@ public:
 			if (!mBackend.isActive(c)) continue;
 			//auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
-			if (computeTheoryLevel(FormulaT(c)) > level()) continue;
+			if (!Settings::early_evaluation && computeTheoryLevel(FormulaT(c)) > level()) continue;
 			if (!evaluator(c)) return false;
 		}
 		for (const auto& b: trail.mvBounds()) {
 			if (!mBackend.isActive(b)) continue;
 			//auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
-			if (computeTheoryLevel(FormulaT(b)) > level()) continue;
+			if (!Settings::early_evaluation && computeTheoryLevel(FormulaT(b)) > level()) continue;
 			if (!evaluator(b)) return false;
 		}
 		return true;
