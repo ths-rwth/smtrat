@@ -105,7 +105,7 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 	if (res.isBool()) {
 		return res.asBool() ? l_True : l_False;
 	}
-	assert(!Settings::early_evaluation);
+	assert(Settings::early_evaluation);
 	return l_Undef;
 }
 
