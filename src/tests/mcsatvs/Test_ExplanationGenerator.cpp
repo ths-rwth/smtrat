@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_eliminationVariableNotContained)
 	carl::Variable x = carl::fresh_real_variable("x");
 	carl::Variable y = carl::fresh_real_variable("y");
 
-	VariableComparisonT varcomp(x, MultivariateRootT(Poly(MultivariateRootT::var())+Rational(1), 1), carl::Relation::EQ);
+	VariableComparisonT varcomp(x, MultivariateRootT(Poly(x)+Rational(1), 1), carl::Relation::EQ);
 	Model model;
 
 	bool result = generateZeros(varcomp, y, model, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
@@ -92,7 +92,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_eliminationVariableNotContained)
 BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_degreeTooHigh) {
 	carl::Variable x = carl::fresh_real_variable("x");
 	carl::Variable y = carl::fresh_real_variable("y");
-	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
+	VariableComparisonT varcomp(y, MultivariateRootT(Poly(y)*y*y*x-Rational(1), 2, y), carl::Relation::EQ);
 
 	Model model;
 
@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_degreeTooHigh) {
 BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_simple) {
 	carl::Variable x = carl::fresh_real_variable("x");
 	carl::Variable y = carl::fresh_real_variable("y");
-	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
+	VariableComparisonT varcomp(y, MultivariateRootT(Poly(y)*y*x-Rational(1), 2, y), carl::Relation::EQ);
 
 	Model model;
 	model.assign(x, Rational(1));
@@ -119,8 +119,8 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_MVRoot_multivar) {
 	carl::Variable x1 = carl::fresh_real_variable("x1");
 	carl::Variable x2 = carl::fresh_real_variable("x2");
 	carl::Variable y = carl::fresh_real_variable("y");
-	Poly poly = (Poly(MultivariateRootT::var())*x1) + (Poly(MultivariateRootT::var())*MultivariateRootT::var()*x2);
-	VariableComparisonT varcomp(y, MultivariateRootT(poly, 2), carl::Relation::EQ);
+	Poly poly = (Poly(y)*x1) + (Poly(y)*y*x2);
+	VariableComparisonT varcomp(y, MultivariateRootT(poly, 2, y), carl::Relation::EQ);
 
 	Model model;
 	model.assign(x1, Rational(-1));
@@ -274,7 +274,7 @@ BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_duplicateRemoval) {
 BOOST_AUTO_TEST_CASE(Test_generateTestCandidates_variableComparison) {
 	carl::Variable x = carl::fresh_real_variable("x");
 	carl::Variable y = carl::fresh_real_variable("y");
-	VariableComparisonT varcomp(y, MultivariateRootT(Poly(MultivariateRootT::var())*MultivariateRootT::var()*x-Rational(1), 2), carl::Relation::EQ);
+	VariableComparisonT varcomp(y, MultivariateRootT(Poly(y)*y*x-Rational(1), 2, y), carl::Relation::EQ);
 	Model model;
 	model.assign(x, Rational(1));
 	FormulaSetT constraints;

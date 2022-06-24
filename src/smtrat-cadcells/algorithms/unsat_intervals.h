@@ -87,7 +87,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto tmp_sample = sample;
 
     assert(c.var() == current_var);
-    assert(std::holds_alternative<RAN>(c.value()) || cadcells::helper::level_of(vars, std::get<MultivariateRoot>(c.value()).poly(current_var)) == sample.size() + 1);
+    assert(std::holds_alternative<RAN>(c.value()) || cadcells::helper::level_of(vars, std::get<MultivariateRoot>(c.value()).poly()) == sample.size() + 1);
 
     auto deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size() + 1).delineated_ref();
 

@@ -12,7 +12,7 @@ namespace smtrat::cadcells::helper {
 inline MultivariateRoot as_multivariate_root(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::IndexedRoot r) {
     const Polynomial& poly = pool(r.poly);
     assert(carl::variables(poly).has(main_var));
-    return MultivariateRoot(carl::switch_variable(poly, main_var, MultivariateRoot::var()), r.index);
+    return MultivariateRoot(poly, r.index, main_var);
 }
 
 /**

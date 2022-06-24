@@ -128,11 +128,11 @@ BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	Model model;
 	model.assign(a, Rational(2));
 
-	const carl::Variable& z = MultivariateRootT::var();
+	carl::Variable z = a;
 	Poly poly = Poly(Rational(1)) + Rational(3)*z*z*z - Rational(3)*b*b*b + Rational(3)*z*z*z*z*z*z - Rational(6)*z*z*z*b*b*b
 				+ Rational(3)*b*b*b*b*b*b + z*z*z*z*z*z*z*z*z - Rational(3)*z*z*z*z*z*z*b*b*b + Rational(3)*z*z*z*b*b*b*b*b*b
 				- b*b*b*b*b*b*b*b*b;
-	MultivariateRootT mvroot(poly, 1);
+	MultivariateRootT mvroot(poly, 1, a);
 	VariableComparisonT varcomp(a, mvroot, carl::Relation::GREATER, true);
 	FormulaT formula(varcomp);
 	std::cout << "Looking at " << varcomp << std::endl;

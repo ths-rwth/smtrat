@@ -329,9 +329,7 @@ bool contains(const std::vector<T>& list, const T& elem) {
 inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std::size_t rootIdx) {
     assert(carl::variables(poly).has(rootVariable));
     // Apparently we need this complicated construction. I forgot why a simple substitute is not okay.
-    return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(),
-                                                                   carl::to_univariate_polynomial(poly, rootVariable).coefficients())),
-                             rootIdx);
+    return MultivariateRootT(poly, rootIdx, rootVariable);
 }
 
 inline RealAlgebraicPoint<smtrat::Rational> asRANPoint(

@@ -30,24 +30,24 @@ namespace helper {
 	 */
 	template<typename MVRootParams>
 	FormulaT buildEquality(carl::Variable var, const MVRootParams& mvp) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " = " << MultivariateRootT(mvp.first, mvp.second));
-		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::EQ));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " = " << MultivariateRootT(mvp.first, mvp.second, var));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second, var), carl::Relation::EQ));
 	}
 	/**
 	 * Construct an atomic formula representing a variable being less than the given multivariate root. "v < root(..)"
 	 */
 	template<typename MVRootParams>
 	FormulaT buildBelow(carl::Variable var, const MVRootParams& mvp) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " < " << MultivariateRootT(mvp.first, mvp.second));
-		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::LESS));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " < " << MultivariateRootT(mvp.first, mvp.second, var));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second, var), carl::Relation::LESS));
 	}
 	/**
 	 * Construct an atomic formula representing a variable being greater than the given multivariate root. "v > root(..)"
 	 */
 	template<typename MVRootParams>
 	FormulaT buildAbove(carl::Variable var, const MVRootParams& mvp) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " > " << MultivariateRootT(mvp.first, mvp.second));
-		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::GREATER));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " > " << MultivariateRootT(mvp.first, mvp.second, var));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second, var), carl::Relation::GREATER));
 	}
 
 	/**
@@ -129,8 +129,7 @@ private:
 			// Find the closest roots/rootIdx around value.
 			std::size_t rootID = 1;
 			for (const auto& root: list.roots()) {
-			  // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-				auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), poly.coefficients())), rootID);
+				auto param = std::make_pair(Poly(poly), rootID);
 				SMTRAT_LOG_TRACE("smtrat.nlsat", root << " -> " << param);
 				if (root < value) {
 					if (!lower || (root > lower->first)) {
