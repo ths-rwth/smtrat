@@ -7,7 +7,7 @@
 namespace smtrat::cadcells::helper {
 
 /**
- * Converts an @ref datastructures::IndexedRoot to a @ref MultivariateRootT.
+ * Converts an @ref datastructures::IndexedRoot to a @ref MultivariateRoot.
  */
 inline MultivariateRoot as_multivariate_root(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::IndexedRoot r) {
     const Polynomial& poly = pool(r.poly);
@@ -16,7 +16,7 @@ inline MultivariateRoot as_multivariate_root(const datastructures::PolyPool& poo
 }
 
 /**
- * Converts a @ref datastructures::SymbolicInterval to a @ref FormulaT.
+ * Converts a @ref datastructures::SymbolicInterval to an @ref Atom.
  */
 std::vector<Atom> to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, const datastructures::SymbolicInterval& c) {
     std::vector<Atom> atoms;
@@ -28,7 +28,6 @@ std::vector<Atom> to_formula(const datastructures::PolyPool& pool, carl::Variabl
         } else if (c.lower().is_weak()) {
             atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,c.lower().value()), carl::Relation::GEQ));
         }
-        FormulaT lower(carl::FormulaType::TRUE);
         if (c.upper().is_strict()) {
             atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,c.upper().value()), carl::Relation::LESS));
         } else if (c.upper().is_weak()) {
