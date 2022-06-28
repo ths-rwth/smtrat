@@ -323,6 +323,7 @@ namespace filter_util {
     }
 
     bool has_common_real_root(datastructures::Projections& proj, Assignment ass, const datastructures::PolyRef& poly1, const datastructures::PolyRef& poly2) {
+        if (proj.is_nullified(ass,poly1) || proj.is_nullified(ass,poly2)) return true;
         auto roots1 = proj.real_roots(ass,poly1);
         auto roots2 = proj.real_roots(ass,poly2);
         auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
@@ -360,6 +361,8 @@ bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, c
                 if (!delineable_interval->contains(ran)) {
                     return filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2);
                 } else {
+                    assert(!deriv.proj().is_nullified(ass,poly1));
+                    assert(!deriv.proj().is_nullified(ass,poly2));
                     auto roots1 = deriv.proj().real_roots(ass,poly1);
                     auto roots2 = deriv.proj().real_roots(ass,poly2);
                     for (const auto& pair : d2.second) {
@@ -506,17 +509,17 @@ bool poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& der
                     if (!delineable_interval) return false;
                     filter_util::filter_resultant(deriv, lower->poly, poly, [&](const RAN& ran) {
                         Assignment ass = filter_util::projection_root(deriv, ran);
-                        if (!delineable_interval->contains(ran)) {
+                        if (delineable_interval->contains(ran)) {
+                            if (deriv.proj().is_nullified(ass,lower->poly) || deriv.proj().is_nullified(ass,poly)) return true;
                             auto roots1 = deriv.proj().real_roots(ass,lower->poly);
                             auto roots2 = deriv.proj().real_roots(ass,poly);
+                            assert(!deriv.proj().is_nullified(ass,cell.lower().value().poly));
                             auto root_lo = deriv.proj().real_roots(ass,cell.lower().value().poly).at(cell.lower().value().index-1);
                             auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
                             return (common_zero != roots1.end() && *common_zero <= ran);
                         } else {
                             return filter_util::has_common_real_root(deriv.proj(),ass,lower->poly, poly);
-                        }
-
-                                             
+                        }                   
                     });
                 }
                 deriv.insert(properties::root_well_def{*upper});
@@ -525,9 +528,11 @@ bool poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& der
                     if (!delineable_interval) return false;
                     filter_util::filter_resultant(deriv, upper->poly, poly, [&](const RAN& ran) {
                         Assignment ass = filter_util::projection_root(deriv, ran);
-                        if (!delineable_interval->contains(ran)) {
+                        if (delineable_interval->contains(ran)) {
+                            if (deriv.proj().is_nullified(ass,upper->poly) || deriv.proj().is_nullified(ass,poly)) return true;
                             auto roots1 = deriv.proj().real_roots(ass,upper->poly);
                             auto roots2 = deriv.proj().real_roots(ass,poly);
+                            assert(!deriv.proj().is_nullified(ass,cell.upper().value().poly));
                             auto root_up = deriv.proj().real_roots(ass, cell.upper().value().poly).at(cell.upper().value().index-1);
                             auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
                             return (common_zero != roots1.end() && *common_zero >= ran);
