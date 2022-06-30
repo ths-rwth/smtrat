@@ -21,7 +21,7 @@ struct PolyProperties {
 };
 
 struct AssignmentProperties {
-    std::map<PolyRef, carl::ran::real_roots_result<RAN>> real_roots;
+    std::map<PolyRef, carl::ran::RealRootsResult<RAN>> real_roots;
     std::map<PolyRef, bool> is_zero;
 };
 
