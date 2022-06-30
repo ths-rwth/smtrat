@@ -6,15 +6,17 @@
 
 namespace smtrat::cadcells {
 
-using RAN = carl::RealAlgebraicNumber<Rational>;
-using Assignment = carl::Assignment<RAN>;
+
 using VariableOrdering = std::vector<carl::Variable>;
 
 using Polynomial = Poly;
-using Constraint = carl::BasicConstraint<Poly>;
-using MultivariateRoot = carl::MultivariateRoot<Poly>;
-using VariableComparison = carl::VariableComparison<Poly>;
+using Constraint = carl::BasicConstraint<Polynomial>;
+using MultivariateRoot = carl::MultivariateRoot<Polynomial>;
+using VariableComparison = carl::VariableComparison<Polynomial>;
 using Atom = std::variant<Constraint, VariableComparison>;
+
+using RAN = carl::RealAlgebraicNumber<Rational>;
+using Assignment = carl::Assignment<RAN>;
 
 static const Assignment empty_assignment;
 
