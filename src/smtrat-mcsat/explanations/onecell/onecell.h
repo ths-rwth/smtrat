@@ -25,7 +25,7 @@ constexpr auto op = cadcells::operators::op::mccallum;
 constexpr bool use_delineation = false; 
 
 /**
- * An MCAST-style single cell explanation function.
+ * An MCSAT-style single cell explanation function.
  * 
  * A set of constraints is called infeasible w.r.t. an assignment if the defining polynomials are univariate under the sample and there does not exists a value for the unassigned variable that satisfies all constraints.
  * 
