@@ -6,8 +6,8 @@
 
 #include "polynomials.h"
 
-#include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -21,7 +21,7 @@ struct PolyProperties {
 };
 
 struct AssignmentProperties {
-    std::map<PolyRef, carl::ran::real_roots_result<RAN>> real_roots;
+    std::map<PolyRef, carl::ran::RealRootsResult<RAN>> real_roots;
     std::map<PolyRef, bool> is_zero;
 };
 
@@ -70,6 +70,7 @@ public:
 
 private:
     auto as_univariate(PolyRef p) const {
+        // TODO @Philip: for LPPoly, just return the polynomial itself here 
         return carl::to_univariate_polynomial(m_pool(p), main_var(p));
     }
 
@@ -129,7 +130,7 @@ public:
         return (bool) cache(p).disc;
     }
 
-    bool known(const Poly& p) const {
+    bool known(const Polynomial& p) const {
         return m_pool.known(p);
     } 
 
@@ -159,7 +160,7 @@ public:
 
     const std::vector<PolyRef>& factors_nonconst(PolyRef p) {
         if (cache(p).factors_nonconst.empty()) {
-            for (const auto& factor : carl::irreducibleFactors(m_pool(p), false)) {
+            for (const auto& factor : carl::irreducible_factors(m_pool(p), false)) {
                 cache(p).factors_nonconst.emplace_back(m_pool(factor));
             }
         }
@@ -171,7 +172,7 @@ public:
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
-            auto mv = carl::evaluate(ConstraintT(m_pool(p), carl::Relation::EQ), restricted_sample);
+            auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
             assert(!indeterminate(mv));
             cache(restricted_sample).is_zero[p] = (bool) mv;
         }
@@ -180,7 +181,7 @@ public:
 
     size_t num_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
-        assert(!m_pool(p).isConstant());
+        assert(!m_pool(p).is_constant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
         }
@@ -190,7 +191,7 @@ public:
 
     std::vector<RAN> real_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
-        assert(!m_pool(p).isConstant());
+        assert(!m_pool(p).is_constant());
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
         }
@@ -201,8 +202,8 @@ public:
     bool is_nullified(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
         auto poly = m_pool(p);
-		assert(!poly.isConstant());
-		if (poly.isLinear()) return false;
+		assert(!poly.is_constant());
+		if (poly.is_linear()) return false;
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
             cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
         }
@@ -228,16 +229,16 @@ public:
     bool has_const_coeff(PolyRef p) const {
         auto poly = as_univariate(p);
         for (const auto& coeff :  poly.coefficients()) {
-            if (coeff.isConstant() && !carl::isZero(coeff)) return true;
+            if (coeff.is_constant() && !carl::is_zero(coeff)) return true;
         }
         return false;
     }
 
-    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Poly&,const Poly&)> compare) const {
-        std::optional<Poly> result;
+    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) const {
+        std::optional<Polynomial> result;
         auto poly = as_univariate(p);
         for (const auto& coeff : poly.coefficients()) {
-            auto mv = carl::evaluate(ConstraintT(coeff, carl::Relation::NEQ), sample);
+            auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);
             assert(!indeterminate(mv));
             if (mv) {
                 if (!result || compare(coeff,*result)) {

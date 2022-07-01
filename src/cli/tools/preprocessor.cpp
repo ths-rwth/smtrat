@@ -27,7 +27,7 @@ public:
 class Preprocessor : public smtrat::parser::InstructionHandler {
 public:
 	PPStrategy solver;
-	carl::SMTLIBStream mOutput;
+	carl::io::SMTLIBStream mOutput;
 	void add(const smtrat::FormulaT& f) {
 		solver.add(f);
 	}
@@ -40,7 +40,7 @@ public:
 	void check() {
 		solver.check();
 		carl::carlVariables vars;
-		solver.getInputSimplified().second.gatherVariables(vars);
+		carl::variables(solver.getInputSimplified().second,vars);
 		mOutput.declare(vars);
 		mOutput.assertFormula(solver.getInputSimplified().second);
 		mOutput << "(check-sat)" << std::endl;

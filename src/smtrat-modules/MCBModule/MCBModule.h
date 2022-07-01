@@ -16,6 +16,7 @@
 
 #include <smtrat-solver/PModule.h>
 #include "MCBSettings.h"
+#include <carl-formula/formula/functions/ConstraintBounds.h>
 
 namespace smtrat
 {
@@ -45,7 +46,7 @@ namespace smtrat
 			Answer checkCore();
 			void updateModel() const;
 		private:
-			void collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const;
+			void collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const;
 			void collectChoices(const FormulaT& formula);
 			std::function<void(FormulaT)> collectChoicesFunction;
 			FormulaT applyReplacements(const FormulaT& f);

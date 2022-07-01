@@ -9,8 +9,10 @@
 #include <cmath>
 #include <limits>
 
-#include <carl/core/polynomialfunctions/Derivative.h>
-#include <carl/core/polynomialfunctions/SoSDecomposition.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/umvpoly/functions/SoSDecomposition.h>
+#include <carl-arith/constraint/IntervalEvaluation.h>
+#include <carl-arith/vs/Substitution.h>
 
 //#define VS_DEBUG_SUBSTITUTION
 const unsigned MAX_NUM_OF_TERMS = 512;
@@ -73,7 +75,7 @@ namespace vs
                     cons = (*conj).erase( cons );
                 else
                 {
-                    unsigned conflictingWithSolutionSpace = cons->consistentWith( _solutionSpace );
+                    unsigned conflictingWithSolutionSpace = consistent_with(cons->constr(), _solutionSpace );
                     
 //                    std::cout << "Is  " << cons << std::endl;
 //                    std::cout << std::endl;
@@ -84,7 +86,8 @@ namespace vs
                     
                     if( conflictingWithSolutionSpace == 0 )
                     {
-                        _conflictingVars.insert( cons->variables().begin(), cons->variables().end() );
+                        auto vars = carl::variables(*cons);
+                        _conflictingVars.insert( vars.begin(), vars.end() );
                         conjInconsistent = true;
                         break;
                     }
@@ -134,7 +137,8 @@ namespace vs
         std::vector<DisjunctionOfConstraintConjunctions> toCombine;
         for( auto constraint = _toSimplify.begin(); constraint != _toSimplify.end(); ++constraint )
         {
-            if( constraint->hasFactorization() )
+            auto& factorization = (*constraint).lhs_factorization();
+            if( !carl::is_trivial(factorization) )
             {
                 switch( constraint->relation() )
                 {
@@ -143,7 +147,6 @@ namespace vs
                         if( !_onlyNeq )
                         {
                             toCombine.emplace_back();
-                            const smtrat::Factorization& factorization = constraint->factorization();
                             for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             {
                                 toCombine.back().emplace_back();
@@ -163,7 +166,6 @@ namespace vs
                     {
                         toCombine.emplace_back();
                         toCombine.back().emplace_back();
-                        const smtrat::Factorization& factorization = constraint->factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                             toCombine.back().back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                         simplify( toCombine.back() );
@@ -202,7 +204,8 @@ namespace vs
     DisjunctionOfConstraintConjunctions splitProducts( const smtrat::ConstraintT& _constraint, bool _onlyNeq )
     {
         DisjunctionOfConstraintConjunctions result;
-        if( _constraint.hasFactorization() )
+        auto& factorization = _constraint.lhs_factorization();
+        if( !carl::is_trivial(factorization) )
         {
             switch( _constraint.relation() )
             {
@@ -210,7 +213,6 @@ namespace vs
                 {
                     if( !_onlyNeq )
                     {
-                        const smtrat::Factorization& factorization = _constraint.factorization();
                         for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         {
                             result.emplace_back();
@@ -228,7 +230,6 @@ namespace vs
                 case Relation::NEQ:
                 {
                     result.emplace_back();
-                    const smtrat::Factorization& factorization = _constraint.factorization();
                     for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
                         result.back().push_back( smtrat::ConstraintT( factor->first, Relation::NEQ ) );
                     simplify( result );
@@ -264,7 +265,7 @@ namespace vs
         // It seems that is is assumed that lcoeffNeg * constraint.lhs() is positive if
         // a SOS decomposition exists. However, we can only follow that it's non-negative
         // (in the univariate case), for the multivariate case more requirements need to be made
-        // (therefor constraint.lhs().hasConstantTerm() ???).
+        // (therefor constraint.lhs().has_constant_term() ???).
         // This lead to wrong simplifications in very rare cases, for example
         // -100 + 140*z + -49*y^2 + -49*z^2 is wrongly simplified to true (see McsatVSBug).
         
@@ -280,7 +281,7 @@ namespace vs
             {
                 const smtrat::ConstraintT& constraint = cc[pos];
                 std::vector<std::pair<smtrat::Rational,smtrat::Poly>> sosDec;
-                bool lcoeffNeg = carl::isNegative(constraint.lhs().lcoeff());
+                bool lcoeffNeg = carl::is_negative(constraint.lhs().lcoeff());
                 if (lcoeffNeg)
                     sosDec = carl::sos_decomposition(-constraint.lhs());
                 else
@@ -294,7 +295,7 @@ namespace vs
                     {
                         case carl::Relation::EQ:
                         {
-                            if( constraint.lhs().hasConstantTerm() )
+                            if( constraint.lhs().has_constant_term() )
                             {
                                 foundNoInvalidConstraint = false;
                                 addSquares = false;
@@ -304,7 +305,7 @@ namespace vs
                         case carl::Relation::NEQ:
                         {
                             addSquares = false;
-                            if( constraint.lhs().hasConstantTerm() )
+                            if( constraint.lhs().has_constant_term() )
                             {
                                 constraintValid = true;
                             }
@@ -317,7 +318,7 @@ namespace vs
                                 addSquares = false;
                                 constraintValid = true;
                             }
-                            else if( constraint.lhs().hasConstantTerm() )
+                            else if( constraint.lhs().has_constant_term() )
                             {
                                 addSquares = false;
                                 foundNoInvalidConstraint = false;
@@ -329,7 +330,7 @@ namespace vs
                             addSquares = false;
                             if( lcoeffNeg )
                             {
-                                if( constraint.lhs().hasConstantTerm() )
+                                if( constraint.lhs().has_constant_term() )
                                     constraintValid = true;
                             }
                             else 
@@ -343,7 +344,7 @@ namespace vs
                                 addSquares = false;
                                 constraintValid = true;
                             }
-                            else if( constraint.lhs().hasConstantTerm() )
+                            else if( constraint.lhs().has_constant_term() )
                             {
                                 addSquares = false;
                                 foundNoInvalidConstraint = false;
@@ -358,7 +359,7 @@ namespace vs
                                 foundNoInvalidConstraint = false;
                             else
                             {
-                                if( constraint.lhs().hasConstantTerm() )
+                                if( constraint.lhs().has_constant_term() )
                                     constraintValid = true;
                             }
                         }
@@ -396,7 +397,8 @@ namespace vs
     DisjunctionOfConstraintConjunctions getSignCombinations( const smtrat::ConstraintT& _constraint )
     {
         DisjunctionOfConstraintConjunctions combinations;
-        if( _constraint.hasFactorization() && _constraint.factorization().size() <= MAX_PRODUCT_SPLIT_NUMBER )
+        auto& factorization = _constraint.lhs_factorization();
+        if( !carl::is_trivial(factorization) && factorization.size() <= MAX_PRODUCT_SPLIT_NUMBER )
         {
             assert( _constraint.relation() == Relation::GREATER || _constraint.relation() == Relation::LESS
                     || _constraint.relation() == Relation::GEQ || _constraint.relation() == Relation::LEQ );
@@ -413,15 +415,14 @@ namespace vs
             ConstraintVector negatives;
             ConstraintVector alwaysnegatives;
             unsigned numOfAlwaysNegatives = 0;
-            const smtrat::Factorization& product = _constraint.factorization();
-            for( auto factor = product.begin(); factor != product.end(); ++factor )
+            for( auto factor = factorization.begin(); factor != factorization.end(); ++factor )
             {
                 smtrat::ConstraintT consPos = smtrat::ConstraintT( factor->first, relPos );
-                unsigned posConsistent = consPos.isConsistent();
+                unsigned posConsistent = consPos.is_consistent();
                 if( posConsistent != 0 )
                     positives.push_back( consPos );
                 smtrat::ConstraintT consNeg = smtrat::ConstraintT( factor->first, relNeg );
-                unsigned negConsistent = consNeg.isConsistent();
+                unsigned negConsistent = consNeg.is_consistent();
                 if( negConsistent == 0 )
                 {
                     if( posConsistent == 0 )
@@ -613,36 +614,36 @@ namespace vs
     {
         
         bool result = true;
-        if( _cons.hasVariable( _subs.variable() ) )
+        if( _cons.variables().has( _subs.variable() ) )
         {
             // Collect all necessary left hand sides to create the new conditions of all cases referring to the virtual substitution.
-            if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constantPart().size()) + smtrat::Rational(_subs.term().factor().size()) * smtrat::Rational(_subs.term().radicand().size())), _cons.maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
+            if( carl::pow( smtrat::Rational(smtrat::Rational(_subs.term().constant_part().size()) + smtrat::Rational(_subs.term().factor().size()) * smtrat::Rational(_subs.term().radicand().size())), _cons.maxDegree( _subs.variable() )) > (MAX_NUM_OF_TERMS*MAX_NUM_OF_TERMS) )
             {
                 return false;
             }
-            smtrat::SqrtEx sub = smtrat::SqrtEx::subBySqrtEx( _cons.lhs(), _subs.variable(), _subs.term() );
+            smtrat::SqrtEx sub = carl::substitute( _cons.lhs(), _subs.variable(), _subs.term() );
             #ifdef VS_DEBUG_SUBSTITUTION
             std::cout << "Result of common substitution:" << sub << std::endl;
             #endif
             // The term then looks like:    q/s
-            if( !sub.hasSqrt() )
+            if( !sub.has_sqrt() )
             {
                 // Create the new decision tuples.
                 if( _cons.relation() == Relation::EQ || _cons.relation() == Relation::NEQ )
                 {
-                    // Add conjunction (sub.constantPart() = 0) to the substitution result.
+                    // Add conjunction (sub.constant_part() = 0) to the substitution result.
                     _result.emplace_back();
-                    _result.back().push_back( smtrat::ConstraintT( sub.constantPart(), _cons.relation() ) );
+                    _result.back().push_back( smtrat::ConstraintT( sub.constant_part(), _cons.relation() ) );
                 }
                 else
                 {
-                    if( !_subs.term().denominator().isConstant() )
+                    if( !_subs.term().denominator().is_constant() )
                     {
-                        // Add conjunction (sub.denominator()>0 and sub.constantPart() </>/<=/>= 0) to the substitution result.
+                        // Add conjunction (sub.denominator()>0 and sub.constant_part() </>/<=/>= 0) to the substitution result.
                         _result.emplace_back();
                         _result.back().push_back( smtrat::ConstraintT( sub.denominator(), Relation::GREATER ) );
-                        _result.back().push_back( smtrat::ConstraintT( sub.constantPart(), _cons.relation() ) );
-                        // Add conjunction (sub.denominator()<0 and sub.constantPart() >/</>=/<= 0) to the substitution result.
+                        _result.back().push_back( smtrat::ConstraintT( sub.constant_part(), _cons.relation() ) );
+                        // Add conjunction (sub.denominator()<0 and sub.constant_part() >/</>=/<= 0) to the substitution result.
                         Relation inverseRelation;
                         switch( _cons.relation() )
                         {
@@ -664,13 +665,13 @@ namespace vs
                         }
                         _result.emplace_back();
                         _result.back().push_back( smtrat::ConstraintT( sub.denominator(), Relation::LESS ) );
-                        _result.back().push_back( smtrat::ConstraintT( sub.constantPart(), inverseRelation ) );
+                        _result.back().push_back( smtrat::ConstraintT( sub.constant_part(), inverseRelation ) );
                     }
                     else
                     {
                         // Add conjunction (f(-c/b)*b^k </>/<=/>= 0) to the substitution result.
                         _result.emplace_back();
-                        _result.back().push_back( smtrat::ConstraintT( sub.constantPart(), _cons.relation() ) );
+                        _result.back().push_back( smtrat::ConstraintT( sub.constant_part(), _cons.relation() ) );
                     }
                 }
             }
@@ -678,38 +679,38 @@ namespace vs
             else
             {
                 smtrat::Poly s = Poly(1);
-                if( !_subs.term().denominator().isConstant() )
+                if( !_subs.term().denominator().is_constant() )
                     s = sub.denominator();
                 switch( _cons.relation() )
                 {
                     case Relation::EQ:
                     {
-                        result = substituteNormalSqrtEq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
+                        result = substituteNormalSqrtEq( sub.radicand(), sub.constant_part(), sub.factor(), _result, _accordingPaper );
                         break;
                     }
                     case Relation::NEQ:
                     {
-                        result = substituteNormalSqrtNeq( sub.radicand(), sub.constantPart(), sub.factor(), _result, _accordingPaper );
+                        result = substituteNormalSqrtNeq( sub.radicand(), sub.constant_part(), sub.factor(), _result, _accordingPaper );
                         break;
                     }
                     case Relation::LESS:
                     {
-                        result = substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLess( sub.radicand(), sub.constant_part(), sub.factor(), s, _result, _accordingPaper );
                         break;
                     }
                     case Relation::GREATER:
                     {
-                        result = substituteNormalSqrtLess( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLess( sub.radicand(), sub.constant_part(), sub.factor(), -s, _result, _accordingPaper );
                         break;
                     }
                     case Relation::LEQ:
                     {
-                        result = substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLeq( sub.radicand(), sub.constant_part(), sub.factor(), s, _result, _accordingPaper );
                         break;
                     }
                     case Relation::GEQ:
                     {
-                        result = substituteNormalSqrtLeq( sub.radicand(), sub.constantPart(), sub.factor(), -s, _result, _accordingPaper );
+                        result = substituteNormalSqrtLeq( sub.radicand(), sub.constant_part(), sub.factor(), -s, _result, _accordingPaper );
                         break;
                     }
                     default:
@@ -995,7 +996,7 @@ namespace vs
                                  Variables& _conflictingVariables,
                                  const smtrat::EvalDoubleIntervalMap& _solutionSpace )
     {
-        assert( _cons.hasVariable( _subs.variable() ) );
+        assert( _cons.variables().has( _subs.variable() ) );
         // Create a substitution formed by the given one without an addition of epsilon.
         Substitution substitution = Substitution( _subs.variable(), _subs.term(), Substitution::NORMAL, carl::PointerSet<Condition>(_subs.originalConditions()) );
         // Call the method substituteNormal with the constraint f(x)~0 and the substitution [x -> t],  where the parameter relation is ~.

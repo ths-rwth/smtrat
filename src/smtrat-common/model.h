@@ -2,9 +2,9 @@
 
 #include "smtrat-common.h"
 
-#include <carl-model/Model.h>
-#include <carl/vs/SqrtEx.h>
-#include <carl/interval/Interval.h>
+#include <carl-formula/model/Model.h>
+#include <carl-arith/vs/SqrtEx.h>
+#include <carl-arith/interval/Interval.h>
 
 namespace smtrat {
 

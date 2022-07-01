@@ -48,9 +48,9 @@ namespace vs
      */
     double Condition::valuate( const carl::Variable& _consideredVariable, size_t _maxNumberOfVars, bool _preferEquation ) const
     {
-        if( !constraint().hasVariable( _consideredVariable ) )
+        if( !constraint().variables().has( _consideredVariable ) )
             return 0;
-        const smtrat::VarPolyInfo& varInfo = constraint().varInfo( _consideredVariable );
+        const auto& varInfo = constraint().var_info( _consideredVariable );
         double maximum = 0;
         if( _maxNumberOfVars < 4 )
             maximum = 16;
@@ -82,7 +82,7 @@ namespace vs
                 return 0;
         }
         //Check the degree of the variable.
-        double degreeWeight = (double)varInfo.maxDegree();
+        double degreeWeight = (double)varInfo.max_degree();
         if( maximum <= degreeWeight )
             degreeWeight = maximum - 1;
         //Check the leading coefficient of the given variable.
@@ -90,8 +90,8 @@ namespace vs
         unsigned lCoeffWeightB = 2;
         if( degreeWeight <= 1 )
         {
-            smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.maxDegree() );
-            if( coeff.isConstant() )
+            smtrat::Poly coeff = constraint().coefficient( _consideredVariable, varInfo.max_degree() );
+            if( coeff.is_constant() )
             {
                 if( _consideredVariable.type() == carl::VariableType::VT_INT && (coeff == Poly(1) || coeff == Poly(-1)) )
                 {
@@ -104,8 +104,8 @@ namespace vs
         }
         else if( degreeWeight == 2 )
         {
-            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.maxDegree() ).isConstant();
-            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.maxDegree() - 1 ).isConstant() )
+            bool hasRationalLeadingCoefficient = constraint().coefficient( _consideredVariable, varInfo.max_degree() ).is_constant();
+            if( hasRationalLeadingCoefficient && constraint().coefficient( _consideredVariable, varInfo.max_degree() - 1 ).is_constant() )
                 lCoeffWeight = 1;
             else if( hasRationalLeadingCoefficient )
                 lCoeffWeight = 2;
@@ -115,7 +115,7 @@ namespace vs
         // Check the number of variables.
         //double numberOfVariableWeight = (double) constraint().variables().size();
         // Check how in how many monomials the variable occurs.
-        double numberOfVariableOccurencesWeight = (double)varInfo.occurence();
+        double numberOfVariableOccurencesWeight = (double)varInfo.num_occurences();
         if( maximum <= numberOfVariableOccurencesWeight )
             numberOfVariableOccurencesWeight = maximum - 1;
         // If variable occurs only in one monomial, give a bonus if all other monomials are either positive or negative.
@@ -127,7 +127,7 @@ namespace vs
 #else
 	typename smtrat::Poly::PolyType polyExpanded = (typename smtrat::Poly::PolyType)constraint().lhs();
 #endif
-	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nrTerms() == 1 || (!carl::isZero(constraint().constantPart()) && polyExpanded.nrTerms() > 1) ) )
+	if( numberOfVariableOccurencesWeight == 1 && ( polyExpanded.nr_terms() == 1 || (!carl::is_zero(constraint().lhs().constant_part()) && polyExpanded.nr_terms() > 1) ) )
         {
             bool allOtherMonomialsPos = true;
             bool allOtherMonomialsNeg = true;
@@ -135,7 +135,7 @@ namespace vs
             {
                 if( term->has( _consideredVariable ) )
                 {
-                    if( term->getNrVariables() > 1 )
+                    if( term->num_variables() > 1 )
                     {
                         allOtherMonomialsPos = false;
                         allOtherMonomialsNeg = false;
@@ -182,7 +182,7 @@ namespace vs
 //        std::cout << "univariateWeight = " << (degreeWeight <= 2 && numberOfVariableWeight == 1 ? 1 : 2) << std::endl;
 //        std::cout << "degreeWeight = " << degreeWeight << std::endl;
 //        std::cout << "lCoeffWeight = " << lCoeffWeight << std::endl;
-//        if( _consideredVariable.getType() == carl::VariableType::VT_INT )
+//        if( _consideredVariable.type() == carl::VariableType::VT_INT )
 //        {
 //            std::cout << "lCoeffWeightB = " << lCoeffWeightB << std::endl;
 //        }
@@ -227,7 +227,7 @@ namespace vs
      */
     bool Condition::operator==( const Condition& _condition ) const
     {
-        return mId == _condition.getId();
+        return mId == _condition.id();
     }
 
     /**
@@ -240,7 +240,7 @@ namespace vs
      */
     bool Condition::operator<( const Condition& _condition ) const
     {
-        return mId < _condition.getId();
+        return mId < _condition.id();
     }
     
     std::ostream& operator<<( std::ostream& _out, const Condition& _condition )
@@ -276,7 +276,7 @@ namespace vs
             {
                 if( oCond != originalConditions().begin() )
                     _out << ", ";
-                _out << "[" << (*oCond)->getId() << "]";
+                _out << "[" << (*oCond)->id() << "]";
             }
             _out << " }";
         }

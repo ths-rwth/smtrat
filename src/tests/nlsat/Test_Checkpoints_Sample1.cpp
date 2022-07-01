@@ -4,7 +4,7 @@
 
 #if false
 
-#include <carl/core/VariablePool.h>
+#include <carl-arith/core/VariablePool.h>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
@@ -12,7 +12,7 @@ namespace mcsat {
 
 namespace verifier {
 	inline auto getVar(const std::string& s) {
-		return carl::VariablePool::getInstance().findVariableWithName(s);
+		return carl::VariablePool::getInstance().find_variable_with_name(s);
 	}
 }
 
@@ -36,7 +36,6 @@ void initializeVerifier() {
 	carl::checkpoints::CheckpointVerifier::getInstance().mayExceed("nlsat") = true;
 	carl::checkpoints::CheckpointVerifier::getInstance().printDebug("nlsat") = true;
 	
-	auto z = MultivariateRootT::var();
 	auto a = verifier::getVar("a");
 	auto b = verifier::getVar("b");
 	auto c = verifier::getVar("c");

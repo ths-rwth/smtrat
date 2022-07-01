@@ -86,7 +86,7 @@ void setup_logging() {
 	;
 	carl::logging::logger().filter("stdout")
 		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.module", carl::logging::LogLevel::LVL_INFO)
+		("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)

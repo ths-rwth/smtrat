@@ -114,7 +114,7 @@ namespace icp
                 if( res.second )
                 {
                     (*res.first)->addICPVariable( this );
-                    mLinear &= !(*res.first)->isLinear();
+                    mLinear &= !(*res.first)->is_linear();
                 }
             }
 
@@ -124,7 +124,7 @@ namespace icp
                 {
                     assert( mCandidates.find( cc ) == mCandidates.end() );
                     cc->addICPVariable( this );
-                    mLinear &= !cc->isLinear();
+                    mLinear &= !cc->is_linear();
                 }
                 mCandidates.insert( _candidates.begin(), _candidates.end() );
             }
@@ -184,7 +184,7 @@ namespace icp
                 --mActivity;
             }
             
-            bool isLinear()
+            bool is_linear()
             {
                 return mLinear;
             }
@@ -201,12 +201,12 @@ namespace icp
             
             void setInterval( const DoubleInterval& _interval )
             {
-                if( _interval.lowerBoundType() != mIntervalPos->second.lowerBoundType() || _interval.lower() != mIntervalPos->second.lower() )
+                if( _interval.lower_bound_type() != mIntervalPos->second.lower_bound_type() || _interval.lower() != mIntervalPos->second.lower() )
                 {
                     mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
                     mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::RIGHT) ? Updated::BOTH : Updated::LEFT;
                 }
-                if( _interval.upperBoundType() != mIntervalPos->second.upperBoundType() || _interval.upper() != mIntervalPos->second.upper() )
+                if( _interval.upper_bound_type() != mIntervalPos->second.upper_bound_type() || _interval.upper() != mIntervalPos->second.upper() )
                 {
                     mUpdated.first = (mUpdated.first == Updated::BOTH || mUpdated.first == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
                     mUpdated.second = (mUpdated.second == Updated::BOTH || mUpdated.second == Updated::LEFT) ? Updated::BOTH : Updated::RIGHT;
@@ -286,9 +286,9 @@ namespace icp
             
             Updated isInternalBoundsSet() const
             {
-                if( !mInternalLeftBound.isTrue() )
+                if( !mInternalLeftBound.is_true() )
                 {
-                    if( !mInternalRightBound.isTrue() )
+                    if( !mInternalRightBound.is_true() )
                         return Updated::BOTH;
                     return Updated::LEFT;
                 }

@@ -15,7 +15,7 @@
 #include "Substitute.h"
 #include "State.h"
 #include "VSStatistics.h"
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 #include <smtrat-solver/Module.h>
 
 namespace smtrat

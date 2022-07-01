@@ -1,0 +1,53 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage[pdfpagelabels=true,linktocpage]{hyperref}
+\usepackage{color}
+
+\title{\texttt{SMT-RAT 22.06}}
+
+\begin{document}
+
+\maketitle
+
+\texttt{SMT-RAT}~\cite{Corzilius2015} is an open-source \texttt{C++} toolbox for strategic and parallel SMT solving consisting of a collection of SMT compliant implementations of methods for
+solving quantifier-free first-order formulas with a focus on non-linear real and integer arithmetic.
+Further supported theories include linear real and integer arithmetic, difference logic, bit-vectors and pseudo-Boolean constraints.
+A more detailed description of \texttt{SMT-RAT} can be found at \href{https://smtrat.github.io/}{\color{blue}https://smtrat.github.io/}.
+%There will be two versions of \texttt{SMT-RAT} that employ different approaches that we call \texttt{SMT-RAT} and \texttt{SMT-RAT-MCSAT}.
+
+
+\iffalse
+\paragraph{\texttt{SMT-RAT-CALC}} focuses on non-linear arithmetic.
+
+We apply several preprocessing techniques, e.g., using factorizations to simplify constraints, applying substitutions gained by constraints being equations or breaking symmetries. We also normalize and simplify formulas if it is obvious. For non-linear integer problems, we employ bit blasting up to some fixed number of bits~\cite{kruger2015bitvectors} as preprocessing and use branch-and-bound~\cite{Kremer2016} afterwards.
+
+The SAT solving takes place in the SAT solver \texttt{minisat}~\cite{Een2003} which we adapted for SMT solving in a less-lazy fashion~\cite{sebastiani2007lazy}.
+
+For solving non-linear real arithmetic, as core theory solving modules, we employ several incomplete but efficient methods, namely subtropical satisfiability~\cite{Fontaine2017}, interval constraint propagation (ICP) as presented in~\cite{GGIGSC10}, virtual substitution (VS)~\cite{Article_Corzilius_FCT2011} and cylindrical algebraic covering (CAlC)~\cite{Abraham2020} which are called in this order before the computationally heavy cylindrical algebraic decomposition (CAD)~\cite{Loup2013} method is called. The ICP lifts splitting decisions and contraction lemmas to the SAT solver and relies on the methods called subsequently in case it cannot determine whether a box contains a solution or not. 
+
+For linear arithmetic, we do not employ the methods used for non-linear inputs, instead we use the Simplex method equipped with branch-and-bound and cutting-plane procedures as presented in \cite{DM06}.
+\fi
+
+\paragraph{\texttt{SMT-RAT-MCSAT}} uses our implementation of the MCSAT framework \cite{Moura2013}.
+We employ incomplete methods to handle simpler problem classes more efficiently. Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, a novel level-wise variant (currently under review) of the one-cell CAD \cite{brown2015constructing} and NLSAT-style model-based CAD projections \cite{jovanovic2012solving}, which are called in this order. The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
+Furthermore, our variable ordering is fully dynamic as suggested in \cite{Jovanovic2013}.
+
+%\newpage
+
+\paragraph{Current authors}
+Jasper Nalbach, Erika \'Abrah\'am, Philip Kroll
+(Theory of Hybrid Systems Group, RWTH Aachen University).
+
+\paragraph{Previous contributions by current and former group members}
+Gereon Kremer (currently at Stanford University),
+Florian Corzilius,
+Rebecca Haehn,
+Sebastian Junges,
+Stefan Schupp (currently at TU Wien).
+
+
+\bibliographystyle{plain}
+\bibliography{literature}
+
+\end{document}

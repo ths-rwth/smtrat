@@ -180,8 +180,6 @@ namespace smtrat
 		return Answer::UNKNOWN; // This should be adapted according to your implementation.
 	}
 }
-
-#include "Instantiation.h"
 """
 	return replacePlaceholder(result, module)
 
@@ -205,8 +203,8 @@ namespace smtrat
   return replacePlaceholder(result, module)
 
 def instantiationContent(module):
-  result = license(module + 'Instantiation.h.in') + """
-#include "${Prefix}Module.h"
+  result = license(module + 'Instantiation.cpp.in') + """
+#include "${Prefix}Module.tpp"
 
 namespace smtrat {
 ${INSTANTIATIONS}
@@ -247,10 +245,10 @@ if not os.path.isdir(moduleDirectory):
 files = {
 	"CMakeLists.txt" : cmakeContent,
 	moduleName + "Module.h": headerContent,
-	moduleName + "Module.cpp": sourceContent,
+	moduleName + "Module.tpp": sourceContent,
 	moduleName + "Module.md": texContent,
 	moduleName + "Settings.h": settingsContent,
-	"Instantiation.h.in": instantiationContent,
+	"Instantiation.cpp.in": instantiationContent,
 }
 
 for file in files:

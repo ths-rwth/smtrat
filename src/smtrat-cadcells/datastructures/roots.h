@@ -18,7 +18,7 @@ struct IndexedRoot {
     /// The index, must be > 0.
     size_t index;
     IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { assert(i>0); }
-    IndexedRoot() : IndexedRoot( PolyRef{0,0}, 1) {}
+    IndexedRoot() : IndexedRoot( PolyRef{0,0}, 0) {}
 };
 inline bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
@@ -34,34 +34,74 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     return os;
 }
 
-/// Bound type.
-enum class Bound { infty };
-/**
- * Holds the description of a cell.
- * A cell is either a section [xi,xi] or a section (-00,xi), (xi, xi'), (xi, oo) where xi,xi' are indexed roots.
- */
-class CellDescription {
-    enum class type { section, sector };
-
-    std::optional<IndexedRoot> m_lower;
-    std::optional<IndexedRoot> m_upper;
-    type m_type;
+/// Bound type of a SymbolicInterval.
+class Bound {
+    enum class Type { infty, strict, weak };
+    Type m_type;
+    std::optional<IndexedRoot> m_value;
+    Bound(Type type, std::optional<IndexedRoot> value) : m_type(type), m_value(value) {}
 
 public:
-
-    CellDescription(IndexedRoot bound) : m_lower(bound), m_type(type::section) {}
-    CellDescription(IndexedRoot lower, IndexedRoot upper) : m_lower(lower), m_upper(upper), m_type(type::sector) {}
-    CellDescription(Bound, IndexedRoot upper) : m_upper(upper), m_type(type::sector) {}
-    CellDescription(IndexedRoot lower, Bound) : m_lower(lower), m_type(type::sector) {}
-    CellDescription(Bound, Bound) : m_type(type::sector) {}
-    CellDescription() : m_type(type::sector) {}
-
-    bool is_sector() const {
-        return m_type == type::sector;
+    static Bound infty() {
+        return Bound(Type::infty, std::nullopt);
+    }
+    static Bound strict(IndexedRoot value) {
+        return Bound(Type::strict, value);
+    }    
+    static Bound weak(IndexedRoot value) {
+        return Bound(Type::weak, value);
     }
 
+    bool is_infty() const {
+        return m_type == Type::infty;
+    }
+    bool is_strict() const {
+        return m_type == Type::strict;
+    }
+    bool is_weak() const {
+        return m_type == Type::weak;
+    }
+    const IndexedRoot& value() const {
+        return *m_value;
+    }
+
+    void set_weak() {
+        if (is_strict()) m_type = Type::weak;
+    }
+
+    bool operator==(const Bound& other) const {
+        return m_type == other.m_type && m_value == other.m_value;
+    }
+
+    bool operator!=(const Bound& other) const {
+        return !(*this == other);
+    }
+};
+/**
+ * A symbolic interal whose bounds are defined by indexed root expressions. Bounds can be infty, strict or weak. A special case is a section where the lower and upper bound are equal and weak.
+ */
+class SymbolicInterval {
+    Bound m_lower;
+    Bound m_upper;
+
+public:
+    /**
+     * Constructs a section.
+     */
+    SymbolicInterval(IndexedRoot root) : m_lower(Bound::weak(root)), m_upper(Bound::weak(root)) {}
+    /**
+     * Constructs an interval iwth arbitrary bounds.
+     */
+    SymbolicInterval(Bound lower, Bound upper) : m_lower(lower), m_upper(upper) {
+        assert(lower != upper || !(lower.is_strict() && upper.is_strict()));
+    }
+    /**
+     * Constructs (-oo, oo).
+     */
+    SymbolicInterval() : m_lower(Bound::infty()), m_upper(Bound::infty()) {}
+
     bool is_section() const {
-        return m_type == type::section;
+        return m_lower == m_upper && m_lower.is_weak();
     }
 
     /**
@@ -69,70 +109,67 @@ public:
      */
     const IndexedRoot& section_defining() const {
         assert(is_section());
-        return *m_lower;
+        return m_lower.value();
     }
 
     /**
-     * Returns the lower bound as IndexedRoot if finite or std::nullopt if the lower bound is -oo.
-     * 
-     * Asserts that the cell is a sector.
+     * Return the lower bound.
      */
     const auto& lower() const {
-        assert(is_sector());
         return m_lower;
     }
 
     /**
-     * Returns the upper bound as IndexedRoot if finite or std::nullopt if the upper bound is oo.
-     * 
-     * Asserts that the cell is a sector.
+     * Returns the upper bound.
      */
     const auto& upper() const {
-        assert(is_sector());
         return m_upper;
-    }
-
-    std::optional<IndexedRoot> lower_defining() const {
-        if (is_sector()) return lower();
-        else return section_defining();
-    }
-
-    std::optional<IndexedRoot> upper_defining() const {
-        if (is_sector()) return upper();
-        else return section_defining();
     }
 
     boost::container::flat_set<PolyRef> polys() const {
         boost::container::flat_set<PolyRef> result;
-        if (m_lower) result.insert(m_lower->poly);
-        if (m_upper) result.insert(m_upper->poly);
+        if (!m_lower.is_infty()) result.insert(m_lower.value().poly);
+        if (!m_upper.is_infty()) result.insert(m_upper.value().poly);
         return result;
     }
+
+    void set_to_closure() {
+        m_lower.set_weak();
+        m_upper.set_weak();
+    }
 };
-inline std::ostream& operator<<(std::ostream& os, const CellDescription& data) {
+inline std::ostream& operator<<(std::ostream& os, const SymbolicInterval& data) {
     if (data.is_section()) {
-        os << "[" << data.section_defining() << ", " << data.section_defining() << "]";
-    } else if (data.lower() && data.upper()) {
-        os << "(" << *data.lower() << ", " << *data.upper() << ")";
-    } else if (data.lower()) {
-        os << "(" << *data.lower() << ", oo)";
-    } else if (data.upper()) {
-        os << "(-oo, " << *data.upper() << ")";
+        os << "[" << data.section_defining() << "]";
     } else {
-        os << "(-oo, oo)";
+        if (data.lower().is_infty()) {
+            os << "(-oo";
+        } else if (data.lower().is_weak()) {
+            os << "[" << data.lower().value();
+        } else if (data.lower().is_strict()) {
+            os << "(" << data.lower().value();
+        }
+        os << ", ";
+        if (data.upper().is_infty()) {
+            os << "oo)";
+        } else if (data.upper().is_weak()) {
+            os << data.upper().value() << "]";
+        } else if (data.upper().is_strict()) {
+            os << data.upper().value() << ")";
+        }
     }
     return os;
 }
 
 /**
- * Describes a covering of the real line by CellDescriptions (given an appropriate sample).
+ * Describes a covering of the real line by SymbolicIntervals (given an appropriate sample).
  */
 class CoveringDescription {
-    std::vector<CellDescription> m_data;
+    std::vector<SymbolicInterval> m_data;
 
 public:
     /**
-     * Add a CellDescription to the covering.
+     * Add a SymbolicInterval to the covering.
      * 
      * The added cell needs to be the rightmost cell of the already added cells and not be contained in any of these cells (or vice versa).
      * 
@@ -142,10 +179,10 @@ public:
      * * Evaluated under an appropriate sample, the left bound of the added cell c is strictly greater than the left bounds of already added cells (considering also "strictness" of the bounds).
      * * The right bound of the added cell c needs to be greater than all right bounds of already added cells (considering also "strictness" of the bounds).
      */
-    void add(const CellDescription& c) {
-        assert(!m_data.empty() || (c.is_sector() && !c.lower()));
-        assert(m_data.empty() || c.is_section() || c.lower());
-        assert(m_data.empty() || m_data.back().is_section() || m_data.back().upper());
+    void add(const SymbolicInterval& c) {
+        assert(!m_data.empty() || (!c.is_section() && c.lower().is_infty()));
+        assert(m_data.empty() || c.is_section() || !c.lower().is_infty());
+        assert(m_data.empty() || m_data.back().is_section() || !m_data.back().upper().is_infty());
         m_data.push_back(c);
     }
 

@@ -11,9 +11,9 @@ BOOST_AUTO_TEST_SUITE( FMQE );
 
 BOOST_AUTO_TEST_CASE( FMQE_eliminate_single_variable )
 {
-    carl::Variable x = carl::freshRealVariable("x");
-    carl::Variable y = carl::freshRealVariable("y");
-    carl::Variable z = carl::freshRealVariable("z");
+    carl::Variable x = carl::fresh_real_variable("x");
+    carl::Variable y = carl::fresh_real_variable("y");
+    carl::Variable z = carl::fresh_real_variable("z");
 
     ConstraintT c1 = ConstraintT(Poly(x) - Poly(y) + Poly(z), carl::Relation::GEQ);
     ConstraintT c2 = ConstraintT(Poly(x) + Poly(y) + Poly(-5), carl::Relation::LEQ);
@@ -38,8 +38,8 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_single_variable )
 
 BOOST_AUTO_TEST_CASE( FMQE_eliminate_to_true )
 {
-    carl::Variable x = carl::freshRealVariable("x");
-    carl::Variable y = carl::freshRealVariable("y");
+    carl::Variable x = carl::fresh_real_variable("x");
+    carl::Variable y = carl::fresh_real_variable("y");
 
     ConstraintT c1 = ConstraintT(Poly(x) - Poly(y), carl::Relation::GEQ);
     ConstraintT c2 = ConstraintT(Poly(x) - Poly(y) + Poly(-5), carl::Relation::LEQ);
@@ -64,9 +64,9 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_to_true )
 
 BOOST_AUTO_TEST_CASE( FMQE_eliminate_to_true_with_remaining_constraint )
 {
-    carl::Variable x = carl::freshRealVariable("x");
-    carl::Variable y = carl::freshRealVariable("y");
-    carl::Variable z = carl::freshRealVariable("z");
+    carl::Variable x = carl::fresh_real_variable("x");
+    carl::Variable y = carl::fresh_real_variable("y");
+    carl::Variable z = carl::fresh_real_variable("z");
 
     ConstraintT c1 = ConstraintT(Poly(x) - Poly(y), carl::Relation::GEQ);
     ConstraintT c2 = ConstraintT(Poly(x) - Poly(y) + Poly(-5), carl::Relation::LEQ);
@@ -93,9 +93,9 @@ BOOST_AUTO_TEST_CASE( FMQE_eliminate_to_true_with_remaining_constraint )
 
 BOOST_AUTO_TEST_CASE( FMQE_eliminate_several_variables )
 {
-    carl::Variable x = carl::freshRealVariable("x");
-    carl::Variable y = carl::freshRealVariable("y");
-    carl::Variable z = carl::freshRealVariable("z");
+    carl::Variable x = carl::fresh_real_variable("x");
+    carl::Variable y = carl::fresh_real_variable("y");
+    carl::Variable z = carl::fresh_real_variable("z");
 
     ConstraintT c1 = ConstraintT(Poly(x) - Poly(y) + Poly(z), carl::Relation::GEQ);
     ConstraintT c2 = ConstraintT(Poly(y), carl::Relation::GEQ);

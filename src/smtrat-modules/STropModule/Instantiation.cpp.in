@@ -1,0 +1,13 @@
+/**
+ * @file STropInstantiation.cpp.in
+ * @author Ömer Sali <oemer.sali@rwth-aachen.de>
+ *
+ * @version 2017-09-13
+ * Created on 2017-09-13.
+ */
+
+#include "${Prefix}Module.tpp"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}

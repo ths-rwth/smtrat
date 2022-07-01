@@ -73,7 +73,7 @@ namespace vs
                 return mValuation;
             }
 
-            size_t getId() const
+            size_t id() const
             {
                 return mId;
             }

@@ -12,7 +12,7 @@
 namespace smtrat {
 namespace cad {
 namespace full {
-	using Polynomial = boost::optional<std::pair<UPoly,Origin>>;
+	using Polynomial = std::optional<std::pair<UPoly,Origin>>;
 }
 	inline std::ostream& operator<<(std::ostream& os, const full::Polynomial& p) {
 		if (!p) return os << "--";
@@ -242,7 +242,7 @@ namespace full {
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", logPrefix(level) << "-> Removing polynomial");
 			mLiftingQueues[level - 1].erase(id);
-			mPolynomials[level][id] = boost::none;
+			mPolynomials[level][id] = std::nullopt;
 			freeID(level, id);
 			return mPolynomialIDs[level].erase(it);
 		}
@@ -335,7 +335,7 @@ namespace full {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Removing " << cid);
 			assert(mPolynomials[0][cid]);
 			assert(mPolynomials[0][cid]->first == p);
-			mPolynomials[0][cid] = boost::none;
+			mPolynomials[0][cid] = std::nullopt;
 			removeFromProjectionQueue(0, cid);
 			carl::Bitset filter = carl::Bitset().set(cid);
 			for (std::size_t level = 1; level <= dim(); level++) {

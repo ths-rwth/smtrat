@@ -4,7 +4,7 @@ namespace smtrat::analyzer {
 
 void analyze_variables(const FormulaT& f, AnalyzerStatistics& stats) {
 	carl::carlVariables vars;
-	f.gatherVariables(vars);
+	carl::variables(f,vars);
 
 	stats.add("num_variables", vars.size());
 	stats.add("num_variables_boolean", vars.boolean().size());

@@ -39,10 +39,10 @@ namespace smtrat {
 			
 			if(!mInfeasibleSubsets.empty()) {
 				for (const FormulaT& formula : infeasible) {
-					if (	(formula.uequality().lhs() == edge->mPred->first && formula.uequality().rhs() == edge->mSucc->first)
-						||	(formula.uequality().rhs() == edge->mPred->first && formula.uequality().lhs() == edge->mSucc->first)) {
+					if (	(formula.u_equality().lhs() == edge->mPred->first && formula.u_equality().rhs() == edge->mSucc->first)
+						||	(formula.u_equality().rhs() == edge->mPred->first && formula.u_equality().lhs() == edge->mSucc->first)) {
 
-						if (!formula.uequality().negated()) {
+						if (!formula.u_equality().negated()) {
 							out << "[color=red,penwidth=3.0]";
 						}
 
@@ -67,7 +67,7 @@ namespace smtrat {
 
 				if(!mInfeasibleSubsets.empty()) {
 					for (const FormulaT& formula : infeasible) {
-						if (formula.uequality().lhs() == edge->mPred->first || formula.uequality().rhs() == edge->mPred->first) {
+						if (formula.u_equality().lhs() == edge->mPred->first || formula.u_equality().rhs() == edge->mPred->first) {
 							out << "color=red ";
 							break;
 						}
@@ -92,7 +92,7 @@ namespace smtrat {
 
 				if(!mInfeasibleSubsets.empty()) {
 					for (const FormulaT& formula : infeasible) {
-						if (formula.uequality().lhs() == edge->mSucc->first || formula.uequality().rhs() == edge->mSucc->first) {
+						if (formula.u_equality().lhs() == edge->mSucc->first || formula.u_equality().rhs() == edge->mSucc->first) {
 							out << "color=red ";
 							break;
 						}
@@ -122,15 +122,15 @@ namespace smtrat {
 			file << "graph {\n";
 			if(!mInfeasibleSubsets.empty()) {
 				for (const FormulaT& formula : infeasible) {
-					if (formula.uequality().negated()) {
+					if (formula.u_equality().negated()) {
 						file << "labelloc=\"t\";\n";
 						file << "label = \"" << formula << "\";\n";
 
-						g_iterator itrLhs = mEqualityGraph.find(formula.uequality().lhs());
-						g_iterator itrRhs = mEqualityGraph.find(formula.uequality().rhs());
+						g_iterator itrLhs = mEqualityGraph.find(formula.u_equality().lhs());
+						g_iterator itrRhs = mEqualityGraph.find(formula.u_equality().rhs());
 
 						if (inserted_nodes.insert(itrLhs).second) {
-							file << "\"" << formula.uequality().lhs() << "\"[fillcolor=yellow, style=\"filled\" ";
+							file << "\"" << formula.u_equality().lhs() << "\"[fillcolor=yellow, style=\"filled\" ";
 							
 
 							if (mUnionFind.find(itrLhs->second.mUFIndex) == itrLhs->second.mUFIndex) {
@@ -144,7 +144,7 @@ namespace smtrat {
 						}
 
 						if (inserted_nodes.insert(itrRhs).second) {
-							file << "\"" << formula.uequality().rhs() << "\"[fillcolor=yellow, style=\"filled\" ";
+							file << "\"" << formula.u_equality().rhs() << "\"[fillcolor=yellow, style=\"filled\" ";
 
 							if (mUnionFind.find(itrRhs->second.mUFIndex) == itrRhs->second.mUFIndex) {
 								if (mComponentUnionFind.find(mUnionFind.find(itrRhs->second.mUFIndex)) == mUnionFind.find(itrRhs->second.mUFIndex)) {
@@ -195,7 +195,7 @@ namespace smtrat {
 				std::unordered_set<UVariable> variables;
 
 				for(const FormulaT &formula : infeasible) {
-					const UEquality &ueq = formula.uequality();
+					const UEquality &ueq = formula.u_equality();
 
 					if(ueq.lhs().isUFInstance()) {
 						functions.insert(ueq.lhs().asUFInstance().uninterpretedFunction());
@@ -248,13 +248,13 @@ namespace smtrat {
 
 				for(const FormulaT& formula : infeasible) {
 					file << "(assert ";
-					if(formula.uequality().negated()) {
+					if(formula.u_equality().negated()) {
 						file << "(not ";
 					}
 
-					file << "(= " << formula.uequality().lhs() << " " << formula.uequality().rhs() << ")";
+					file << "(= " << formula.u_equality().lhs() << " " << formula.u_equality().rhs() << ")";
 
-					if(formula.uequality().negated()) {
+					if(formula.u_equality().negated()) {
 						file << ")";
 					}
 

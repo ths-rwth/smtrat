@@ -7,7 +7,7 @@
 
 #include "MCSATStatistics.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
@@ -247,7 +247,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Assigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
-		if (f.getType() == carl::FormulaType::VARASSIGN) {
+		if (f.type() == carl::FormulaType::VARASSIGN) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
@@ -258,7 +258,7 @@ public:
 			mStatistics.modelAssignmentCacheHit();
 			#endif
 
-			auto res = carl::model::evaluate(f, mModelAssignmentCache.model());
+			auto res = carl::evaluate(f, mModelAssignmentCache.model());
 			if (!res.isBool() || !res.asBool()) {
 				mModelAssignmentCache.clear(); // clear model assignment cache
 			}
@@ -274,7 +274,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Unassigned " << lit);
 		if (!mGetter.isTheoryAbstraction(var(lit))) return;
 		const auto& f = mGetter.reabstractLiteral(lit);
-		if (f.getType() == carl::FormulaType::VARASSIGN) {
+		if (f.type() == carl::FormulaType::VARASSIGN) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Skipping assignment.");
 			return;
 		}
@@ -377,11 +377,11 @@ public:
 	/**
 	 * Checks if any inconsistency was detected.
 	 */
-	bool isConsistent() {
+	bool is_consistent() {
 		return mInconsistentVariables.empty();
 	}
 
-	bool isConsistent(Minisat::Var v) {
+	bool is_consistent(Minisat::Var v) {
 		return std::find(mInconsistentVariables.begin(), mInconsistentVariables.end(), v) == mInconsistentVariables.end();
 	}
 
@@ -392,7 +392,7 @@ public:
 	 * Returns std::nullopt if consistent and an explanation.
 	 */
 	std::optional<Explanation> explainInconsistency() {
-		if (isConsistent()) {
+		if (is_consistent()) {
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Trail is still consistent");
 			return std::nullopt;
 		} else {
@@ -420,7 +420,7 @@ public:
 		const auto& f = mGetter.reabstractLiteral(literal);
 
 		carl::carlVariables vars;
-		f.gatherVariables(vars);
+		carl::variables(f,vars);
 		for (const auto& v : mBackend.assignedVariables())
 			vars.erase(v);
 		assert(vars.size() == 1);
@@ -435,7 +435,7 @@ public:
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explaining " << f << " by " << res);
 		// f is part of the conflict, because the trail is feasible without f:
 		if (std::holds_alternative<FormulaT>(res)) {
-			if (std::get<FormulaT>(res).isFalse()) {
+			if (std::get<FormulaT>(res).is_false()) {
 				SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Explanation failed.");
 			} else {
 				assert(std::get<FormulaT>(res).contains(f));
@@ -493,28 +493,41 @@ public:
 	
 	std::size_t computeTheoryLevel(const FormulaT& f) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
-		carl::carlVariables vars;
-		f.gatherVariables(vars);
-		if (vars.empty()) {
-			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
-			return 0;
-		}
-		
-		Model m = model();
-		if (!carl::model::evaluate(f, m).isBool()) {
+		if constexpr(!Settings::early_evaluation) {
+			auto poly_variables = f.variables();
+			if (poly_variables.empty()) {
+				return 0;
+			}
+			for (std::size_t level = 1; level < mTheoryStack.size(); ++level) {
+				poly_variables.erase(mTheoryStack[level].variable);
+				if (poly_variables.empty()) return level;
+			}
 			SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
 			return std::numeric_limits<std::size_t>::max();
-		}
-		for (std::size_t lvl = level(); lvl > 0; lvl--) {
-			if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
-			m.erase(variable(lvl));
-			if (!vars.has(variable(lvl))) continue;
-			if (!carl::model::evaluate(f, m).isBool()) {
-				return lvl;
+		} else {
+			carl::carlVariables vars;
+			carl::variables(f,vars);
+			if (vars.empty()) {
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " has no variable, thus on level 0");
+				return 0;
 			}
+			
+			Model m = model();
+			if (!carl::evaluate(f, m).isBool()) {
+				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
+				return std::numeric_limits<std::size_t>::max();
+			}
+			for (std::size_t lvl = level(); lvl > 0; lvl--) {
+				if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
+				m.erase(variable(lvl));
+				if (!vars.has(variable(lvl))) continue;
+				if (!carl::evaluate(f, m).isBool()) {
+					return lvl;
+				}
+			}
+			assert(false);
+			return 0;
 		}
-		assert(false);
-		return 0;
 	}
 	
 	Minisat::Lit getDecisionLiteral(Minisat::Var var) const {
@@ -551,7 +564,7 @@ public:
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){
-			auto res = carl::model::evaluate(c, trail.model());
+			auto res = carl::evaluate(c, trail.model());
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", c << " evaluates to " << res);
 			if (res.isBool()) {
 				if (!res.asBool()) return false;
@@ -562,12 +575,14 @@ public:
 			if (!mBackend.isActive(c)) continue;
 			//auto category = mcsat::constraint_type::categorize(c, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
+			if (!Settings::early_evaluation && computeTheoryLevel(FormulaT(c)) > level()) continue;
 			if (!evaluator(c)) return false;
 		}
 		for (const auto& b: trail.mvBounds()) {
 			if (!mBackend.isActive(b)) continue;
 			//auto category = mcsat::constraint_type::categorize(b, model(), carl::Variable::NO_VARIABLE);
 			//if (category != mcsat::ConstraintType::Assigned) continue;
+			if (!Settings::early_evaluation && computeTheoryLevel(FormulaT(b)) > level()) continue;
 			if (!evaluator(b)) return false;
 		}
 		return true;
@@ -582,7 +597,7 @@ public:
 				mVarPropertyCache[v].maxDegree = 0;
 			} else {
 				const auto& reabstraction = mGetter.reabstractVariable(var);
-				if (reabstraction.getType() == carl::FormulaType::CONSTRAINT) {
+				if (reabstraction.type() == carl::FormulaType::CONSTRAINT) {
 					const auto& constr = reabstraction.constraint();
 					auto vars = carl::arithmetic_variables(reabstraction);
 					std::size_t maxDeg = 0;
@@ -591,7 +606,7 @@ public:
 						if (deg > maxDeg) maxDeg = deg;
 					}
 					mVarPropertyCache[v].maxDegree = maxDeg;
-				} else if (reabstraction.getType() == carl::FormulaType::VARCOMPARE) {
+				} else if (reabstraction.type() == carl::FormulaType::VARCOMPARE) {
 					mVarPropertyCache[v].maxDegree = std::numeric_limits<std::size_t>::max();
 				} else {
 					assert(false);

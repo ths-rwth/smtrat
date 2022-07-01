@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/core/Variable.h>
+#include <carl-arith/core/Variable.h>
 
 #include <map>
 #include <vector>
@@ -36,7 +36,7 @@ inline std::ostream& operator<<(std::ostream& os, const VariableIDs& vids) {
 template<typename Constraints>
 void gatherVariables(carl::carlVariables& vars, const Constraints& constraints) {
 	for (const auto& c: constraints) {
-		c.gatherVariables(vars);
+		carl::variables(c, vars);
 	}
 }
 

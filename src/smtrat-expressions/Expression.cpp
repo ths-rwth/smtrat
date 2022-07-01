@@ -15,7 +15,7 @@ namespace expression {
 		//return boost::apply_visitor(ExpressionTypeChecker<T>(), mContent->content);
 	}
 	template<typename T>
-	const T& Expression::getType() const {
+	const T& Expression::type() const {
 		return boost::get<T>(mContent->content);
 	}
 	
@@ -73,7 +73,7 @@ namespace expression {
 		return getType<BinaryExpression>();
 	}
 	
-	bool Expression::isNary() const {
+	bool Expression::is_nary() const {
 		return isType<NaryExpression>();
 	}
 	const NaryExpression& Expression::getNary() const {

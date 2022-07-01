@@ -8,7 +8,7 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <smtrat-variablebounds/VariableBounds.h>
 #include <smtrat-solver/Manager.h>
 #include <smtrat-solver/Module.h>
@@ -44,7 +44,7 @@ namespace smtrat
 					, mUsage(0)
 					, mActive(false)
 				{
-					mSubstitutions.emplace_back(carl::freshIntegerVariable());
+					mSubstitutions.emplace_back(carl::fresh_integer_variable());
 				}
 			};
 			
@@ -80,11 +80,11 @@ namespace smtrat
 				
 				Expansion(const carl::Variable& rationalization)
 					: mRationalization(rationalization)
-					, mDiscretization(rationalization.type() == carl::VariableType::VT_INT ? rationalization : carl::freshIntegerVariable())
+					, mDiscretization(rationalization.type() == carl::VariableType::VT_INT ? rationalization : carl::fresh_integer_variable())
 					, mNucleus(0)
 					, mMaximalDomainSize(DomainSize::UNBOUNDED)
-					, mMaximalDomain(RationalInterval::unboundedInterval())
-					, mActiveDomain(RationalInterval::emptyInterval())
+					, mMaximalDomain(RationalInterval::unbounded_interval())
+					, mActiveDomain(RationalInterval::empty_interval())
 					, mChangedBounds(false)
 				{
 					mQuotients.emplace_back(mDiscretization);

@@ -116,7 +116,7 @@ namespace smtrat
             /// Stores the bounds, which would influence a backend call because of recent changes.
             std::vector<const LRABound* > mBoundCandidatesToPass;
             ///
-            mutable EvalRationalMap mRationalAssignment;
+            mutable RationalAssignment mRationalAssignment;
             #ifdef SMTRAT_DEVOPTION_Statistics
             /// Stores the yet collected statistics of this LRAModule.
             LRAModuleStatistics& mStatistics = statistics_get<LRAModuleStatistics>(moduleName() + "_" + std::to_string(id()));
@@ -210,7 +210,7 @@ namespace smtrat
              * is calculated from scratch every time you call this method.
              * @return The rational model.
              */
-            const EvalRationalMap& getRationalModel() const;
+            const RationalAssignment& getRationalModel() const;
             
             Answer optimize( Answer _result );
             
@@ -387,7 +387,7 @@ namespace smtrat
              * @return true, if the found assignment is consistent with the tableau;
              *         false, otherwise.
              */
-            bool assignmentConsistentWithTableau( const EvalRationalMap& _assignment, const LRABoundType& _delta ) const;
+            bool assignmentConsistentWithTableau( const RationalAssignment& _assignment, const LRABoundType& _delta ) const;
             
             /**
              * @return true, if the encountered satisfying assignment for the received formula indeed satisfies it;

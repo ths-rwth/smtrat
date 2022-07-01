@@ -3,6 +3,8 @@
 
 #include <smtrat-mcsat/explanations/nlsat/ExplanationGenerator.h>
 
+#include <carl-common/config.h>
+
 namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
@@ -21,7 +23,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 #endif
 
 #if not(defined USE_COCOA || defined USE_GINAC)
-// OneCellCAD needs carl::irreducibleFactors to be implemented
+// OneCellCAD needs carl::irreducible_factors to be implemented
 #warning OneCellCAD may be incorrect as USE_COCOA is disabled
 #endif
 
@@ -76,7 +78,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 											   << projectionLevels);
 
 	// Project higher level polys down to "normal" level
-    carl::RealAlgebraicPoint<Rational> point = asRANPoint(trail).prefixPoint(oneCellMaxLvl + 1);
+    RealAlgebraicPoint<Rational> point = asRANPoint(trail).prefixPoint(oneCellMaxLvl + 1);
 	auto maxLevel = fullProjectionVarOrder.size() - 1;
 	while (projectionLevels[maxLevel].empty() && maxLevel > 0){
         projectionLevels.erase(projectionLevels.begin() + maxLevel);
@@ -131,26 +133,23 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 		auto cellVariable = oneCellCADVarOrder[i];
 		if (std::holds_alternative<Section>(cellComponent)) {
 			auto section = std::get<Section>(cellComponent).boundFunction;
-			// Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 			auto param = std::make_pair(section.poly(), section.k());
 			explainLiterals.emplace_back(nlsat::helper::buildEquality(cellVariable, param).negated());
 		} else {
 			auto sectorLowBound = std::get<Sector>(cellComponent).lowBound;
 			if (sectorLowBound) {
-				// Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 				auto param = std::make_pair(sectorLowBound->boundFunction.poly(), sectorLowBound->boundFunction.k());
 				explainLiterals.emplace_back(nlsat::helper::buildAbove(cellVariable, param).negated());
 			}
 			auto sectorHighBound = std::get<Sector>(cellComponent).highBound;
 			if (sectorHighBound) {
-				// Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 				auto param = std::make_pair(sectorHighBound->boundFunction.poly(), sectorHighBound->boundFunction.k());
 				explainLiterals.emplace_back(nlsat::helper::buildBelow(cellVariable, param).negated());
 			}
 		}
 	}
 
-	//    if (!impliedLiteral.isFalse())
+	//    if (!impliedLiteral.is_false())
 	//      explainLiterals.emplace_back(impliedLiteral);
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain literals: " << explainLiterals);

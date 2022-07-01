@@ -8,15 +8,15 @@ namespace smtrat {
 	struct JunctorMerger {
 		public:
 			FormulaT rewrite_or (const FormulaT& formula, FormulaSetT&& subformulas) {
-				return P_merge(formula.getType(), std::move(subformulas));
+				return P_merge(formula.type(), std::move(subformulas));
 			}
 
 			FormulaT rewrite_and(const FormulaT& formula, FormulaSetT&& subformulas) {
-				return P_merge(formula.getType(), std::move(subformulas));
+				return P_merge(formula.type(), std::move(subformulas));
 			}
 
 			FormulaT rewrite_xor(const FormulaT& formula, FormulasMultiT&& subformulas) {
-				return P_merge(formula.getType(), std::move(subformulas));
+				return P_merge(formula.type(), std::move(subformulas));
 			}
 
 		private:
@@ -27,7 +27,7 @@ namespace smtrat {
 				bool changed = false;
 
 				for(auto i = subformulas.begin(); i != subformulas.end(); ) {
-					if(i->getType() == type) {
+					if(i->type() == type) {
 						changed = true;
 						std::copy(i->subformulas().begin(), i->subformulas().end(), std::inserter(replacements, replacements.end()));
 						subformulas.erase(i++);

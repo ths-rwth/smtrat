@@ -2,9 +2,9 @@
 
 #include "Dependencies.h"
 
-#include <carl/interval/Interval.h>
-#include <carl/interval/Contractor.h>
-#include <carl/interval/sampling.h>
+#include <carl-arith/interval/Interval.h>
+#include <carl-arith/intervalcontraction/Contractor.h>
+#include <carl-arith/interval/sampling.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/utils/Bookkeeping.h>
 
@@ -37,7 +37,7 @@ private:
 	bool has_interval_below_threshold() const {
 		return std::any_of(mBox.begin(), mBox.end(),
 			[](const auto& dim) {
-				return (!dim.second.isUnbounded()) && dim.second.diameter() < threshold_width; 
+				return (!dim.second.is_unbounded()) && dim.second.diameter() < threshold_width; 
 			}
 		);
 	}
@@ -73,17 +73,17 @@ private:
 		auto& cur = it->second;
 		auto old = cur;
 		bool changed = false;
-		if (cur.lowerBound() < intervals.front().lowerBound()) {
-			cur = carl::Interval<double>(intervals.front().lower(), intervals.front().lowerBoundType(), cur.upper(), cur.upperBoundType());
+		if (cur.lower_bound() < intervals.front().lower_bound()) {
+			cur = carl::Interval<double>(intervals.front().lower(), intervals.front().lower_bound_type(), cur.upper(), cur.upper_bound_type());
 			changed = true;
 		}
-		if (intervals.back().upperBound() < cur.upperBound()) {
-			cur = carl::Interval<double>(cur.lower(), cur.lowerBoundType(), intervals.back().upper(), intervals.back().upperBoundType());
+		if (intervals.back().upper_bound() < cur.upper_bound()) {
+			cur = carl::Interval<double>(cur.lower(), cur.lower_bound_type(), intervals.back().upper(), intervals.back().upper_bound_type());
 			changed = true;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", old << " -> " << cur);
-		if (old.isInfinite()) {
-			if (cur.isInfinite()) {
+		if (old.is_infinite()) {
+			if (cur.is_infinite()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still infinite");
 				return std::make_pair(changed, 0.0);
 			} else {
@@ -91,9 +91,9 @@ private:
 				assert(changed);
 				return std::make_pair(changed, 1.0);
 			}
-		} else if (old.isUnbounded()) {
-			assert(!cur.isInfinite());
-			if (cur.isUnbounded()) {
+		} else if (old.is_unbounded()) {
+			assert(!cur.is_infinite());
+			if (cur.is_unbounded()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "still unbounded");
 				if (old.lower() < cur.lower() || cur.upper() < old.upper()) {
 					assert(changed);
@@ -128,9 +128,9 @@ private:
 				const auto& a = admissible[i];
 				carl::Interval<Rational> cur(
 					carl::rationalize<Rational>(a.lower()),
-					a.lowerBoundType(),
+					a.lower_bound_type(),
 					carl::rationalize<Rational>(a.upper()),
-					a.upperBoundType()
+					a.upper_bound_type()
 				);
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.icp", "cur is " << cur);
 				if (val < cur) {
@@ -177,22 +177,22 @@ private:
 			FormulasT s;
 			FormulasT box;
 			for (const auto& kv: mBox) {
-				if (kv.second.lowerBoundType() != carl::BoundType::INFTY || kv.second.upperBoundType() != carl::BoundType::INFTY) {
+				if (kv.second.lower_bound_type() != carl::BoundType::INFTY || kv.second.upper_bound_type() != carl::BoundType::INFTY) {
 					for (const auto& c : mDependencies.get(kv.first, false)) {
 						s.push_back(c);
 					}
 				}
 
-				if (kv.second.lowerBoundType() == carl::BoundType::WEAK) {
+				if (kv.second.lower_bound_type() == carl::BoundType::WEAK) {
 					// not l <= x
 					box.emplace_back(ConstraintT(Poly(carl::rationalize<Rational>(kv.second.lower())) - kv.first, carl::Relation::GREATER));
-				} else if (kv.second.lowerBoundType() == carl::BoundType::STRICT) {
+				} else if (kv.second.lower_bound_type() == carl::BoundType::STRICT) {
 					box.emplace_back(ConstraintT(Poly(carl::rationalize<Rational>(kv.second.lower())) - kv.first, carl::Relation::GEQ));
 				}
-				if (kv.second.upperBoundType() == carl::BoundType::WEAK) {
+				if (kv.second.upper_bound_type() == carl::BoundType::WEAK) {
 					// not x <= u
 					box.emplace_back(ConstraintT(Poly(kv.first) - carl::rationalize<Rational>(kv.second.upper()), carl::Relation::GREATER));
-				} else if (kv.second.upperBoundType() == carl::BoundType::STRICT) {
+				} else if (kv.second.upper_bound_type() == carl::BoundType::STRICT) {
 					box.emplace_back(ConstraintT(Poly(kv.first) - carl::rationalize<Rational>(kv.second.upper()), carl::Relation::GEQ));
 				}
 			}

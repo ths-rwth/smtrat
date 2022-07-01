@@ -23,7 +23,7 @@ namespace smtrat {
 			}
 			
 			
-			inline bool isEmpty() const {
+			inline bool is_empty() const {
 				return m_size==0;
 			}
 			
@@ -40,7 +40,7 @@ namespace smtrat {
 			}
 			
 			T extractMin() {
-				assert(!isEmpty());
+				assert(!is_empty());
 				
 				T res = m_elements[1];
 				m_elements[1] = m_elements[m_size--];

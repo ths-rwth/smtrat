@@ -23,7 +23,6 @@ elif [[ ${TASK} == "documentation" ]]; then
 		sudo rm -f /etc/ImageMagick-6/policy.xml
 	fi
 
-	make doxygen-build || return 1
 	make doc || return 1
 	
 	git config --global user.email "admin@ths.rwth-aachen.de"

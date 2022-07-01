@@ -2,10 +2,10 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
-#include <carl/util/Common.h>
-#include <carl-model/evaluation/ModelEvaluation.h>
-#include <carl/vs/substitute.h>
-#include <carl/vs/zeros.h>
+#include <carl-arith/core/Common.h>
+#include <carl-formula/model/evaluation/ModelEvaluation.h>
+#include <carl-vs/substitute.h>
+#include <carl-vs/zeros.h>
 
 #include <variant>
 #include <vector>
@@ -16,15 +16,15 @@ namespace vs {
 namespace helper {
 
     inline void getFormulaAtoms(const FormulaT& f, FormulaSetT& result) {
-        if (f.getType() == carl::FormulaType::CONSTRAINT || f.getType() == carl::FormulaType::VARCOMPARE) {
+        if (f.type() == carl::FormulaType::CONSTRAINT || f.type() == carl::FormulaType::VARCOMPARE) {
             result.insert(f);
-        } else if (f.getType() == carl::FormulaType::NOT) {
+        } else if (f.type() == carl::FormulaType::NOT) {
             getFormulaAtoms(f.subformula(), result);
-        } else if (f.isNary()) {
+        } else if (f.is_nary()) {
             for (const auto& sub : f.subformulas()) {
                 getFormulaAtoms(sub, result);
             }
-        } else if (f.getType() == carl::FormulaType::TRUE || f.getType() == carl::FormulaType::FALSE) {
+        } else if (f.type() == carl::FormulaType::TRUE || f.type() == carl::FormulaType::FALSE) {
             result.insert(f);
         } else {
             assert(false);
@@ -54,15 +54,15 @@ namespace helper {
     static bool generateZeros(const FormulaT& formula, const carl::Variable& eliminationVar, std::function<void(SqrtEx&& sqrtExpression, ConstraintsT&& sideConditions)> yield_result) {
         std::vector<carl::vs::zero<Poly>> res;
         
-        if (formula.getType()==carl::FormulaType::CONSTRAINT) {
+        if (formula.type()==carl::FormulaType::CONSTRAINT) {
             if (!carl::vs::gather_zeros(formula.constraint(), eliminationVar, res)) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zero");
                 return false;
             }
-        } else if (formula.getType()==carl::FormulaType::TRUE || formula.getType()==carl::FormulaType::FALSE) {
+        } else if (formula.type()==carl::FormulaType::TRUE || formula.type()==carl::FormulaType::FALSE) {
             return true;
-        } else if (formula.getType()==carl::FormulaType::VARCOMPARE) {
-            if (!carl::vs::gather_zeros(formula.variableComparison(), eliminationVar, res)) {
+        } else if (formula.type()==carl::FormulaType::VARCOMPARE) {
+            if (!carl::vs::gather_zeros(formula.variable_comparison(), eliminationVar, res)) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Could not generate zero");
                 return false;
             }
@@ -112,9 +112,9 @@ namespace helper {
         // scan through conditions for test candidates
         for (const auto& constraint : constraints) {
             // Determine the substitution type: normal or +epsilon
-            assert(constraint.getType() == carl::FormulaType::CONSTRAINT || constraint.getType() == carl::FormulaType::TRUE || constraint.getType() == carl::FormulaType::FALSE || constraint.getType() == carl::FormulaType::VARCOMPARE);
-            bool isConstraint = constraint.getType() == carl::FormulaType::CONSTRAINT || constraint.getType() == carl::FormulaType::TRUE || constraint.getType() == carl::FormulaType::FALSE;
-            const carl::Relation& relation = isConstraint ? constraint.constraint().relation() : constraint.variableComparison().relation();
+            assert(constraint.type() == carl::FormulaType::CONSTRAINT || constraint.type() == carl::FormulaType::TRUE || constraint.type() == carl::FormulaType::FALSE || constraint.type() == carl::FormulaType::VARCOMPARE);
+            bool isConstraint = constraint.type() == carl::FormulaType::CONSTRAINT || constraint.type() == carl::FormulaType::TRUE || constraint.type() == carl::FormulaType::FALSE;
+            const carl::Relation& relation = isConstraint ? constraint.constraint().relation() : constraint.variable_comparison().relation();
             bool weakConstraint = (relation == carl::Relation::EQ || relation == carl::Relation::LEQ || relation == carl::Relation::GEQ);
             auto subType = weakConstraint ? carl::vs::TermType::NORMAL : carl::vs::TermType::PLUS_EPSILON;
 
@@ -136,7 +136,7 @@ namespace helper {
     }
 
     inline bool substitute(const FormulaT& constr, const carl::Variable var, const carl::vs::Term<Poly>& term, FormulaT& result) {
-        if (constr.getType() == carl::FormulaType::CONSTRAINT) {
+        if (constr.type() == carl::FormulaType::CONSTRAINT) {
             auto subres = carl::vs::substitute(constr.constraint(), var, term);
             if (!subres) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
@@ -146,8 +146,8 @@ namespace helper {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution obtained " << result);
                 return true;
             }
-        } else if (constr.getType() == carl::FormulaType::VARCOMPARE) {
-            auto subres = carl::vs::substitute(constr.variableComparison(), var, term);
+        } else if (constr.type() == carl::FormulaType::VARCOMPARE) {
+            auto subres = carl::vs::substitute(constr.variable_comparison(), var, term);
             if (!subres) {
                 SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Substitution failed");
                 return false;
@@ -162,7 +162,7 @@ namespace helper {
                 return true;
             }
         } else {
-            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Formula type " << constr.getType() << " not supported for substitution");
+            SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Formula type " << constr.type() << " not supported for substitution");
             return false;
         }
     }

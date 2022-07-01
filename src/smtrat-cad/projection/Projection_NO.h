@@ -87,7 +87,7 @@ namespace cad {
 			if (level < dim() && projection::canBeForwarded(level, p)) {
 				return addToProjection(level + 1, carl::switch_main_variable(p, var(level+1)), origin);
 			}
-			assert(p.mainVar() == var(level));
+			assert(p.main_var() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				// We already have this polynomial.
@@ -131,7 +131,7 @@ namespace cad {
 		 */
 		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " from constraint " << cid);
-			assert(p.mainVar() == var(1));
+			assert(p.main_var() == var(1));
 			return addToProjection(1, p, cid);
 		}
 		/**

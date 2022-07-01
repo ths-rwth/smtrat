@@ -21,7 +21,7 @@ void single(const Poly& p, carl::Variable variable, Callback&& cb) {
 	SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> discriminant " << projection::discriminant(variable, p));
 	cb(projection::discriminant(variable, p));
 	for (const auto& coeff : p.coefficients()) {
-		if (coeff.isConstant()) continue;
+		if (coeff.is_constant()) continue;
 		SMTRAT_LOG_DEBUG("smtrat.cad.projection", "\t-> coefficient " << coeff);
 		returnPoly(projection::normalize(carl::to_univariate_polynomial(coeff, variable)), cb);
 	}

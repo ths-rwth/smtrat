@@ -15,7 +15,7 @@
 #pragma once
 
 // Datastructures from carl
-#include "carl/groebner/groebner.h"
+#include <carl-arith/groebner/groebner.h>
 
 // General Module interface
 #include <smtrat-solver/Module.h>
@@ -69,7 +69,7 @@ protected:
     /// The rewrite rules for the variables
     groebner::RewriteRules mRewriteRules;
 
-    std::map<size_t, carl::Variable> mAdditionalVarMap;
+    std::map<ConstraintT, carl::Variable> mAdditionalVarMap;
     
     /** A workaround to associate equalities in the passed formula originating from the gb
      * (in contrast to those which originate from simplified formulae)

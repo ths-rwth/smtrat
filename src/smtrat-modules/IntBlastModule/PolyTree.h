@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
@@ -46,8 +46,8 @@ namespace smtrat
             carl::Variable mVariable;
             Integer mConstant;
         };
-        boost::optional<PolyTree> mLeft;
-        boost::optional<PolyTree> mRight;
+        std::optional<PolyTree> mLeft;
+        std::optional<PolyTree> mRight;
 
     public:
         PolyTreeContent(const Poly& _poly, PolyTree::Type _type, const PolyTree& _left, const PolyTree& _right) :

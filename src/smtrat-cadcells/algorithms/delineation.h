@@ -14,7 +14,7 @@ namespace smtrat::cadcells::algorithms {
  * @return A sampled derivation which contains the information to keep the delineation invariant. 
  */
 template <cadcells::operators::op op, representation::DelineationHeuristic delineation_heuristic>
-std::optional<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_delineation(datastructures::Projections& proj, const FormulasT& cs, const Assignment& sample) {
+std::optional<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_delineation(datastructures::Projections& proj, const std::vector<Atom>& cs, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", cs << ", " << sample);
 
     auto vars = proj.polys().var_order();
@@ -24,18 +24,16 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
 
     for (const auto& c: cs) {
         SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
-        Poly p;
-        if (c.getType() == carl::FormulaType::CONSTRAINT) {
-            p = c.constraint().lhs();
-        } else if (c.getType() == carl::FormulaType::VARCOMPARE) {
-            p = c.variableComparison().definingPolynomial();
-        } else {
-            assert(false);
-            return std::nullopt;
-        }
+        const Polynomial& p = [&](){
+            if (std::holds_alternative<Constraint>(c)) {
+                return std::get<Constraint>(c).lhs();
+            } else {
+                assert(std::holds_alternative<VariableComparison>(c));
+                return carl::defining_polynomial(std::get<VariableComparison>(c));
+            }
+        }();
         assert(cadcells::helper::level_of(vars, p) == sample.size()+1);
         deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(p) });
-        // TODO can we use equational constraints?     
     }
     operators::project_basic_properties<op>(*deriv);
     operators::delineate_properties<op>(*deriv);

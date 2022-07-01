@@ -47,7 +47,7 @@ int executeFile(const std::string& pathToInputFile, Executor& e) {
 	setrlimit(RLIMIT_STACK, &rl);
 #endif
 
-	auto start = SMTRAT_TIME_START();
+	SMTRAT_TIME_START(start);
 	bool queueInstructions = true;
 	if (!parseInput(pathToInputFile, e, queueInstructions)) {
 		std::cerr << "Parse error" << std::endl;

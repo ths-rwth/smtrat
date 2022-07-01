@@ -46,6 +46,7 @@ namespace smtrat::cadcells::representation {
             case CellHeuristic::CHAIN_EQ: return "CHAIN_EQ";
             case CellHeuristic::LOWEST_DEGREE_BARRIERS: return "LOWEST_DEGREE_BARRIERS";
             case CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ: return "LOWEST_DEGREE_BARRIERS_EQ";
+            default: return "UNKNOWN";
         }
     }
 
@@ -53,12 +54,14 @@ namespace smtrat::cadcells::representation {
         switch (heuristic) {
             case CoveringHeuristic::DEFAULT_COVERING: return "DEFAULT_COVERING";
             case CoveringHeuristic::CHAIN_COVERING: return "CHAIN_COVERING";
+            default: return "UNKNOWN";
         }
     }
 
     inline std::string get_name(DelineationHeuristic heuristic){
         switch (heuristic) {
             case DelineationHeuristic::CHAIN: return "CHAIN";
+            default: return "UNKNOWN";
         }
     }
 

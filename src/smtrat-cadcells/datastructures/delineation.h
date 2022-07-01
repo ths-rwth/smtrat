@@ -76,7 +76,7 @@ class Delineation {
     /// The set of all nullified polynomials.
     boost::container::flat_set<PolyRef> m_polys_nullified;
     /// The set of all polynomials without a root.
-    boost::container::flat_set<PolyRef> m_polys_noroot;
+    boost::container::flat_set<PolyRef> m_polys_nonzero;
 
 public: 
     Delineation() {}
@@ -97,10 +97,10 @@ public:
      * The set of polynomials without roots.
      */
     const auto& nonzero() const {
-        return m_polys_noroot;
+        return m_polys_nonzero;
     }
     bool empty() const {
-        return m_roots.empty() && m_polys_nullified.empty() && m_polys_noroot.empty();
+        return m_roots.empty() && m_polys_nullified.empty() && m_polys_nonzero.empty();
     }
 
     /**
@@ -143,8 +143,8 @@ public:
         }
     }
 
-    void add_poly_noroot(PolyRef poly) {
-        m_polys_noroot.insert(poly);
+    void add_poly_nonzero(PolyRef poly) {
+        m_polys_nonzero.insert(poly);
     }
 
     void add_poly_nullified(PolyRef poly) {
@@ -156,27 +156,46 @@ inline std::ostream& operator<<(std::ostream& os, const Delineation& data) {
     return os;
 }
 
-inline bool lower_less(const DelineationInterval& del1, const DelineationInterval& del2) {
+/**
+ * Compares the lower bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool lower_lt_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();
     else if (del2.lower_unbounded()) return false;
     else if (del1.lower()->first == del2.lower()->first) return del1.is_section() && del2.is_sector();
     else return del1.lower()->first < del2.lower()->first;
 }
 
-inline bool lower_equal(const DelineationInterval& del1, const DelineationInterval& del2) {
+/**
+ * Compares the lower bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
     else if (del1.lower_unbounded() != del2.lower_unbounded()) return false;
     else if (del1.lower()->first == del2.lower()->first) return del1.is_section() == del2.is_section();
     else return false;
 }
 
-inline bool upper_less(const DelineationInterval& del1, const DelineationInterval& del2) {
+/**
+ * Compares the upper bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool upper_lt_upper(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.upper_unbounded()) return false;
-    else if (del2.upper_unbounded()) return !del1.upper_unbounded();
+    else if (del2.upper_unbounded()) return true;
     else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
     else return del1.upper()->first < del2.upper()->first;
 }
 
+/**
+ * Compares an upper bound with a lower bound of DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool upper_lt_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
+    if (del1.upper_unbounded()) return false;
+    if (del2.lower_unbounded()) return false;
+    if (del1.upper()->first < del2.lower()->first) return true;
+    if (del1.upper()->first == del2.lower()->first && del1.is_sector() && del2.is_sector()) return true;
+    return false;
+}
 
 
 } 

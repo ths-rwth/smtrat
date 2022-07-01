@@ -13,7 +13,7 @@ namespace smtrat {
 			std::string name() { return "LongFormulaEncoder"; }
 
 		protected:
-			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
+			std::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
 	};
 }

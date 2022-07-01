@@ -15,7 +15,7 @@ namespace smtrat {
 template<typename Strategy>
 int run_opb_file(Strategy& strategy, const std::string& filename) {
 	Optimization<Strategy> optimization(strategy);
-	carl::OPBImporter<Poly> opb(filename);
+	carl::io::OPBImporter<Poly> opb(filename);
 	SMTRAT_LOG_INFO("smtrat", "Parsing " << filename << " using OPB");
 	int exitCode = 0;
 	auto input = opb.parse();
@@ -26,7 +26,7 @@ int run_opb_file(Strategy& strategy, const std::string& filename) {
 		SMTRAT_LOG_INFO("smtrat", "Parsed " << input->first);
 		SMTRAT_LOG_INFO("smtrat", "with objective " << input->second);
 		strategy.add(input->first);
-		if (!input->second.isConstant()) {
+		if (!input->second.is_constant()) {
 			optimization.add_objective(input->second, true);
 			exitCode = handleAnswer(std::get<0>(optimization.compute()));
 		} else {

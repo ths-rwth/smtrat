@@ -4,7 +4,7 @@
 #include <map>
 #include <vector>
 
-#include <boost/optional.hpp>
+#include <optional>
 
 #include "../common.h"
 #include "BaseProjection.h"
@@ -36,7 +36,7 @@ namespace cad {
 		// Maps polynomials to a (per level) unique ID.
 		std::vector<std::map<UPoly,std::size_t>> mPolynomialIDs;
 		// Stores polynomials with their origins, being pairs of polynomials from the level above.
-		std::vector<std::vector<boost::optional<std::pair<UPoly,Origin>>>> mPolynomials;
+		std::vector<std::vector<std::optional<std::pair<UPoly,Origin>>>> mPolynomials;
 		
 		auto& polyIDs(std::size_t level) {
 			assert(level > 0 && level <= dim());
@@ -59,7 +59,7 @@ namespace cad {
 			assert(level > 0 && level <= dim());
 			if (projection::canBeRemoved(p)) return carl::Bitset();
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "Adding " << p << " to projection level " << level);
-			assert(p.mainVar() == var(level));
+			assert(p.main_var() == var(level));
 			auto it = polyIDs(level).find(p);
 			if (it != polyIDs(level).end()) {
 				assert(polys(level)[it->second]);
@@ -99,7 +99,7 @@ namespace cad {
 			mPolynomialIDs.resize(dim());
 		}
 		carl::Bitset addPolynomial(const UPoly& p, std::size_t cid, bool) override {
-			assert(p.mainVar() == var(1));
+			assert(p.main_var() == var(1));
 			return addToProjection(1, p, Origin::BaseType(0, cid));
 		}
 		void removePolynomial(const UPoly&, std::size_t cid, bool) override {
@@ -120,7 +120,7 @@ namespace cad {
 						freeID(level, id);
 						mLiftingQueues[level - 1].erase(id);
 						removed.set(id);
-						polys(level)[id] = boost::none;
+						polys(level)[id] = std::nullopt;
 						it = polyIDs(level).erase(it);
 					} else {
 						it++;

@@ -3,7 +3,7 @@
 #include "../common.h"
 #include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 
 
 namespace smtrat::cadcells::datastructures {
@@ -50,9 +50,9 @@ class PolyPool {
     inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
     inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
     inline PolyRef positive_poly_ref() const { return PolyRef {0, 2}; }
-    Poly negative_poly;
-    Poly zero_poly;
-    Poly positive_poly;
+    Polynomial negative_poly;
+    Polynomial zero_poly;
+    Polynomial positive_poly;
 
 public:
     /**
@@ -70,14 +70,14 @@ public:
 
     const VariableOrdering& var_order() const { return m_var_order; }
 
-    PolyRef insert(const Poly& poly) {
+    PolyRef insert(const Polynomial& poly) {
         auto npoly = poly.normalize();
         PolyRef ref;
         ref.level = helper::level_of(m_var_order, npoly);
         if (ref.level == 0) {
-            assert(poly.isConstant());
-            if (carl::isZero(poly)) return zero_poly_ref();
-            else if (carl::isNegative(poly.constantPart())) return negative_poly_ref();
+            assert(poly.is_constant());
+            if (carl::is_zero(poly)) return zero_poly_ref();
+            else if (carl::is_negative(poly.constant_part())) return negative_poly_ref();
             else return positive_poly_ref();
         }
         assert(ref.level <= m_polys.size() && ref.level > 0);
@@ -92,11 +92,11 @@ public:
         return ref;
     }
 
-    PolyRef operator()(const Poly& poly){
+    PolyRef operator()(const Polynomial& poly) {
         return insert(poly);
     }
 
-    const Poly& get(const PolyRef& ref) const {
+    const Polynomial& get(const PolyRef& ref) const {
         assert(ref.level <= m_polys.size());
         if (ref.level == 0) {
             assert(ref.id <=2);
@@ -108,11 +108,11 @@ public:
         return m_polys[ref.level-1][ref.id];
     }
 
-    const Poly& operator()(const PolyRef& ref) const{
+    const Polynomial& operator()(const PolyRef& ref) const {
         return get(ref);
     }
 
-    bool known(const Poly& poly) const {
+    bool known(const Polynomial& poly) const {
         auto npoly = poly.normalize();
         auto level = helper::level_of(m_var_order, npoly);
         auto res = m_poly_ids[level-1].find(npoly);

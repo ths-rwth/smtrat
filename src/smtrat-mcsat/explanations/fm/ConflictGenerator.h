@@ -93,7 +93,7 @@ private:
 
 	FormulasT conflictLowerAndUpperBound(const Bound& lower, const Bound& upper) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Lower bound " << lower << " in conflict with upper bound " << upper);
-		bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
+		bool strict = carl::is_strict(lower.constr.relation()) || carl::is_strict(upper.constr.relation());
 		carl::Relation rel = (lower.neg xor upper.neg) ? (strict ? carl::Relation::GREATER : carl::Relation::GEQ) : (strict ? carl::Relation::LESS : carl::Relation::LEQ);
 		FormulasT res;
 		res.emplace_back(lower.constr.negation());
@@ -129,7 +129,7 @@ private:
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Explanation: " << expl[0].negated() << " && " << expl[1].negated() << " && " << expl[2].negated() << " && " << expl[3].negated() << " -> " << expl[4]);
 		expl.emplace_back(sideCondition(ineq).negation());
 		expl.emplace_back(sideConditionLoUp(lower).negation());
-		expl.emplace_back(sideConditionLoUp(upper).negation()); // TODO move to struct member
+		expl.emplace_back(sideConditionLoUp(upper).negation());
 		return expl;
 	}
 
@@ -147,22 +147,22 @@ public:
 		for (const auto& b: mBounds) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Processing bound " << b);
 
-			if (!b.hasVariable(mVariable)) {
+			if (!b.variables().has(mVariable)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
 				continue;
 			}
 
-			if (b.varInfo(mVariable).maxDegree() > 1) {
+			if (b.var_info(mVariable).max_degree() > 1) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << mVariable << " occurs nonlinearly");
 				continue;
 			}
 			auto p = b.coefficient(mVariable, 1);
-			if (carl::isZero(p)) {
+			if (carl::is_zero(p)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable);
 				continue;
 			}
 			
-			auto evalp = carl::model::evaluate(p, mModel);
+			auto evalp = carl::evaluate(p, mModel);
 			if (!evalp.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << p << " did not evaluate to a rational");
 				continue;
@@ -170,14 +170,14 @@ public:
 			assert(evalp.isRational());
 
 			auto q = p * mVariable - b.lhs();
-			auto evalq = carl::model::evaluate(q, mModel);
+			auto evalq = carl::evaluate(q, mModel);
 			if (!evalq.isRational()) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because " << q << " did not evaluate to a rational");
 				continue;
 			}
 			assert(evalq.isRational());
 
-			if (carl::isZero(evalp.asRational())) {
+			if (carl::is_zero(evalp.asRational())) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Discarding bound " << b << " because it does not contain " << mVariable << " after we evaluate it");
 
 				if (!carl::evaluate(Rational(0), b.relation(), evalq.asRational())) {
@@ -246,7 +246,7 @@ public:
 		for (const Bound& lower : mLower) {
 			for (const Bound& upper : mUpper) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Combining " << lower << " and " << upper);
-				bool strict = carl::isStrict(lower.constr.relation()) || carl::isStrict(upper.constr.relation());
+				bool strict = carl::is_strict(lower.constr.relation()) || carl::is_strict(upper.constr.relation());
 				
 				if (lower.r < upper.r) {
 					SMTRAT_LOG_DEBUG("smtrat.mcsat.fm", "Not in conflict");

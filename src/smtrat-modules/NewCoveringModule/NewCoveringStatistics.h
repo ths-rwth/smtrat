@@ -16,85 +16,96 @@
 namespace smtrat {
 class NewCoveringStatistics : public Statistics {
 private:
-	std::size_t mTotalCalls = 0;
-	std::size_t mIncrementalOnlyCalls = 0;
-	std::size_t mBacktrackingOnlyCalls = 0;
-	std::size_t mIncrementalAndBacktrackingCalls = 0;
-	std::size_t mDimension = 0;
-	std::string mVariableOrderingType = "";
-	std::string mCoveringHeuristicType = "";
-	std::string mOperatorType = "";
-	std::string mSamplingAlgorithm = "";
-	std::string mIsSampleOutsideAlgorithm = "";
-	carl::statistics::timer mTimerComputeCovering;
-	carl::statistics::timer mTimerConstructDerivation;
+    std::size_t mTotalCalls = 0;
+    bool isIncremental = false;
+    bool isBacktracking = false;
+    std::size_t mIncrementalOnlyCalls = 0;
+    std::size_t mBacktrackingOnlyCalls = 0;
+    std::size_t mIncrementalAndBacktrackingCalls = 0;
+    std::size_t mDimension = 0;
+    std::string mVariableOrderingType = "";
+    std::string mCoveringHeuristicType = "";
+    std::string mOperatorType = "";
+    std::string mSamplingAlgorithm = "";
+    std::string mIsSampleOutsideAlgorithm = "";
+    carl::statistics::timer mTimerComputeCovering;
+    carl::statistics::timer mTimerConstructDerivation;
 
 public:
-	void collect() {
-		Statistics::addKeyValuePair("total_calls", mTotalCalls);
-		Statistics::addKeyValuePair("incremental_only_calls", mIncrementalOnlyCalls);
-		Statistics::addKeyValuePair("backtracking_only_calls", mBacktrackingOnlyCalls);
-		Statistics::addKeyValuePair("incremental_and_backtracking_calls", mIncrementalAndBacktrackingCalls);
-		Statistics::addKeyValuePair("dimension", mDimension);
-		Statistics::addKeyValuePair("time_compute_covering", mTimerComputeCovering);
-		Statistics::addKeyValuePair("time_construct_derivation", mTimerConstructDerivation);
-		Statistics::addKeyValuePair("variable_ordering_type", mVariableOrderingType);
-		Statistics::addKeyValuePair("covering_heuristic_type", mCoveringHeuristicType);
-		Statistics::addKeyValuePair("operator_type", mOperatorType);
-		Statistics::addKeyValuePair("sampling_algorithm", mSamplingAlgorithm);
-		Statistics::addKeyValuePair("is_sample_outside_algorithm", mIsSampleOutsideAlgorithm);
-	}
-	void called() {
-		mTotalCalls++;
-	}
+    void collect() {
+        Statistics::addKeyValuePair("total_calls", mTotalCalls);
+        Statistics::addKeyValuePair("incremental_only_calls", mIncrementalOnlyCalls);
+        Statistics::addKeyValuePair("backtracking_only_calls", mBacktrackingOnlyCalls);
+        Statistics::addKeyValuePair("incremental_and_backtracking_calls", mIncrementalAndBacktrackingCalls);
+        Statistics::addKeyValuePair("dimension", mDimension);
+        Statistics::addKeyValuePair("time_compute_covering", mTimerComputeCovering);
+        Statistics::addKeyValuePair("time_construct_derivation", mTimerConstructDerivation);
+        Statistics::addKeyValuePair("variable_ordering_type", mVariableOrderingType);
+        Statistics::addKeyValuePair("covering_heuristic_type", mCoveringHeuristicType);
+        Statistics::addKeyValuePair("operator_type", mOperatorType);
+        Statistics::addKeyValuePair("sampling_algorithm", mSamplingAlgorithm);
+        Statistics::addKeyValuePair("is_sample_outside_algorithm", mIsSampleOutsideAlgorithm);
+        Statistics::addKeyValuePair("is_incremental", isIncremental);
+        Statistics::addKeyValuePair("is_backtracking", isBacktracking);
+    }
+    void called() {
+        mTotalCalls++;
+    }
 
-	void calledIncrementalOnly() {
-		mIncrementalOnlyCalls++;
-	}
-	void calledBacktrackingOnly() {
-		mBacktrackingOnlyCalls++;
-	}
-	void calledIncrementalAndBacktracking() {
-		mIncrementalAndBacktrackingCalls++;
-	}
+    void calledIncrementalOnly() {
+        mIncrementalOnlyCalls++;
+    }
+    void calledBacktrackingOnly() {
+        mBacktrackingOnlyCalls++;
+    }
+    void calledIncrementalAndBacktracking() {
+        mIncrementalAndBacktrackingCalls++;
+    }
 
-	void setDimension(std::size_t dimension) {
-		mDimension = dimension;
-	}
+    void setDimension(std::size_t dimension) {
+        mDimension = dimension;
+    }
 
-	auto& timeForComputeCovering() {
-		return mTimerComputeCovering;
-	}
+    auto& timeForComputeCovering() {
+        return mTimerComputeCovering;
+    }
 
-	auto& timeForConstructDerivation() {
-		return mTimerConstructDerivation;
-	}
+    auto& timeForConstructDerivation() {
+        return mTimerConstructDerivation;
+    }
 
-	void setVariableOrderingType(std::string variableOrderingType) {
-		mVariableOrderingType = variableOrderingType;
-	}
+    void setVariableOrderingType(const std::string& variableOrderingType) {
+        mVariableOrderingType = variableOrderingType;
+    }
 
-	void setCoveringHeuristicType(std::string coveringHeuristicType) {
-		mCoveringHeuristicType = coveringHeuristicType;
-	}
+    void setCoveringHeuristicType(const std::string& coveringHeuristicType) {
+        mCoveringHeuristicType = coveringHeuristicType;
+    }
 
-	void setOperatorType(std::string operatorType) {
-		mOperatorType = operatorType;
-	}
+    void setOperatorType(const std::string& operatorType) {
+        mOperatorType = operatorType;
+    }
 
-	void setSamplingAlgorithm(std::string samplingAlgorithm) {
-		mSamplingAlgorithm = samplingAlgorithm;
-	}
+    void setSamplingAlgorithm(const std::string& samplingAlgorithm) {
+        mSamplingAlgorithm = samplingAlgorithm;
+    }
 
-	void setIsSampleOutsideAlgorithm(std::string isSampleOutsideAlgorithm) {
-		mIsSampleOutsideAlgorithm = isSampleOutsideAlgorithm;
-	}
+    void setIsSampleOutsideAlgorithm(const std::string& isSampleOutsideAlgorithm) {
+        mIsSampleOutsideAlgorithm = isSampleOutsideAlgorithm;
+    }
 
+    void setIncremental(bool incremental) {
+        isIncremental = incremental;
+    }
+
+    void setBacktracking(bool backtracking) {
+        isBacktracking = backtracking;
+    }
 };
 
 static auto& getStatistics() {
-	SMTRAT_STATISTICS_INIT_STATIC(NewCoveringStatistics, stats, "NewCoveringModule");
-	return stats;
+    SMTRAT_STATISTICS_INIT_STATIC(NewCoveringStatistics, stats, "NewCoveringModule");
+    return stats;
 }
 
 } // namespace smtrat

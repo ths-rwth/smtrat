@@ -1,7 +1,7 @@
 #include "formula_types.h"
 
 #include "utils.h"
-#include <carl/formula/helpers/to_cnf.h>
+#include <carl-formula/formula/functions/CNF.h>
 
 
 namespace smtrat::analyzer {

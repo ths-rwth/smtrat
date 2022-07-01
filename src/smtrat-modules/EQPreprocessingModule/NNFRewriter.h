@@ -95,7 +95,7 @@ namespace smtrat {
 			// normalize all inequalities to be (not (= x y)), distinct can cause (!= x y) which causes errors in CNF/SAT module and preprocessing
 			FormulaT rewrite_ueq(const FormulaT& formula) {
 				remove_xor_first_arg remove(*this, formula);
-				const carl::UEquality& ueq = formula.uequality();
+				const carl::UEquality& ueq = formula.u_equality();
 
 				if((notCount + (ueq.negated() ? 1 : 0)) % 2) {
 					return FormulaT(carl::NOT, FormulaT(ueq.lhs(), ueq.rhs(), false));
@@ -108,9 +108,9 @@ namespace smtrat {
 				remove_xor_first_arg remover(*this, formula);
 
 				if(notCount % 2) {
-					return FormulaT(formula.getType() == carl::EXISTS ? carl::FORALL : carl::EXISTS, formula.quantifiedVariables(), std::move(subformula));
+					return FormulaT(formula.type() == carl::EXISTS ? carl::FORALL : carl::EXISTS, formula.quantified_variables(), std::move(subformula));
 				} else {
-					return FormulaT(formula.getType(), formula.quantifiedVariables(), std::move(subformula));
+					return FormulaT(formula.type(), formula.quantified_variables(), std::move(subformula));
 				}
 			}
 

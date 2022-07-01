@@ -11,8 +11,10 @@
 #include <smtrat-solver/Module.h>
 #include "CoCoAGBSettings.h"
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <algorithm>
+
+#include <carl-common/config.h>
 
 namespace smtrat
 {
@@ -68,15 +70,15 @@ namespace smtrat
 				if (it != mAuxVariables.end()) {
 					return it->second;
 				}
-				return mAuxVariables.emplace(c, carl::freshRealVariable()).first->second;
+				return mAuxVariables.emplace(c, carl::fresh_real_variable()).first->second;
 			}
 			// Return the polynomial to be put in the GB, does conversion for inequalities (if enabled)
-			boost::optional<Poly> getPoly(const ConstraintT& c) {
+			std::optional<Poly> getPoly(const ConstraintT& c) {
 				if (c.relation() == carl::Relation::EQ) {
 					return c.lhs();
 				}
 				if (!Settings::convert_inequalities) {
-					return boost::none;
+					return std::nullopt;
 				}
 				carl::Variable aux = getAuxVar(c);
 				switch (c.relation()) {
@@ -92,7 +94,7 @@ namespace smtrat
 						return c.lhs() * aux + Rational(1);
 					default:
 						assert(false);
-						return boost::none;
+						return std::nullopt;
 				}
 			}
 			
