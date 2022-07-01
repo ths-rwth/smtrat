@@ -160,7 +160,7 @@ public:
 
     const std::vector<PolyRef>& factors_nonconst(PolyRef p) {
         if (cache(p).factors_nonconst.empty()) {
-            for (const auto& factor : carl::irreducibleFactors(m_pool(p), false)) {
+            for (const auto& factor : carl::irreducible_factors(m_pool(p), false)) {
                 cache(p).factors_nonconst.emplace_back(m_pool(factor));
             }
         }

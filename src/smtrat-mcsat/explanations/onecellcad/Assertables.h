@@ -26,7 +26,7 @@ bool hasOnlyNonConstIrreducibles(const std::vector<PolyType>& polys) {
 	for (const auto& poly : polys) {
 		if (poly.is_constant())
 			return false;
-		else if (carl::irreducibleFactors(poly, false).size() > 1)
+		else if (carl::irreducible_factors(poly, false).size() > 1)
 			return false;
 		// if more than 1 factor, not irreducible
 	}

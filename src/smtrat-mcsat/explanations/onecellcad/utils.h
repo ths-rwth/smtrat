@@ -173,7 +173,7 @@ inline std::vector<TagPoly> nonConstIrreducibleFactors(
         InvarianceType tag) {
 
     std::vector<TagPoly> factors;
-    for (const Poly& factor : carl::irreducibleFactors(poly, false)) {
+    for (const Poly& factor : carl::irreducible_factors(poly, false)) {
         factors.emplace_back(TagPoly{tag, factor, *levelOf(variableOrder, factor)}); // inherit poly's tag
         //SMTRAT_LOG_DEBUG("smtrat.cad", "factor " << factor);
         assert(!factor.is_constant());

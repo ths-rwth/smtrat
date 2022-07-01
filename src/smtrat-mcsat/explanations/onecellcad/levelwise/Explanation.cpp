@@ -23,7 +23,7 @@ Explanation<Setting1,Setting2>::operator()(const mcsat::Bookkeeping& trail, // c
 #endif
 
 #if not(defined USE_COCOA || defined USE_GINAC)
-// OneCellCAD needs carl::irreducibleFactors to be implemented
+// OneCellCAD needs carl::irreducible_factors to be implemented
 #warning OneCellCAD may be incorrect as USE_COCOA is disabled
 #endif
 
