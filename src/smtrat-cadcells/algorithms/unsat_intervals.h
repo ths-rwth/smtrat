@@ -94,7 +94,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto value_result = [&]() -> std::variant<std::pair<datastructures::IndexedRoot, RAN>, datastructures::PolyRef> {
         if (std::holds_alternative<RAN>(c.value())) {
             RAN root = std::get<RAN>(c.value());
-            auto p = c.defining_polynomial();
+            auto p = carl::defining_polynomial(c);
             auto poly = proj.polys()(p);
             auto poly_roots = proj.real_roots(sample, poly); // TODO sample is irrelevant here, but needed for the correct level...
             size_t index = (size_t)std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
@@ -103,11 +103,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         } else {
             auto eval_res = carl::evaluate(std::get<MultivariateRoot>(c.value()), sample);
             if (!eval_res) {
-                auto p = c.defining_polynomial();
+                auto p = carl::defining_polynomial(c);
                 return proj.polys()(p);
             } else {
                 RAN root = *eval_res;
-                auto p = c.defining_polynomial();
+                auto p = carl::defining_polynomial(c);
                 datastructures::IndexedRoot iroot(proj.polys()(p), std::get<MultivariateRoot>(c.value()).k());
                 return std::make_pair(iroot, root);
             }

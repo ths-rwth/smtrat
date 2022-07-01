@@ -172,7 +172,7 @@ public:
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
-            auto mv = carl::evaluate(carl::BasicConstraint<Poly>(m_pool(p), carl::Relation::EQ), restricted_sample);
+            auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
             assert(!indeterminate(mv));
             cache(restricted_sample).is_zero[p] = (bool) mv;
         }
@@ -235,7 +235,7 @@ public:
     }
 
     PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) const {
-        std::optional<Poly> result;
+        std::optional<Polynomial> result;
         auto poly = as_univariate(p);
         for (const auto& coeff : poly.coefficients()) {
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);

@@ -14,8 +14,7 @@ using Constraint = carl::BasicConstraint<Polynomial>;
 using MultivariateRoot = carl::MultivariateRoot<Polynomial>;
 using VariableComparison = carl::VariableComparison<Polynomial>;
 using Atom = std::variant<Constraint, VariableComparison>;
-
-using RAN = carl::RealAlgebraicNumber<Rational>;
+using RAN = Polynomial::RootType;
 using Assignment = carl::Assignment<RAN>;
 
 static const Assignment empty_assignment;

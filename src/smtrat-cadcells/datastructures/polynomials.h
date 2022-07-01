@@ -50,9 +50,9 @@ class PolyPool {
     inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
     inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
     inline PolyRef positive_poly_ref() const { return PolyRef {0, 2}; }
-    Poly negative_poly;
-    Poly zero_poly;
-    Poly positive_poly;
+    Polynomial negative_poly;
+    Polynomial zero_poly;
+    Polynomial positive_poly;
 
 public:
     /**
@@ -92,7 +92,7 @@ public:
         return ref;
     }
 
-    PolyRef operator()(const Polynomial& poly){
+    PolyRef operator()(const Polynomial& poly) {
         return insert(poly);
     }
 
@@ -108,7 +108,7 @@ public:
         return m_polys[ref.level-1][ref.id];
     }
 
-    const Polynomial& operator()(const PolyRef& ref) const{
+    const Polynomial& operator()(const PolyRef& ref) const {
         return get(ref);
     }
 
