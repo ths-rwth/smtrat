@@ -32,7 +32,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
                 return carl::defining_polynomial(std::get<VariableComparison>(c));
             }
         }();
-        assert(cadcells::helper::level_of(vars, p) == sample.size()+1);
+        assert(proj.polys().adaptor().level_of(p) == sample.size()+1);
         deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(p) });
     }
     operators::project_basic_properties<op>(*deriv);

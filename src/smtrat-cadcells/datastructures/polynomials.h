@@ -32,7 +32,64 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
     return os;
 }
 
-// TODO later: make polynomials univariate
+// TODO later: store carl polynomials as univariate
+// TODO later: carl should be designed such that PolyAdaptor is not needed
+
+template<typename P>
+struct PolyAdaptor {};
+
+template<>
+struct PolyAdaptor<Poly> {
+    const VariableOrdering& m_var_order;
+    PolyAdaptor(const VariableOrdering& var_order) : m_var_order(var_order) {}
+    auto negative_poly() const { return Poly(-1); }
+    auto zero_poly() const { return Poly(0); }
+    auto positive_poly() const { return Poly(1); }
+    auto as_univariate(const Poly& p, carl::Variable v) const { return carl::to_univariate_polynomial(p, v); }
+    auto as_multivariate(const carl::UnivariatePolynomial<Poly>& p) const { return Poly(p); };
+    auto lcoeff(const Poly& p, carl::Variable v) const { return p.lcoeff(v); }
+    std::size_t level_of(const Poly& p) const { 
+        auto poly_variables = carl::variables(p).as_set();
+        if (poly_variables.empty()) return 0;
+        for (std::size_t level = 1; level <= m_var_order.size(); ++level) {
+            poly_variables.erase(m_var_order[level-1]);
+            if (poly_variables.empty()) return level;
+        }
+        assert(false && "Poly contains variable not found in m_var_order");
+        return 0;
+    }
+    auto main_var(const Poly& p) const {
+        auto poly_variables = carl::variables(p).as_set();
+        if (poly_variables.empty()) return carl::Variable::NO_VARIABLE;
+        for (std::size_t level = 0; level < m_var_order.size(); ++level) {
+            if (poly_variables.size() == 1) return *poly_variables.begin();
+            poly_variables.erase(m_var_order[level]);
+        }
+        assert(false && "Poly contains variable not found in m_var_order");
+        return carl::Variable::NO_VARIABLE;
+    }
+};
+
+template<>
+struct PolyAdaptor<carl::LPPolynomial> {
+    carl::LPContext m_context;
+    PolyAdaptor(const VariableOrdering& var_order) : m_context(var_order) {}
+    auto negative_poly() const { return carl::LPPolynomial(m_context,-1); }
+    auto zero_poly() const { return carl::LPPolynomial(m_context,0); }
+    auto positive_poly() const { return carl::LPPolynomial(m_context,1); }
+    auto as_univariate(const carl::LPPolynomial& p, carl::Variable) const { return p; }
+    auto as_multivariate(const carl::LPPolynomial& p) const { return p; };
+    auto lcoeff(const carl::LPPolynomial& p, carl::Variable) const { return p.lcoeff(); }
+    std::size_t level_of(const carl::LPPolynomial& p) const {
+        assert(p.context() == m_context);
+        if (p.is_number()) return 0;
+        auto it = std::find(m_context.variable_order().begin(), m_context.variable_order().end(), p.main_var());
+        assert(it != m_context.variable_order().end());
+        return std::distance(m_context.variable_order().begin(), it)+1;
+    }
+    auto main_var(const carl::LPPolynomial& p) const { return p.main_var(); }
+};
+
 
 /**
  * A pool for polynomials.
@@ -41,11 +98,13 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
  */
 class PolyPool {
     const VariableOrdering& m_var_order;
+    
+    PolyAdaptor<Polynomial> m_adaptor;
 
     // TODO later: safe memory
     // std::vector<carl::IDPool> m_id_pools;
-    std::vector<std::vector<Poly>> m_polys;
-    std::vector<std::map<Poly, size_t>> m_poly_ids;
+    std::vector<std::vector<Polynomial>> m_polys;
+    std::vector<std::map<Polynomial, size_t>> m_poly_ids;
 
     inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
     inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
@@ -60,7 +119,7 @@ public:
      * 
      * @param var_order The variable ordering determining polynomial levels.
      */
-    PolyPool(const VariableOrdering& var_order) : m_var_order(var_order), negative_poly(-1), zero_poly(0), positive_poly(1) {
+    PolyPool(const VariableOrdering& var_order) : m_var_order(var_order), m_adaptor(var_order), negative_poly(m_adaptor.negative_poly()), zero_poly(m_adaptor.zero_poly()), positive_poly(m_adaptor.positive_poly()) {
         for (size_t i = 0; i < var_order.size(); i++) {
             // m_id_pools.emplace_back();
             m_polys.emplace_back();
@@ -70,10 +129,12 @@ public:
 
     const VariableOrdering& var_order() const { return m_var_order; }
 
+    const PolyAdaptor<Polynomial>& adaptor() const { return m_adaptor; }
+
     PolyRef insert(const Polynomial& poly) {
         auto npoly = poly.normalize();
         PolyRef ref;
-        ref.level = helper::level_of(m_var_order, npoly);
+        ref.level = adaptor().level_of(npoly);
         if (ref.level == 0) {
             assert(poly.is_constant());
             if (carl::is_zero(poly)) return zero_poly_ref();
@@ -114,7 +175,7 @@ public:
 
     bool known(const Polynomial& poly) const {
         auto npoly = poly.normalize();
-        auto level = helper::level_of(m_var_order, npoly);
+        auto level = adaptor().level_of(npoly);
         auto res = m_poly_ids[level-1].find(npoly);
         return res != m_poly_ids[level-1].end();
     }

@@ -8,6 +8,7 @@
 
 #include <carl-arith/poly/umvpoly/functions/Factorization.h>
 #include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/lp/LPFunctions.h>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -70,8 +71,7 @@ public:
 
 private:
     auto as_univariate(PolyRef p) const {
-        // TODO @Philip: for LPPoly, just return the polynomial itself here 
-        return carl::to_univariate_polynomial(m_pool(p), main_var(p));
+        return m_pool.adaptor().as_univariate(m_pool(p), main_var(p));
     }
 
     Assignment restrict_assignment(Assignment ass, PolyRef p) {
@@ -119,7 +119,7 @@ public:
         } else {
             auto upoly = carl::resultant(as_univariate(p), as_univariate(q));
             assert(carl::is_constant(upoly));
-            auto result = m_pool(Poly(upoly));
+            auto result = m_pool(m_pool.adaptor().as_multivariate(upoly));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
             return result;
@@ -140,7 +140,7 @@ public:
         } else {
             auto upoly = carl::discriminant(as_univariate(p));
             assert(carl::is_constant(upoly));
-            auto result = m_pool(Poly(upoly));
+            auto result = m_pool(m_pool.adaptor().as_multivariate(upoly));
             assert(!is_zero(result));
             cache(p).disc = result;
             return result;
@@ -151,7 +151,7 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
-            auto result = m_pool(m_pool(p).lcoeff(main_var(p)));
+            auto result = m_pool(m_pool.adaptor().lcoeff(m_pool(p),main_var(p)));
             assert(!is_zero(result));
             cache(p).ldcf = result;
             return result;

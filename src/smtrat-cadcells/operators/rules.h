@@ -61,7 +61,7 @@ bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::
         auto coeff = deriv.proj().simplest_nonzero_coeff(deriv.sample(), poly, [&](const Polynomial& a, const Polynomial& b) {
             if (deriv.proj().known(a) && deriv.contains( properties::poly_sgn_inv { deriv.proj().polys()(a)} )) return true;
             if (deriv.proj().known(b) && deriv.contains( properties::poly_sgn_inv { deriv.proj().polys()(b)} )) return true;
-            return helper::level_of(deriv.polys().var_order(),a) < helper::level_of(deriv.polys().var_order(),b) || (helper::level_of(deriv.polys().var_order(),a) == helper::level_of(deriv.polys().var_order(),b) && a.degree(helper::main_var(deriv.polys().var_order(), a)) < b.degree(helper::main_var(deriv.polys().var_order(), b)));
+            return deriv.polys().adaptor().level_of(a) < deriv.polys().adaptor().level_of(b) || (deriv.polys().adaptor().level_of(a) == deriv.polys().adaptor().level_of(b) && a.degree(deriv.polys().adaptor().main_var(a)) < b.degree(deriv.polys().adaptor().main_var(b)));
         });
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= sgn_inv(" << coeff << ") && " << coeff << " is coeff of " << poly << "");
         deriv.insert(properties::poly_sgn_inv{ coeff });
