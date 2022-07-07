@@ -34,14 +34,15 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
 
 // TODO later: store carl polynomials as univariate
 // TODO later: carl should be designed such that PolyAdaptor is not needed
+// solution: introduce wrapper class ContextedPolynomial
 
 template<typename P>
 struct PolyAdaptor {};
 
 template<>
 struct PolyAdaptor<Poly> {
-    const VariableOrdering& m_var_order;
-    PolyAdaptor(const VariableOrdering& var_order) : m_var_order(var_order) {}
+    carl::Context m_context;
+    PolyAdaptor(const carl::Context& context) : m_context(context) {}
     auto negative_poly() const { return Poly(-1); }
     auto zero_poly() const { return Poly(0); }
     auto positive_poly() const { return Poly(1); }
@@ -51,21 +52,21 @@ struct PolyAdaptor<Poly> {
     std::size_t level_of(const Poly& p) const { 
         auto poly_variables = carl::variables(p).as_set();
         if (poly_variables.empty()) return 0;
-        for (std::size_t level = 1; level <= m_var_order.size(); ++level) {
-            poly_variables.erase(m_var_order[level-1]);
+        for (std::size_t level = 1; level <= m_context.variable_order().size(); ++level) {
+            poly_variables.erase(m_context.variable_order()[level-1]);
             if (poly_variables.empty()) return level;
         }
-        assert(false && "Poly contains variable not found in m_var_order");
+        assert(false && "Poly contains variable not found in m_context.variable_order()");
         return 0;
     }
     auto main_var(const Poly& p) const {
         auto poly_variables = carl::variables(p).as_set();
         if (poly_variables.empty()) return carl::Variable::NO_VARIABLE;
-        for (std::size_t level = 0; level < m_var_order.size(); ++level) {
+        for (std::size_t level = 0; level < m_context.variable_order().size(); ++level) {
             if (poly_variables.size() == 1) return *poly_variables.begin();
-            poly_variables.erase(m_var_order[level]);
+            poly_variables.erase(m_context.variable_order()[level]);
         }
-        assert(false && "Poly contains variable not found in m_var_order");
+        assert(false && "Poly contains variable not found in m_context.variable_order()");
         return carl::Variable::NO_VARIABLE;
     }
 };
@@ -73,7 +74,7 @@ struct PolyAdaptor<Poly> {
 template<>
 struct PolyAdaptor<carl::LPPolynomial> {
     carl::LPContext m_context;
-    PolyAdaptor(const VariableOrdering& var_order) : m_context(var_order) {}
+    PolyAdaptor(const carl::LPContext& context) : m_context(context) {}
     auto negative_poly() const { return carl::LPPolynomial(m_context,-1); }
     auto zero_poly() const { return carl::LPPolynomial(m_context,0); }
     auto positive_poly() const { return carl::LPPolynomial(m_context,1); }
@@ -119,8 +120,8 @@ public:
      * 
      * @param var_order The variable ordering determining polynomial levels.
      */
-    PolyPool(const VariableOrdering& var_order) : m_var_order(var_order), m_adaptor(var_order), negative_poly(m_adaptor.negative_poly()), zero_poly(m_adaptor.zero_poly()), positive_poly(m_adaptor.positive_poly()) {
-        for (size_t i = 0; i < var_order.size(); i++) {
+    PolyPool(const Polynomial::ContextType& context) : m_var_order(context.variable_order()), m_adaptor(context), negative_poly(m_adaptor.negative_poly()), zero_poly(m_adaptor.zero_poly()), positive_poly(m_adaptor.positive_poly()) {
+        for (size_t i = 0; i < m_var_order.size(); i++) {
             // m_id_pools.emplace_back();
             m_polys.emplace_back();
             m_poly_ids.emplace_back();

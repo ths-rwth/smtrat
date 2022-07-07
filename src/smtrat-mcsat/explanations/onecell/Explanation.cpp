@@ -11,7 +11,8 @@ struct Conversion {};
 
 template<>
 struct Conversion<Poly> {
-    Conversion(const cadcells::VariableOrdering& var_order) {}
+    carl::Context m_context;
+    Conversion(const carl::Context& context) : m_context(context) {}
     Poly to(const Poly& p) { return p; }
     Poly from(const Poly& p) { return p; }
     Poly::RootType to(const Poly::RootType& r) { return r; }
@@ -25,7 +26,7 @@ struct Conversion<Poly> {
 template<>
 struct Conversion<carl::LPPolynomial> {
     carl::LPContext m_context;
-    Conversion(const cadcells::VariableOrdering& var_order) : m_context(var_order) {}
+    Conversion(const carl::LPContext& context) : m_context(context) {}
     carl::LPPolynomial to(const Poly& p) { return carl::LPPolynomial(m_context); } // TODO
     Poly from(const carl::LPPolynomial& p) { return Poly(); } // TODO
     carl::LPPolynomial::RootType to(const Poly::RootType& p) { return carl::LPPolynomial::RootType(); } // TODO
@@ -60,7 +61,8 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
     cadcells::VariableOrdering vars = trail.assignedVariables();
     vars.push_back(var);
 
-    helper::Conversion<cadcells::Polynomial> conv(vars); // TODO we need to pass the context to onecell ... (introduce Context for umvpoly?)
+    cadcells::Polynomial::ContextType context(vars);
+    helper::Conversion<cadcells::Polynomial> conv(context);
 
     cadcells::Assignment ass;
     for (const auto& [key, value] : trail.model()) {
