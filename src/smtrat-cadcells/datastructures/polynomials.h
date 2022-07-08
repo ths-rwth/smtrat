@@ -58,7 +58,7 @@ public:
      * 
      * @param var_order The variable ordering determining polynomial levels.
      */
-    PolyPool(const Polynomial::ContextType& context) : m_context(context), m_var_order(context.variable_order()), negative_poly(Polynomial(m_context, -1)), zero_poly(Polynomial(m_context, 0)), positive_poly(Polynomial(m_context, 1)) {
+    PolyPool(const Polynomial::ContextType& context) : m_context(context), m_var_order(context.variable_ordering()), negative_poly(Polynomial(m_context, -1)), zero_poly(Polynomial(m_context, 0)), positive_poly(Polynomial(m_context, 1)) {
         for (size_t i = 0; i < m_var_order.size(); i++) {
             // m_id_pools.emplace_back();
             m_polys.emplace_back();
