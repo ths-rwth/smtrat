@@ -28,7 +28,6 @@ namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
 
-using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -334,7 +333,7 @@ inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std:
 
 inline RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         const mcsat::Bookkeeping& data) {
-    std::vector<carl::RealAlgebraicNumber<smtrat::Rational>> point;
+    std::vector<RAN> point;
     for (const auto variable : data.assignedVariables()) {
         const auto& modelValue = data.model().evaluated(variable);
         assert(modelValue.isRational() || modelValue.isRAN());

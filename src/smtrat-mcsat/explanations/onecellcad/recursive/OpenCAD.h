@@ -37,7 +37,6 @@ namespace recursive {
 using UniPoly = carl::UnivariatePolynomial<smtrat::Rational>;
 using MultiPoly = carl::MultivariatePolynomial<smtrat::Rational>;
 using MultiCoeffUniPoly = carl::UnivariatePolynomial<MultiPoly>;
-using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANPoint = RealAlgebraicPoint<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 

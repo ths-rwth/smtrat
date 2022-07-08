@@ -27,7 +27,6 @@ namespace {
   using namespace smtrat::mcsat::onecellcad;
   using carl::Variable;
   using Poly = carl::MultivariatePolynomial<Rational>;
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 	using RANPoint = RealAlgebraicPoint<Rational>;
 
 struct VariableFixture {

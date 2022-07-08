@@ -13,8 +13,6 @@ namespace arithmetic {
 
 	
 class RootIndexer {
-public:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 private:
 	std::vector<RAN> mRoots;
 	std::map<RAN, std::size_t> mMap;

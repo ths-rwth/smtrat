@@ -17,7 +17,7 @@ private:
 	/**
 	 * Numbers of this RealAlgebraicPoint.
 	 */
-	std::vector<carl::RealAlgebraicNumber<Number>> mNumbers;
+	std::vector<carl::IntRepRealAlgebraicNumber<Number>> mNumbers;
 
 public:
 	/**
@@ -28,28 +28,28 @@ public:
   /**
    * Convert from a vector using its numbers in the same order as components.
    */
-	explicit RealAlgebraicPoint(const std::vector<carl::RealAlgebraicNumber<Number>>& v):
+	explicit RealAlgebraicPoint(const std::vector<carl::IntRepRealAlgebraicNumber<Number>>& v):
 		mNumbers(v)
 	{}
 
   /**
    * Convert from a vector using its numbers in the same order as components.
    */
-	explicit RealAlgebraicPoint(std::vector<carl::RealAlgebraicNumber<Number>>&& v):
+	explicit RealAlgebraicPoint(std::vector<carl::IntRepRealAlgebraicNumber<Number>>&& v):
 		mNumbers(std::move(v))
 	{}
 
   /**
    * Convert from a list using its numbers in the same order as components.
    */
-	explicit RealAlgebraicPoint(const std::list<carl::RealAlgebraicNumber<Number>>& v):
+	explicit RealAlgebraicPoint(const std::list<carl::IntRepRealAlgebraicNumber<Number>>& v):
 		mNumbers(v.begin(), v.end())
 	{}
 
   /**
    * Convert from a initializer_list using its numbers in the same order as components.
    */
-	RealAlgebraicPoint(const std::initializer_list<carl::RealAlgebraicNumber<Number>>& v):
+	RealAlgebraicPoint(const std::initializer_list<carl::IntRepRealAlgebraicNumber<Number>>& v):
 		mNumbers(v.begin(), v.end())
 	{}
 
@@ -66,7 +66,7 @@ public:
    */
   RealAlgebraicPoint prefixPoint(size_t componentCount) const {
     assert(componentCount <= mNumbers.size());
-    std::vector<carl::RealAlgebraicNumber<Number>> copy(
+    std::vector<carl::IntRepRealAlgebraicNumber<Number>> copy(
     	mNumbers.begin(), std::next(mNumbers.begin(), componentCount));
     return RealAlgebraicPoint(std::move(copy));
   }
@@ -76,7 +76,7 @@ public:
    * point, thereby increasing its dimension by 1. The original point remains
    * untouched.
    */
-	RealAlgebraicPoint conjoin(const carl::RealAlgebraicNumber<Number>& r) {
+	RealAlgebraicPoint conjoin(const carl::IntRepRealAlgebraicNumber<Number>& r) {
 		RealAlgebraicPoint res = RealAlgebraicPoint(*this);
 		res.mNumbers.push_back(r);
 		return res;
@@ -85,7 +85,7 @@ public:
   /**
    * Retrieve the component of this point at the given index.
    */
-	const carl::RealAlgebraicNumber<Number>& operator[](std::size_t index) const {
+	const carl::IntRepRealAlgebraicNumber<Number>& operator[](std::size_t index) const {
 		assert(index < mNumbers.size());
 		return mNumbers[index];
 	}
@@ -93,7 +93,7 @@ public:
   /**
    * Retrieve the component of this point at the given index.
    */
-	carl::RealAlgebraicNumber<Number>& operator[](std::size_t index) {
+	carl::IntRepRealAlgebraicNumber<Number>& operator[](std::size_t index) {
 		assert(index < mNumbers.size());
 		return mNumbers[index];
 	}

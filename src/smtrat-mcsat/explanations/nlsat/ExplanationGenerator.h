@@ -91,7 +91,6 @@ namespace helper {
 
 class ExplanationGenerator {
 private:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 	struct ProjectionSettings: public cad::BaseSettings {	
 		static constexpr cad::Incrementality incrementality = cad::Incrementality::NONE;
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::ORDERED;

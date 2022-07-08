@@ -17,8 +17,6 @@ namespace arithmetic {
 using carl::operator<<;
 
 class AssignmentFinder_detail {
-public:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 private:
 	carl::Variable mVar;
 	const Model& mModel;

@@ -46,7 +46,7 @@ private:
     std::shared_ptr<datastructures::Projections> mProjections;
 
     // Current (partial) satisfying assignment
-    carl::Assignment<carl::RealAlgebraicNumber<Rational>> mCurrentAssignment;
+    carl::Assignment<RAN> mCurrentAssignment;
 
     // Current Covering Information, only contains partial coverings
     std::vector<LevelWiseInformation<Settings>> mCoveringInformation;
@@ -78,7 +78,7 @@ public:
         return mVariableOrdering.size();
     }
 
-    const carl::Assignment<carl::RealAlgebraicNumber<Rational>>& getCurrentAssignment() {
+    const carl::Assignment<RAN>& getCurrentAssignment() {
         return mCurrentAssignment;
     }
 
@@ -227,7 +227,7 @@ public:
                 intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
             } else {
                 // create copy of the assignment with mVariableOrdering[level] and following not present
-                carl::Assignment<carl::RealAlgebraicNumber<Rational>> assignment;
+                carl::Assignment<RAN> assignment;
                 for (std::size_t i = 0; i < level; i++) {
                     assignment[mVariableOrdering[i]] = mCurrentAssignment[mVariableOrdering[i]];
                 }
