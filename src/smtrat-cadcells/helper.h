@@ -2,7 +2,7 @@
 
 #include "common.h"
 
-namespace smtrat::cadcells::helper {
+namespace smtrat::cadcells::helper { // TODO remove (need to refactor NewCoveringModule first)
 
 /**
  * Find the index of the highest variable (wrt. the ordering in 'order') that occurs with positive degree in 'poly'.

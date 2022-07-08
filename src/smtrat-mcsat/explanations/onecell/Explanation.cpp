@@ -6,21 +6,35 @@ namespace smtrat::mcsat::onecell {
 
 namespace helper {
 
+// TODO make conversion part of carl:
 template<typename P>
 struct Conversion {};
 
 template<>
-struct Conversion<Poly> {
+struct Conversion<carl::ContextPolynomial<Rational>> {
     carl::Context m_context;
     Conversion(const carl::Context& context) : m_context(context) {}
-    Poly to(const Poly& p) { return p; }
-    Poly from(const Poly& p) { return p; }
-    Poly::RootType to(const Poly::RootType& r) { return r; }
-    Poly::RootType from(const Poly::RootType& r) { return r; }
-    carl::BasicConstraint<Poly> to(const carl::BasicConstraint<Poly>& c) { return c; }
-    carl::BasicConstraint<Poly> from(const carl::BasicConstraint<Poly>& c) { return c; }
-    carl::VariableComparison<Poly> to(const carl::VariableComparison<Poly>& c) { return c; }
-    carl::VariableComparison<Poly> from(const carl::VariableComparison<Poly>& c) { return c; }
+    carl::ContextPolynomial<Rational> to(const Poly& p) { return carl::ContextPolynomial<Rational>(m_context, p); }
+    Poly from(const carl::ContextPolynomial<Rational>& p) { return p.as_multivariate(); }
+    carl::ContextPolynomial<Rational>::RootType to(const Poly::RootType& r) { return r; }
+    Poly::RootType from(const carl::ContextPolynomial<Rational>::RootType& r) { return r; }
+    carl::BasicConstraint<carl::ContextPolynomial<Rational>> to(const carl::BasicConstraint<Poly>& c) {
+        return carl::BasicConstraint<carl::ContextPolynomial<Rational>>(to(c.lhs()), c.relation());
+    }
+    carl::BasicConstraint<Poly> from(const carl::BasicConstraint<carl::ContextPolynomial<Rational>>& c) {
+        return carl::BasicConstraint<Poly>(from(c.lhs()), c.relation());
+    }
+    carl::VariableComparison<carl::ContextPolynomial<Rational>> to(const carl::VariableComparison<Poly>& c) {
+        auto k = std::holds_alternative<carl::MultivariateRoot<Poly>>(c.value()) ? std::get<carl::MultivariateRoot<Poly>>(c.value()).k() : 1;
+        carl::MultivariateRoot<carl::ContextPolynomial<Rational>> mv(to(defining_polynomial(c)), k, c.var());
+        return carl::VariableComparison<carl::ContextPolynomial<Rational>>(c.var(), mv, c.relation(), c.negated());
+    }
+    carl::VariableComparison<Poly> from(const carl::VariableComparison<carl::ContextPolynomial<Rational>>& c) {
+        assert(std::holds_alternative<carl::MultivariateRoot<carl::ContextPolynomial<Rational>>>(c.value()));
+        const auto& m = std::get<carl::MultivariateRoot<carl::ContextPolynomial<Rational>>>(c.value());
+        carl::MultivariateRoot<Poly> mv(from(m.poly()), m.k(), m.var());
+        return carl::VariableComparison<Poly>(c.var(), mv, c.relation(), c.negated());
+    }
 };
 
 template<>
