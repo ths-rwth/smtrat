@@ -3,7 +3,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 #include <carl-arith/ran/ran.h>
-#include <carl-arith/poly/lp/LPPolynomial.h>
+#include <carl-arith/poly/libpoly/LPPolynomial.h>
 
 namespace smtrat::cadcells {
 

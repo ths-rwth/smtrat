@@ -7,7 +7,7 @@
 #include "polynomials.h"
 
 #include <carl-arith/poly/ctxpoly/Functions.h>
-#include <carl-arith/poly/lp/Functions.h>
+#include <carl-arith/poly/libpoly/Functions.h>
 
 namespace smtrat::cadcells::datastructures {
 
