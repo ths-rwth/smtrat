@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include "../helper.h"
 
 namespace smtrat::cadcells::algorithms {
 
