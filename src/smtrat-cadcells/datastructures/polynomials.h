@@ -1,7 +1,6 @@
 #pragma once
 
 #include "../common.h"
-#include "../helper.h"
 #include <smtrat-common/smtrat-common.h>
 #include <carl-common/memory/IDPool.h>
 
@@ -32,20 +31,19 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
     return os;
 }
 
-// TODO later: make polynomials univariate
-
 /**
  * A pool for polynomials.
  * 
  * The polynomials are stored in a table, that is, a list of lists of polynomials of a given level.
  */
 class PolyPool {
+    Polynomial::ContextType m_context;
     const VariableOrdering& m_var_order;
 
-    // TODO later: safe memory
+    // TODO later: safe memory with boost::intrusive
     // std::vector<carl::IDPool> m_id_pools;
-    std::vector<std::vector<Poly>> m_polys;
-    std::vector<std::map<Poly, size_t>> m_poly_ids;
+    std::vector<std::vector<Polynomial>> m_polys;
+    std::vector<std::map<Polynomial, size_t>> m_poly_ids;
 
     inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
     inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
@@ -60,8 +58,8 @@ public:
      * 
      * @param var_order The variable ordering determining polynomial levels.
      */
-    PolyPool(const VariableOrdering& var_order) : m_var_order(var_order), negative_poly(-1), zero_poly(0), positive_poly(1) {
-        for (size_t i = 0; i < var_order.size(); i++) {
+    PolyPool(const Polynomial::ContextType& context) : m_context(context), m_var_order(context.variable_ordering()), negative_poly(Polynomial(m_context, -1)), zero_poly(Polynomial(m_context, 0)), positive_poly(Polynomial(m_context, 1)) {
+        for (size_t i = 0; i < m_var_order.size(); i++) {
             // m_id_pools.emplace_back();
             m_polys.emplace_back();
             m_poly_ids.emplace_back();
@@ -71,11 +69,11 @@ public:
     const VariableOrdering& var_order() const { return m_var_order; }
 
     PolyRef insert(const Polynomial& poly) {
-        auto npoly = poly.normalize();
+        auto npoly = poly.normalized();
         PolyRef ref;
-        ref.level = helper::level_of(m_var_order, npoly);
+        ref.level = carl::level_of(npoly);
         if (ref.level == 0) {
-            assert(poly.is_constant());
+            assert(carl::is_constant(poly));
             if (carl::is_zero(poly)) return zero_poly_ref();
             else if (carl::is_negative(poly.constant_part())) return negative_poly_ref();
             else return positive_poly_ref();
@@ -113,8 +111,8 @@ public:
     }
 
     bool known(const Polynomial& poly) const {
-        auto npoly = poly.normalize();
-        auto level = helper::level_of(m_var_order, npoly);
+        auto npoly = poly.normalized();
+        auto level = carl::level_of(npoly);
         auto res = m_poly_ids[level-1].find(npoly);
         return res != m_poly_ids[level-1].end();
     }

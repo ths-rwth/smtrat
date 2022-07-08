@@ -17,7 +17,6 @@
 #include "NewCoveringSettings.h"
 
 #include <smtrat-cadcells/algorithms/unsat_intervals.h>
-#include <smtrat-cadcells/helper.h>
 
 namespace smtrat {
 
@@ -30,14 +29,14 @@ class Backend {
     using PropSet = typename operators::PropertiesSet<Settings::op>::type;
 
 private:
-    // Variable Ordering
-    std::vector<carl::Variable> mVariableOrdering;
+    // Context
+    std::shared_ptr<cadcells::Polynomial::ContextType> mContext;
 
     // Ordered List of unique unknown Constraints (flat_set by level)
-    std::vector<boost::container::flat_set<ConstraintT>> mUnknownConstraints;
+    std::vector<boost::container::flat_set<cadcells::Constraint>> mUnknownConstraints;
 
     // Ordered List of unique known Constraints (flat_set by level)
-    std::vector<boost::container::flat_set<ConstraintT>> mKnownConstraints;
+    std::vector<boost::container::flat_set<cadcells::Constraint>> mKnownConstraints;
 
     // Cache for Polynomials
     std::shared_ptr<datastructures::PolyPool> mPool;
@@ -52,7 +51,7 @@ private:
     std::vector<LevelWiseInformation<Settings>> mCoveringInformation;
 
     // Mapping from derivation to the constraints which resulted in its creation
-    std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>> mDerivationToConstraint;
+    std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<cadcells::Constraint>> mDerivationToConstraint;
 
 public:
     // Init with empty variable ordering
@@ -62,10 +61,10 @@ public:
 
     // Set Variable Ordering and init cache helpers
     void init(std::vector<carl::Variable>& varOrdering) {
-        mVariableOrdering = varOrdering;
+        mContext = std::make_shared<cadcells::Polynomial::ContextType>(varOrdering);
 
         // init Helpers
-        mPool = std::make_shared<datastructures::PolyPool>(mVariableOrdering);
+        mPool = std::make_shared<datastructures::PolyPool>(mContext);
         mProjections = std::make_shared<datastructures::Projections>(*mPool);
 
         // Reserve space for the data structures
@@ -75,7 +74,7 @@ public:
     }
 
     std::size_t dimension() {
-        return mVariableOrdering.size();
+        return mContext->variable_ordering().size();
     }
 
     const carl::Assignment<RAN>& getCurrentAssignment() {
@@ -102,18 +101,18 @@ public:
     }
 
     // Adds a constraint into the right level
-    void addConstraint(const ConstraintT& constraint) {
+    void addConstraint(const cadcells::Constraint& constraint) {
         // We can substract 1 from level because we dont have constant polynomials
-        std::size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
+        std::size_t level = carl::level_of(constraint.lhs()) - 1;
         SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
         mUnknownConstraints[level].insert(constraint);
     }
 
     // Adds a constraint into the right level, already given the level
-    void addConstraint(const size_t level, const std::vector<ConstraintT>&& constraints) {
+    void addConstraint(const size_t level, const std::vector<cadcells::Constraint>&& constraints) {
         SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraints : " << constraints << " on level " << level);
         for (const auto& constraint : constraints) {
-            assert((helper::level_of(mVariableOrdering, constraint.lhs()) - 1) == level);
+            assert((carl::level_of(constraint.lhs()) - 1) == level);
             mUnknownConstraints[level].insert(std::move(constraint));
         }
     }
@@ -135,7 +134,7 @@ public:
     }
 
     void updateAssignment(std::size_t level) {
-        mCurrentAssignment[mVariableOrdering[level]] = mCoveringInformation[level].getSampleOutside();
+        mCurrentAssignment[mContext->variable_ordering()[level]] = mCoveringInformation[level].getSampleOutside();
     }
 
     // Delete all stored data with level higher or equal
@@ -147,7 +146,7 @@ public:
             // Resetting the covering data
             mCoveringInformation[i].clear();
             // Resetting the assignment
-            mCurrentAssignment.erase(mVariableOrdering[i]);
+            mCurrentAssignment.erase(mContext->variable_ordering()[i]);
             // Resetting the known constraints
             for (const auto& constraint : mKnownConstraints[i]) {
                 mUnknownConstraints[i].insert(std::move(constraint));
@@ -161,9 +160,9 @@ public:
     }
 
     // Return true if the constraint to remove was used in the current covering
-    void removeConstraint(const ConstraintT& constraint) {
+    void removeConstraint(const cadcells::Constraint& constraint) {
         // We can substract 1 from level because we dont have constant polynomials
-        std::size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
+        std::size_t level = carl::level_of(constraint.lhs()) - 1;
         SMTRAT_LOG_DEBUG("smtrat.covering", "Removing Constraint : " << constraint << " on level " << level);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Known Constraints: " << mKnownConstraints);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Unknown Constraints: " << mUnknownConstraints);
@@ -221,22 +220,22 @@ public:
         SMTRAT_LOG_DEBUG("smtrat.covering", "Processing unknown constraints on level " << level << " with " << mUnknownConstraints[level].size() << " constraints");
         SMTRAT_LOG_DEBUG("smtrat.covering", "Need to prune the assignment: " << prune_assignment);
 
-        for (const ConstraintT& constraint : mUnknownConstraints[level]) {
+        for (const cadcells::Constraint& constraint : mUnknownConstraints[level]) {
             std::vector<datastructures::SampledDerivationRef<PropSet>> intervals;
             if (prune_assignment) {
                 intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
             } else {
-                // create copy of the assignment with mVariableOrdering[level] and following not present
+                // create copy of the assignment with mContext->variable_ordering()[level] and following not present
                 carl::Assignment<RAN> assignment;
                 for (std::size_t i = 0; i < level; i++) {
-                    assignment[mVariableOrdering[i]] = mCurrentAssignment[mVariableOrdering[i]];
+                    assignment[mContext->variable_ordering()[i]] = mCurrentAssignment[mContext->variable_ordering()[i]];
                 }
                 intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, assignment);
             }
             for (const auto& interval : intervals) {
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
                 // Insert into the derivation to constraint map
-                mDerivationToConstraint.insert(std::make_pair(interval, std::vector<ConstraintT>{constraint}));
+                mDerivationToConstraint.insert(std::make_pair(interval, std::vector<cadcells::Constraint>{constraint}));
                 mCoveringInformation[level].addDerivation(std::move(interval));
             }
         }
@@ -247,7 +246,7 @@ public:
 
     Answer getUnsatCover(const std::size_t level) {
         SMTRAT_LOG_DEBUG("smtrat.covering", " getUnsatCover for level: " << level << " / " << dimension());
-        SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mVariableOrdering);
+        SMTRAT_LOG_DEBUG("smtrat.covering", " Variable Ordering: " << mContext->variable_ordering());
         SMTRAT_LOG_DEBUG("smtrat.covering", " Unknown Constraints: " << mUnknownConstraints[level]);
         SMTRAT_LOG_DEBUG("smtrat.covering", " Known Constraints: " << mKnownConstraints[level]);
         SMTRAT_LOG_DEBUG("smtrat.covering", " Current Covering Information: " << mCoveringInformation[level]);
@@ -256,7 +255,7 @@ public:
         // incase of incremental solving, we need to check if the current level is already assigned
         // if it is assigned, the current assignment is satisfying all unknown constraints and we dont need to process the unknown constraints
         // If we know that the assignment is still satisfying we also dont need to recalculate the (partial!) covering.
-        if (mCurrentAssignment.find(mVariableOrdering[level]) == mCurrentAssignment.end()) {
+        if (mCurrentAssignment.find(mContext->variable_ordering()[level]) == mCurrentAssignment.end()) {
             processUnknownConstraints(level, false);
             SMTRAT_LOG_DEBUG("smtrat-covering", "Computing Covering represenentation")
             bool invalidates = mCoveringInformation[level].computeCovering();
@@ -265,7 +264,7 @@ public:
                 resetStoredData(level + 1);
             }
         } else {
-            SMTRAT_LOG_DEBUG("smtrat.covering", "Current variable " << mVariableOrdering[level] << " is assigned, skipping processing of new constraints and computing covering representation");
+            SMTRAT_LOG_DEBUG("smtrat.covering", "Current variable " << mContext->variable_ordering()[level] << " is assigned, skipping processing of new constraints and computing covering representation");
             // Possible in the case that SAT was reported before and constraints were removed and invalidated the current partial covering
             if (mCoveringInformation[level].isUnknownCovering()) {
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Covering was invalidated, recomputing covering representation and processing all unknown constraints");
@@ -288,7 +287,7 @@ public:
         while (mCoveringInformation[level].isPartialCovering()) {
             SMTRAT_LOG_DEBUG("smtrat.covering", "Sample outside " << mCoveringInformation[level].getSampleOutside());
             updateAssignment(level);
-            if (mCurrentAssignment.size() == mVariableOrdering.size()) {
+            if (mCurrentAssignment.size() == mContext->variable_ordering().size()) {
                 // SAT
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Found satisfying variable assignment: " << mCurrentAssignment);
                 return Answer::SAT;
@@ -313,7 +312,7 @@ public:
                 mCoveringInformation[level].addDerivation(std::move(new_derivation.value()));
 
                 // delete the now obsolete data
-                mCurrentAssignment.erase(mVariableOrdering[level]);
+                mCurrentAssignment.erase(mContext->variable_ordering()[level]);
                 mCoveringInformation[level + 1].clear();
                 setConstraintsUnknown(level + 1);
 
