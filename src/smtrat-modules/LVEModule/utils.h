@@ -12,7 +12,7 @@ Rational evaluate(carl::Variable v, const Poly& p, const Rational& r) {
 	assert(carl::substitute(p, v, Poly(r)).is_constant());
 	return carl::substitute(p, v, Poly(r)).constant_part();
 }
-carl::Sign sgn(carl::Variable v, const Poly& p, const RAN<Rational>& r) {
+carl::Sign sgn(carl::Variable v, const Poly& p, const RAN& r) {
 	Model m;
 	m.assign(v, r);
 	auto res = carl::evaluate(p, m);
@@ -43,7 +43,7 @@ ModelValue get_non_root(carl::Variable v, const Poly& p) {
 }
 
 std::optional<ModelValue> get_value_for_sgn(carl::Variable v, const Poly& p, carl::Sign sign) {
-	RAN<Rational> test;
+	RAN test;
 	if (sgn(v, p, test) == sign) {
 		return ModelValue(test);
 	}
