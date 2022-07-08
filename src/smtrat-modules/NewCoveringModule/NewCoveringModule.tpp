@@ -79,11 +79,11 @@ size_t NewCoveringModule<Settings>::addConstraintsSAT() {
     std::size_t lowestLevelWithUnsatisfiedConstraint = mVariableOrdering.size() + 1;
     bool foundUnsatisfiedConstraint = false;
 
-    std::map<size_t, std::vector<ConstraintT>> constraintsByLevel;
+    std::map<size_t, std::vector<cadcells::Constraint>> constraintsByLevel;
 
     for (const auto& formula : mUnknownConstraints) {
         ConstraintT constraint = formula.constraint();
-        size_t level = helper::level_of(mVariableOrdering, constraint.lhs()) - 1;
+        size_t level = carl::level_of(constraint.lhs()) - 1;
         constraintsByLevel[level].push_back(std::move(constraint));
     }
     mUnknownConstraints.clear();
