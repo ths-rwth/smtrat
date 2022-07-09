@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl-arith/ran/real_roots.h>
+
 #include <carl-arith/poly/umvpoly/functions/Substitution.h>
 #include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-common/model.h>
