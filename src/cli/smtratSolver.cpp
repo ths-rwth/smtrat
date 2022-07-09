@@ -92,7 +92,7 @@ void setup_logging() {
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
 		//("smtrat.mcsat.assignmentfinder", carl::logging::LogLevel::LVL_TRACE)
 		//("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
-		("carl.ran.realroots", carl::logging::LogLevel::LVL_TRACE)
+		//("carl.ran.realroots", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
