@@ -2,8 +2,7 @@
 
 #include "../common.h"
 #include <smtrat-common/smtrat-common.h>
-#include <carl-common/memory/IDPool.h>
-
+#include <boost/intrusive/set.hpp>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -37,13 +36,30 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
  * The polynomials are stored in a table, that is, a list of lists of polynomials of a given level.
  */
 class PolyPool {
+    struct Element : public boost::intrusive::set_base_hook<> {
+        Polynomial poly;
+        size_t id;
+        Element(Polynomial&& p, size_t i) : poly(p), id(i) {}
+        friend bool operator<(const Element& e1, const Element& e2) {
+            return e1.poly < e2.poly;
+        }
+    };
+    struct element_less {
+        bool operator()(const Polynomial& poly, const Element& element) const { 
+            return poly < element.poly;
+        }
+        bool operator()(const Element& element, const Polynomial& poly) const {
+            return element.poly < poly;
+        }
+    };
+
+    typedef boost::intrusive::set<Element> ElementSet;
+
     Polynomial::ContextType m_context;
     const VariableOrdering& m_var_order;
 
-    // TODO later: safe memory with boost::intrusive
-    // std::vector<carl::IDPool> m_id_pools;
-    std::vector<std::vector<Polynomial>> m_polys;
-    std::vector<std::map<Polynomial, size_t>> m_poly_ids;
+    std::vector<std::vector<std::unique_ptr<Element>>> m_polys;
+    std::vector<ElementSet> m_poly_ids;
 
     inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
     inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
@@ -60,7 +76,6 @@ public:
      */
     PolyPool(const Polynomial::ContextType& context) : m_context(context), m_var_order(context.variable_ordering()), negative_poly(Polynomial(m_context, -1)), zero_poly(Polynomial(m_context, 0)), positive_poly(Polynomial(m_context, 1)) {
         for (size_t i = 0; i < m_var_order.size(); i++) {
-            // m_id_pools.emplace_back();
             m_polys.emplace_back();
             m_poly_ids.emplace_back();
         }
@@ -79,13 +94,14 @@ public:
             else return positive_poly_ref();
         }
         assert(ref.level <= m_polys.size() && ref.level > 0);
-        auto res = m_poly_ids[ref.level-1].find(npoly);
-        if (res == m_poly_ids[ref.level-1].end()) {
-            ref.id = m_polys[ref.level-1].size(); // = m_id_pools[ref.level-1].get();
-            m_poly_ids[ref.level-1].emplace(npoly, ref.id);
-            m_polys[ref.level-1].push_back(npoly); // [ref.id] = npoly;
+        typename ElementSet::insert_commit_data insert_data;
+        auto res = m_poly_ids[ref.level-1].insert_check(npoly, element_less(), insert_data);
+        if (!res.second) {
+            ref.id = res.first->id;
         } else {
-            ref.id = res->second;
+            ref.id = m_polys[ref.level-1].size();
+            m_polys[ref.level-1].push_back(std::make_unique<Element>(std::move(npoly), ref.id));
+            m_poly_ids[ref.level-1].insert_commit(*m_polys[ref.level-1].back(), insert_data);            
         }
         return ref;
     }
@@ -103,7 +119,7 @@ public:
             else return positive_poly;
         }
         assert(ref.id < m_polys[ref.level-1].size());
-        return m_polys[ref.level-1][ref.id];
+        return m_polys[ref.level-1][ref.id]->poly;
     }
 
     const Polynomial& operator()(const PolyRef& ref) const {
@@ -113,16 +129,15 @@ public:
     bool known(const Polynomial& poly) const {
         auto npoly = poly.normalized();
         auto level = carl::level_of(npoly);
-        auto res = m_poly_ids[level-1].find(npoly);
+        auto res = m_poly_ids[level-1].find(npoly, element_less());
         return res != m_poly_ids[level-1].end();
     }
 
     void clear_levels(size_t level) {
         assert(level > 0);
         assert(level <= m_polys.size());
-        // m_id_pools[level-1].clear();
-        m_polys.erase(m_polys.begin() + (level - 1), m_polys.end());
         m_poly_ids.erase(m_poly_ids.begin() + (level - 1), m_poly_ids.end());
+        m_polys.erase(m_polys.begin() + (level - 1), m_polys.end());
     }
 };
 
