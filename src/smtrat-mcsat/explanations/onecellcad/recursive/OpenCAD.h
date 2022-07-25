@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include <carl-arith/converter/CoCoAAdaptor.h>
+#include <carl-arith/poly/umvpoly/CoCoAAdaptor.h>
 #include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl-arith/poly/umvpoly/functions/Resultant.h>
 #include <carl-arith/poly/umvpoly/UnivariatePolynomial.h>
