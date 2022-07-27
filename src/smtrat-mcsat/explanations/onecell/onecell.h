@@ -35,9 +35,9 @@ constexpr bool use_delineation = false;
  * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
  * @return A set of constraints whose conjunction describes an unsatisfying cell that can be concluded from the input constraints.
  */
-std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::VariableOrdering& vars, const cadcells::Assignment& sample) {
-    SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << vars << ", " << sample);
-    cadcells::datastructures::PolyPool pool(vars);
+std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
+    SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
+    cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);
 
     // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak
