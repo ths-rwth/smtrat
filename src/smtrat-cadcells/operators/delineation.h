@@ -14,6 +14,7 @@ namespace smtrat::cadcells::operators::delineation {
 
 template<typename P>
 void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties::poly_irreducible_sgn_inv& prop) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
     if (deriv.proj().is_nullified(deriv.underlying_sample(), prop.poly)) {
         deriv.delin().add_poly_nullified(prop.poly);
     } else {
