@@ -20,7 +20,7 @@ class AssignmentFinder_detail {
 private:
 	carl::Variable mVar;
 	const Model& mModel;
-	RootIndexer mRI;
+	RootIndexer<typename Poly::RootType> mRI;
 	/**
 	 * Maps the input formula to the list of real roots and the simplified formula where mModel was substituted.
 	 */
