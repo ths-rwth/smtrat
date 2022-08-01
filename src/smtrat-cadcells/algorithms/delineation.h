@@ -24,16 +24,15 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
 
     for (const auto& c: cs) {
         SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
-        Poly p;
-        if (std::holds_alternative<Constraint>(c)) {
-            p = std::get<Constraint>(c).lhs();
-        } else if (std::holds_alternative<VariableComparison>(c)) {
-            p = std::get<VariableComparison>(c).defining_polynomial();
-        } else {
-            assert(false);
-            return std::nullopt;
-        }
-        assert(cadcells::helper::level_of(vars, p) == sample.size()+1);
+        const Polynomial& p = [&](){
+            if (std::holds_alternative<Constraint>(c)) {
+                return std::get<Constraint>(c).lhs();
+            } else {
+                assert(std::holds_alternative<VariableComparison>(c));
+                return carl::defining_polynomial(std::get<VariableComparison>(c));
+            }
+        }();
+        assert(carl::level_of(p) == sample.size()+1);
         deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(p) });
     }
     if (!operators::project_basic_properties<op>(*deriv)) return std::nullopt;

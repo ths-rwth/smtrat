@@ -44,6 +44,8 @@ using FormulasMultiT = std::multiset<FormulaT>;
 
 using RationalAssignment = carl::Assignment<Rational>;
 
+using RAN = carl::IntRepRealAlgebraicNumber<Rational>;
+
 // Pair of priority and module id (within the respective strategy graph)
 using thread_priority = std::pair<std::size_t, std::size_t>;
 

@@ -15,7 +15,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Include own macros.
 include(macros)
 
-set_version(22 04)
+set_version(22 06)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")

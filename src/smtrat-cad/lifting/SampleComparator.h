@@ -25,16 +25,16 @@ namespace sample_compare {
 	}
 	template<typename It>
 	auto get(const It& it, size) {
-		return it->value().size();
+		return carl::size(it->value());
 	}
 	template<typename It>
 	auto get(const It& it, absvalue) {
-		return it->value().abs();
+		return carl::abs(it->value());
 	}
 	template<typename It>
 	auto get(const It& it, type) {
 		if (!it->value().is_numeric()) return 0;
-		if (!it->value().is_integral()) return 1;
+		if (!carl::is_integer(it->value())) return 1;
 		return 2;
 	}
 
@@ -105,8 +105,8 @@ namespace sample_compare {
 			return res;
 		}
 		bool compare(const Iterator& lhs, const Iterator& rhs) const {
-			bool l1 = lhs->value().is_integral();
-			bool r1 = rhs->value().is_integral();
+			bool l1 = carl::is_integer(lhs->value());
+			bool r1 = carl::is_integer(rhs->value());
 			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Int " << r1);
 			if (l1 != r1) {
 				return r1;
@@ -117,14 +117,14 @@ namespace sample_compare {
 			if (l2 != r2) {
 				return r2;
 			}
-			std::size_t l3 = lhs->value().size();
-			std::size_t r3 = rhs->value().size();
+			std::size_t l3 = carl::size(lhs->value());
+			std::size_t r3 = carl::size(rhs->value());
 			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
 			if (l3 != r3) {
 				return l3 > r3;
 			}
-			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Absolute " << (lhs->value().abs() >= rhs->value().abs()));
-			if (lhs->value().abs() != rhs->value().abs()) return lhs->value().abs() >= rhs->value().abs();
+			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Absolute " << (carl::abs(lhs->value()) >= carl::abs(rhs->value())));
+			if (carl::abs(lhs->value()) != carl::abs(rhs->value())) return carl::abs(lhs->value()) >= carl::abs(rhs->value());
 			return lhs < rhs;
 		}
 	};

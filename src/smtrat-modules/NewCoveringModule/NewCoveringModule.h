@@ -50,7 +50,7 @@ private:
     Answer mLastAnswer = Answer::UNKNOWN;
 
 	// Contains the last assignment which satisfied all the given known constraints (empty otherwise)
-	carl::Assignment<carl::RealAlgebraicNumber<Rational>> mLastAssignment;
+	carl::Assignment<RAN> mLastAssignment;
 
     // The actual algorithm
     Backend<Settings> backend;

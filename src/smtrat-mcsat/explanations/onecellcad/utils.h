@@ -28,7 +28,6 @@ namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
 
-using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -173,7 +172,7 @@ inline std::vector<TagPoly> nonConstIrreducibleFactors(
         InvarianceType tag) {
 
     std::vector<TagPoly> factors;
-    for (const Poly& factor : carl::irreducibleFactors(poly, false)) {
+    for (const Poly& factor : carl::irreducible_factors(poly, false)) {
         factors.emplace_back(TagPoly{tag, factor, *levelOf(variableOrder, factor)}); // inherit poly's tag
         //SMTRAT_LOG_DEBUG("smtrat.cad", "factor " << factor);
         assert(!factor.is_constant());
@@ -334,7 +333,7 @@ inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std:
 
 inline RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         const mcsat::Bookkeeping& data) {
-    std::vector<carl::RealAlgebraicNumber<smtrat::Rational>> point;
+    std::vector<RAN> point;
     for (const auto variable : data.assignedVariables()) {
         const auto& modelValue = data.model().evaluated(variable);
         assert(modelValue.isRational() || modelValue.isRAN());
@@ -504,7 +503,7 @@ public:
 
         const carl::Variable mainVariable = variableOrder[polyLevel];
 
-        return carl::ran::real_roots(carl::to_univariate_polynomial(poly, mainVariable), prefixPointToStdMap(polyLevel)).is_nullified();
+        return carl::real_roots(carl::to_univariate_polynomial(poly, mainVariable), prefixPointToStdMap(polyLevel)).is_nullified();
     }
 
     bool isPointRootOfPoly(

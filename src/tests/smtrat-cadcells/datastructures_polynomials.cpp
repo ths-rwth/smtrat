@@ -4,7 +4,9 @@
 
 TEST(smtrat_cadcells, datastructures_polynomials)
 {
-	smtrat::Poly poly(2);
-	smtrat::cadcells::datastructures::PolyPool pool({});
-	ASSERT_EQ(pool(pool(poly)), smtrat::Poly(1));
+	smtrat::cadcells::VariableOrdering vrs;
+	smtrat::cadcells::Polynomial::ContextType ctx(vrs);
+	smtrat::cadcells::Polynomial poly(ctx, 2);
+	smtrat::cadcells::datastructures::PolyPool pool(ctx);
+	ASSERT_EQ(pool(pool(poly)), poly);
 }

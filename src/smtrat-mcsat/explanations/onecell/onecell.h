@@ -28,7 +28,7 @@ constexpr auto op = cadcells::operators::op::mccallum_filtered;
 constexpr bool use_delineation = false; 
 
 /**
- * An MCAST-style single cell explanation function.
+ * An MCSAT-style single cell explanation function.
  * 
  * A set of constraints is called infeasible w.r.t. an assignment if the defining polynomials are univariate under the sample and there does not exists a value for the unassigned variable that satisfies all constraints.
  * 
@@ -38,9 +38,9 @@ constexpr bool use_delineation = false;
  * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
  * @return A set of constraints whose conjunction describes an unsatisfying cell that can be concluded from the input constraints.
  */
-std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::VariableOrdering& vars, const cadcells::Assignment& sample) {
-    SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << vars << ", " << sample);
-    cadcells::datastructures::PolyPool pool(vars);
+std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
+    SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
+    cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);
 
     // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak

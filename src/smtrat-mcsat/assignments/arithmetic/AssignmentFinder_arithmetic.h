@@ -6,7 +6,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/smtrat-mcsat.h>
 #include <carl-formula/model/Assignment.h>
-#include <carl-arith/ran/real_roots.h>
+
 
 #include <algorithm>
 
@@ -17,8 +17,6 @@ namespace arithmetic {
 using carl::operator<<;
 
 class AssignmentFinder_detail {
-public:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 private:
 	carl::Variable mVar;
 	const Model& mModel;
@@ -58,13 +56,13 @@ private:
 		const auto& r = mRI.sampleFrom(rhs);
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", l << " (" << mRI.is_root(lhs) << ") < " << r << " (" << mRI.is_root(rhs) << ") ?");
 		// this is more like z3, but performs worse:
-		// if ((l.is_integral() || l.is_numeric()) && (r.is_integral() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return !mRI.is_root(lhs);
+		// if ((l.is_integer() || l.is_numeric()) && (r.is_integer() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return !mRI.is_root(lhs);
 		// even the opposite performs better (but not better than not respecting samples being a root):
-		// if ((l.is_integral() || l.is_numeric()) && (r.is_integral() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return mRI.is_root(lhs);
-		if (l.is_integral() != r.is_integral()) return l.is_integral();
+		// if ((l.is_integer() || l.is_numeric()) && (r.is_integer() || r.is_numeric()) && (mRI.is_root(lhs) != mRI.is_root(rhs))) return mRI.is_root(lhs);
+		if (carl::is_integer(l) != carl::is_integer(r)) return carl::is_integer(l);
 		if (l.is_numeric() != r.is_numeric()) return l.is_numeric();
-		if (l.size() != r.size()) return l.size() < r.size();
-		if (l.abs() != r.abs()) return l.abs() < r.abs();
+		if (carl::size(l) != carl::size(r)) return carl::size(l) < carl::size(r);
+		if (carl::abs(l) != carl::abs(r)) return carl::abs(l) < carl::abs(r);
 		return l < r;
 	}
 	

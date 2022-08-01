@@ -294,7 +294,7 @@ public:
 	ShrinkResult shrinkCellWithIrreducibleFactorsOfPoly(
 		const TagPoly& poly,
 		CADCell& cell) {
-		for (const auto& factor : carl::irreducibleFactors(poly.poly, false)) {
+		for (const auto& factor : carl::irreducible_factors(poly.poly, false)) {
 			SMTRAT_LOG_TRACE("smtrat.cad", "Shrink with irreducible factor: Poly: "
 											   << poly.poly << " Factor: " << factor);
 			if (factor.is_constant())
