@@ -58,6 +58,7 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
     } else {
         derivation = cadcells::algorithms::get_level_covering<op, covering_heuristic>(proj, constraints, sample);
     }
+    SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
     if (!derivation) {
         return std::nullopt;
     }
@@ -65,6 +66,7 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
     std::vector<cadcells::Atom> description;
     while ((*derivation)->level() > 0) {
         auto lvl = cadcells::algorithms::get_interval<op, cell_heuristic>(*derivation);
+        SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
         if (!lvl) {
             return std::nullopt;
         }

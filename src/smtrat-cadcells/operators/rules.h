@@ -19,11 +19,9 @@ void root_well_def(datastructures::SampledDerivation<P>& deriv, datastructures::
 
     if (root.index != 1 && root.index != deriv.proj().num_roots(deriv.sample(), root.poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> well_def(" << root << ", " << deriv.sample() << ") <= proj_del(" << root.poly << ") && 0 < " << root << ".index < |real_roots(" << root.poly << "(" << deriv.sample() << "))|");
-    }
-    else if (deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) {
+    } else if (deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> well_def(" << root << ", " << deriv.sample() << ") <= proj_del(" << root.poly << ") && ldcf(" << root.poly << ")(" << deriv.sample() << ") = 0");
-    }
-    else {
+    } else {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> well_def(" << root << ", " << deriv.sample() << ") <= proj_del(" << root.poly << ") && sgn_inv(ldcf(" << root.poly << "))");
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(root.poly) });
     }
@@ -33,11 +31,9 @@ template<typename P>
 bool is_trivial_root_well_def(datastructures::SampledDerivation<P>& deriv, datastructures::IndexedRoot root) {
     if (root.index != 1 && root.index != deriv.proj().num_roots(deriv.sample(), root.poly)) {
         return true;
-    }
-    else if (deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) {
+    } else if (deriv.proj().is_ldcf_zero(deriv.sample(), root.poly)) {
         return true;
-    }
-    else {
+    } else {
         return false;
     }
 }
@@ -52,19 +48,19 @@ bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::
     } else if (deriv.proj().has_const_coeff(poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= " << poly << " has const coeff");
     } else if (!deriv.proj().is_ldcf_zero(deriv.sample(), poly) && deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) } )) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= ldcf(" << poly << ")(" << deriv.sample() << ")!=0 && sgn_inv(ldcf(" << poly << "))");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= ldcf(" << poly << ")(" << deriv.sample() << ")!=0 && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "])");
     } else if (
         deriv.proj().know_disc(poly) && !deriv.proj().is_disc_zero(deriv.sample(), poly) &&
         (deriv.contains(properties::poly_sgn_inv{ deriv.proj().disc(poly) }) || deriv.contains(properties::poly_ord_inv{ deriv.proj().disc(poly) }))
     ) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= disc(" << poly << ")(" << deriv.sample() << ")!=0 && sgn_inv(disc(" << poly << "))");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= disc(" << poly << ")(" << deriv.sample() << ")!=0 && sgn_inv(disc(" << poly << ") [" << deriv.proj().disc(poly) << "])");
     } else {
         auto coeff = deriv.proj().simplest_nonzero_coeff(deriv.sample(), poly, [&](const Polynomial& a, const Polynomial& b) {
             if (deriv.proj().known(a) && deriv.contains( properties::poly_sgn_inv { deriv.proj().polys()(a)} )) return true;
             if (deriv.proj().known(b) && deriv.contains( properties::poly_sgn_inv { deriv.proj().polys()(b)} )) return true;
             return carl::level_of(a) < carl::level_of(b) || (carl::level_of(a) == carl::level_of(b) && a.degree() < b.degree());
         });
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= sgn_inv(" << coeff << ") && " << coeff << " is coeff of " << poly << "");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "non_null(" << poly << ") <= sgn_inv(" << coeff << ") && " << coeff << " in coeff(" << poly << ")");
         deriv.insert(properties::poly_sgn_inv{ coeff });
     }
     return true;
@@ -73,8 +69,8 @@ bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::
 template<typename P>
 bool poly_pdel(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "proj_del(" << poly << ")");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly << ") [" << deriv.proj().disc(poly) << "]) && cell_connected(" << (poly.level-1) << ")");
     if (!poly_non_null(deriv, poly)) return false;
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly <<"))");
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
     deriv.insert(properties::cell_connected{ poly.level-1 });
     return true;
@@ -87,7 +83,7 @@ void poly_irrecubile_ord_inv(datastructures::SampledDerivation<P>& deriv, datast
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << " const");
     } else {
         if (deriv.proj().is_zero(deriv.sample(), poly)) {
-            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(" << poly << ")");
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(" << poly << ") && cell_connected(" << poly.level << ")");
             deriv.insert(properties::poly_pdel{ poly });
             deriv.insert(properties::cell_connected{ poly.level });
         } else {
@@ -117,7 +113,7 @@ void poly_irrecubile_ord_inv(datastructures::BaseDerivation<P>& deriv, datastruc
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << " const");
     } else {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(" << poly << ")");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(" << poly << ") && cell_connected(" << poly.level << ")");
         deriv.insert(properties::poly_pdel{ poly });
         deriv.insert(properties::cell_connected{ poly.level });
         deriv.insert(properties::poly_irreducible_sgn_inv{ poly });
@@ -164,7 +160,10 @@ void poly_irrecubile_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& de
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
     deriv.insert(properties::poly_pdel{ poly });
     if (deriv.proj().is_ldcf_zero(deriv.underlying_sample(), poly)) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "])");
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
+    } else {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= proj_del(" << poly << ")");
     }
 }
 
@@ -252,6 +251,7 @@ namespace filter_util {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
         auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
         for (const auto& poly : polys) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << proj.ldcf(poly) << "])");
             subderiv->insert(properties::poly_pdel{ poly });
             subderiv->insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
         }
@@ -268,7 +268,7 @@ namespace filter_util {
             delineation::delineate(*subderiv->delineated(), prop);
         }
         subderiv->delineate_cell();
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval end");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval end; got " << subderiv->cell());
 
         if (subderiv->cell().is_section()) {
             return carl::Interval<RAN>(subderiv->cell().lower()->first);
@@ -279,9 +279,10 @@ namespace filter_util {
 
     template<typename P>
     void filter_resultant(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly1, const datastructures::PolyRef poly2, std::function<bool(const RAN&)> filter_condition) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_resultant start");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_resultant start; resultant is " << deriv.proj().res(poly1, poly2));
         auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).sampled_ref();
         subderiv->insert(properties::poly_ord_inv{ deriv.proj().res(poly1, poly2) });
+        // TODO what happens if a level is skipped? should we jump to the resultant's level?
         for(const auto& prop : subderiv->template properties<properties::poly_ord_inv>()) {
             // this will make all polynomials projectively delineable.
             // TODO later: we need to defer making a poly projectively delineable to the point for the case we want to apply equational constraints 
@@ -299,7 +300,10 @@ namespace filter_util {
             if (filter_condition(entry.first)) {
                 for (const auto root : entry.second) {
                     deriv.insert(properties::root_inv{ root });
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "add " << properties::root_inv{ root });
                 }
+            } else {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "skip " << entry.first << " / " << entry.second);
             }
         }
 
@@ -352,6 +356,7 @@ bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, c
         const auto& poly1 = d1.first;
         for (const auto& d2 : d1.second) {
             const auto& poly2 = d2.first;
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
             assert(deriv.contains(properties::poly_pdel{ poly1 }));
             assert(deriv.contains(properties::poly_pdel{ poly2 }));
             auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
@@ -359,8 +364,10 @@ bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, c
             filter_util::filter_resultant(deriv, poly1, poly2, [&](const RAN& ran) {
                 Assignment ass = filter_util::projection_root(deriv, ran);
                 if (!delineable_interval->contains(ran)) {
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
                     return filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2);
                 } else {
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
                     assert(!deriv.proj().is_nullified(ass,poly1));
                     assert(!deriv.proj().is_nullified(ass,poly2));
                     auto roots1 = deriv.proj().real_roots(ass,poly1);
@@ -371,9 +378,11 @@ bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, c
                         assert(index1 <= roots1.size());
                         assert(index2 <= roots2.size());
                         if (roots1[index1-1] == roots2[index2-1]) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
                             return true;
                         }
                     }
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no common at " << ran);
                     return false;
                 }
             });
@@ -552,6 +561,7 @@ void root_inv(datastructures::SampledDerivation<P>& deriv, const datastructures:
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv(" << root << ")");
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
     // guaranteed by ordering
+    deriv.insert(properties::root_well_def{root});
 }
 
 template<typename P>

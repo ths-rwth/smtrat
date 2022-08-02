@@ -31,6 +31,7 @@ void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties:
 
 template<typename P>
 void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties::root_inv& prop) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
     assert(!deriv.proj().is_nullified(deriv.underlying_sample(), prop.root.poly));
     auto roots = deriv.proj().real_roots(deriv.underlying_sample(), prop.root.poly);
     assert(!roots.empty());
