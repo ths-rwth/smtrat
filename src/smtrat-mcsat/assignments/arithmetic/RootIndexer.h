@@ -11,14 +11,14 @@ namespace smtrat {
 namespace mcsat {
 namespace arithmetic {
 
-	
+template<typename RANT>
 class RootIndexer {
 private:
-	std::vector<RAN> mRoots;
-	std::map<RAN, std::size_t> mMap;
-	std::vector<RAN> mSamples;
+	std::vector<RANT> mRoots;
+	std::map<RANT, std::size_t> mMap;
+	std::vector<RANT> mSamples;
 public:	
-	void add(const std::vector<RAN>& list) {
+	void add(const std::vector<RANT>& list) {
 		mRoots.insert(mRoots.end(), list.begin(), list.end());
 	}
 	void process() {
@@ -34,30 +34,31 @@ public:
 			else mSamples.emplace_back(carl::sample_between(mRoots[n-1], mRoots[n]));
 			mSamples.emplace_back(mRoots[n]);
 		}
-		if (mRoots.empty()) mSamples.emplace_back(RAN(0));
+		if (mRoots.empty()) mSamples.emplace_back(RANT(0));
 		else mSamples.emplace_back(carl::sample_above(mRoots.back()));
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.rootindexer", "Samples: " << mSamples);
 	}
 	std::size_t size() const {
 		return mRoots.size();
 	}
-	std::size_t operator[](const RAN& ran) const {
+	std::size_t operator[](const RANT& ran) const {
 		auto it = mMap.find(ran);
 		assert(it != mMap.end());
 		return it->second;
 	}
-	const RAN& operator[](std::size_t n) const {
+	const RANT& operator[](std::size_t n) const {
 		assert(n < mRoots.size());
 		return mRoots[n];
 	}
-	const RAN& sampleFrom(std::size_t n) const {
+	const RANT& sampleFrom(std::size_t n) const {
 		return mSamples[n];
 	}
 	bool is_root(std::size_t n) const {
 		return (n % 2) == 1;
 	}
 };
-inline std::ostream& operator<<(std::ostream& os, const RootIndexer& ri) {
+template<typename RANT>
+inline std::ostream& operator<<(std::ostream& os, const RootIndexer<RANT>& ri) {
 	os << "Roots:" << std::endl;
 	for (std::size_t i = 0; i < ri.size(); i++) {
 		os << "\t" << i << ": " << ri[i] << std::endl;
