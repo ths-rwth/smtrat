@@ -125,14 +125,18 @@ public:
     }
 
     template<typename P>
-    friend bool operator==(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
-        return lhs.m_data == rhs.m_data;
-    }
+    friend bool operator==(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs);
     template<typename P>
-    friend bool operator<(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
-        return lhs.m_data < rhs.m_data;
-    }
+    friend bool operator<(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs);
 };
+template<typename P>
+bool operator==(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
+    return lhs.m_data == rhs.m_data;
+}
+template<typename P>
+bool operator<(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
+    return lhs.m_data < rhs.m_data;
+}
 
 /**
  * A BaseDerivation has a level and a set of properties of this level, and an underlying derivation representing the lower levels.
