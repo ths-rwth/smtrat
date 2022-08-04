@@ -135,7 +135,7 @@ public:
 
     void clear_levels(size_t level) {
         assert(level > 0);
-        assert(level <= m_polys.size());
+        if (level > m_polys.size()) return;
         m_poly_ids.erase(m_poly_ids.begin() + (level - 1), m_poly_ids.end());
         m_polys.erase(m_polys.begin() + (level - 1), m_polys.end());
     }
