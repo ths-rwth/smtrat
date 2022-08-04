@@ -27,6 +27,7 @@ struct DefaultSettings {
     constexpr static bool use_delineation = false; 
 };
 
+// TODO the mccallum_filtered oeprator is work in progress and atm incorrect
 struct FilteredSettings {
     // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
