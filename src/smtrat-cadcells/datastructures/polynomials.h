@@ -135,9 +135,21 @@ public:
 
     void clear_levels(size_t level) {
         assert(level > 0);
-        assert(level <= m_polys.size());
+        if (level > m_polys.size()) return;
         m_poly_ids.erase(m_poly_ids.begin() + (level - 1), m_poly_ids.end());
         m_polys.erase(m_polys.begin() + (level - 1), m_polys.end());
+    }
+
+    inline friend std::ostream& operator<<(std::ostream& os, const PolyPool& data) {
+        std::size_t lvl_id = 1;
+        for (const auto& lvl : data.m_polys) {
+            os << std::endl << lvl_id << ":: ";
+            for (const auto& p : lvl) {
+                os << p->id << ": " << p->poly << "; ";
+            }
+            lvl_id++;
+        }
+        return os;
     }
 };
 

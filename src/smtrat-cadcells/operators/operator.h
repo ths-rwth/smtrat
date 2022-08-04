@@ -34,11 +34,12 @@
  */
 namespace smtrat::cadcells::operators {
 
-enum op { mccallum };
+enum op { mccallum, mccallum_filtered };
 
 inline std::string get_name(op op){
     switch (op) {
         case op::mccallum: return "mccallum";
+        case op::mccallum_filtered: return "mccallum_filtered";
     }
 }
 
@@ -53,7 +54,7 @@ struct PropertiesSet;
  * Project basic properties, i.e. independent from any sample or delineation.
  */
 template <op Op>
-inline void project_basic_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);
+inline bool project_basic_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);
 
 /**
  * Delineate properties.
@@ -65,7 +66,7 @@ inline void delineate_properties(datastructures::DelineatedDerivation<typename P
  * Project cell properties that depend on a delineation.
  */
 template <op Op>
-inline void project_delineated_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv, bool cell_represents = true);
+inline bool project_delineated_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv, bool cell_represents = true);
 
 /**
  * Project cell properties.
@@ -79,12 +80,12 @@ inline bool project_cell_properties(datastructures::SampledDerivation<typename P
  * Project covering properties.
  */
 template <op Op>
-inline void project_covering_properties(datastructures::CoveringRepresentation<typename PropertiesSet<Op>::type>& repr);
+inline bool project_covering_properties(datastructures::CoveringRepresentation<typename PropertiesSet<Op>::type>& repr);
 
 /**
  * Project delineation properties.
  */
 template <op Op>
-inline void project_delineation_properties(datastructures::DelineationRepresentation<typename PropertiesSet<Op>::type>& repr);
+inline bool project_delineation_properties(datastructures::DelineationRepresentation<typename PropertiesSet<Op>::type>& repr);
 
 } 
