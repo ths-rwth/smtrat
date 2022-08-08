@@ -35,16 +35,10 @@
 namespace smtrat::cadcells::operators {
 
 enum op { mccallum, mccallum_filtered };
-
-inline std::string get_name(op op){
-    switch (op) {
-        case op::mccallum: return "mccallum";
-        case op::mccallum_filtered: return "mccallum_filtered";
-    }
-}
+static const char * OpStrings[] = { "mccallum", "mccallum_filtered" };
 
 inline std::ostream& operator<<(std::ostream& os, op op){
-    return os << get_name(op);
+    return os << OpStrings[op];
 }
 
 template <op Op>
