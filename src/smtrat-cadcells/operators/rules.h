@@ -470,7 +470,7 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& deriv, const
             boost::container::flat_set<datastructures::PolyRef> res_polys = poly_irreducible_sgn_inv_util::resultant_polys(poly, ordering);
             
             auto lower = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
-            auto upper = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
+            auto upper = poly_irreducible_sgn_inv_util::protect_upper(deriv, cell, ordering, poly, res_polys);
             
             if (!lower || !upper) {
                 deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
@@ -507,7 +507,7 @@ bool poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& der
             boost::container::flat_set<datastructures::PolyRef> res_polys = poly_irreducible_sgn_inv_util::resultant_polys(poly, ordering);
             
             auto lower = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
-            auto upper = poly_irreducible_sgn_inv_util::protect_lower(deriv, cell, ordering, poly, res_polys);
+            auto upper = poly_irreducible_sgn_inv_util::protect_upper(deriv, cell, ordering, poly, res_polys);
             
             if (!lower || !upper) {
                 deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
