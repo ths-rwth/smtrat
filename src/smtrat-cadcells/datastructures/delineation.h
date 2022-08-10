@@ -8,7 +8,23 @@
 
 namespace smtrat::cadcells::datastructures {
 
-using RootMap = std::map<RAN, std::vector<IndexedRoot>>;
+struct TaggedIndexedRoot {
+    IndexedRoot root;
+    bool is_inclusive;
+};
+inline std::ostream& operator<<(std::ostream& os, const TaggedIndexedRoot& data) {
+    os << data.root;
+    if (data.is_inclusive) os << "_incl";
+    return os;
+}
+bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
+    return lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive;
+}
+bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
+    return lhs.root < rhs.root || (lhs.root == rhs.root && lhs.is_inclusive < rhs.is_inclusive);
+}
+
+using RootMap = std::map<RAN, std::vector<TaggedIndexedRoot>>;
 
 /**
  * An interval of a delineation.
@@ -17,8 +33,12 @@ class DelineationInterval {
     RootMap::const_iterator m_lower;
     RootMap::const_iterator m_upper;
     RootMap::const_iterator m_end;
+    bool m_lower_strict;
+    bool m_upper_strict;
 
-    DelineationInterval(RootMap::const_iterator&& lower, RootMap::const_iterator&& upper, RootMap::const_iterator&& end) : m_lower(lower), m_upper(upper), m_end(end) {};
+    DelineationInterval(RootMap::const_iterator&& lower, RootMap::const_iterator&& upper, RootMap::const_iterator&& end, bool lower_strict, bool upper_strict) : m_lower(lower), m_upper(upper), m_end(end), m_lower_strict(lower_strict), m_upper_strict(upper_strict) {
+        assert(!is_section() || (!lower_strict && !upper_strict));
+    };
 
     friend class Delineation;
 
@@ -38,6 +58,9 @@ public:
     bool lower_unbounded() const {
         return m_lower == m_end;
     }
+    bool lower_strict() const {
+        return !lower_unbounded() && m_lower_strict;
+    }
 
     const auto& upper() const {
         assert(m_upper != m_end);
@@ -46,27 +69,37 @@ public:
     bool upper_unbounded() const {
         return m_upper == m_end;
     }
+    bool upper_strict() const {
+        return !upper_unbounded() && m_upper_strict;
+    }
+
     bool contains(const RAN& sample) const {
         if (is_section()) {
             return sample == lower()->first;
         } else {
-            if (!lower_unbounded() && sample <= lower()->first) return false;
-            if (!upper_unbounded() && sample >= upper()->first) return false;
+            if (!lower_unbounded() && lower_strict() && sample <= lower()->first) return false;
+            if (!lower_unbounded() && !lower_strict() && sample < lower()->first) return false;
+            if (!upper_unbounded() && upper_strict() && sample >= upper()->first) return false;
+            if (!upper_unbounded() && !upper_strict() && sample >= upper()->first) return false;
             return true;
         }
     }
 };    
 inline std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
-    if (data.is_section()) {
-        os << "[" << *data.lower() << ", " << *data.upper() << "]";
-    } else if (!data.lower_unbounded() && !data.upper_unbounded()) {
-        os << "(" << *data.lower() << ", " << *data.upper() << ")";
-    } else if (!data.lower_unbounded()) {
-        os << "(" << *data.lower() << ", oo)";
-    } else if (!data.upper_unbounded()) {
-        os << "(-oo, " << *data.upper() << ")";
+    if (data.lower_strict()) {
+        os << "(" << *data.lower();
+    } else if (data.lower_unbounded()) {
+        os << "(-oo";
     } else {
-        os << "(-oo, oo)";
+        os << "[" << *data.lower();
+    }
+    os << ", ";
+    if (data.upper_strict()) {
+        os << *data.upper() << ")";
+    } else if (data.upper_unbounded()) {
+        os << "oo)";
+    } else {
+        os << *data.upper() << "]";
     }
     return os;
 }
@@ -118,6 +151,8 @@ public:
     auto delineate_cell(const RAN& sample) const {
         RootMap::const_iterator lower;
         RootMap::const_iterator upper;
+        bool lower_strict = false;
+        bool upper_strict = false;
 
         if (m_roots.empty()) {
             lower = m_roots.end();
@@ -137,18 +172,39 @@ public:
                 }
             }
         }
-        
-        return DelineationInterval(std::move(lower),std::move(upper),m_roots.end());
+
+        if (lower != upper) {
+            if(lower != m_roots.end()) {
+                for(const auto& root : lower->second) {
+                    if (!root.is_inclusive) {
+                        lower_strict = true;
+                        break;
+                    }
+                }
+
+            }
+            if(upper != m_roots.end()) {
+                for(const auto& root : upper->second) {
+                    if (!root.is_inclusive) {
+                        upper_strict = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return DelineationInterval(std::move(lower), std::move(upper), m_roots.end(), lower_strict, upper_strict);
     }
 
-    void add_root(RAN root, IndexedRoot ir_root) {
+    void add_root(RAN root, IndexedRoot ir_root, bool inclusive) {
         auto irs = m_roots.find(root);
         if (irs == m_roots.end()) {
-            irs = m_roots.emplace(std::move(root), std::vector<IndexedRoot>()).first;
+            irs = m_roots.emplace(std::move(root), std::vector<TaggedIndexedRoot>()).first;
         }
-        auto loc = std::find(irs->second.begin(), irs->second.end(), ir_root);
+        auto tagged_root = TaggedIndexedRoot {ir_root, inclusive};
+        auto loc = std::find(irs->second.begin(), irs->second.end(), tagged_root);
         if (loc == irs->second.end()) {
-            irs->second.push_back(std::move(ir_root));
+            irs->second.push_back(std::move(tagged_root));
         }
     }
 
@@ -171,7 +227,7 @@ inline std::ostream& operator<<(std::ostream& os, const Delineation& data) {
 inline bool lower_lt_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded()) return !del2.lower_unbounded();
     else if (del2.lower_unbounded()) return false;
-    else if (del1.lower()->first == del2.lower()->first) return del1.is_section() && del2.is_sector();
+    else if (del1.lower()->first == del2.lower()->first) return !del1.lower_strict() && del2.lower_strict();
     else return del1.lower()->first < del2.lower()->first;
 }
 
@@ -181,7 +237,7 @@ inline bool lower_lt_lower(const DelineationInterval& del1, const DelineationInt
 inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.lower_unbounded() && del2.lower_unbounded()) return true;
     else if (del1.lower_unbounded() != del2.lower_unbounded()) return false;
-    else if (del1.lower()->first == del2.lower()->first) return del1.is_section() == del2.is_section();
+    else if (del1.lower()->first == del2.lower()->first) return del1.lower_strict() == del2.lower_strict();
     else return false;
 }
 
@@ -191,7 +247,7 @@ inline bool lower_eq_lower(const DelineationInterval& del1, const DelineationInt
 inline bool upper_lt_upper(const DelineationInterval& del1, const DelineationInterval& del2) {
     if (del1.upper_unbounded()) return false;
     else if (del2.upper_unbounded()) return true;
-    else if (del1.upper()->first == del2.upper()->first) return del1.is_sector() && del2.is_section();
+    else if (del1.upper()->first == del2.upper()->first) return del1.upper_strict() && !del2.upper_strict();
     else return del1.upper()->first < del2.upper()->first;
 }
 
@@ -202,7 +258,7 @@ inline bool upper_lt_lower(const DelineationInterval& del1, const DelineationInt
     if (del1.upper_unbounded()) return false;
     if (del2.lower_unbounded()) return false;
     if (del1.upper()->first < del2.lower()->first) return true;
-    if (del1.upper()->first == del2.lower()->first && del1.is_sector() && del2.is_sector()) return true;
+    if (del1.upper()->first == del2.lower()->first && del1.upper_strict() && del2.upper_strict()) return true;
     return false;
 }
 

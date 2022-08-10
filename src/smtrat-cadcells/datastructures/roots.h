@@ -196,22 +196,54 @@ inline std::ostream& operator<<(std::ostream& os, const CoveringDescription& dat
 }
 
 /**
+ * A relation between two roots.
+ * 
+ */
+struct IndexedRootRelation {
+    IndexedRoot first;
+    IndexedRoot second;
+    bool is_strict;
+};
+inline std::ostream& operator<<(std::ostream& os, const IndexedRootRelation& data) {
+    os << "(";
+    os << data.first;
+    if (data.is_strict) os << " < ";
+    else os << " <= ";
+    os << data.second;
+    os << ")";
+    return os;
+}
+/**
  * Describes an ordering of IndexedRoots.
  */
 class IndexedRootOrdering {
     boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_leq;
     boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_geq;
-    std::vector<std::pair<IndexedRoot, IndexedRoot>> m_data;
+    boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_less;
+    boost::container::flat_map<IndexedRoot, boost::container::flat_set<IndexedRoot>> m_greater;
+    
+    std::vector<IndexedRootRelation> m_data;
 
 public:
     void add_leq(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
         if (first != second) {
-            m_data.push_back(std::make_pair(first, second));
+            m_data.push_back(IndexedRootRelation{first, second, false});
             if (!m_leq.contains(first)) m_leq.emplace(first, boost::container::flat_set<IndexedRoot>());
             m_leq[first].insert(second);
             if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<IndexedRoot>());
             m_geq[first].insert(first);
+        }
+    }
+
+    void add_less(IndexedRoot first, IndexedRoot second) {
+        assert(first.poly.level == second.poly.level);
+        if (first != second) {
+            m_data.push_back(IndexedRootRelation{first, second, true});
+            if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<IndexedRoot>());
+            m_less[first].insert(second);
+            if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<IndexedRoot>());
+            m_greater[first].insert(first);
         }
     }
 
@@ -234,15 +266,24 @@ public:
         return m_leq;
     }
 
-    bool leq_transitive(IndexedRoot first, IndexedRoot second) const {
+    bool holds_transitive(IndexedRoot first, IndexedRoot second, bool strict) const {
         boost::container::flat_set<IndexedRoot> reached({first});
         std::vector<IndexedRoot> active({first});
         if (first == second) return true;
         while(!active.empty()) {
             auto current = active.back();
             active.pop_back();
-            if (m_leq.contains(current)) {
+            if (!strict && m_leq.contains(current)) {
                 for (const auto& e : m_leq.at(current)) {
+                    if (!reached.contains(e)) {
+                        if (e == second) return true;
+                        reached.insert(e);
+                        active.push_back(e);
+                    }
+                }
+            }
+            if (m_less.contains(current)) {
+                for (const auto& e : m_less.at(current)) {
                     if (!reached.contains(e)) {
                         if (e == second) return true;
                         reached.insert(e);
@@ -254,7 +295,7 @@ public:
         return false;
     }
 
-    std::optional<IndexedRoot> leq_transitive(IndexedRoot first, PolyRef poly) const {
+    std::optional<IndexedRoot> holds_transitive(IndexedRoot first, PolyRef poly, bool strict) const {
         boost::container::flat_set<IndexedRoot> reached({first});
         std::vector<IndexedRoot> active({first});
         std::optional<IndexedRoot> result;
@@ -262,8 +303,17 @@ public:
         while(!active.empty()) {
             auto current = active.back();
             active.pop_back();
-            if (m_leq.contains(current)) {
+            if (!strict && m_leq.contains(current)) {
                 for (const auto& e : m_leq.at(current)) {
+                    if (!reached.contains(e)) {
+                        if (e.poly == poly && (!result || result->index > e.index)) result = e; 
+                        reached.insert(e);
+                        active.push_back(e);
+                    }
+                }
+            }
+            if (m_less.contains(current)) {
+                for (const auto& e : m_less.at(current)) {
                     if (!reached.contains(e)) {
                         if (e.poly == poly && (!result || result->index > e.index)) result = e; 
                         reached.insert(e);
@@ -275,7 +325,7 @@ public:
         return result;
     }
 
-    std::optional<IndexedRoot> leq_transitive(PolyRef poly, IndexedRoot second) const {
+    std::optional<IndexedRoot> holds_transitive(PolyRef poly, IndexedRoot second, bool strict) const {
         boost::container::flat_set<IndexedRoot> reached({second});
         std::vector<IndexedRoot> active({second});
         std::optional<IndexedRoot> result;
@@ -283,8 +333,17 @@ public:
         while(!active.empty()) {
             auto current = active.back();
             active.pop_back();
-            if (m_geq.contains(current)) {
+            if (!strict && m_geq.contains(current)) {
                 for (const auto& e : m_geq.at(current)) {
+                    if (!reached.contains(e)) {
+                        if (e.poly == poly && (!result || result->index < e.index)) result = e; 
+                        reached.insert(e);
+                        active.push_back(e);
+                    }
+                }
+            }
+            if (m_greater.contains(current)) {
+                for (const auto& e : m_greater.at(current)) {
                     if (!reached.contains(e)) {
                         if (e.poly == poly && (!result || result->index < e.index)) result = e; 
                         reached.insert(e);

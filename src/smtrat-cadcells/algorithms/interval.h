@@ -12,8 +12,6 @@ namespace smtrat::cadcells::algorithms {
  * @param cell_deriv A derivation object to construct the cell from.
  * @return A vector of pairs of variables and their symbolic intervals on success or std::nullopt otherwise.
  */
-
-// TODO refactor: level by level
 template<cadcells::operators::op op, representation::CellHeuristic cell_heuristic>
 std::optional<std::pair<carl::Variable, datastructures::SymbolicInterval>> get_interval(datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>& cell_deriv) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());

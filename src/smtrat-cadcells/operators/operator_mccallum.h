@@ -13,12 +13,18 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv>;
 };
 
 template <>
 inline bool project_basic_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
+        deriv.insert(properties::poly_sgn_inv{prop.poly});
+    }
+    for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
+        deriv.insert(properties::root_inv{prop.root});
+    }
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
     }
@@ -29,6 +35,9 @@ template <>
 inline void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
+        delineation::delineate(deriv, prop);
+    }
+    for(const auto& prop : deriv.properties<properties::root_inv>()) {
         delineation::delineate(deriv, prop);
     }
 }
@@ -52,7 +61,7 @@ inline bool project_delineated_cell_properties<op::mccallum>(datastructures::Cel
 
     for (const auto& poly : deriv.delin().nonzero()) {
         if (repr.equational.find(poly) == repr.equational.end()) {
-            rules::poly_irrecubile_nonzero_sgn_inv(*deriv.delineated(), poly);
+            rules::poly_irreducible_nonzero_sgn_inv(*deriv.delineated(), poly);
         }
     }
 
@@ -78,6 +87,11 @@ inline bool project_delineated_cell_properties<op::mccallum>(datastructures::Cel
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
             rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
+        }
+    }
+    for(const auto& prop : deriv.properties<properties::root_inv>()) {
+        if (repr.equational.find(prop.root.poly) == repr.equational.end()) {
+            rules::root_inv(deriv, repr.description, repr.ordering, prop.root);
         }
     }
     return true;
@@ -121,7 +135,7 @@ inline bool project_delineation_properties<op::mccallum>(datastructures::Delinea
     }
 
     for (const auto& poly : deriv.delin().nonzero()) {
-        rules::poly_irrecubile_nonzero_sgn_inv(deriv, poly);
+        rules::poly_irreducible_nonzero_sgn_inv(deriv, poly);
     }
 
     rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
