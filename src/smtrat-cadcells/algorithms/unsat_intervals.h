@@ -140,6 +140,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         } else {
             deriv->insert(operators::properties::root_inv{ iroot });
         }
+        if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
         operators::delineate_properties<op>(*deriv);
         //deriv->delin().add_root(root, iroot, false);
 
