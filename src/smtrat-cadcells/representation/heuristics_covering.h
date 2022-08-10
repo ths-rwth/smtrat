@@ -36,7 +36,7 @@ namespace smtrat::cadcells::representation {
     }
 
     template <>
-    struct covering<CoveringHeuristic::DEFAULT_COVERING> {
+    struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING> {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
             datastructures::CoveringRepresentation<T> result;
@@ -52,7 +52,7 @@ namespace smtrat::cadcells::representation {
     };
 
     template <>
-    struct covering<CoveringHeuristic::DEFAULT_COVERING_EW> {
+    struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_EW> {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
             datastructures::CoveringRepresentation<T> result;

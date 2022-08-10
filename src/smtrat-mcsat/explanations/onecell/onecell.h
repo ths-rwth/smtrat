@@ -21,7 +21,18 @@ struct DefaultSettings {
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
     // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
     constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::DEFAULT_COVERING;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
+    // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
+    constexpr static auto op = cadcells::operators::op::mccallum;
+    constexpr static bool use_delineation = false; 
+};
+
+struct BiggestCellSettings {
+    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
+    // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
+    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
+    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
     constexpr static bool use_delineation = false; 
@@ -33,7 +44,7 @@ struct FilteredSettings {
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
     // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
     // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::DEFAULT_COVERING_EW;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
     constexpr static bool use_delineation = false; 

@@ -13,9 +13,9 @@ namespace smtrat::cadcells::representation {
     static const char * CellHeuristicStrings[] = { "BIGGEST_CELL", "CHAIN_EQ", "LOWEST_DEGREE_BARRIERS", "LOWEST_DEGREE_BARRIERS_EQ", "BIGGEST_CELL_EW" };
 
     enum CoveringHeuristic {
-        DEFAULT_COVERING, CHAIN_COVERING, DEFAULT_COVERING_EW
+        BIGGEST_CELL_COVERING, CHAIN_COVERING, BIGGEST_CELL_COVERING_EW
     };
-    static const char * CoveringHeuristicStrings[] = { "DEFAULT_COVERING", "CHAIN_COVERING", "DEFAULT_COVERING_EW" };
+    static const char * CoveringHeuristicStrings[] = { "BIGGEST_CELL_COVERING", "CHAIN_COVERING", "BIGGEST_CELL_COVERING_EW" };
 
     enum DelineationHeuristic {
         CHAIN
