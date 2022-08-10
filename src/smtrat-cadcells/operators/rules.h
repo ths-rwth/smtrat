@@ -687,22 +687,6 @@ void root_semi_inv(datastructures::SampledDerivation<P>& deriv, const datastruct
 }
 
 template<typename P>
-void poly_irreducible_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
-    assert(deriv.contains(properties::poly_pdel{ poly }));
-    assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) }));
-    // guaranteed by ordering
-}
-
-template<typename P>
-void poly_irreducible_semi_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible");
-    assert(deriv.contains(properties::poly_pdel{ poly }));
-    assert(deriv.contains(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) }));
-    // guaranteed by ordering
-}
-
-template<typename P>
 void covering_holds(datastructures::DelineatedDerivation<P>& deriv, const datastructures::CoveringDescription& covering, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "holds(" << covering << ")");
     for (auto it = covering.cells().begin(); it != covering.cells().end()-1; it++) {

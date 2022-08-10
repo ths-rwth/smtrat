@@ -17,11 +17,6 @@ namespace smtrat::cadcells::representation {
     };
     static const char * CoveringHeuristicStrings[] = { "BIGGEST_CELL_COVERING", "CHAIN_COVERING", "BIGGEST_CELL_COVERING_EW" };
 
-    enum DelineationHeuristic {
-        CHAIN
-    };
-    static const char * DelineationHeuristicStrings[] = { "CHAIN" };
-
     /**
      * Note: If connected(i) holds, then the indexed root ordering must contain an ordering between the interval bounds. 
      */
@@ -37,25 +32,14 @@ namespace smtrat::cadcells::representation {
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders);
     };
 
-    template<DelineationHeuristic H>
-    struct delineation {
-        template<typename T>
-        static std::optional<datastructures::DelineationRepresentation<T>> compute(datastructures::DelineatedDerivationRef<T>& der);
-    };
-
     inline std::ostream& operator<<(std::ostream& os, CellHeuristic heuristic){
         return os << CellHeuristicStrings[heuristic];
     }
     inline std::ostream& operator<<(std::ostream& os, CoveringHeuristic heuristic){
         return os << CoveringHeuristicStrings[heuristic];
     }
-    inline std::ostream& operator<<(std::ostream& os, DelineationHeuristic heuristic){
-        return os << DelineationHeuristicStrings[heuristic];
-    }
 }
 
 #include "util.h"
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
-#include "heuristics_delineation.h"
-

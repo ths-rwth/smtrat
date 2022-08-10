@@ -73,7 +73,7 @@ namespace cadcells {
  * 
  * ## Representations
  * 
- * The derivation objects do not store heuristic decisions, they just describe the current state. At some point, a representation of this state needs to be determined that is passed to the operator. This heuristic decision is stored in @ref datastructures::CellRepresentation, @ref datastructures::CoveringRepresentation or @ref datastructures::DelineationRepresentation.
+ * The derivation objects do not store heuristic decisions, they just describe the current state. At some point, a representation of this state needs to be determined that is passed to the operator. This heuristic decision is stored in @ref datastructures::CellRepresentation or @ref datastructures::CoveringRepresentation.
  * 
  * The heuristics for computing representations are in @ref representation.
  * 

@@ -76,10 +76,4 @@ inline bool project_cell_properties(datastructures::SampledDerivation<typename P
 template <op Op>
 inline bool project_covering_properties(datastructures::CoveringRepresentation<typename PropertiesSet<Op>::type>& repr);
 
-/**
- * Project delineation properties.
- */
-template <op Op>
-inline bool project_delineation_properties(datastructures::DelineationRepresentation<typename PropertiesSet<Op>::type>& repr);
-
 } 

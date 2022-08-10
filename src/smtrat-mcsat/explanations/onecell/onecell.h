@@ -9,7 +9,6 @@
 #include <smtrat-cadcells/representation/heuristics.h>
 
 #include <smtrat-cadcells/algorithms/level_covering.h>
-#include <smtrat-cadcells/algorithms/delineation.h>
 #include <smtrat-cadcells/algorithms/interval.h>
 
 #include <carl-formula/formula/functions/Visit.h>
@@ -24,7 +23,6 @@ struct DefaultSettings {
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
-    constexpr static bool use_delineation = false; 
 };
 
 struct BiggestCellSettings {
@@ -35,7 +33,6 @@ struct BiggestCellSettings {
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
-    constexpr static bool use_delineation = false; 
 };
 
 // TODO the mccallum_filtered operator is work in progress and atm incorrect
@@ -47,7 +44,6 @@ struct FilteredSettings {
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
-    constexpr static bool use_delineation = false; 
 };
 
 /**
@@ -76,12 +72,7 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
     }) == constraints.end();
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "constraints_all_strict = " << constraints_all_strict);
 
-    std::optional<cadcells::datastructures::SampledDerivationRef<typename cadcells::operators::PropertiesSet<Settings::op>::type>> derivation;
-    if (Settings::use_delineation) {
-        derivation = cadcells::algorithms::get_delineation<Settings::op, cadcells::representation::CHAIN>(proj, constraints, sample);
-    } else {
-        derivation = cadcells::algorithms::get_level_covering<Settings::op, Settings::covering_heuristic>(proj, constraints, sample);
-    }
+    auto derivation = cadcells::algorithms::get_level_covering<Settings::op, Settings::covering_heuristic>(proj, constraints, sample);
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
     if (!derivation) {
         return std::nullopt;
