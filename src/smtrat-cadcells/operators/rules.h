@@ -580,16 +580,16 @@ void poly_additional_root_outside(datastructures::SampledDerivation<P>& deriv, c
         } else {
             // compute set of polynomials that have a resultant with the current polynomials (according to the given ordering)
             boost::container::flat_set<datastructures::PolyRef> res_polys = additional_root_outside_util::resultant_polys(poly, ordering);
-                
+            
             auto lower = additional_root_outside_util::protect_lower(deriv, cell, ordering, poly, res_polys, false);
             auto upper = additional_root_outside_util::protect_upper(deriv, cell, ordering, poly, res_polys, false);
-                
-                if (!lower || !upper) {
-                    deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
+            
+            if (!lower || !upper) {
+                deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "])");
-                } else {
-                    if (lower->poly != poly) {
-                        //assert(deriv.contains(properties::poly_ord_inv{ deriv.proj().res(lower->poly, poly) }));
+            } else {
+                if (lower->poly != poly) {
+                    //assert(deriv.contains(properties::poly_ord_inv{ deriv.proj().res(lower->poly, poly) }));
                     //deriv.insert(properties::poly_ord_inv{ deriv.proj().res(lower->poly, poly) });
                     if (!deriv.contains(properties::poly_ord_inv{ deriv.proj().res(lower->poly, poly) })) {
                         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
@@ -603,8 +603,8 @@ void poly_additional_root_outside(datastructures::SampledDerivation<P>& deriv, c
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && well_def(" << *lower << ") && ir_holds(" << ordering << ")");
                 }
                 
-                    if (upper->poly != poly) {
-                        //assert(deriv.contains(properties::poly_ord_inv{ deriv.proj().res(upper->poly, poly) }));
+                if (upper->poly != poly) {
+                    //assert(deriv.contains(properties::poly_ord_inv{ deriv.proj().res(upper->poly, poly) }));
                     //deriv.insert(properties::poly_ord_inv{ deriv.proj().res(upper->poly, poly) });
                     if (!deriv.contains(properties::poly_ord_inv{ deriv.proj().res(upper->poly, poly) })) {
                         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
