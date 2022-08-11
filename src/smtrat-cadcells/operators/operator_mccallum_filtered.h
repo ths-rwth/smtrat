@@ -13,7 +13,7 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum_filtered> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv,properties::poly_additional_root_outside>;
 };
 
 template <>
@@ -126,6 +126,11 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
     for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
         if (repr.equational.find(prop.root.poly) == repr.equational.end()) {
             rules::root_semi_inv(deriv, repr.description, repr.ordering, prop.root);
+        }
+    }
+    for(const auto& prop : deriv.properties<properties::poly_additional_root_outside>()) {
+        if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
+            rules::poly_additional_root_outside(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
     return true;

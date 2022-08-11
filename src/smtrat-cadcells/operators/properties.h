@@ -232,4 +232,26 @@ inline std::ostream& operator<<(std::ostream& os, const root_semi_inv& data) {
     return os;
 }
 
+struct poly_additional_root_outside {
+    static constexpr bool is_flag = false; 
+    datastructures::PolyRef poly;   
+    size_t level() const {
+        return poly.level;
+    }
+     std::size_t hash_on_level() const {
+        return std::hash<std::size_t>()(poly.id);
+    }
+};
+inline bool operator==(const poly_additional_root_outside& lhs, const poly_additional_root_outside& rhs) {
+    return lhs.poly == rhs.poly;
+}
+inline bool operator<(const poly_additional_root_outside& lhs, const poly_additional_root_outside& rhs) {
+    return lhs.poly < rhs.poly;
+}
+inline std::ostream& operator<<(std::ostream& os, const poly_additional_root_outside& data) {
+    os << data.poly << " additional root outside";
+    return os;
+}
+
+
 }
