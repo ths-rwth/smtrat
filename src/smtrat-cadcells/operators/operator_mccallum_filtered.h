@@ -13,7 +13,7 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum_filtered> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv,properties::poly_additional_root_outside>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv,properties::poly_additional_root_outside,properties::poly_ord_inv_base>;
 };
 
 template <>
@@ -91,6 +91,8 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
             rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
         } else if (deriv.contains(properties::poly_irreducible_semi_sgn_inv{ poly })) {
             rules::poly_irreducible_semi_sgn_inv_ec(deriv, repr.description, poly);
+        } else if (deriv.contains(properties::poly_additional_root_outside{ poly })) {
+            rules::poly_additional_root_outside_ec(deriv, repr.description, poly);
         } else {
             for(const auto& prop : deriv.properties<properties::root_inv>()) {
                 if (prop.root.poly == poly) {
@@ -108,6 +110,9 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
     // if (!rules::root_ordering_holds_filtered(deriv.underlying().sampled(), repr.ordering)) return false;
     if (!rules::root_ordering_holds_ew(deriv.underlying().sampled(), repr.ordering)) return false;
 
+    for(const auto& prop : deriv.properties<properties::poly_ord_inv_base>()) {
+        rules::poly_ord_inv_base(deriv, repr.description, repr.ordering, prop.poly);
+    }
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
             rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
@@ -129,7 +134,7 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
         }
     }
     for(const auto& prop : deriv.properties<properties::poly_additional_root_outside>()) {
-        if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
+        if (repr.equational.find(prop.poly) == repr.equational.end()) {
             rules::poly_additional_root_outside(deriv, repr.description, repr.ordering, prop.poly);
         }
     }

@@ -253,5 +253,25 @@ inline std::ostream& operator<<(std::ostream& os, const poly_additional_root_out
     return os;
 }
 
+struct poly_ord_inv_base {
+    static constexpr bool is_flag = false; 
+    datastructures::PolyRef poly;   
+    size_t level() const {
+        return poly.level;
+    }
+     std::size_t hash_on_level() const {
+        return std::hash<std::size_t>()(poly.id);
+    }
+};
+inline bool operator==(const poly_ord_inv_base& lhs, const poly_ord_inv_base& rhs) {
+    return lhs.poly == rhs.poly;
+}
+inline bool operator<(const poly_ord_inv_base& lhs, const poly_ord_inv_base& rhs) {
+    return lhs.poly < rhs.poly;
+}
+inline std::ostream& operator<<(std::ostream& os, const poly_ord_inv_base& data) {
+    os << data.poly << " ord inv base";
+    return os;
+}
 
 }
