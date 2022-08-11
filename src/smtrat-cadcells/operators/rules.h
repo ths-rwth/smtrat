@@ -629,7 +629,7 @@ void poly_additional_root_outside(datastructures::SampledDerivation<P>& deriv, c
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "])");
                     } else {
                         deriv.insert(properties::root_well_def{*upper});
-                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && well_def(" << *upper << ") && ord_inv(res(" << poly << ", "<< upper->poly <<") [" << deriv.proj().res(lower->poly, poly) << "]) && ir_holds(" << ordering << ")");
+                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && well_def(" << *upper << ") && ord_inv(res(" << poly << ", "<< upper->poly <<") [" << deriv.proj().res(upper->poly, poly) << "]) && ir_holds(" << ordering << ")");
                     }
                 } else {
                     deriv.insert(properties::root_well_def{*upper});
