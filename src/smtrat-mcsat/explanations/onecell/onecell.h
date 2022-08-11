@@ -27,22 +27,14 @@ struct DefaultSettings {
 
 struct BiggestCellSettings {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
-    // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
 };
 
 // TODO the mccallum_filtered operator is work in progress and atm incorrect
 struct FilteredSettings {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_EW;
-    // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
-    // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
 };
 

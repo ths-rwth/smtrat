@@ -354,13 +354,13 @@ namespace filter_util {
         for (const auto& entry : subderiv->delin().roots()) {
             switch (filter_condition(entry.first)) {
             case result::ROOT_INV:
-                for (const auto ir : entry.second) {
+                for (const auto& ir : entry.second) {
                     deriv.insert(properties::root_inv{ ir.root });
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "add " << properties::root_inv{ ir.root });
                 }
                 break;
             case result::ROOT_SEMI_INV:
-                for (const auto ir : entry.second) {
+                for (const auto& ir : entry.second) {
                     deriv.insert(properties::root_semi_inv{ ir.root });
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "add " << properties::root_semi_inv{ ir.root });
                 }
