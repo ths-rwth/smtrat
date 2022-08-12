@@ -255,14 +255,12 @@ void poly_irreducible_semi_sgn_inv_ec(datastructures::SampledDerivation<P>& deri
 template<typename P>
 void root_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv(" << root << "), using EC");
-    assert(deriv.contains(properties::poly_pdel{ root.poly }));
     poly_irreducible_sgn_inv_ec(deriv, cell, root.poly);
 }
 
 template<typename P>
 void root_semi_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_semi_inv(" << root << "), using EC");
-    assert(deriv.contains(properties::poly_pdel{ root.poly }));
     poly_irreducible_semi_sgn_inv_ec(deriv, cell, root.poly);
 }
 

@@ -91,9 +91,10 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
             rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
         } else if (deriv.contains(properties::poly_irreducible_semi_sgn_inv{ poly })) {
             rules::poly_irreducible_semi_sgn_inv_ec(deriv, repr.description, poly);
-        } else if (deriv.contains(properties::poly_additional_root_outside{ poly })) {
-            rules::poly_additional_root_outside_ec(deriv, repr.description, poly);
         } else {
+            if (deriv.contains(properties::poly_additional_root_outside{ poly })) {
+                rules::poly_additional_root_outside_ec(deriv, repr.description, poly);
+            }
             for(const auto& prop : deriv.properties<properties::root_inv>()) {
                 if (prop.root.poly == poly) {
                     rules::root_inv_ec(deriv, repr.description, prop.root);
