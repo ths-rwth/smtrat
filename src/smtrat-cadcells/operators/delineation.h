@@ -65,5 +65,15 @@ void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties:
     assert(prop.root.index <= roots.size());
     deriv.delin().add_root(roots[prop.root.index-1], prop.root, true);
 }
+
+template<typename P>
+void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties::root_inv_or_weird& prop) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
+    assert(!deriv.proj().is_nullified(deriv.underlying_sample(), prop.root.poly));
+    auto roots = deriv.proj().real_roots(deriv.underlying_sample(), prop.root.poly);
+    assert(!roots.empty());
+    assert(prop.root.index <= roots.size());
+    deriv.delin().add_root(roots[prop.root.index-1], prop.root, false, true);
+}
     
 }

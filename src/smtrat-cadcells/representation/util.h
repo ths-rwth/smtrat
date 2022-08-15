@@ -198,4 +198,40 @@ inline void add_biggest_cell_ordering(datastructures::IndexedRootOrdering& out, 
     }
 }
 
+inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
+    auto begin = delin_interval.lower_unbounded() ? delin.roots().begin() : delin_interval.lower();
+    auto end = delin_interval.upper_unbounded() ? delin.roots().end() : delin_interval.upper();
+    if (begin != end) begin++;
+    
+    boost::container::flat_set<datastructures::PolyRef> polys;
+    for (auto it = begin; it != end; it++) {
+        for (const auto t_root : it->second) {
+            polys.insert(t_root.root.poly);
+        }
+    }
+
+    for (const auto& p : polys) {
+        datastructures::IndexedRoot prev;
+        for (auto it = begin; it != end; it++) {
+            for (const auto t_root : it->second) {
+                if (t_root.root.poly == p) {
+                    if (prev == datastructures::IndexedRoot()) {
+                        if (!interval.lower().is_infty()) {
+                            out.add_less(interval.lower().value(), t_root.root);
+                        }
+                    } else {
+                        out.add_less(prev, t_root.root);
+                    }
+                    prev = t_root.root;
+                    break;
+                }
+            }
+        }
+        assert(prev != datastructures::IndexedRoot());
+        if (!interval.lower().is_infty()) {
+            out.add_less(prev, interval.upper().value());
+        }
+    }
+}
+
 }

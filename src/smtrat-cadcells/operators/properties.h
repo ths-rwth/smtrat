@@ -274,4 +274,29 @@ inline std::ostream& operator<<(std::ostream& os, const poly_ord_inv_base& data)
     return os;
 }
 
+struct root_inv_or_weird {
+    static constexpr bool is_flag = false; 
+    datastructures::IndexedRoot root;
+    size_t level() const {
+        return root.poly.level;
+    }
+    std::size_t hash_on_level() const {
+        auto hasher = std::hash<std::size_t>();
+        std::size_t seed = 0;
+        seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        return seed;
+    }
+};
+inline bool operator==(const root_inv_or_weird& lhs, const root_inv_or_weird& rhs) {
+    return lhs.root == rhs.root;
+}
+inline bool operator<(const root_inv_or_weird& lhs, const root_inv_or_weird& rhs) {
+    return lhs.root < rhs.root;
+}
+inline std::ostream& operator<<(std::ostream& os, const root_inv_or_weird& data) {
+    os << data.root << " inv or weird";
+    return os;
+}
+
 }

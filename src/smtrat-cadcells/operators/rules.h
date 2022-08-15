@@ -253,18 +253,6 @@ void poly_irreducible_semi_sgn_inv_ec(datastructures::SampledDerivation<P>& deri
 }
 
 template<typename P>
-void root_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv(" << root << "), using EC");
-    poly_irreducible_sgn_inv_ec(deriv, cell, root.poly);
-}
-
-template<typename P>
-void root_semi_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_semi_inv(" << root << "), using EC");
-    poly_irreducible_semi_sgn_inv_ec(deriv, cell, root.poly);
-}
-
-template<typename P>
 void root_represents(datastructures::SampledDerivation<P>& deriv, datastructures::IndexedRoot root) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_rep(" << root << ", " << deriv.sample() << ")");
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
@@ -348,7 +336,7 @@ namespace filter_util {
     }
 
     enum class result {
-        ROOT_INV, ROOT_SEMI_INV, SKIP
+        ROOT_INV, ROOT_SEMI_INV, FILTER
     };
 
     template<typename P>
@@ -383,8 +371,15 @@ namespace filter_util {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "add " << properties::root_semi_inv{ ir.root });
                 }
                 break;
+            case result::FILTER:
+                assert(false);
+                for (const auto& ir : entry.second) {
+                    deriv.insert(properties::root_inv_or_weird{ ir.root });
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "add " << properties::root_inv_or_weird{ ir.root });
+                }
+                break;
             default:
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "skip " << entry.first << " / " << entry.second);
+                assert(false);
             }
         }
 
@@ -451,7 +446,7 @@ bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, c
                 Assignment ass = filter_util::projection_root(deriv, ran);
                 if (!delineable_interval->contains(ran)) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
-                    return filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2) ? filter_util::result::ROOT_INV : filter_util::result::SKIP;
+                    return filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2) ? filter_util::result::ROOT_INV : filter_util::result::FILTER;
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
                     assert(!deriv.proj().is_nullified(ass,poly1));
@@ -461,16 +456,19 @@ bool root_ordering_holds_filtered(datastructures::SampledDerivation<P>& deriv, c
                     for (const auto& pair : d2.second) {
                         auto index1 = pair.first.poly == poly1 ? pair.first.index : pair.second.index;
                         auto index2 = pair.first.poly == poly1 ? pair.second.index : pair.first.index;
-                        assert(pair.is_strict); // TODO not supported yet
                         assert(index1 <= roots1.size());
                         assert(index2 <= roots2.size());
                         if (roots1[index1-1] == roots2[index2-1]) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
-                            return filter_util::result::ROOT_INV;
+                            if (pair.is_strict) {
+                                return filter_util::result::ROOT_INV;
+                            } else {
+                                return filter_util::result::ROOT_SEMI_INV;
+                            }
                         }
                     }
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no common at " << ran);
-                    return filter_util::result::SKIP;
+                    return filter_util::result::FILTER;
                 }
             });
         }
@@ -735,9 +733,35 @@ void root_inv(datastructures::SampledDerivation<P>& deriv, const datastructures:
 }
 
 template<typename P>
+void root_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv(" << root << "), using EC");
+    poly_irreducible_sgn_inv_ec(deriv, cell, root.poly);
+}
+
+template<typename P>
 void root_semi_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::IndexedRoot root) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv(" << root << ")");
     assert(deriv.contains(properties::poly_pdel{ root.poly }));
+    // guaranteed by ordering
+}
+
+template<typename P>
+void root_semi_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_semi_inv(" << root << "), using EC");
+    poly_irreducible_semi_sgn_inv_ec(deriv, cell, root.poly);
+}
+
+template<typename P>
+void root_inv_or_weird(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::IndexedRoot root) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv_or_weird(" << root << ")");
+    assert(deriv.contains(properties::poly_pdel{ root.poly }));
+    // guaranteed by ordering
+}
+
+template<typename P>
+void root_inv_or_weird_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::IndexedRoot root) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "root_inv_or_weird(" << root << "), using EC");
+    poly_irreducible_sgn_inv_ec(deriv, cell, root.poly);
 }
 
 template<typename P>

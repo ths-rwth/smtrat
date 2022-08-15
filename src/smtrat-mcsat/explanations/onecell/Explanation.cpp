@@ -50,7 +50,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         }
     }
     SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << constr << " with " << vars << " and " << ass);
-    auto result = onecell<DefaultSettings>(constr, context, ass); 
+    auto result = onecell<FilteredSettings>(constr, context, ass); 
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");

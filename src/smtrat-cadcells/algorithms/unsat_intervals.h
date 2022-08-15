@@ -134,7 +134,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
 
         deriv->insert(operators::properties::poly_pdel{ iroot.poly });
-        deriv->insert(operators::properties::root_well_def{ iroot });
+        deriv->insert(operators::properties::root_well_def{ iroot }); // TODO reicht das??
         if (carl::is_strict(relation)) {
             deriv->insert(operators::properties::root_semi_inv{ iroot });
         } else {

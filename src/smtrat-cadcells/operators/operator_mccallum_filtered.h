@@ -13,7 +13,7 @@ namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum_filtered> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv,properties::poly_additional_root_outside,properties::poly_ord_inv_base>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv,properties::poly_additional_root_outside,properties::poly_ord_inv_base,properties::root_inv_or_weird>;
 };
 
 template <>
@@ -105,11 +105,16 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
                     rules::root_semi_inv_ec(deriv, repr.description, prop.root);
                 }
             }
+            for(const auto& prop : deriv.properties<properties::root_inv_or_weird>()) {
+                if (prop.root.poly == poly) {
+                    rules::root_inv_or_weird_ec(deriv, repr.description, prop.root);
+                }
+            }
         }
     }
 
-    // if (!rules::root_ordering_holds_filtered(deriv.underlying().sampled(), repr.ordering)) return false;
-    if (!rules::root_ordering_holds_ew(deriv.underlying().sampled(), repr.ordering)) return false;
+    if (!rules::root_ordering_holds_filtered(deriv.underlying().sampled(), repr.ordering)) return false;
+    // if (!rules::root_ordering_holds_ew(deriv.underlying().sampled(), repr.ordering)) return false;
 
     for(const auto& prop : deriv.properties<properties::poly_ord_inv_base>()) {
         rules::poly_ord_inv_base(deriv, repr.description, repr.ordering, prop.poly);
@@ -139,6 +144,11 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
             rules::poly_additional_root_outside(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
+    for(const auto& prop : deriv.properties<properties::root_inv_or_weird>()) {
+        if (repr.equational.find(prop.root.poly) == repr.equational.end()) {
+            rules::root_inv_or_weird(deriv, repr.description, repr.ordering, prop.root);
+        }
+    }
     return true;
 }
 
@@ -164,8 +174,8 @@ inline bool project_covering_properties<op::mccallum_filtered>(datastructures::C
         project_delineated_cell_properties<op::mccallum_filtered>(cell_repr, false);
     }
     auto cov = repr.get_covering();
-    // if (!rules::root_ordering_holds_filtered(repr.cells.front().derivation->underlying().sampled(), repr.ordering)) return false;
-    if (!rules::root_ordering_holds_ew(repr.cells.front().derivation->underlying().sampled(), repr.ordering)) return false;
+    if (!rules::root_ordering_holds_filtered(repr.cells.front().derivation->underlying().sampled(), repr.ordering)) return false;
+    // if (!rules::root_ordering_holds_ew(repr.cells.front().derivation->underlying().sampled(), repr.ordering)) return false;
     rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov, repr.ordering);
     return true;
 }
