@@ -43,6 +43,9 @@ inline void delineate_properties<op::mccallum_filtered>(datastructures::Delineat
     for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
         delineation::delineate(deriv, prop);
     }
+    for(const auto& prop : deriv.properties<properties::root_inv_or_weird>()) {
+        delineation::delineate(deriv, prop);
+    }
 }
 
 template <>
