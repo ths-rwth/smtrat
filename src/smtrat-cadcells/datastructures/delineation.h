@@ -161,7 +161,7 @@ public:
             upper = m_roots.end();
         } else {
             lower = m_roots.lower_bound(sample);
-            if (lower != m_roots.end() && lower->first != sample) {
+            if (lower == m_roots.end() || lower->first != sample) {
                 if (lower == m_roots.begin()) lower = m_roots.end();
                 else lower--;
             }
