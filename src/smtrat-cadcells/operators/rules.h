@@ -372,7 +372,6 @@ namespace filter_util {
                 }
                 break;
             case result::FILTER:
-                assert(false);
                 for (const auto& ir : entry.second) {
                     deriv.insert(properties::root_inv_or_weird{ ir.root });
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "add " << properties::root_inv_or_weird{ ir.root });
