@@ -113,6 +113,7 @@ void poly_irreducible_ord_inv_filtered(datastructures::SampledDerivation<P>& der
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= " << poly << " const");
     } else {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv(" << poly << ") <= ord_inv_base(" << poly << ") && sgn_inv(" << poly << ")");
         deriv.insert(properties::poly_ord_inv_base{ poly });
         deriv.insert(properties::poly_irreducible_sgn_inv{ poly });
     }
@@ -145,8 +146,8 @@ void poly_ord_inv_base(datastructures::SampledDerivation<P>& deriv, const datast
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv_base(" << poly << ") <= " << poly << "(" << deriv.sample() << ") != 0 && holds(" << cell << ")");
     } else {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> ord_inv_base(" << poly << ") <= proj_del(" << poly << ") && cell_connected(" << poly.level << ")");
-        deriv.contains(properties::poly_pdel{ poly });
-        deriv.contains(properties::cell_connected{ poly.level });
+        deriv.insert(properties::poly_pdel{ poly });
+        deriv.insert(properties::cell_connected{ poly.level });
     }
 }
 
@@ -383,6 +384,9 @@ namespace filter_util {
         }
 
         deriv.underlying().sampled_ref()->merge_with(*subderiv->underlying().sampled_ref());
+        for(const auto& p : subderiv->template properties<properties::poly_ord_inv_base>()) {
+            deriv.insert(p);
+        }
 
         for (const auto& p : subderiv->delin().nonzero()) {
             deriv.insert(properties::poly_irreducible_sgn_inv{ p });
