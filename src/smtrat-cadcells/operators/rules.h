@@ -590,7 +590,7 @@ void poly_additional_root_outside(datastructures::SampledDerivation<P>& deriv, c
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && repr(" << cell << ") && " << poly << "(" << deriv.sample() << ")=0 && ir_holds(" << ordering << ")");
         // ok by indexed root ordering!
     } else {
-        assert(!deriv.proj().is_zero(deriv.sample(), poly));
+        // assert(!deriv.proj().is_zero(deriv.sample(), poly)); 
         if (!cell.is_section() && (cell.lower().is_infty() || cell.upper().is_infty())) {
             deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> additional_root_outside(" << poly << ") <= connected(" << (poly.level-1) << ") && proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "])");
