@@ -228,7 +228,7 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
             }
         }
         assert(prev != datastructures::IndexedRoot());
-        if (!interval.lower().is_infty()) {
+        if (!interval.upper().is_infty()) {
             out.add_less(prev, interval.upper().value());
         }
     }
