@@ -7,4 +7,4 @@
 
 ERROR=$($3 $1 2>&1 >/dev/null)
 echo $ERROR
-ddsmt -v --match-err "$ERROR" $1 $2 $3
+ddsmt -j8 -v --match-err "$ERROR" $1 $2 $3
