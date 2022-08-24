@@ -146,7 +146,7 @@ inline void decompose(const datastructures::Delineation& delin, const datastruct
             for (const auto& ir : it->second) {
                 poly_delin_out.get(ir.root.poly).delineated_roots.insert(ir.root.index);
                 if (seen.contains(ir.root.poly)) continue;
-                delin_out.add_root(it->first,ir.root,ir.is_inclusive);
+                delin_out.add_root(it->first,ir);
                 poly_delin_out.get(ir.root.poly).critical_lower_root = ir.root.index;
                 seen.insert(ir.root.poly);
             }
@@ -161,7 +161,7 @@ inline void decompose(const datastructures::Delineation& delin, const datastruct
             for (const auto& ir : it->second) {
                 poly_delin_out.get(ir.root.poly).delineated_roots.insert(ir.root.index);
                 if (seen.contains(ir.root.poly)) continue;
-                delin_out.add_root(it->first,ir.root,ir.is_inclusive);
+                delin_out.add_root(it->first,ir);
                 poly_delin_out.get(ir.root.poly).critical_upper_root = ir.root.index;
                 seen.insert(ir.root.poly);
             }
@@ -206,7 +206,7 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
     boost::container::flat_set<datastructures::PolyRef> polys;
     for (auto it = begin; it != end; it++) {
         for (const auto t_root : it->second) {
-            polys.insert(t_root.root.poly);
+            polys.insert(*t_root.origin);
         }
     }
 
@@ -214,7 +214,7 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
         datastructures::IndexedRoot prev;
         for (auto it = begin; it != end; it++) {
             for (const auto t_root : it->second) {
-                if (t_root.root.poly == p) {
+                if (*t_root.origin == p) {
                     if (prev == datastructures::IndexedRoot()) {
                         if (!interval.lower().is_infty()) {
                             out.add_less(interval.lower().value(), t_root.root);

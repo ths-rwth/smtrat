@@ -10,8 +10,9 @@ namespace smtrat::cadcells::datastructures {
 
 struct TaggedIndexedRoot {
     IndexedRoot root;
-    bool is_inclusive;
-    bool is_optional;
+    bool is_inclusive = false;
+    bool is_optional = false;
+    std::optional<PolyRef> origin = std::nullopt;
 };
 inline std::ostream& operator<<(std::ostream& os, const TaggedIndexedRoot& data) {
     os << data.root;
@@ -202,12 +203,11 @@ public:
         return DelineationInterval(std::move(lower), std::move(upper), m_roots.end(), lower_strict, upper_strict);
     }
 
-    void add_root(RAN root, IndexedRoot ir_root, bool inclusive, bool optional = false) {
+    void add_root(RAN root, TaggedIndexedRoot tagged_root) {
         auto irs = m_roots.find(root);
         if (irs == m_roots.end()) {
             irs = m_roots.emplace(std::move(root), std::vector<TaggedIndexedRoot>()).first;
         }
-        auto tagged_root = TaggedIndexedRoot {ir_root, inclusive, optional};
         auto loc = std::find(irs->second.begin(), irs->second.end(), tagged_root);
         if (loc == irs->second.end()) {
             irs->second.push_back(std::move(tagged_root));

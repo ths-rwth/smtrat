@@ -204,6 +204,12 @@ struct IndexedRootRelation {
     IndexedRoot second;
     bool is_strict;
 };
+inline bool operator==(const IndexedRootRelation& lhs, const IndexedRootRelation& rhs) {
+    return lhs.first == rhs.first && lhs.second == rhs.second && lhs.is_strict == rhs.is_strict;
+}
+inline bool operator<(const IndexedRootRelation& lhs, const IndexedRootRelation& rhs) {
+    return lhs.first < rhs.first || (lhs.first == rhs.first &&  lhs.second < rhs.second) || (lhs.first == rhs.first &&  lhs.second == rhs.second && lhs.is_strict < rhs.is_strict);
+}
 inline std::ostream& operator<<(std::ostream& os, const IndexedRootRelation& data) {
     os << "(";
     os << data.first;

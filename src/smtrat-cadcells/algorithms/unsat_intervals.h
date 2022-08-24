@@ -135,14 +135,14 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
 
         deriv->insert(operators::properties::poly_pdel{ iroot.poly });
         deriv->insert(operators::properties::root_well_def{ iroot }); // TODO reicht das??
-        if (carl::is_strict(relation)) {
-            deriv->insert(operators::properties::root_semi_inv{ iroot });
-        } else {
-            deriv->insert(operators::properties::root_inv{ iroot });
-        }
-        if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
-        operators::delineate_properties<op>(*deriv);
-        //deriv->delin().add_root(root, iroot, false);
+        // if (carl::is_strict(relation)) {
+        //     deriv->insert(operators::properties::root_semi_inv{ iroot });
+        // } else {
+        //     deriv->insert(operators::properties::root_inv{ iroot });
+        // }
+        // if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
+        // operators::delineate_properties<op>(*deriv);
+        deriv->delin().add_root(root, datastructures::TaggedIndexedRoot{iroot, !carl::is_strict(relation)});
 
         if (point) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, root));

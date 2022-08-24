@@ -85,7 +85,7 @@ namespace smtrat::cadcells::representation {
 
                 if ((iter)->cell().is_section()) {
                     compute_section_all_equational(iter, cell_result);
-                    delineation.add_root((iter)->cell().lower()->first,cell_result.description.section_defining(), false);
+                    delineation.add_root((iter)->cell().lower()->first,datastructures::TaggedIndexedRoot {cell_result.description.section_defining() });
                 } else {
                     ord_idx.push_back(result.cells.size()-1);
                     if (!(iter)->delin().nullified().empty()) return std::nullopt;

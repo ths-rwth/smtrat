@@ -182,56 +182,6 @@ inline std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
     return os;
 }
 
-struct root_inv {
-    static constexpr bool is_flag = false; 
-    datastructures::IndexedRoot root;
-    size_t level() const {
-        return root.poly.level;
-    }
-    std::size_t hash_on_level() const {
-        auto hasher = std::hash<std::size_t>();
-        std::size_t seed = 0;
-        seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        return seed;
-    }
-};
-inline bool operator==(const root_inv& lhs, const root_inv& rhs) {
-    return lhs.root == rhs.root;
-}
-inline bool operator<(const root_inv& lhs, const root_inv& rhs) {
-    return lhs.root < rhs.root;
-}
-inline std::ostream& operator<<(std::ostream& os, const root_inv& data) {
-    os << data.root << " inv";
-    return os;
-}
-
-struct root_semi_inv {
-    static constexpr bool is_flag = false; 
-    datastructures::IndexedRoot root;
-    size_t level() const {
-        return root.poly.level;
-    }
-    std::size_t hash_on_level() const {
-        auto hasher = std::hash<std::size_t>();
-        std::size_t seed = 0;
-        seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        return seed;
-    }
-};
-inline bool operator==(const root_semi_inv& lhs, const root_semi_inv& rhs) {
-    return lhs.root == rhs.root;
-}
-inline bool operator<(const root_semi_inv& lhs, const root_semi_inv& rhs) {
-    return lhs.root < rhs.root;
-}
-inline std::ostream& operator<<(std::ostream& os, const root_semi_inv& data) {
-    os << data.root << " semi-inv";
-    return os;
-}
-
 struct poly_additional_root_outside {
     static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;   
@@ -274,28 +224,36 @@ inline std::ostream& operator<<(std::ostream& os, const poly_ord_inv_base& data)
     return os;
 }
 
-struct root_inv_or_weird {
+struct root_ordering_holds {
     static constexpr bool is_flag = false; 
-    datastructures::IndexedRoot root;
+    datastructures::IndexedRootOrdering ordering;
+    std::size_t lvl;
     size_t level() const {
-        return root.poly.level;
+        return lvl;
     }
     std::size_t hash_on_level() const {
+        return ordering.data().size();
         auto hasher = std::hash<std::size_t>();
-        std::size_t seed = 0;
-        seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        std::size_t seed = ordering.data().size();
+        for(auto& i : ordering.data()) {
+            std::size_t subseed = 0;
+            subseed ^= hasher(i.first.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            subseed ^= hasher(i.first.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            subseed ^= hasher(i.second.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            subseed ^= hasher(i.second.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+            seed ^= subseed + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
         return seed;
     }
 };
-inline bool operator==(const root_inv_or_weird& lhs, const root_inv_or_weird& rhs) {
-    return lhs.root == rhs.root;
+inline bool operator==(const root_ordering_holds& lhs, const root_ordering_holds& rhs) {
+    return lhs.ordering.data() == rhs.ordering.data();
 }
-inline bool operator<(const root_inv_or_weird& lhs, const root_inv_or_weird& rhs) {
-    return lhs.root < rhs.root;
+inline bool operator<(const root_ordering_holds& lhs, const root_ordering_holds& rhs) {
+    return lhs.ordering.data() < rhs.ordering.data();
 }
-inline std::ostream& operator<<(std::ostream& os, const root_inv_or_weird& data) {
-    os << data.root << " inv or weird";
+inline std::ostream& operator<<(std::ostream& os, const root_ordering_holds& data) {
+    os << data.ordering << " holds";
     return os;
 }
 
