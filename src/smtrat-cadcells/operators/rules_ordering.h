@@ -41,8 +41,11 @@ void delineate(datastructures::SampledDerivation<P>& deriv, const properties::ro
                     if (all_relations_weak) return filter_util::result::INCLUSIVE;
                     else return filter_util::result::NORMAL;
                 } else {
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> omit root " << ran);
-                    return filter_util::result::OMIT;
+                    // SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> omit root " << ran);
+                    // return filter_util::result::OMIT;
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
+                    if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                    else return filter_util::result::NORMAL_OPTIONAL;
                 }
             } else {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
@@ -63,14 +66,14 @@ void delineate(datastructures::SampledDerivation<P>& deriv, const properties::ro
                         // else return filter_util::result::NORMAL;
                     }
                 }
-                if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
-                    if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
-                    else return filter_util::result::NORMAL_OPTIONAL;
-                } else {
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> omit root " << ran);
-                    return filter_util::result::OMIT;
-                }
+                //if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
+                if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                else return filter_util::result::NORMAL_OPTIONAL;
+                //} else {
+                //    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> omit root " << ran);
+                //    return filter_util::result::OMIT;
+                //}
             }
         });
     }
