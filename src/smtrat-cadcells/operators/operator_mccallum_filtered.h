@@ -103,7 +103,6 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
     }
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
-            std::cout << "asdf" << std::endl;
             rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
