@@ -28,6 +28,7 @@ bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
 }
 
 using RootMap = std::map<RAN, std::vector<TaggedIndexedRoot>>;
+using RootMapPlain = std::map<RAN, std::vector<IndexedRoot>>;
 
 /**
  * An interval of a delineation.

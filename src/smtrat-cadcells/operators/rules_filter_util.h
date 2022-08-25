@@ -5,36 +5,36 @@ namespace smtrat::cadcells::operators::rules::filter_util {
 template<typename P>
 void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const boost::container::flat_set<datastructures::PolyRef>& considered_polys) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "pseudo_ord_inv(" << poly << ") wrt " << considered_polys);
-    auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).sampled_ref();
-    rules::poly_sgn_inv(*subderiv->delineated(), poly);
-    for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
-        rules::delineate(*subderiv->delineated(), prop);
-        deriv.insert(properties::poly_ord_inv_base{ prop.poly });
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv_base(" << prop.poly << ") ");
-    }
-    for (const auto& r : subderiv->delin().roots()) {
-        for (const auto& tir : r.second) {
-            const auto& p = tir.root.poly;
-            if (considered_polys.contains(p)) {
-                deriv.insert(properties::poly_additional_root_outside{ p });
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add additional_root_outside(" << p << ") ");
+    auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).delineated_ref();
+    if (deriv.proj().is_const(poly)) return;
+    for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
+        deriv.insert(properties::poly_ord_inv_base{ factor });
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv_base(" << factor << ") ");
+        if (factor.level == deriv.level()) {
+            if (deriv.proj().is_nullified(deriv.underlying_sample(), factor)) {
+                deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
             } else {
-                deriv.insert(properties::poly_irreducible_sgn_inv{ p });
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << p << ") ");
+                auto roots = deriv.proj().real_roots(deriv.underlying_sample(), factor);
+                if (roots.empty()) {
+                    deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
+                } else {
+                    if (considered_polys.contains(factor)) {
+                        deriv.insert(properties::poly_additional_root_outside{ factor });
+                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add additional_root_outside(" << factor << ") ");
+                    } else {
+                        deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
+                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
+                    }
+                }
             }
+        } else {
+            assert(factor.level < deriv.level());
+            deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
         }
     }
-    for (const auto& p : subderiv->delin().nonzero()) {
-        deriv.insert(properties::poly_irreducible_sgn_inv{ p });
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << p << ") ");
-    }
-    for (const auto& p : subderiv->delin().nullified()) {
-        deriv.insert(properties::poly_irreducible_sgn_inv{ p });
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << p << ") ");
-    }
-    deriv.underlying().sampled_ref()->merge_with(*subderiv->underlying().sampled_ref());
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv for underlying polys");
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "pseudo_ord_inv end");
 }
 
 template<typename P>
@@ -75,32 +75,48 @@ enum class result {
 template<typename P>
 void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastructures::PolyRef poly, std::function<result(const RAN&)> filter_condition) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_roots " << poly);
-    auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.underlying_sample(), deriv.level()).delineated_ref();
-    rules::poly_sgn_inv(*subderiv, poly);
-    for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
-        rules::delineate(*subderiv, prop);
+    datastructures::RootMapPlain root_map;
+    if (deriv.proj().is_const(poly)) return;
+    for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
+        if (factor.level == deriv.level()) {
+            if (deriv.proj().is_nullified(deriv.underlying_sample(), factor)) {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> nullified: " << factor);
+                deriv.delin().add_poly_nullified(factor);
+            } else {
+                auto roots = deriv.proj().real_roots(deriv.underlying_sample(), factor);
+                if (roots.empty()) {
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> nonzero: " << factor);
+                    deriv.delin().add_poly_nonzero(factor);
+                } else {
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> got roots: " << roots);
+                    for (size_t idx = 0; idx < roots.size(); idx++) {
+                        root_map.try_emplace(roots[idx]).first->second.push_back(datastructures::IndexedRoot(factor, idx+1));
+                    }
+                }
+            }
+        }
     }
-
-    for (const auto& entry : subderiv->delin().roots()) {
+    for (const auto& entry : root_map) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "conisdering root " << entry);
         switch (filter_condition(entry.first)) {
         case result::NORMAL:
             for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir.root });
+                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir });
             }
             break;
         case result::INCLUSIVE:
             for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir.root, true });
+                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true });
             }
             break;
         case result::NORMAL_OPTIONAL:
             for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir.root, false, true, poly });
+                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, false, true, poly });
             }
             break;
         case result::INCLUSIVE_OPTIONAL:
             for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir.root, true, true, poly });
+                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true, true, poly });
             }
             break;
         case result::OMIT:
@@ -108,12 +124,6 @@ void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastru
         default:
             assert(false);
         }
-    }
-    for (const auto& p : subderiv->delin().nonzero()) {
-        deriv.delin().add_poly_nonzero(p);
-    }
-    for (const auto& p : subderiv->delin().nullified()) {
-        deriv.delin().add_poly_nullified(p);
     }
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_roots end");
 }
