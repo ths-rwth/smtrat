@@ -10,7 +10,7 @@ void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, const d
     for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
         rules::delineate(*subderiv->delineated(), prop);
         deriv.insert(properties::poly_ord_inv_base{ prop.poly });
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add pseudo_ord_inv(" << prop.poly << ") ");
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv_base(" << prop.poly << ") ");
     }
     for (const auto& r : subderiv->delin().roots()) {
         for (const auto& tir : r.second) {
