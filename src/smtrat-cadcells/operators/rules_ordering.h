@@ -86,7 +86,7 @@ void delineate_wb(datastructures::SampledDerivation<P>& deriv, const properties:
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
-        filter_util::filter_roots(deriv, deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&) {
             if (all_relations_weak) return filter_util::result::INCLUSIVE;
             else return filter_util::result::NORMAL;
         });
