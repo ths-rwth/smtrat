@@ -155,6 +155,8 @@ void poly_semi_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastruc
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= " << poly << " const");
     } else if (deriv.contains(properties::poly_ord_inv{ poly })) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= ord_inv(" << poly << ")");
+    } else if (deriv.contains(properties::poly_sgn_inv{ poly }) || deriv.contains(properties::poly_irreducible_sgn_inv{ poly })) {
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= poly_sgn_inv(" << poly << ")");
     } else {
         auto factors = deriv.proj().factors_nonconst(poly);
         for (const auto& factor : factors) {
@@ -452,6 +454,18 @@ template<typename P>
 void poly_irreducible_semi_sgn_inv(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible");
     poly_additional_root_outside(deriv, cell, ordering, poly);
+}
+
+template<typename P>
+void poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    deriv.insert(properties::poly_additional_root_outside{ poly });
+}
+
+template<typename P>
+void poly_irreducible_semi_sgn_inv_filtered(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible");
+    deriv.insert(properties::poly_additional_root_outside{ poly });
 }
 
 }
