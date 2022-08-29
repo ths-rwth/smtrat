@@ -29,7 +29,6 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
             assert(value.isRational());
             ass.emplace(key.asVariable(), cadcells::RAN(value.asRational()));
         }
-        
     }
 
     carl::carlVariables reason_vars;
