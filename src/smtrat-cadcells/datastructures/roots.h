@@ -244,13 +244,12 @@ public:
 
     void add_less(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
-        if (first != second) {
-            m_data.push_back(IndexedRootRelation{first, second, true});
-            if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<IndexedRoot>());
-            m_less[first].insert(second);
-            if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<IndexedRoot>());
-            m_greater[first].insert(first);
-        }
+        assert(first != second);
+        m_data.push_back(IndexedRootRelation{first, second, true});
+        if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<IndexedRoot>());
+        m_less[first].insert(second);
+        if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<IndexedRoot>());
+        m_greater[first].insert(first);
     }
 
     void add_eq(IndexedRoot first, IndexedRoot second) {

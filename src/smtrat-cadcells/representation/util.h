@@ -199,9 +199,9 @@ inline void add_biggest_cell_ordering(datastructures::IndexedRootOrdering& out, 
 }
 
 inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
-    auto begin = delin_interval.lower_unbounded() ? delin.roots().begin() : delin_interval.lower();
+    assert(!delin_interval.is_section());
+    auto begin = delin_interval.lower_unbounded() ? delin.roots().begin() : std::next(delin_interval.lower());
     auto end = delin_interval.upper_unbounded() ? delin.roots().end() : delin_interval.upper();
-    if (begin != end) begin++;
     
     boost::container::flat_set<datastructures::PolyRef> polys;
     for (auto it = begin; it != end; it++) {
@@ -214,22 +214,24 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
         datastructures::IndexedRoot prev;
         for (auto it = begin; it != end; it++) {
             for (const auto t_root : it->second) {
+                bool same_value = false;
                 if (*t_root.origin == p) {
                     if (prev == datastructures::IndexedRoot()) {
                         if (!interval.lower().is_infty()) {
-                            out.add_less(interval.lower().value(), t_root.root);
+                            out.add_leq(interval.lower().value(), t_root.root);
                         }
                     } else {
-                        out.add_less(prev, t_root.root);
+                        if (same_value) out.add_eq(prev, t_root.root);
+                        else out.add_less(prev, t_root.root);
+                        same_value = true;
                     }
                     prev = t_root.root;
-                    break;
                 }
             }
         }
         assert(prev != datastructures::IndexedRoot());
         if (!interval.upper().is_infty()) {
-            out.add_less(prev, interval.upper().value());
+            out.add_leq(prev, interval.upper().value());
         }
     }
 }
