@@ -4,6 +4,9 @@
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
+#include <carl-arith/extended/Encoding.h>
+#include <carl-formula/formula/functions/Visit.h>
+
 namespace smtrat {
 namespace mcsat {
 
@@ -93,16 +96,43 @@ public:
 		std::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
+			#ifdef SMTRAT_DEVOPTION_Validation
 			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", validation_point);
+			FormulaT formula;
 			if (std::holds_alternative<FormulaT>(*res)) {
 				// Checking validity: forall x. phi(x) = ~exists x. ~phi(x)
-				SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", std::get<FormulaT>(*res).negated(), false);
+				formula = std::get<FormulaT>(*res);
 			} else {
 				// Tseitin: phi(x) = exists t. phi'(x,t)
 				// Checking validity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
 				// this is kind of ugly, so we just resolve the clause chain
-				SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", std::get<ClauseChain>(*res).resolve().negated(), false);
+				formula = std::get<ClauseChain>(*res).resolve();
 			}
+			carl::Assignment<RAN> ass;
+			for (const auto& [key, value] : getTrail().model()) {
+				if (value.isRAN()) {
+					ass.emplace(key.asVariable(), value.asRAN());
+				} else {
+					assert(value.isRational());
+					ass.emplace(key.asVariable(), RAN(value.asRational()));
+				}
+			}
+			FormulasT fs;
+			formula = carl::visit_result(formula, [&](const FormulaT& f) {
+				if (f.type() == carl::FormulaType::VARCOMPARE) {
+					auto [conds, constr] = carl::encode_as_constraints(f.variable_comparison(), ass);
+					for (const auto& c: conds) {
+						fs.emplace_back(FormulaT(ConstraintT(c)).negated());
+					}
+					return FormulaT(ConstraintT(constr));
+				} else {
+					return f;
+				}
+			});
+			fs.emplace_back(std::move(formula));
+			formula = FormulaT(carl::FormulaType::OR, std::move(fs));
+			SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", formula.negated(), false);
+			#endif
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");
