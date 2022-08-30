@@ -67,8 +67,8 @@ namespace types {
 	struct ArithmeticTheory  {
 		typedef mpl::vector<Rational, FixedWidthConstant<Integer>> ConstTypes;
 		typedef mpl::vector<carl::Variable> VariableTypes;
-		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly> ExpressionTypes;
-		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly> TermTypes;
+		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly, carl::MultivariateRoot<Poly>> ExpressionTypes;
+		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly, carl::MultivariateRoot<Poly>> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif
