@@ -254,7 +254,7 @@ public:
 
     void add_eq(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
-        assert(first != second);
+        if (first == second) return;
         add_leq(first, second);
         add_leq(second, first);
     }

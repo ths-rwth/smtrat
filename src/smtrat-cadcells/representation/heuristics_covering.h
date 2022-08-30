@@ -29,7 +29,12 @@ namespace smtrat::cadcells::representation {
             if (enable_weak && (!std::next(it)->description.lower().is_strict() || !it->description.upper().is_strict())) {
                 ordering.add_leq(std::next(it)->description.lower().value(), it->description.upper().value());
             } else {
-                ordering.add_less(std::next(it)->description.lower().value(), it->description.upper().value());
+                if (std::next(it)->description.lower().value() == it->description.upper().value()) {
+                    ordering.add_eq(std::next(it)->description.lower().value(), it->description.upper().value());
+                } else {
+                    ordering.add_less(std::next(it)->description.lower().value(), it->description.upper().value());
+                }
+                
             }
         }
         return ordering;
