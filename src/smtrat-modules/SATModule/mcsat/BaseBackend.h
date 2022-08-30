@@ -108,30 +108,32 @@ public:
 				// this is kind of ugly, so we just resolve the clause chain
 				formula = std::get<ClauseChain>(*res).resolve();
 			}
-			// Note that we can only encode some properties of the indexed root expressions. Thus, some explanation might wrongly be detected as incorrect.
-			carl::Assignment<RAN> ass;
-			for (const auto& [key, value] : getTrail().model()) {
-				if (value.isRAN()) {
-					ass.emplace(key.asVariable(), value.asRAN());
-				} else {
-					assert(value.isRational());
-					ass.emplace(key.asVariable(), RAN(value.asRational()));
-				}
-			}
-			carl::EncodingCache<Poly> cache;
-			formula = carl::visit_result(formula, [&](const FormulaT& f) {
-				if (f.type() == carl::FormulaType::VARCOMPARE) {
-					auto [conds, constr] = carl::encode_as_constraints(f.variable_comparison(), ass, cache);
-					FormulasT fs;
-					for (const auto& c: conds) {
-						fs.emplace_back(FormulaT(ConstraintT(c)));
+			if (false) {
+				// Note that we can only encode some properties of the indexed root expressions. Thus, some explanation might wrongly be detected as incorrect.
+				carl::Assignment<RAN> ass;
+				for (const auto& [key, value] : getTrail().model()) {
+					if (value.isRAN()) {
+						ass.emplace(key.asVariable(), value.asRAN());
+					} else {
+						assert(value.isRational());
+						ass.emplace(key.asVariable(), RAN(value.asRational()));
 					}
-					fs.emplace_back(ConstraintT(constr));
-					return FormulaT(carl::FormulaType::AND, std::move(fs));
-				} else {
-					return f;
 				}
-			});
+				carl::EncodingCache<Poly> cache;
+				formula = carl::visit_result(formula, [&](const FormulaT& f) {
+					if (f.type() == carl::FormulaType::VARCOMPARE) {
+						auto [conds, constr] = carl::encode_as_constraints(f.variable_comparison(), ass, cache);
+						FormulasT fs;
+						for (const auto& c: conds) {
+							fs.emplace_back(FormulaT(ConstraintT(c)));
+						}
+						fs.emplace_back(ConstraintT(constr));
+						return FormulaT(carl::FormulaType::AND, std::move(fs));
+					} else {
+						return f;
+					}
+				});
+			}
 			SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", formula.negated(), false);
 			#endif
 			return *res;
