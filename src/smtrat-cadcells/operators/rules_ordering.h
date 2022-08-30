@@ -193,6 +193,21 @@ void delineate_wb(datastructures::SampledDerivation<P>& deriv, const properties:
 }
 
 template<typename P>
+void delineate_noop(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
+
+    auto decomposed = ordering_util::decompose(prop.ordering);
+    for (const auto& d : decomposed) {
+        const auto& poly1 = d.first.first;
+        const auto& poly2 = d.first.second;
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&) {
+            return filter_util::result::NORMAL;
+        });
+    }
+}
+
+template<typename P>
 bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& underlying_ordering, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     deriv.insert(properties::cell_connected{ deriv.level() });

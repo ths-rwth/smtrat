@@ -47,6 +47,7 @@ inline void delineate_properties<op::mccallum_filtered>(datastructures::SampledD
         // rules::delineate_fo(deriv, prop);
         // rules::delineate_fo_alt(deriv, prop);
         // rules::delineate_wb(deriv, prop);
+        // rules::delineate_noop(deriv, prop);
     }
 }
 
