@@ -108,6 +108,7 @@ public:
 				// this is kind of ugly, so we just resolve the clause chain
 				formula = std::get<ClauseChain>(*res).resolve();
 			}
+			// Note that we can only encode some properties of the indexed root expressions. Thus, is validation passes, this does not mean that the explanation is correct.
 			carl::Assignment<RAN> ass;
 			for (const auto& [key, value] : getTrail().model()) {
 				if (value.isRAN()) {
