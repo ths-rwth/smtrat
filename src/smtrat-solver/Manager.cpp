@@ -186,7 +186,13 @@ namespace smtrat
     void Manager::reset()
     {
         while( pop() );
+        while(!mpPassedFormula->empty()) {
+            auto it = mpPassedFormula->end();
+            it--;
+            remove(it);
+        }
         assert( mpPassedFormula->empty() );
+        assert(mBacktrackPoints.empty());
         mBackendsOfModules.clear();
         while( !mGeneratedModules.empty() )
         {
