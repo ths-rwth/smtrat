@@ -55,11 +55,20 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
     cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);
 
-    // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak
-    bool constraints_all_strict = std::find_if(constraints.begin(), constraints.end(), [](const auto& f) {
+    // if all input constraints are "strict" (their unsat cells can be closed), then we can close the cell, i.e. make the bounds weak
+    bool constraints_all_strict = std::find_if(constraints.begin(), constraints.end(), [&](const auto& f) {
         if (std::holds_alternative<cadcells::Constraint>(f)) return !carl::is_strict(std::get<cadcells::Constraint>(f).relation());
-        else if (std::holds_alternative<cadcells::VariableComparison>(f)) return (!carl::is_strict(std::get<cadcells::VariableComparison>(f).relation()) || std::get<cadcells::VariableComparison>(f).negated());
-        // Negated VariableComparisons evaluate to true where its MultivariateRoot is undefined. Thus, their unsatisfying region is never closed! 
+        else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
+            auto vc = std::get<cadcells::VariableComparison>(f);
+            // Negated VariableComparisons evaluate to true where its MultivariateRoot is undefined. Thus, their unsatisfying region is never closed! 
+            if (vc.negated()) return true;
+            if (!carl::is_strict(vc.relation())) return true;
+            // If the VariableComparison is not well-defined at the given sample, then the unsatusfying region is not closed, as it might get well-defined at the boundary.
+            auto mv = std::get<carl::MultivariateRoot<cadcells::Polynomial>>(vc.value());
+            auto mvp = pool(mv.poly());
+            if (proj.is_nullified(sample, mvp) || proj.real_roots(sample, mvp).size() < mv.k()) return true;
+            return false;
+        }
         assert(false);
         return false;
     }) == constraints.end();
