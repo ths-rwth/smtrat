@@ -199,7 +199,7 @@ public:
 			for (const auto& assertion : state.assertions()) {
 				regular() << assertion.formula << " ";
 			}
-			regular() << ")";
+			regular() << ")" << std::endl;
 		} else {
 			error() << "nothing is asserted";
 		}
