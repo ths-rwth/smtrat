@@ -40,19 +40,8 @@ public:
 		return mBookkeeping;
 	}
 	
-	template<typename Constraints>
-	void initVariables(const Constraints& c) {
-		if (mBookkeeping.variables().empty()) {
-			carl::carlVariables vars;
-			for (int i = 0; i < c.size(); ++i) {
-				if (c[i].first == nullptr) continue;
-				if (c[i].first->reabstraction.type() != carl::FormulaType::CONSTRAINT) continue;
-				const ConstraintT& constr = c[i].first->reabstraction.constraint(); 
-				carl::variables(constr, vars);
-			}
-			mBookkeeping.updateVariables(vars.as_set());
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variables " << variables());
-		}
+	void initVariables(const carl::Variables& variables) {
+		mBookkeeping.updateVariables(variables);
 	}
 	
 	const auto& variables() const {

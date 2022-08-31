@@ -74,6 +74,8 @@ private:
 	/// Semantically propagated variables that are not yet inserted into the trail
 	std::set<Minisat::Var> mSemanticPropagations;
 
+	std::map<Minisat::Var, std::vector<Minisat::Var>> mVarDeps;
+
 	MCSATBackend<Settings> mBackend;
 
 	struct VarMapping {
@@ -449,12 +451,39 @@ public:
 		
 	template<typename Constraints>
 	void initVariables(const Constraints& c) {
-		mBackend.initVariables(c);
-		for (const carl::Variable& theoryVar : mBackend.variables()) {
-			if (!mTheoryVarMapping.has(theoryVar)) {
-				Minisat::Var minisatVar = mGetter.newVar();
-				mTheoryVarMapping.insert(theoryVar, minisatVar);
+		if (mBackend.variables().empty()) {
+			carl::carlVariables vars;
+			std::map<carl::Variable,carl::Variables> deps;
+			for (int i = 0; i < c.size(); ++i) {
+				if (c[i].first == nullptr) continue;
+				if (c[i].first->reabstraction.type() == carl::FormulaType::CONSTRAINT) {
+					const ConstraintT& constr = c[i].first->reabstraction.constraint(); 
+					carl::variables(constr, vars);
+				} else if (c[i].first->reabstraction.type() == carl::FormulaType::VARCOMPARE) {
+					const auto& constr = c[i].first->reabstraction.variable_comparison(); 
+					carl::variables(constr, vars);
+					if (std::holds_alternative<carl::MultivariateRoot<Poly>>(constr.value())) {
+						auto dep_vars = carl::variables(constr);
+						dep_vars.erase(constr.var());
+						deps.try_emplace(constr.var()).first->second.insert(dep_vars.begin(), dep_vars.end());
+					}
+				}
 			}
+			mBackend.initVariables(vars.as_set());
+			for (const carl::Variable& theoryVar : vars) {
+				if (!mTheoryVarMapping.has(theoryVar)) {
+					Minisat::Var minisatVar = mGetter.newVar();
+					mTheoryVarMapping.insert(theoryVar, minisatVar);
+				}
+			}
+			for (const auto& p : deps) {
+				std::vector<Minisat::Var> d;
+				for (const auto& v : p.second) {
+					d.push_back(mTheoryVarMapping.minisatVar(v));
+				}
+				mVarDeps.emplace(mTheoryVarMapping.minisatVar(p.first), std::move(d));
+			}
+			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variables " << mBackend.variables() << " with dependencies " << mVarDeps);
 		}
 	}
 
@@ -472,6 +501,15 @@ public:
 
 	std::vector<Minisat::Var> theoryVarAbstractions() const {
 		return mTheoryVarMapping.minisatVars();
+	}
+
+	bool hasUnassignedDep(Minisat::Var v) const {
+		auto e = mVarDeps.find(v);
+		if (e == mVarDeps.end()) return false;
+		auto d = std::find_if(e->second.begin(), e->second.end(), [this](const auto& c) {
+			return !this->isAssignedTheoryVariable(this->carlVar(c));
+		});
+		return (d != e->second.end());
 	}
 
 	// ***** Auxliary getter
