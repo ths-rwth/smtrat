@@ -58,7 +58,8 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
     // if all input constraints are strict, then we can close the cell, i.e. make the bounds weak
     bool constraints_all_strict = std::find_if(constraints.begin(), constraints.end(), [](const auto& f) {
         if (std::holds_alternative<cadcells::Constraint>(f)) return !carl::is_strict(std::get<cadcells::Constraint>(f).relation());
-        else if (std::holds_alternative<cadcells::VariableComparison>(f)) return (!carl::is_strict(std::get<cadcells::VariableComparison>(f).relation()) && !std::get<cadcells::VariableComparison>(f).negated()) || (carl::is_strict(std::get<cadcells::VariableComparison>(f).relation()) && std::get<cadcells::VariableComparison>(f).negated());
+        else if (std::holds_alternative<cadcells::VariableComparison>(f)) return (!carl::is_strict(std::get<cadcells::VariableComparison>(f).relation()) || std::get<cadcells::VariableComparison>(f).negated());
+        // Negated VariableComparisons evaluate to true where its MultivariateRoot is undefined. Thus, their unsatisfying region is never closed! 
         assert(false);
         return false;
     }) == constraints.end();
