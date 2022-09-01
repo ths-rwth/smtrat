@@ -135,12 +135,15 @@ void delineate_fo_alt(datastructures::SampledDerivation<P>& deriv, const propert
         const auto& poly1 = d.first.first;
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
-        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
-        assert(delineable_interval);
+        std::optional<carl::Interval<RAN>> delineable_interval;
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
-            if (algebraic) {
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> underlying sample is algebraic, adding " << ran);
+            if (algebraic || !ran.is_numeric()) {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sample is algebraic, adding " << ran);
                 return filter_util::result::NORMAL;
+            }
+            if (!delineable_interval) {
+                delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
+                assert(delineable_interval);
             }
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
