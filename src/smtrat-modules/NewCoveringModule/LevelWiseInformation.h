@@ -304,7 +304,7 @@ public:
             return std::nullopt;
         }
         operators::project_basic_properties<op>(*new_deriv->delineated());
-        operators::delineate_properties<op>(*new_deriv->delineated());
+        operators::delineate_properties<op>(*new_deriv);
         new_deriv->delineate_cell();
         SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());
 

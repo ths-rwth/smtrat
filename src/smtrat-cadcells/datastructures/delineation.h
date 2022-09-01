@@ -10,21 +10,25 @@ namespace smtrat::cadcells::datastructures {
 
 struct TaggedIndexedRoot {
     IndexedRoot root;
-    bool is_inclusive;
+    bool is_inclusive = false;
+    bool is_optional = false;
+    std::optional<PolyRef> origin = std::nullopt;
 };
 inline std::ostream& operator<<(std::ostream& os, const TaggedIndexedRoot& data) {
     os << data.root;
     if (data.is_inclusive) os << "_incl";
+    if (data.is_optional) os << "_opt";
     return os;
 }
 bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
-    return lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive;
+    return lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional == rhs.is_optional;
 }
 bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
-    return lhs.root < rhs.root || (lhs.root == rhs.root && lhs.is_inclusive < rhs.is_inclusive);
+    return lhs.root < rhs.root || (lhs.root == rhs.root && lhs.is_inclusive < rhs.is_inclusive) || (lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional < rhs.is_optional);
 }
 
 using RootMap = std::map<RAN, std::vector<TaggedIndexedRoot>>;
+using RootMapPlain = std::map<RAN, std::vector<IndexedRoot>>;
 
 /**
  * An interval of a delineation.
@@ -158,6 +162,20 @@ public:
             lower = m_roots.end();
             upper = m_roots.end();
         } else {
+            lower = m_roots.lower_bound(sample);
+            if (lower == m_roots.end() || lower->first != sample) {
+                if (lower == m_roots.begin()) lower = m_roots.end();
+                else lower--;
+            }
+            while(lower != m_roots.end() && std::find_if(lower->second.begin(), lower->second.end(), [&](const auto& t_root) { return !t_root.is_optional; }) == lower->second.end()) {
+                if (lower == m_roots.begin()) lower = m_roots.end();
+                else lower--;
+            }
+            upper = m_roots.lower_bound(sample);
+            while(upper != m_roots.end() && std::find_if(upper->second.begin(), upper->second.end(), [&](const auto& t_root) { return !t_root.is_optional; }) == upper->second.end()) {
+                upper++;
+            }
+            /*
             auto section = m_roots.find(sample);
             if (section != m_roots.end()) {
                 lower = section;
@@ -171,37 +189,26 @@ public:
                     lower--;
                 }
             }
+            */
         }
 
         if (lower != upper) {
             if(lower != m_roots.end()) {
-                for(const auto& root : lower->second) {
-                    if (!root.is_inclusive) {
-                        lower_strict = true;
-                        break;
-                    }
-                }
-
+                lower_strict = std::find_if(lower->second.begin(), lower->second.end(), [&](const auto& t_root) { return !t_root.is_inclusive; }) != lower->second.end();
             }
             if(upper != m_roots.end()) {
-                for(const auto& root : upper->second) {
-                    if (!root.is_inclusive) {
-                        upper_strict = true;
-                        break;
-                    }
-                }
+                upper_strict = std::find_if(upper->second.begin(), upper->second.end(), [&](const auto& t_root) { return !t_root.is_inclusive; }) != upper->second.end();
             }
         }
 
         return DelineationInterval(std::move(lower), std::move(upper), m_roots.end(), lower_strict, upper_strict);
     }
 
-    void add_root(RAN root, IndexedRoot ir_root, bool inclusive) {
+    void add_root(RAN root, TaggedIndexedRoot tagged_root) {
         auto irs = m_roots.find(root);
         if (irs == m_roots.end()) {
             irs = m_roots.emplace(std::move(root), std::vector<TaggedIndexedRoot>()).first;
         }
-        auto tagged_root = TaggedIndexedRoot {ir_root, inclusive};
         auto loc = std::find(irs->second.begin(), irs->second.end(), tagged_root);
         if (loc == irs->second.end()) {
             irs->second.push_back(std::move(tagged_root));

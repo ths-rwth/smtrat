@@ -6,14 +6,13 @@
 #include "../datastructures/roots.h"
 #include "properties.h"
 #include "rules.h"
-#include "delineation.h"
 
 
 namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum_filtered> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv,properties::poly_additional_root_outside,properties::poly_ord_inv_base>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::poly_additional_root_outside,properties::poly_ord_inv_base,properties::root_ordering_holds>;
 };
 
 template <>
@@ -32,16 +31,23 @@ template <>
 inline void delineate_properties<op::mccallum_filtered>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum_filtered>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-        delineation::delineate(deriv, prop);
+        rules::delineate(deriv, prop);
     }
     for(const auto& prop : deriv.properties<properties::poly_irreducible_semi_sgn_inv>()) {
-        delineation::delineate(deriv, prop);
+        rules::delineate(deriv, prop);
     }
-    for(const auto& prop : deriv.properties<properties::root_inv>()) {
-        delineation::delineate(deriv, prop);
-    }
-    for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
-        delineation::delineate(deriv, prop);
+}
+
+template <>
+inline void delineate_properties<op::mccallum_filtered>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    delineate_properties<op::mccallum_filtered>(*deriv.delineated());
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate(deriv, prop);
+        // rules::delineate_fo(deriv, prop);
+        // rules::delineate_fo_alt(deriv, prop);
+        // rules::delineate_wb(deriv, prop);
+        // rules::delineate_noop(deriv, prop);
     }
 }
 
@@ -50,16 +56,16 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr << ", " << cell_represents);
     auto& deriv = *repr.derivation;
 
-    // for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-    //     if (repr.equational.find(prop.poly) == repr.equational.end()) {
-    //         deriv.insert(properties::poly_pdel{ prop.poly });
-    //     }
-    // }
     for(const auto& poly : repr.description.polys()) {
         deriv.insert(properties::poly_pdel{ poly });
     }
     for(const auto& poly : repr.ordering.polys()) {
         deriv.insert(properties::poly_pdel{ poly });
+    }
+    deriv.insert(properties::root_ordering_holds{ repr.ordering, deriv.level()-1 });
+
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        if (!rules::root_ordering_holds_delineated(deriv, repr.description, repr.ordering, prop.ordering)) return false;
     }
 
     for (const auto& poly : deriv.delin().nonzero()) {
@@ -89,55 +95,28 @@ inline bool project_delineated_cell_properties<op::mccallum_filtered>(datastruct
     for (const auto& poly : repr.equational) {
         if (deriv.contains(properties::poly_irreducible_sgn_inv{ poly })) {
             rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
-        } else if (deriv.contains(properties::poly_irreducible_semi_sgn_inv{ poly })) {
-            rules::poly_irreducible_semi_sgn_inv_ec(deriv, repr.description, poly);
         } else {
-            if (deriv.contains(properties::poly_additional_root_outside{ poly })) {
-                rules::poly_additional_root_outside_ec(deriv, repr.description, poly);
-            }
-            for(const auto& prop : deriv.properties<properties::root_inv>()) {
-                if (prop.root.poly == poly) {
-                    rules::root_inv_ec(deriv, repr.description, prop.root);
-                }
-            }
-            for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
-                if (prop.root.poly == poly) {
-                    rules::root_semi_inv_ec(deriv, repr.description, prop.root);
-                }
-            }
+            assert(deriv.contains(properties::poly_irreducible_semi_sgn_inv{ poly }));
+            rules::poly_irreducible_semi_sgn_inv_ec(deriv, repr.description, poly);
         }
     }
-
-    // if (!rules::root_ordering_holds_filtered(deriv.underlying().sampled(), repr.ordering)) return false;
-    if (!rules::root_ordering_holds_ew(deriv.underlying().sampled(), repr.ordering)) return false;
 
     for(const auto& prop : deriv.properties<properties::poly_ord_inv_base>()) {
         rules::poly_ord_inv_base(deriv, repr.description, repr.ordering, prop.poly);
     }
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
-            rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
+            rules::poly_irreducible_sgn_inv_filtered(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
     for(const auto& prop : deriv.properties<properties::poly_irreducible_semi_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
-            rules::poly_irreducible_semi_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
-        }
-    }
-    for(const auto& prop : deriv.properties<properties::root_inv>()) {
-        if (repr.equational.find(prop.root.poly) == repr.equational.end()) {
-            rules::root_inv(deriv, repr.description, repr.ordering, prop.root);
-        }
-    }
-    for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
-        if (repr.equational.find(prop.root.poly) == repr.equational.end()) {
-            rules::root_semi_inv(deriv, repr.description, repr.ordering, prop.root);
+            rules::poly_irreducible_semi_sgn_inv_filtered(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
     for(const auto& prop : deriv.properties<properties::poly_additional_root_outside>()) {
-        if (repr.equational.find(prop.poly) == repr.equational.end()) {
-            rules::poly_additional_root_outside(deriv, repr.description, repr.ordering, prop.poly);
-        }
+        assert (repr.equational.find(prop.poly) == repr.equational.end());
+        rules::poly_additional_root_outside(deriv, repr.description, repr.ordering, prop.poly);
     }
     return true;
 }
@@ -164,8 +143,7 @@ inline bool project_covering_properties<op::mccallum_filtered>(datastructures::C
         project_delineated_cell_properties<op::mccallum_filtered>(cell_repr, false);
     }
     auto cov = repr.get_covering();
-    // if (!rules::root_ordering_holds_filtered(repr.cells.front().derivation->underlying().sampled(), repr.ordering)) return false;
-    if (!rules::root_ordering_holds_ew(repr.cells.front().derivation->underlying().sampled(), repr.ordering)) return false;
+    repr.cells.front().derivation->underlying().sampled().insert(properties::root_ordering_holds{ repr.ordering, repr.cells.front().derivation->underlying().sampled().level() });
     rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov, repr.ordering);
     return true;
 }

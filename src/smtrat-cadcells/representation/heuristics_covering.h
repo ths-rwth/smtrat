@@ -29,7 +29,12 @@ namespace smtrat::cadcells::representation {
             if (enable_weak && (!std::next(it)->description.lower().is_strict() || !it->description.upper().is_strict())) {
                 ordering.add_leq(std::next(it)->description.lower().value(), it->description.upper().value());
             } else {
-                ordering.add_less(std::next(it)->description.lower().value(), it->description.upper().value());
+                if (std::next(it)->description.lower().value() == it->description.upper().value()) {
+                    ordering.add_eq(std::next(it)->description.lower().value(), it->description.upper().value());
+                } else {
+                    ordering.add_less(std::next(it)->description.lower().value(), it->description.upper().value());
+                }
+                
             }
         }
         return ordering;
@@ -85,7 +90,7 @@ namespace smtrat::cadcells::representation {
 
                 if ((iter)->cell().is_section()) {
                     compute_section_all_equational(iter, cell_result);
-                    delineation.add_root((iter)->cell().lower()->first,cell_result.description.section_defining(), false);
+                    delineation.add_root((iter)->cell().lower()->first,datastructures::TaggedIndexedRoot {cell_result.description.section_defining() });
                 } else {
                     ord_idx.push_back(result.cells.size()-1);
                     if (!(iter)->delin().nullified().empty()) return std::nullopt;

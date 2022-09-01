@@ -98,8 +98,21 @@ public:
 
     /// Clears all projections cached with respect to this assignment.
     void clear_assignment_cache(const Assignment& assignment) {
-        if (level_of(assignment) < m_assignment_cache.size()) {
-            m_assignment_cache[level_of(assignment)].erase(assignment);
+        for (auto lvl = level_of(assignment); lvl < m_assignment_cache.size(); lvl++) {
+            for (auto it = m_assignment_cache[lvl].begin(); it != m_assignment_cache[lvl].end(); ) {
+                bool is_subset = true;
+                for (const auto& e : it->first) {
+                    if (assignment.find(e.first) == assignment.end() || assignment.at(e.first) != e.second) {
+                        is_subset = false;
+                        break;
+                    }
+                }
+                if (is_subset) {
+                    it = m_assignment_cache[lvl].erase(it);
+                } else {
+                    it++;
+                }
+            }
         }
     }
     

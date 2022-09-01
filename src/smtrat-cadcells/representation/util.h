@@ -146,7 +146,7 @@ inline void decompose(const datastructures::Delineation& delin, const datastruct
             for (const auto& ir : it->second) {
                 poly_delin_out.get(ir.root.poly).delineated_roots.insert(ir.root.index);
                 if (seen.contains(ir.root.poly)) continue;
-                delin_out.add_root(it->first,ir.root,ir.is_inclusive);
+                delin_out.add_root(it->first,ir);
                 poly_delin_out.get(ir.root.poly).critical_lower_root = ir.root.index;
                 seen.insert(ir.root.poly);
             }
@@ -161,7 +161,7 @@ inline void decompose(const datastructures::Delineation& delin, const datastruct
             for (const auto& ir : it->second) {
                 poly_delin_out.get(ir.root.poly).delineated_roots.insert(ir.root.index);
                 if (seen.contains(ir.root.poly)) continue;
-                delin_out.add_root(it->first,ir.root,ir.is_inclusive);
+                delin_out.add_root(it->first,ir);
                 poly_delin_out.get(ir.root.poly).critical_upper_root = ir.root.index;
                 seen.insert(ir.root.poly);
             }
@@ -194,6 +194,44 @@ inline void add_biggest_cell_ordering(datastructures::IndexedRootOrdering& out, 
     if (poly_delin.critical_upper_root != 0) {
             for (auto it = poly_delin.delineated_roots.rbegin(); *it != poly_delin.critical_upper_root; it++) {
             out.add_less(datastructures::IndexedRoot(poly,poly_delin.critical_upper_root), datastructures::IndexedRoot(poly,*it));
+        }
+    }
+}
+
+inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
+    assert(!delin_interval.is_section());
+    auto begin = delin_interval.lower_unbounded() ? delin.roots().begin() : std::next(delin_interval.lower());
+    auto end = delin_interval.upper_unbounded() ? delin.roots().end() : delin_interval.upper();
+    
+    boost::container::flat_set<datastructures::PolyRef> polys;
+    for (auto it = begin; it != end; it++) {
+        for (const auto t_root : it->second) {
+            polys.insert(*t_root.origin);
+        }
+    }
+
+    for (const auto& p : polys) {
+        datastructures::IndexedRoot prev;
+        for (auto it = begin; it != end; it++) {
+            for (const auto t_root : it->second) {
+                bool same_value = false;
+                if (*t_root.origin == p) {
+                    if (prev == datastructures::IndexedRoot()) {
+                        if (!interval.lower().is_infty()) {
+                            out.add_leq(interval.lower().value(), t_root.root);
+                        }
+                    } else {
+                        if (same_value) out.add_eq(prev, t_root.root);
+                        else out.add_less(prev, t_root.root);
+                        same_value = true;
+                    }
+                    prev = t_root.root;
+                }
+            }
+        }
+        assert(prev != datastructures::IndexedRoot());
+        if (!interval.upper().is_infty()) {
+            out.add_leq(prev, interval.upper().value());
         }
     }
 }

@@ -134,15 +134,16 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
 
         deriv->insert(operators::properties::poly_pdel{ iroot.poly });
-        deriv->insert(operators::properties::root_well_def{ iroot });
-        if (carl::is_strict(relation)) {
-            deriv->insert(operators::properties::root_semi_inv{ iroot });
-        } else {
-            deriv->insert(operators::properties::root_inv{ iroot });
-        }
-        if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
-        operators::delineate_properties<op>(*deriv);
-        //deriv->delin().add_root(root, iroot, false);
+        //deriv->insert(operators::properties::root_well_def{ iroot });
+        deriv->insert(operators::properties::poly_sgn_inv{ proj.ldcf(iroot.poly) });
+        // if (carl::is_strict(relation)) {
+        //     deriv->insert(operators::properties::root_semi_inv{ iroot });
+        // } else {
+        //     deriv->insert(operators::properties::root_inv{ iroot });
+        // }
+        // if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
+        // operators::delineate_properties<op>(*deriv);
+        deriv->delin().add_root(root, datastructures::TaggedIndexedRoot{iroot, (op == cadcells::operators::op::mccallum_filtered) && carl::is_strict(relation)});
 
         if (point) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, root));

@@ -17,7 +17,7 @@ struct IndexedRoot {
     PolyRef poly;
     /// The index, must be > 0.
     size_t index;
-    IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { assert(i>0); }
+    IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { /*assert(i>0);*/ }
     IndexedRoot() : IndexedRoot( PolyRef{0,0}, 0) {}
 };
 inline bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
@@ -204,6 +204,12 @@ struct IndexedRootRelation {
     IndexedRoot second;
     bool is_strict;
 };
+inline bool operator==(const IndexedRootRelation& lhs, const IndexedRootRelation& rhs) {
+    return lhs.first == rhs.first && lhs.second == rhs.second && lhs.is_strict == rhs.is_strict;
+}
+inline bool operator<(const IndexedRootRelation& lhs, const IndexedRootRelation& rhs) {
+    return lhs.first < rhs.first || (lhs.first == rhs.first &&  lhs.second < rhs.second) || (lhs.first == rhs.first &&  lhs.second == rhs.second && lhs.is_strict < rhs.is_strict);
+}
 inline std::ostream& operator<<(std::ostream& os, const IndexedRootRelation& data) {
     os << "(";
     os << data.first;
@@ -238,18 +244,17 @@ public:
 
     void add_less(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
-        if (first != second) {
-            m_data.push_back(IndexedRootRelation{first, second, true});
-            if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<IndexedRoot>());
-            m_less[first].insert(second);
-            if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<IndexedRoot>());
-            m_greater[first].insert(first);
-        }
+        assert(first != second);
+        m_data.push_back(IndexedRootRelation{first, second, true});
+        if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<IndexedRoot>());
+        m_less[first].insert(second);
+        if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<IndexedRoot>());
+        m_greater[first].insert(first);
     }
 
     void add_eq(IndexedRoot first, IndexedRoot second) {
         assert(first.poly.level == second.poly.level);
-        assert(first != second);
+        if (first == second) return;
         add_leq(first, second);
         add_leq(second, first);
     }

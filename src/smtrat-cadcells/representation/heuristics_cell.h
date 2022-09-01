@@ -80,6 +80,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_EW> {
             for (const auto& poly_delin : poly_delins.data) {
                 add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
+            util::add_weird_ordering(response.ordering, der->delin(), der->cell(), response.description);
         }
         maintain_connectedness(der, response, true);
         return response;

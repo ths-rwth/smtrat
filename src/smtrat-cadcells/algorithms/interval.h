@@ -20,7 +20,7 @@ std::optional<std::pair<carl::Variable, datastructures::SymbolicInterval>> get_i
     if (!operators::project_cell_properties<op>(*cell_deriv)) return std::nullopt;
     if (!operators::project_basic_properties<op>(*cell_deriv->delineated())) return std::nullopt;
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
-    operators::delineate_properties<op>(*cell_deriv->delineated());
+    operators::delineate_properties<op>(*cell_deriv);
     cell_deriv->delineate_cell();
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");

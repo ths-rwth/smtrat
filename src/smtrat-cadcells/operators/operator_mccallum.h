@@ -6,14 +6,12 @@
 #include "../datastructures/roots.h"
 #include "properties.h"
 #include "rules.h"
-#include "delineation.h"
-
 
 namespace smtrat::cadcells::operators {
 
 template <>
 struct PropertiesSet<op::mccallum> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::root_inv,properties::root_semi_inv>;
+    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected>;
 };
 
 template <>
@@ -21,9 +19,6 @@ inline bool project_basic_properties<op::mccallum>(datastructures::DelineatedDer
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
         deriv.insert(properties::poly_sgn_inv{prop.poly});
-    }
-    for(const auto& prop : deriv.properties<properties::root_semi_inv>()) {
-        deriv.insert(properties::root_inv{prop.root});
     }
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
@@ -35,11 +30,13 @@ template <>
 inline void delineate_properties<op::mccallum>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-        delineation::delineate(deriv, prop);
+        rules::delineate(deriv, prop);
     }
-    for(const auto& prop : deriv.properties<properties::root_inv>()) {
-        delineation::delineate(deriv, prop);
-    }
+}
+
+template <>
+inline void delineate_properties<op::mccallum>(datastructures::SampledDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+    delineate_properties<op::mccallum>(*deriv.delineated());
 }
 
 template <>
@@ -87,11 +84,6 @@ inline bool project_delineated_cell_properties<op::mccallum>(datastructures::Cel
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
             rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
-        }
-    }
-    for(const auto& prop : deriv.properties<properties::root_inv>()) {
-        if (repr.equational.find(prop.root.poly) == repr.equational.end()) {
-            rules::root_inv(deriv, repr.description, repr.ordering, prop.root);
         }
     }
     return true;

@@ -55,6 +55,11 @@ inline bool project_basic_properties(datastructures::DelineatedDerivation<typena
  */
 template <op Op>
 inline void delineate_properties(datastructures::DelineatedDerivation<typename PropertiesSet<Op>::type>& deriv);
+/**
+ * Delineate properties.
+ */
+template <op Op>
+inline void delineate_properties(datastructures::SampledDerivation<typename PropertiesSet<Op>::type>& deriv);
 
 /**
  * Project cell properties that depend on a delineation.
