@@ -21,7 +21,7 @@ namespace ordering_util {
 }
 
 template<typename P>
-void delineate(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
+void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
     auto decomposed = ordering_util::decompose(prop.ordering);
@@ -73,7 +73,7 @@ void delineate(datastructures::SampledDerivation<P>& deriv, const properties::ro
 }
 
 template<typename P>
-void delineate_fo(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
+void delineate_samples(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
     auto decomposed = ordering_util::decompose(prop.ordering);
@@ -118,7 +118,7 @@ void delineate_fo(datastructures::SampledDerivation<P>& deriv, const properties:
 }
 
 template<typename P>
-void delineate_alt(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
+void delineate_all_selective(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
     bool algebraic = std::find_if(deriv.underlying_sample().begin(), deriv.underlying_sample().end(), [](const auto& m) { return !m.second.is_numeric(); }) != deriv.underlying_sample().end();
@@ -183,7 +183,7 @@ void delineate_alt(datastructures::SampledDerivation<P>& deriv, const properties
 }
 
 template<typename P>
-void delineate_wb(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
+void delineate_bounds(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
     auto decomposed = ordering_util::decompose(prop.ordering);
