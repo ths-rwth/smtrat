@@ -10,7 +10,7 @@
 
 namespace smtrat::mcsat::onecell {
 
-using Settings = LDBSettings;
+using Settings = LDBSettings; // current default
 // using Settings = BCSettings;
 // using Settings = BCFilteredSettings;
 // using Settings = BCFilteredAllSettings;
