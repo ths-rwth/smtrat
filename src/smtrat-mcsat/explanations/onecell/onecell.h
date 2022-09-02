@@ -15,8 +15,6 @@
 
 namespace smtrat::mcsat::onecell {
 
-using DefaultSettings = LDBSettings;
-
 struct LDBSettings {
     // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
@@ -38,6 +36,8 @@ struct BCFilteredSettings {
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
 };
+
+using DefaultSettings = LDBSettings;
 
 /**
  * An MCSAT-style single cell explanation function.
