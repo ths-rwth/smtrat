@@ -203,6 +203,12 @@ public:
         return cache(sample).real_roots.at(p).roots();
     }
 
+    RAN evaluate(const Assignment& sample, IndexedRoot r) {
+        auto roots = real_roots(sample, r.poly);
+        assert(r.index <= roots.size());
+        return roots[r.index-1];
+    }
+
     bool is_nullified(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
         auto poly = m_pool(p);

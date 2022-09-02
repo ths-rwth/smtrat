@@ -233,17 +233,17 @@ struct root_ordering_holds {
     }
     std::size_t hash_on_level() const {
         return ordering.data().size();
-        auto hasher = std::hash<std::size_t>();
-        std::size_t seed = ordering.data().size();
-        for(auto& i : ordering.data()) {
-            std::size_t subseed = 0;
-            subseed ^= hasher(i.first.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-            subseed ^= hasher(i.first.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-            subseed ^= hasher(i.second.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-            subseed ^= hasher(i.second.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-            seed ^= subseed + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-        }
-        return seed;
+        // auto hasher = std::hash<std::size_t>();
+        // std::size_t seed = ordering.data().size();
+        // for(auto& i : ordering.data()) {
+        //     std::size_t subseed = 0;
+        //     subseed ^= hasher(i.first.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        //     subseed ^= hasher(i.first.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        //     subseed ^= hasher(i.second.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        //     subseed ^= hasher(i.second.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
+        //     seed ^= subseed + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        // }
+        // return seed;
     }
 };
 inline bool operator==(const root_ordering_holds& lhs, const root_ordering_holds& rhs) {

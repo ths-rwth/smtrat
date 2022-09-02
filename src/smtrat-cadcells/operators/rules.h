@@ -231,9 +231,9 @@ void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties:
 template<typename P>
 void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "connected(" << deriv.level() << ")");
-    if (!cell.is_section() && !cell.lower().is_infty() && !cell.upper().is_infty() && cell.lower().value().poly != cell.upper().value().poly) {
-        assert(deriv.contains(properties::poly_pdel{ cell.lower().value().poly }));
-        assert(deriv.contains(properties::poly_pdel{ cell.upper().value().poly }));
+    if (!cell.is_section() && !cell.lower().is_infty() && !cell.upper().is_infty() /*&& cell.lower().value().poly != cell.upper().value().poly*/) {
+        // assert(deriv.contains(properties::poly_pdel{ cell.lower().value().poly }));
+        // assert(deriv.contains(properties::poly_pdel{ cell.upper().value().poly }));
         assert(ordering.holds_transitive(cell.lower().value(),cell.upper().value(), false));
     }
     deriv.insert(properties::cell_connected{ deriv.level()-1 });
@@ -274,10 +274,22 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "repr(" << cell << ")");
     if (!cell.is_section()) {
         if (!cell.lower().is_infty()) {
-            root_represents(deriv, cell.lower().value());
+            if (cell.lower().value().is_root()) {
+                root_represents(deriv, cell.lower().value().root());
+            } else {
+                for (const auto& root : cell.lower().value().roots()) {
+                    root_represents(deriv, root);
+                }
+            }
         }
         if (!cell.upper().is_infty()) {
-            root_represents(deriv, cell.upper().value());
+            if (cell.upper().value().is_root()) {
+                root_represents(deriv, cell.upper().value().root());
+            } else {
+                for (const auto& root : cell.upper().value().roots()) {
+                    root_represents(deriv, root);
+                }
+            }
         }
     } else {
         root_represents(deriv, cell.section_defining());
@@ -287,16 +299,17 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
 template<typename P>
 void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "well_def(" << cell << ")");
-    if (!cell.is_section()) {
-        if (!cell.lower().is_infty()) {
-            deriv.insert(properties::root_well_def{ cell.lower().value() });
-        }
-        if (!cell.upper().is_infty()) {
-            deriv.insert(properties::root_well_def{ cell.upper().value() });
-        }
-    } else {
-        deriv.insert(properties::root_well_def{ cell.section_defining() });
-    }
+    // TODO remove!
+    // if (!cell.is_section()) {
+    //     if (!cell.lower().is_infty()) {
+    //         deriv.insert(properties::root_well_def{ cell.lower().value() });
+    //     }
+    //     if (!cell.upper().is_infty()) {
+    //         deriv.insert(properties::root_well_def{ cell.upper().value() });
+    //     }
+    // } else {
+    //     deriv.insert(properties::root_well_def{ cell.section_defining() });
+    // }
 }
 
 template<typename P>
@@ -304,11 +317,14 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     deriv.insert(properties::cell_connected{ deriv.level() });
     for (const auto& rel : ordering.data()) {
-        if (rel.first.poly != rel.second.poly) {
-            assert(rel.is_strict || (ordering.holds_transitive(rel.first,rel.second,false) && ordering.holds_transitive(rel.second,rel.first,false))); // not supported
-            assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
-            assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
+        assert(rel.first.is_root() && rel.second.is_root());
+        auto& first = rel.first.root();
+        auto& second = rel.second.root();
+        if (first.poly != second.poly) {
+            assert(rel.is_strict || (ordering.holds_transitive(first,second,false) && ordering.holds_transitive(second,first,false))); // not supported
+            assert(deriv.contains(properties::poly_pdel{ first.poly }));
+            assert(deriv.contains(properties::poly_pdel{ second.poly }));
+            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(first.poly, second.poly) });
         }
     }
 }
@@ -317,70 +333,88 @@ namespace additional_root_outside_util {
     inline boost::container::flat_set<datastructures::PolyRef> resultant_polys(const datastructures::PolyRef& poly, const datastructures::IndexedRootOrdering& ordering) {
         boost::container::flat_set<datastructures::PolyRef> result;
         for (const auto& rel : ordering.data()) {
-            if (rel.first.poly == poly) {
-                result.insert(rel.second.poly);
-            } else if (rel.second.poly == poly) {
-                result.insert(rel.first.poly);
+            if (rel.first.has_poly(poly)) {
+                rel.second.polys(result);
+            } else if (rel.second.has_poly(poly)) {
+                rel.first.polys(result);
             }
         }
         return result;
     }
-            
+
     template<typename P>
     inline std::optional<datastructures::IndexedRoot> protect_lower(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, const datastructures::PolyRef& poly, const boost::container::flat_set<datastructures::PolyRef>& res_polys, bool strict = false) {
-        if (poly == cell.lower().value().poly) return cell.lower().value();
+        {
+            auto ir = cell.lower().value().poly_root(poly);
+            if (ir) return *ir;
+        }
 
         auto lower_root = ordering.holds_transitive(poly, cell.lower().value(), strict);
         if (lower_root) {
-            if (deriv.contains(properties::root_well_def{*lower_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *lower_root)) {
-                return lower_root;
+            if (!lower_root->is_root()) {
+                assert(false);
+                return std::nullopt;
+            } else if (deriv.contains(properties::root_well_def{lower_root->root()}) || is_trivial_root_well_def(deriv.underlying().sampled(), lower_root->root())) {
+                return lower_root->root();
             }
         }
 
         // check if a res_poly has a well defined root below
         for (const auto& res_poly : res_polys) {
-            if (res_poly == cell.lower().value().poly) {
-                return cell.lower().value();
-            } else {
+            auto ir = cell.lower().value().poly_root(res_poly);
+            if (ir) return *ir;
+            else {
                 auto res_lower_root = ordering.holds_transitive(res_poly, cell.lower().value(), strict);
                 if (res_lower_root) {
-                    if (deriv.contains(properties::root_well_def{*res_lower_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_lower_root)) {
-                        return res_lower_root;
+                    if (!res_lower_root->is_root()) {
+                        assert(false);
+                        return std::nullopt;
+                    } else if (deriv.contains(properties::root_well_def{res_lower_root->root()}) || is_trivial_root_well_def(deriv.underlying().sampled(), res_lower_root->root())) {
+                        return res_lower_root->root();
                     }
                 }
             }
         }
 
-        if (lower_root) return lower_root;
+        if (lower_root) return lower_root->root();
         return std::nullopt;
     }
 
     template<typename P>
     inline std::optional<datastructures::IndexedRoot> protect_upper(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, const datastructures::PolyRef& poly, const boost::container::flat_set<datastructures::PolyRef>& res_polys, bool strict = false) {
-        if (poly == cell.upper().value().poly) return cell.upper().value();
+        {
+            auto ir = cell.upper().value().poly_root(poly);
+            if (ir) return *ir;
+        }
 
         auto upper_root = ordering.holds_transitive(cell.upper().value(), poly, strict);
         if (upper_root) {
-            if (deriv.contains(properties::root_well_def{*upper_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *upper_root)) {
-                return upper_root;
+            if (!upper_root->is_root()) {
+                assert(false);
+                return std::nullopt;
+            } else if (deriv.contains(properties::root_well_def{upper_root->root()}) || is_trivial_root_well_def(deriv.underlying().sampled(), upper_root->root())) {
+                return upper_root->root();
             }
         }
 
         // check if a res_poly has a well defined root above
         for (const auto& res_poly : res_polys) {
-            if (res_poly == cell.upper().value().poly) {
-                return cell.upper().value();
-            } else {
+            auto ir = cell.upper().value().poly_root(res_poly);
+            if (ir) return *ir;
+            else {
                 auto res_upper_root = ordering.holds_transitive(cell.upper().value(), res_poly, strict);
                 if (res_upper_root) {
-                    if (deriv.contains(properties::root_well_def{*res_upper_root}) || is_trivial_root_well_def(deriv.underlying().sampled(), *res_upper_root)) {
-                        return res_upper_root;
+                    if (!res_upper_root->is_root()) {
+                        assert(false);
+                        return std::nullopt;
+                    } else if (deriv.contains(properties::root_well_def{res_upper_root->root()}) || is_trivial_root_well_def(deriv.underlying().sampled(), res_upper_root->root())) {
+                        return res_upper_root->root();
                     }
                 }
             }
         }
 
-        if (upper_root) return upper_root;
+        if (upper_root) return upper_root->root();
         return std::nullopt;
     }
 }
