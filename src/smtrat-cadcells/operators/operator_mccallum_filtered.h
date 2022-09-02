@@ -45,7 +45,7 @@ inline void delineate_properties<op::mccallum_filtered>(datastructures::SampledD
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
         rules::delineate(deriv, prop);
         // rules::delineate_fo(deriv, prop);
-        // rules::delineate_fo_alt(deriv, prop);
+        // rules::delineate_alt(deriv, prop);
         // rules::delineate_wb(deriv, prop);
         // rules::delineate_noop(deriv, prop);
     }

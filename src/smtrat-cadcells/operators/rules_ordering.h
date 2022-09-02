@@ -41,8 +41,6 @@ void delineate(datastructures::SampledDerivation<P>& deriv, const properties::ro
                     if (all_relations_weak) return filter_util::result::INCLUSIVE;
                     else return filter_util::result::NORMAL;
                 } else {
-                    // SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> omit root " << ran);
-                    // return filter_util::result::OMIT;
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
                     if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                     else return filter_util::result::NORMAL_OPTIONAL;
@@ -60,20 +58,15 @@ void delineate(datastructures::SampledDerivation<P>& deriv, const properties::ro
                     assert(index2 <= roots2.size());
                     if (roots1[index1-1] == roots2[index2-1]) {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                        if (all_relations_weak) return filter_util::result::INCLUSIVE;
-                        else return filter_util::result::NORMAL;
-                        // if (pair.is_strict) return filter_util::result::INCLUSIVE;
+                        // if (all_relations_weak) return filter_util::result::INCLUSIVE;
                         // else return filter_util::result::NORMAL;
+                        if (pair.is_strict) return filter_util::result::INCLUSIVE;
+                        else return filter_util::result::NORMAL;
                     }
                 }
-                //if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
                 if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                 else return filter_util::result::NORMAL_OPTIONAL;
-                //} else {
-                //    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> omit root " << ran);
-                //    return filter_util::result::OMIT;
-                //}
             }
         });
     }
@@ -125,7 +118,7 @@ void delineate_fo(datastructures::SampledDerivation<P>& deriv, const properties:
 }
 
 template<typename P>
-void delineate_fo_alt(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
+void delineate_alt(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
     bool algebraic = std::find_if(deriv.underlying_sample().begin(), deriv.underlying_sample().end(), [](const auto& m) { return !m.second.is_numeric(); }) != deriv.underlying_sample().end();
@@ -135,11 +128,14 @@ void delineate_fo_alt(datastructures::SampledDerivation<P>& deriv, const propert
         const auto& poly1 = d.first.first;
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
+        bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
         std::optional<carl::Interval<RAN>> delineable_interval;
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             if (algebraic || !ran.is_numeric()) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sample is algebraic, adding " << ran);
-                return filter_util::result::NORMAL;
+                // return filter_util::result::NORMAL;
+                if (all_relations_weak) return filter_util::result::INCLUSIVE;
+                else return filter_util::result::NORMAL;
             }
             if (!delineable_interval) {
                 delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
@@ -150,10 +146,14 @@ void delineate_fo_alt(datastructures::SampledDerivation<P>& deriv, const propert
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
                 if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
-                    return filter_util::result::NORMAL;
+                    // return filter_util::result::NORMAL;
+                    if (all_relations_weak) return filter_util::result::INCLUSIVE;
+                    else return filter_util::result::NORMAL;
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
-                    return filter_util::result::NORMAL_OPTIONAL;
+                    // return filter_util::result::NORMAL_OPTIONAL;
+                    if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                    else return filter_util::result::NORMAL_OPTIONAL;
                 }
             } else {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
@@ -168,11 +168,15 @@ void delineate_fo_alt(datastructures::SampledDerivation<P>& deriv, const propert
                     assert(index2 <= roots2.size());
                     if (roots1[index1-1] == roots2[index2-1]) {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                        return filter_util::result::NORMAL;
+                        // return filter_util::result::NORMAL;
+                        if (pair.is_strict) return filter_util::result::INCLUSIVE;
+                        else return filter_util::result::NORMAL;
                     }
                 }
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
-                return filter_util::result::NORMAL_OPTIONAL;
+                // return filter_util::result::NORMAL_OPTIONAL;
+                if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                else return filter_util::result::NORMAL_OPTIONAL;
             }
         });
     }
