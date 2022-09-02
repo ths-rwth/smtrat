@@ -37,7 +37,21 @@ struct BCFilteredSettings {
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
 };
 
-using DefaultSettings = LDBSettings;
+struct BCFilteredAllSettings : BCFilteredSettings{
+    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all;
+};
+
+struct BCFilteredBoundsSettings : BCFilteredSettings{
+    constexpr static auto op = cadcells::operators::op::mccallum_filtered_bounds;
+};
+
+struct BCFilteredSamplesSettings : BCFilteredSettings{
+    constexpr static auto op = cadcells::operators::op::mccallum_filtered_samples;
+};
+
+struct BCFilteredAllSelectiveSettings : BCFilteredSettings{
+    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
+};
 
 /**
  * An MCSAT-style single cell explanation function.

@@ -10,6 +10,14 @@
 
 namespace smtrat::mcsat::onecell {
 
+using Settings = LDBSettings;
+// using Settings = BCSettings;
+// using Settings = BCFilteredSettings;
+// using Settings = BCFilteredAllSettings;
+// using Settings = BCFilteredBoundsSettings;
+// using Settings = BCFilteredSamplesSettings;
+// using Settings = BCFilteredAllSelectiveSettings;
+
 std::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -49,7 +57,7 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         }
     }
     SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << constr << " with " << vars << " and " << ass);
-    auto result = onecell<DefaultSettings>(constr, context, ass); 
+    auto result = onecell<Settings>(constr, context, ass); 
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");
