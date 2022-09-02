@@ -15,7 +15,9 @@
 
 namespace smtrat::mcsat::onecell {
 
-struct DefaultSettings {
+using DefaultSettings = LDBSettings;
+
+struct LDBSettings {
     // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
     // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
@@ -25,14 +27,13 @@ struct DefaultSettings {
     constexpr static auto op = cadcells::operators::op::mccallum;
 };
 
-struct BiggestCellSettings {
+struct BCSettings {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
 };
 
-// TODO the mccallum_filtered operator is work in progress and atm incorrect
-struct FilteredSettings {
+struct BCFilteredSettings {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_EW;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
