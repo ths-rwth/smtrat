@@ -63,33 +63,50 @@ inline std::optional<datastructures::IndexedRootOrdering> simplest_biggest_cell_
     
     if (!delin_interval.lower_unbounded()) {
         auto it = delin_interval.lower();
+        bool at_lower = true;
         while(true) {
             for (const auto& ir : it->second) {
                 if (ir.root != interval.lower().value()) {
-                    if (enable_weak && (interval.lower().is_strict() || ir.is_inclusive)) {
+                    bool p_at_lower = std::find_if(delin_interval.lower()->second.begin(), delin_interval.lower()->second.end(), [&ir](const auto& tir) {
+                        return tir.origin && *tir.origin == *ir.origin;
+                    }) != delin_interval.lower()->second.end();
+                    if (enable_weak && (interval.lower().is_strict() || (ir.is_inclusive && !p_at_lower))) {
                         ordering.add_leq(ir.root, interval.lower().value());
                     } else {
-                        ordering.add_less(ir.root, interval.lower().value());
+                        if (at_lower) {
+                            ordering.add_eq(ir.root, interval.lower().value());
+                        } else {
+                            ordering.add_less(ir.root, interval.lower().value());
+                        }
                     }
-                    
                 } 
             }
+            at_lower = false;
             if (it != delin.roots().begin()) it--;
             else break;
         }
     }
     if (!delin_interval.upper_unbounded()) {
         auto it = delin_interval.upper();
+        bool at_upper = true;
         while(it != delin.roots().end()) {
             for (const auto& ir : it->second) {
                 if (ir.root != interval.upper().value()) {
-                    if (enable_weak && (interval.upper().is_strict() || ir.is_inclusive)) {
+                    bool p_at_upper = std::find_if(delin_interval.upper()->second.begin(), delin_interval.upper()->second.end(), [&ir](const auto& tir) {
+                        return tir.origin && *tir.origin == *ir.origin;
+                    }) != delin_interval.upper()->second.end();
+                    if (enable_weak && (interval.upper().is_strict() || (ir.is_inclusive && !p_at_upper))) {
                         ordering.add_leq(interval.upper().value(), ir.root);
                     } else {
-                        ordering.add_less(interval.upper().value(), ir.root);
+                        if (at_upper) {
+                            ordering.add_eq(interval.upper().value(), ir.root);
+                        } else {
+                            ordering.add_less(interval.upper().value(), ir.root);
+                        }
                     }
                 }
             }
+            at_upper = false;
             it++;
         }
     }
@@ -211,14 +228,25 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
     }
 
     for (const auto& p : polys) {
+        bool p_at_lower = !delin_interval.lower_unbounded() ||  std::find_if(delin_interval.lower()->second.begin(), delin_interval.lower()->second.end(), [&p](const auto& tir) {
+            return tir.origin && *tir.origin == p;
+        }) != delin_interval.lower()->second.end();
+        bool p_at_upper = !delin_interval.upper_unbounded() ||  std::find_if(delin_interval.upper()->second.begin(), delin_interval.upper()->second.end(), [&p](const auto& tir) {
+            return tir.origin && *tir.origin == p;
+        }) != delin_interval.upper()->second.end();
+
         datastructures::IndexedRoot prev;
         for (auto it = begin; it != end; it++) {
             for (const auto t_root : it->second) {
                 bool same_value = false;
                 if (*t_root.origin == p) {
                     if (prev == datastructures::IndexedRoot()) {
-                        if (!interval.lower().is_infty()) {
-                            out.add_leq(interval.lower().value(), t_root.root);
+                        if (!interval.lower().is_infty() && interval.lower().value() != t_root.root) {
+                            if (interval.lower().is_weak() && p_at_lower) {
+                                out.add_eq(interval.lower().value(), t_root.root);
+                            } else {
+                                out.add_leq(interval.lower().value(), t_root.root);
+                            }
                         }
                     } else {
                         if (same_value) out.add_eq(prev, t_root.root);
@@ -230,8 +258,12 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
             }
         }
         assert(prev != datastructures::IndexedRoot());
-        if (!interval.upper().is_infty()) {
-            out.add_leq(prev, interval.upper().value());
+        if (!interval.upper().is_infty() && interval.upper().value() != prev) {
+            if (interval.upper().is_weak() && p_at_upper) {
+                out.add_eq(prev, interval.upper().value());
+            } else {
+                out.add_leq(prev, interval.upper().value());
+            }
         }
     }
 }

@@ -101,12 +101,12 @@ void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastru
         switch (filter_condition(entry.first)) {
         case result::NORMAL:
             for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir });
+                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, false, false, poly });
             }
             break;
         case result::INCLUSIVE:
             for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true });
+                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true, false, poly });
             }
             break;
         case result::NORMAL_OPTIONAL:

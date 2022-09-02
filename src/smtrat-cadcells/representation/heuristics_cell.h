@@ -67,9 +67,6 @@ struct cell<CellHeuristic::BIGGEST_CELL_EW> {
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            // auto res = simplest_biggest_cell_ordering(der->proj(), der->delin(), der->cell(), response.description);
-            // if (!res) return std::nullopt;
-            // response.ordering = *res;
             datastructures::Delineation reduced_delineation;
             util::PolyDelineations poly_delins;
             util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
