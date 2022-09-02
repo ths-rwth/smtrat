@@ -305,7 +305,7 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
     deriv.insert(properties::cell_connected{ deriv.level() });
     for (const auto& rel : ordering.data()) {
         if (rel.first.poly != rel.second.poly) {
-            assert(rel.is_strict); // not supported
+            assert(rel.is_strict || (ordering.holds_transitive(rel.first,rel.second,false) && ordering.holds_transitive(rel.second,rel.first,false))); // not supported
             assert(deriv.contains(properties::poly_pdel{ rel.first.poly }));
             assert(deriv.contains(properties::poly_pdel{ rel.second.poly }));
             deriv.insert(properties::poly_ord_inv{ deriv.proj().res(rel.first.poly, rel.second.poly) });
