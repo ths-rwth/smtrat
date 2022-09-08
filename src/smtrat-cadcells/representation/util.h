@@ -228,10 +228,10 @@ inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const d
     }
 
     for (const auto& p : polys) {
-        bool p_at_lower = !delin_interval.lower_unbounded() ||  std::find_if(delin_interval.lower()->second.begin(), delin_interval.lower()->second.end(), [&p](const auto& tir) {
+        bool p_at_lower = !delin_interval.lower_unbounded() && std::find_if(delin_interval.lower()->second.begin(), delin_interval.lower()->second.end(), [&p](const auto& tir) {
             return tir.origin && *tir.origin == p;
         }) != delin_interval.lower()->second.end();
-        bool p_at_upper = !delin_interval.upper_unbounded() ||  std::find_if(delin_interval.upper()->second.begin(), delin_interval.upper()->second.end(), [&p](const auto& tir) {
+        bool p_at_upper = !delin_interval.upper_unbounded() && std::find_if(delin_interval.upper()->second.begin(), delin_interval.upper()->second.end(), [&p](const auto& tir) {
             return tir.origin && *tir.origin == p;
         }) != delin_interval.upper()->second.end();
 
