@@ -60,7 +60,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                         // if (all_relations_weak) return filter_util::result::INCLUSIVE;
                         // else return filter_util::result::NORMAL;
-                        if (pair.is_strict) return filter_util::result::INCLUSIVE;
+                        if (!pair.is_strict) return filter_util::result::INCLUSIVE;
                         else return filter_util::result::NORMAL;
                     }
                 }
@@ -169,7 +169,7 @@ void delineate_all_selective(datastructures::SampledDerivation<P>& deriv, const 
                     if (roots1[index1-1] == roots2[index2-1]) {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                         // return filter_util::result::NORMAL;
-                        if (pair.is_strict) return filter_util::result::INCLUSIVE;
+                        if (!pair.is_strict) return filter_util::result::INCLUSIVE;
                         else return filter_util::result::NORMAL;
                     }
                 }
