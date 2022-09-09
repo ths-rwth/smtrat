@@ -377,7 +377,7 @@ class IndexedRootOrdering {
 
 public:
     void add_leq(RootFunction first, RootFunction second) {
-        assert(first.poly.level == second.poly.level);
+        //assert(first.poly.level == second.poly.level);
         if (first != second) {
             m_data.push_back(IndexedRootRelation{first, second, false});
             if (!m_leq.contains(first)) m_leq.emplace(first, boost::container::flat_set<RootFunction>());
@@ -388,7 +388,7 @@ public:
     }
 
     void add_less(RootFunction first, RootFunction second) {
-        assert(first.poly.level == second.poly.level);
+        //assert(first.poly.level == second.poly.level);
         assert(first != second);
         m_data.push_back(IndexedRootRelation{first, second, true});
         if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<RootFunction>());
@@ -398,7 +398,7 @@ public:
     }
 
     void add_eq(RootFunction first, RootFunction second) {
-        assert(first.poly.level == second.poly.level);
+        //assert(first.poly.level == second.poly.level);
         if (first == second) return;
         add_leq(first, second);
         add_leq(second, first);
