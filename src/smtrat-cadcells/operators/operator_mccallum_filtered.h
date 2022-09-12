@@ -70,8 +70,6 @@ inline bool project_delineated_cell_properties(datastructures::CellRepresentatio
     rules::cell_analytic_submanifold(deriv, repr.description);
     if (cell_represents) {
         rules::cell_represents(deriv, repr.description);
-    } else {
-        rules::cell_well_def(deriv, repr.description);
     }
 
     if (!repr.equational.empty()) {

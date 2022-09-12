@@ -297,22 +297,6 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
 }
 
 template<typename P>
-void cell_well_def(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "well_def(" << cell << ")");
-    // TODO remove!
-    // if (!cell.is_section()) {
-    //     if (!cell.lower().is_infty()) {
-    //         deriv.insert(properties::root_well_def{ cell.lower().value() });
-    //     }
-    //     if (!cell.upper().is_infty()) {
-    //         deriv.insert(properties::root_well_def{ cell.upper().value() });
-    //     }
-    // } else {
-    //     deriv.insert(properties::root_well_def{ cell.section_defining() });
-    // }
-}
-
-template<typename P>
 void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     deriv.insert(properties::cell_connected{ deriv.level() });
