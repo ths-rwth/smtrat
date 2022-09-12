@@ -18,6 +18,8 @@ using Settings = LDBSettings; // current default
 // using Settings = BCFilteredSamplesSettings;
 // using Settings = BCFilteredAllSelectiveSettings;
 
+// TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
+
 std::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
     #ifdef SMTRAT_DEVOPTION_Statistics
