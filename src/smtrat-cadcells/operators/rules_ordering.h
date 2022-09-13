@@ -182,7 +182,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
-                if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) { // TODO optionally disable these checks?
+                if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
                     if (all_relations_weak) return filter_util::result::INCLUSIVE;
                     else return filter_util::result::NORMAL;
@@ -292,7 +292,7 @@ void delineate_all_selective(datastructures::SampledDerivation<P>& deriv, const 
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
-                if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
+                if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) { // TODO disable check?
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
                     // return filter_util::result::NORMAL;
                     if (all_relations_weak) return filter_util::result::INCLUSIVE;
