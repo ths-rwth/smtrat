@@ -1,6 +1,7 @@
 #include "AssignmentFinder.h"
 
 #include "AssignmentFinder_arithmetic.h"
+//#include "AssignmentFinder_ctx.h"
 
 namespace smtrat {
 namespace mcsat {
@@ -11,6 +12,9 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 	#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.called();
 	#endif
+	// auto var_order = data.assignedVariables();
+	// var_order.push_back(var);
+	// AssignmentFinder_ctx af(var_order, var, data.model());
 	AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
@@ -18,7 +22,7 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 			SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Skipping inactive Constraint " << c);
 			continue;
 		}
-		assert(c.getType() == carl::FormulaType::CONSTRAINT);
+		assert(c.type() == carl::FormulaType::CONSTRAINT);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding Constraint " << c);
 		if(!af.addConstraint(c)){
 			conflict.push_back(c);
@@ -46,21 +50,21 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 }
 
 bool AssignmentFinder::active(const mcsat::Bookkeeping& data, const FormulaT& f) const {
-		if(f.getType() != carl::FormulaType::VARCOMPARE)
+		if(f.type() != carl::FormulaType::VARCOMPARE)
 			return true;
 
-		const auto& val = f.variableComparison().value();
+		const auto& val = f.variable_comparison().value();
 		if (std::holds_alternative<VariableComparisonT::RAN>(val)) {
 			return true;
 		} else {
-			if (data.model().find(f.variableComparison().var()) == data.model().end()) {
+			if (data.model().find(f.variable_comparison().var()) == data.model().end()) {
 				return true;
 			} else {
 				const auto& mvroot = std::get<MultivariateRootT>(val);
 				auto vars = carl::variables(mvroot.poly()).as_set();
 				vars.erase(mvroot.var());
 				for (auto iter = data.assignedVariables().begin(); iter != data.assignedVariables().end(); iter++) {
-					if (*iter == f.variableComparison().var()) {
+					if (*iter == f.variable_comparison().var()) {
 						break;
 					}
 					vars.erase(*iter);

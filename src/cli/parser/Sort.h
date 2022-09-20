@@ -1,6 +1,6 @@
 #pragma once
 
-#include <carl/formula/SortManager.h>
+#include <carl-formula/sort/SortManager.h>
 
 #include "Common.h"
 #include "Lexicon.h"

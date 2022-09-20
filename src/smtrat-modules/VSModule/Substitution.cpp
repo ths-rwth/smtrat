@@ -64,15 +64,15 @@ namespace vs
                 return 9;
             else if( type() == NORMAL )
             {
-                if( term().isConstant() )
+                if( term().is_constant() )
                     return 8;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 4;
                     else
                     {
-                        if( term().denominator().isConstant() )
+                        if( term().denominator().is_constant() )
                             return 6;
                         else
                             return 5;
@@ -81,15 +81,15 @@ namespace vs
             }
             else
             {
-                if( term().isConstant() )
+                if( term().is_constant() )
                     return 7;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 1;
                     else
                     {
-                        if( term().denominator().isConstant() )
+                        if( term().denominator().is_constant() )
                             return 3;
                         else
                             return 2;
@@ -103,15 +103,15 @@ namespace vs
                 return 1;
             else if( type() == NORMAL )
             {
-                if( term().isConstant() )
+                if( term().is_constant() )
                     return 9;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 5;
                     else
                     {
-                        if( term().denominator().isConstant() )
+                        if( term().denominator().is_constant() )
                             return 7;
                         else
                             return 6;
@@ -120,15 +120,15 @@ namespace vs
             }
             else
             {
-                if( term().isConstant() )
+                if( term().is_constant() )
                     return 8;
                 else
                 {
-                    if( term().hasSqrt() )
+                    if( term().has_sqrt() )
                         return 2;
                     else
                     {
-                        if( term().denominator().isConstant() )
+                        if( term().denominator().is_constant() )
                             return 4;
                         else
                             return 3;

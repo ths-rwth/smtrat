@@ -8,7 +8,7 @@
 #include "parser_smtlib_utils.h"
 #include "execute_smtlib.h"
 
-#include <carl/formula/helpers/to_cnf.h>
+#include <carl-formula/formula/functions/CNF.h>
 #include <carl-io/DIMACSExporter.h>
 #include <carl-io/SMTLIBStream.h>
 
@@ -18,7 +18,7 @@ int convert_to_cnf_dimacs(const std::string& filename, const std::string& outfil
 	auto e = parseformula::FormulaCollector();
 	executeFile(filename, e);
 
-	carl::DIMACSExporter<Poly> exporter;
+	carl::io::DIMACSExporter<Poly> exporter;
 	exporter(carl::to_cnf(e.getFormula()));
 
 	if (outfile.empty()) {
@@ -39,10 +39,10 @@ int convert_to_cnf_smtlib(const std::string& filename, const std::string& outfil
 	auto f_in_cnf = carl::to_cnf(e.getFormula());
 
 	if (outfile.empty()) {
-		e.regular() << carl::outputSMTLIB(e.getLogic(), { f_in_cnf });
+		e.regular() << carl::io::outputSMTLIB(e.getLogic(), { f_in_cnf });
 	} else {
 		std::ofstream file(outfile);
-		file << carl::outputSMTLIB(e.getLogic(), { f_in_cnf });
+		file << carl::io::outputSMTLIB(e.getLogic(), { f_in_cnf });
 		file.close();
 	}
 

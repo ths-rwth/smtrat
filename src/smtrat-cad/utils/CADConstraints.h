@@ -10,6 +10,7 @@
 #include "../common.h"
 #include "../Settings.h"
 #include "../debug/DotHelper.h"
+#include <carl-arith/constraint/IntervalEvaluation.h>
 
 namespace smtrat {
 namespace cad {
@@ -24,7 +25,7 @@ public:
 protected:
 	struct ConstraintComparator {
 		std::size_t complexity(const ConstraintT& c) const {
-			return c.maxDegree() * c.variables().size() * c.lhs().size();
+			return c.max_degree() * variables(c).size() * c.lhs().size();
 		}
 		bool operator()(const ConstraintT& lhs, const ConstraintT& rhs) const {
 			auto cl = complexity(lhs);
@@ -132,7 +133,7 @@ public:
                         assert(r.second);
                         mConstraintIts[id] = r.first;
 		}
-		auto vars = c.variables();
+		auto vars = carl::variables(c);
 		for (std::size_t level = mVariables.size(); level > 0; level--) {
 			vars.erase(mVariables[level - 1]);
 			if (vars.empty()) {
@@ -223,7 +224,7 @@ public:
 		for (const auto& c: mConstraintIts) {
 			if (c == mConstraintMap.end()) continue;
 			SMTRAT_LOG_TRACE("smtrat.cad", "Checking " << c->first << " against " << intervalmap);
-			switch (c->first.consistentWith(intervalmap)) {
+			switch (consistent_with(c->first.constr(),intervalmap)) {
 				case 0: {
 					SMTRAT_LOG_INFO("smtrat.cad", "Single constraint conflicts with bounds: " << c->first << std::endl << bounds());
 					mis.emplace_back();

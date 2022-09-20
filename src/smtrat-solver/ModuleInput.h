@@ -182,7 +182,7 @@ namespace smtrat
          * @return true, if this formula is a conjunction of constraints;
          *         false, otherwise.
          */
-        bool isConstraintConjunction() const
+        bool is_constraint_conjunction() const
         {
             if( carl::PROP_IS_PURE_CONJUNCTION <= mProperties )
                 return !(carl::PROP_CONTAINS_BOOLEAN <= mProperties) && !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties);
@@ -206,9 +206,9 @@ namespace smtrat
          * @return true, if this formula is a conjunction of real constraints;
          *         false, otherwise.
          */
-        bool isRealConstraintConjunction() const
+        bool is_real_constraint_conjunction() const
         {
-            return isConstraintConjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties) && !(carl::PROP_CONTAINS_PSEUDOBOOLEAN <= mProperties);
+            return is_constraint_conjunction() && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= mProperties) && !(carl::PROP_CONTAINS_PSEUDOBOOLEAN <= mProperties);
         }
 
         /**
@@ -224,9 +224,9 @@ namespace smtrat
          * @return true, if this formula is a conjunction of integer constraints;
          *         false, otherwise.
          */
-        bool isIntegerConstraintConjunction() const
+        bool is_integer_constraint_conjunction() const
         {
-            return isConstraintConjunction() && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
+            return is_constraint_conjunction() && !(carl::PROP_CONTAINS_REAL_VALUED_VARS <= mProperties);
         }
 
         /**
@@ -287,7 +287,7 @@ namespace smtrat
          * @return true, if this formula is propositional;
          *         false, otherwise.
          */
-        bool isOnlyPropositional() const
+        bool is_only_propositional() const
         {
             return !(carl::PROP_CONTAINS_BITVECTOR <= mProperties) 
                 && !(carl::PROP_CONTAINS_UNINTERPRETED_EQUATIONS <= mProperties)
@@ -312,7 +312,7 @@ namespace smtrat
          *         2, if it cannot be determined cheaply, whether the given assignment conflicts or satisfies 
          *            the conjunction of the stored formulas.
          */
-        unsigned satisfiedBy( const EvalRationalMap& _assignment ) const;
+        unsigned satisfiedBy( const RationalAssignment& _assignment ) const;
 
 		const auto& back() const {
 			return super::back();
@@ -381,7 +381,7 @@ namespace smtrat
 
 		void gatherVariables(carl::carlVariables& vars) const {
 			for (const auto& f: *this) {
-				f.formula().gatherVariables(vars);
+				carl::variables(f.formula(), vars);
 			}
 		}
         

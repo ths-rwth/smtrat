@@ -5,7 +5,7 @@
 
 #pragma once
 
-#include "carl/formula/bitvector/Pool.h"
+#include "carl-formula/bitvector/Pool.h"
 #include "PolyTree.h"
 
 namespace smtrat

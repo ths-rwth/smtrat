@@ -11,14 +11,14 @@ struct ClauseChecker {
 	Model buildModel() const {
 		const auto& vp = carl::VariablePool::getInstance();
 		Model model;
-		model.emplace(vp.findVariableWithName("X"), Rational(1)/2);
-		model.emplace(vp.findVariableWithName("Y"), Rational(-2));
-		model.emplace(vp.findVariableWithName("Z"), Rational(2));
+		model.emplace(vp.find_variable_with_name("X"), Rational(1)/2);
+		model.emplace(vp.find_variable_with_name("Y"), Rational(-2));
+		model.emplace(vp.find_variable_with_name("Z"), Rational(2));
 		return model;
 	}
 
 	void operator()(const FormulaT& formula) const {
-		if (formula.getType() == carl::FormulaType::OR) {
+		if (formula.type() == carl::FormulaType::OR) {
 			(*this)(formula.subformulas());
 		} else {
 			(*this)(FormulasT({formula}));
@@ -29,7 +29,7 @@ struct ClauseChecker {
 		bool allFalse = true;
 		SMTRAT_LOG_DEBUG("smtrat.sat.clausechecker", "Model: " << model);
 		for (const auto& f: formulas) {
-			ModelValue res = carl::model::evaluate(f, model);
+			ModelValue res = carl::evaluate(f, model);
 			SMTRAT_LOG_DEBUG("smtrat.sat.clausechecker", f << " -> " << res);
 			if (res.isBool()) {
 				allFalse = allFalse && !res.asBool();

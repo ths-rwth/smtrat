@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # This script can be called on smt2-files on which SMT-RAT returns a wrong. 
+# ddsmt-wrong <in.smt2> <out.smt2> <solver>
 
 cp $1 $2.in
 sed '/(set-info :status sat)/d' $2.in >$2.tmp
@@ -8,5 +9,5 @@ sed '/(set-info :status unsat)/d' $2.tmp >$2.in
 rm $2.tmp
 
 parent_path=$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )
-ddsmt --ignore-output $2.in $2 $parent_path/result_differs.py $3
+ddsmt -j8 --ignore-output $2.in $2 $parent_path/result_differs.py $3
 rm $2.in

@@ -14,13 +14,13 @@ namespace smtrat {
 			std::string name() { return "CardinalityEncoder"; }
 
 		protected:
-			boost::optional<FormulaT> doEncode(const ConstraintT& constraint);
+			std::optional<FormulaT> doEncode(const ConstraintT& constraint);
 
 		private:
-			boost::optional<FormulaT> encodeExactly(const ConstraintT& constraint);
+			std::optional<FormulaT> encodeExactly(const ConstraintT& constraint);
 			FormulaT encodeExactly(const std::vector<carl::Variable>& variables, const Rational constant);
-			boost::optional<FormulaT> encodeAtLeast(const ConstraintT& constraint);
-			boost::optional<FormulaT> encodeAtMost(const ConstraintT& constraint);
+			std::optional<FormulaT> encodeAtLeast(const ConstraintT& constraint);
+			std::optional<FormulaT> encodeAtMost(const ConstraintT& constraint);
 
 	};
 }

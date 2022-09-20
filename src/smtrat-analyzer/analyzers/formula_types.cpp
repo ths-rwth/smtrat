@@ -16,12 +16,11 @@ void analyze_formula_types(const FormulaT& f, AnalyzerStatistics& stats) {
 	DegreeCollector dc;
 
 
-	carl::FormulaVisitor<FormulaT> fv;
-	fv.visit(f, [&](const FormulaT& f){
+	carl::visit(f, [&](const FormulaT& f){
 		++num_formulas;
-		if (f.getType() == carl::FormulaType::OR) {
+		if (f.type() == carl::FormulaType::OR) {
 			++num_or;
-		} else if (f.getType() == carl::FormulaType::CONSTRAINT) {
+		} else if (f.type() == carl::FormulaType::CONSTRAINT) {
 			++num_constraints;
 			num_variable_occurrences += f.variables().size();
 			dc(f.constraint());

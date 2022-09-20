@@ -3,7 +3,7 @@
 #include <functional>
 #include <type_traits>
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <boost/variant.hpp>
 
 #include "Expression.h"
@@ -16,8 +16,8 @@ namespace expression {
 	public:
 		typedef std::function<void(const Expression&)> VisitorFunction;
 	private:
-		boost::optional<VisitorFunction> mPre;
-		boost::optional<VisitorFunction> mPost;
+		std::optional<VisitorFunction> mPre;
+		std::optional<VisitorFunction> mPost;
 	public:
 		void setPre(const VisitorFunction& f) {
 			mPre = f;
@@ -60,8 +60,8 @@ namespace expression {
 	public:
 		typedef std::function<const ExpressionContent*(const Expression&)> VisitorFunction;
 	private:
-		boost::optional<VisitorFunction> mPre;
-		boost::optional<VisitorFunction> mPost;
+		std::optional<VisitorFunction> mPre;
+		std::optional<VisitorFunction> mPost;
 		
 		const ExpressionContent* internalVisit(const ExpressionContent* _content) {
 			const ExpressionContent* content = _content;

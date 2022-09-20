@@ -162,16 +162,16 @@ namespace smtrat
         Variable<T1,T2>* Tableau<Settings,T1,T2>::getVariable( const Poly& _lhs, T1& _factor, T1& _boundValue )
         {
             Variable<T1, T2>* result;
-            if( _lhs.nrTerms() == 1 || ( _lhs.nrTerms() == 2 && _lhs.hasConstantTerm() ) )
+            if( _lhs.nr_terms() == 1 || ( _lhs.nr_terms() == 2 && _lhs.has_constant_term() ) )
             {
                 // TODO: do not store the expanded polynomial, but use the coefficient and coprimeCoefficients
                 const typename Poly::PolyType& expandedPoly = _lhs.polynomial();
                 auto term = expandedPoly.begin();
                 for( ; term != expandedPoly.end(); ++term )
-                    if( !term->isConstant() ) break;
+                    if( !term->is_constant() ) break;
 				carl::Variable var = term->monomial()->begin()->first;
                 _factor = T1( term->coeff() ) * _lhs.coefficient();
-                _boundValue = T1( -_lhs.constantPart() )/_factor;
+                _boundValue = T1( -_lhs.constant_part() )/_factor;
                 auto basicIter = mOriginalVars.find( var );
                 // constraint not found, add new nonbasic variable
                 if( basicIter == mOriginalVars.end() )
@@ -187,14 +187,14 @@ namespace smtrat
             }
             else
             {
-                T1 constantPart( _lhs.constantPart() );
+                T1 constantPart( _lhs.constant_part() );
                 bool negative = (_lhs.lterm().coeff() < typename Poly::CoeffType(T1( 0 )));
                 typename Poly::PolyType* linearPart;
                 if( negative )
                     linearPart = new typename Poly::PolyType( -_lhs + (Rational)constantPart );
                 else
                     linearPart = new typename Poly::PolyType( _lhs - (Rational)constantPart );
-                _factor = linearPart->coprimeFactor();
+                _factor = linearPart->coprime_factor();
                 assert( _factor > 0 );
                 constantPart *= _factor;
                 (*linearPart) *= _factor;
@@ -203,7 +203,7 @@ namespace smtrat
                 typename carl::FastPointerMap<typename Poly::PolyType, Variable<T1, T2>*>::iterator slackIter = mSlackVars.find( linearPart );
                 if( slackIter == mSlackVars.end() )
                 {
-                    result = newBasicVariable( linearPart, _lhs.integerValued() );
+                    result = newBasicVariable( linearPart, _lhs.integer_valued() );
                     mSlackVars.insert( std::pair<const typename Poly::PolyType*, Variable<T1, T2>*>( linearPart, result ) );
                 }
                 else
@@ -220,7 +220,7 @@ namespace smtrat
         template<class Settings, typename T1, typename T2>
         Variable<T1,T2>* Tableau<Settings,T1,T2>::getObjectiveVariable( const Poly& _lhs )
         {
-            return newBasicVariable( new typename Poly::PolyType( _lhs ), _lhs.integerValued() );
+            return newBasicVariable( new typename Poly::PolyType( _lhs ), _lhs.integer_valued() );
         }
 
         template<class Settings, typename T1, typename T2>
@@ -229,9 +229,9 @@ namespace smtrat
             auto ctbIter = mConstraintToBound.find( _constraint );
             if( ctbIter != mConstraintToBound.end() )
                 return std::make_pair( *ctbIter->second->begin(), false );
-            assert( _constraint.getType() == carl::FormulaType::CONSTRAINT );
+            assert( _constraint.type() == carl::FormulaType::CONSTRAINT );
             const ConstraintT& constraint = _constraint.constraint();
-            assert( constraint.isConsistent() == 2 );
+            assert( constraint.is_consistent() == 2 );
             T1 factor( 0 );
             T1 boundValue( 0 );
             Variable<T1, T2>* newVar = getVariable( constraint.lhs(), factor, boundValue );
@@ -261,7 +261,7 @@ namespace smtrat
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
                     // create the complement
-                    Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    Value<T1>* vc = constraint.integer_valued() ? new Value<T1>( boundValue + (negative ? T1( -1 ) : T1( 1 )) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
@@ -285,7 +285,7 @@ namespace smtrat
                     mConstraintToBound[_constraint] = boundVector;
                     result.first->boundExists();
                     // create the complement
-                    Value<T1>* vc = constraint.integerValued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    Value<T1>* vc = constraint.integer_valued() ? new Value<T1>( boundValue + (negative ? T1( 1 ) : T1( -1 )) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     FormulaT complConstr( _constraint.constraint().lhs(), carl::inverse( _constraint.constraint().relation() ) );
                     const Bound<T1,T2>* complement = negative ? newVar->addLowerBound( vc, mDefaultBoundPosition, complConstr ).first : newVar->addUpperBound( vc, mDefaultBoundPosition, complConstr ).first;
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( complConstr, nullptr ) );
@@ -350,7 +350,7 @@ namespace smtrat
                 case carl::Relation::NEQ:
                 {
                     FormulaT constraintLess = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::LESS ) );
-                    Value<T1>* valueA = constraint.integerValued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
+                    Value<T1>* valueA = constraint.integer_valued() ? new Value<T1>( boundValue - T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( 1 ) : T1( -1 ) ) );
                     auto resultLess = negative ? newVar->addLowerBound( valueA, mDefaultBoundPosition, constraintLess ) : newVar->addUpperBound( valueA, mDefaultBoundPosition, constraintLess );
                     auto ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintLess, nullptr ) );
                     if( ctbInsertRes.second )
@@ -359,7 +359,7 @@ namespace smtrat
                         boundVector->push_back( resultLess.first );
                         ctbInsertRes.first->second = boundVector;
                     }
-//                    if( !constraint.integerValued() )
+//                    if( !constraint.integer_valued() )
                         resultLess.first->setNeqRepresentation( _constraint );
 
                     std::vector< const Bound<T1,T2>* >* boundVectorB = new std::vector< const Bound<T1,T2>* >();
@@ -394,7 +394,7 @@ namespace smtrat
                     boundVectorB->push_back( resultGeq.first );
 
                     FormulaT constraintGreater = FormulaT( smtrat::ConstraintT( constraint.lhs(), carl::Relation::GREATER ) );
-                    Value<T1>* valueD = constraint.integerValued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
+                    Value<T1>* valueD = constraint.integer_valued() ? new Value<T1>( boundValue + T1( 1 ) ) : new Value<T1>( boundValue, (negative ? T1( -1 ) : T1( 1 )) );
                     auto resultGreater = negative ? newVar->addUpperBound( valueD, mDefaultBoundPosition, constraintGreater ) : newVar->addLowerBound( valueD, mDefaultBoundPosition, constraintGreater );
                     ctbInsertRes = mConstraintToBound.insert( std::make_pair( constraintGreater, nullptr ) );
                     if( ctbInsertRes.second )
@@ -403,7 +403,7 @@ namespace smtrat
                         boundVector->push_back( resultGreater.first );
                         ctbInsertRes.first->second = boundVector;
                     }
-//                    if( !constraint.integerValued() )
+//                    if( !constraint.integer_valued() )
                         resultGreater.first->setNeqRepresentation( _constraint );
 
                     boundVectorB->push_back( resultGreater.first );
@@ -467,7 +467,7 @@ namespace smtrat
                     }
                     const Bound<T1,T2>* bound = boundVector->back();
                     assert(!bound->isActive());
-                    if( !bound->neqRepresentation().isTrue() )
+                    if( !bound->neqRepresentation().is_true() )
                     {
                         bound->markAsDeleted();
                     }
@@ -505,7 +505,7 @@ namespace smtrat
             if( !_optimizationVar )
                 mSlackVars.erase( _variable->pExpression() );
             assert( _variable->isBasic() );
-            mVariableIdAllocator.free( _variable->getId() );
+            mVariableIdAllocator.free( _variable->id() );
             delete _variable;
         }
 
@@ -524,8 +524,8 @@ namespace smtrat
             Variable<T1, T2>* var = new Variable<T1, T2>( mNonActiveBasics.begin(), _poly, mDefaultBoundPosition, _isInteger, mVariableIdAllocator.get() );
             for( auto term = _poly->begin(); term != _poly->end(); ++term )
             {
-                assert( !term->isConstant() );
-                assert( carl::isInteger( term->coeff() ) );
+                assert( !term->is_constant() );
+                assert( carl::is_integer( term->coeff() ) );
 				carl::Variable var = term->monomial()->begin()->first;
                 Variable<T1, T2>* nonBasic;
                 auto nonBasicIter = mOriginalVars.find( var );
@@ -539,7 +539,7 @@ namespace smtrat
                 {
                     nonBasic = nonBasicIter->second;
                 }
-                mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::getNum( term->coeff() ) ) );
+                mNonActiveBasics.front().emplace_back( nonBasic, T2( carl::get_num( term->coeff() ) ) );
             }
             return var;
         }
@@ -786,7 +786,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        EvalRationalMap Tableau<Settings,T1,T2>::getRationalAssignment() const
+        RationalAssignment Tableau<Settings,T1,T2>::getRationalAssignment() const
         {
             T1 minDelta = -1;
             mCurDelta = T1(0);
@@ -806,7 +806,7 @@ namespace smtrat
                 }
             }
             mCurDelta = minDelta < 0 ? T1(1) : minDelta;
-            EvalRationalMap result;
+            RationalAssignment result;
             // Calculate the rational assignment of all original variables.
             for( auto var : mColumns )
             {
@@ -814,7 +814,7 @@ namespace smtrat
                 {
                     T1 value = var->assignment().mainPart();
                     value += (var->assignment().deltaPart() * mCurDelta);
-                    result.insert( std::pair<const carl::Variable,T1>( var->expression().getSingleVariable(), value ) );
+                    result.insert( std::pair<const carl::Variable,T1>( var->expression().single_variable(), value ) );
                 }
             }
             for( auto var : mRows )
@@ -823,7 +823,7 @@ namespace smtrat
                 {
                     T1 value = var->assignment().mainPart();
                     value += (var->assignment().deltaPart() * mCurDelta);
-                    result.insert( std::pair<const carl::Variable,T1>( var->expression().getSingleVariable(), value ) );
+                    result.insert( std::pair<const carl::Variable,T1>( var->expression().single_variable(), value ) );
                 }
             }
             return result;
@@ -1099,7 +1099,7 @@ namespace smtrat
         }
 
         template<class Settings, typename T1, typename T2>
-        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
+        void Tableau<Settings,T1,T2>::computeLeavingCandidates(const std::size_t i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates){
             const Variable<T1,T2>& nVar = *mColumns[i];
 
             // consider possible leaving variables
@@ -1181,7 +1181,7 @@ namespace smtrat
             Value<T1> delta_new;
             Value<T1> new_dVio;
             T1 beta = mInfeasibilityRow[nVar.position()];
-            int candidate_index = 0;
+            std::size_t candidate_index = 0;
             if(candidates.empty())
                 return dVio_map;
             // beta_0 has to be adjusted for the delta_0 values
@@ -1366,7 +1366,7 @@ namespace smtrat
                 assert(mInfeasibilityRow == getInfeasibilityRow());
                 #endif
                 // leaving rule: minimizes d_Violation
-                std::vector< std::tuple <int, Value<T1>, Variable<T1,T2>* > > update_candidates;
+                std::vector< std::tuple <std::size_t, Value<T1>, Variable<T1,T2>* > > update_candidates;
 
                 // check conflicts
                 std::pair<EntryID,bool> conflictPair = hasConflict();
@@ -1399,7 +1399,7 @@ namespace smtrat
                 SMTRAT_LOG_DEBUG("smtrat", "Iteration over "<<mColumns.size()<<" columns");
 
                 bool found_improvement;
-                for(int column = 0; column < mColumns.size(); column++){
+                for(std::size_t column = 0; column < mColumns.size(); column++){
                     assert( mColumns[column] != NULL ); // non_basic variable must exist 
 
                     const Variable<T1,T2>& nVar = *mColumns[column];
@@ -1479,7 +1479,7 @@ namespace smtrat
                     std::pair<Value<T1>,Variable<T1,T2>*>* min_pair;
                     Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
                     SMTRAT_LOG_DEBUG("smtrat",  "Size leaving candidates is "<< leaving_candidates.size());
-                    for(int candidate_index = 0; candidate_index < leaving_candidates.size(); candidate_index++){ // can be optimized to only consider positive/negative values
+                    for(std::size_t candidate_index = 0; candidate_index < leaving_candidates.size(); candidate_index++){ // can be optimized to only consider positive/negative values
                         std::pair< Value<T1>, Variable<T1,T2>* >* candidate = &leaving_candidates[candidate_index]; // rename for easier access
                         if(leaving_dVio.find(candidate->first) == leaving_dVio.end()){
                             // doesnt need to be considered
@@ -1487,7 +1487,7 @@ namespace smtrat
                         }
                         assert(leaving_dVio.find(candidate->first) != leaving_dVio.end());
                         Value<T1> helper_diff = leaving_dVio[candidate->first];;
-                        SMTRAT_LOG_DEBUG("smtrat", "candidate is" << "(" << candidate->first << "," << candidate->second->position() << ")" << " id " << candidate->second->getId());
+                        SMTRAT_LOG_DEBUG("smtrat", "candidate is" << "(" << candidate->first << "," << candidate->second->position() << ")" << " id " << candidate->second->id());
 
                         // tie-breaking in the size of variable numbers
                         if( helper_diff < min_val){
@@ -1500,8 +1500,8 @@ namespace smtrat
                             min_pair = candidate;
                             SMTRAT_LOG_DEBUG("smtrat", "Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
                         }
-                        else if((helper_diff == min_val && candidate->first.abs() == min_pair->first.abs() && min_pair->second->getId() > candidate->second->getId() )){
-                            SMTRAT_LOG_DEBUG("smtrat", "ID: " << min_pair->second->getId() << " " << candidate->second->getId() );
+                        else if((helper_diff == min_val && candidate->first.abs() == min_pair->first.abs() && min_pair->second->id() > candidate->second->id() )){
+                            SMTRAT_LOG_DEBUG("smtrat", "ID: " << min_pair->second->id() << " " << candidate->second->id() );
                             min_val = helper_diff;
                             min_pair = candidate;
                             SMTRAT_LOG_DEBUG("smtrat", "Min_pair set to: "<< "(" << min_pair->first << "," << min_pair->second->position() << ")" );
@@ -1521,7 +1521,7 @@ namespace smtrat
                     }
 
                     // Abort computation of candidates after finding one with progress (atleast mFullCandidateSearch times all canidates are evaluated, then the amount increases depending on state of computation)
-                    if(mPivotingSteps > mFullCandidateSearch && column > mPivotingSteps/5.0){
+                    if(mPivotingSteps > mFullCandidateSearch && (double)column > (double)mPivotingSteps/5.0){
                         if(found_improvement){
                             break;
                         }
@@ -1532,7 +1532,7 @@ namespace smtrat
                     mOldVioSum = Value<T1>(-1);
                     mOld_dVioSum = Value<T1>(1);
                     std::vector<Variable<T1, T2>*> errorVars;
-                    for(int row = 0; row < mRows.size(); row++){
+                    for(std::size_t row = 0; row < mRows.size(); row++){
                         assert( mRows[row] != NULL ); // non_basic variable must exist
 
                         const Variable<T1,T2>& bVar = *mRows[row];
@@ -1571,10 +1571,10 @@ namespace smtrat
                 s.str("");
                 #endif
 
-                std::tuple <int, Value<T1>, Variable<T1,T2>* >* min_pair;
+                std::tuple <std::size_t, Value<T1>, Variable<T1,T2>* >* min_pair;
                 Value<T1> min_val = Value<T1>(std::numeric_limits<double>::max());
-                for(int candidate_index = 0; candidate_index < update_candidates.size(); candidate_index++){ 
-                    std::tuple<int, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
+                for(std::size_t candidate_index = 0; candidate_index < update_candidates.size(); candidate_index++){ 
+                    std::tuple<std::size_t, Value<T1>, Variable<T1,T2>*>* candidate = &update_candidates[candidate_index];
                     // compute sign(dVio)* abs(mInfeasibilityRow[v_j])
                     const Variable<T1,T2>& nVar = *mColumns[std::get<0>(*candidate)];
                     Value<T1> vio_sum = dViolationSum(&nVar, std::get<1>(*candidate));
@@ -1698,7 +1698,7 @@ namespace smtrat
 
         template<class Settings, typename T1, typename T2>
         bool Tableau<Settings,T1,T2>::hasMultilineConflict(){
-            for(int column = 0; column < mColumns.size(); column++){
+            for(std::size_t column = 0; column < mColumns.size(); column++){
                 assert( mColumns[column] != NULL ); // non_basic variable must exist 
 
                 const Variable<T1,T2>& nVar = *mColumns[column];
@@ -1719,7 +1719,7 @@ namespace smtrat
 
             // rebuild set of error variables
             std::vector<Variable<T1, T2>*> errorVars;
-            for(int row = 0; row < mRows.size(); row++){
+            for(std::size_t row = 0; row < mRows.size(); row++){
                 assert( mRows[row] != NULL ); // non_basic variable must exist 
 
                 const Variable<T1,T2>& bVar = *mRows[row];
@@ -1755,7 +1755,7 @@ namespace smtrat
 
             std::vector<T2> infeas_row = getInfeasibilityRow();
             //add lower or upper bounds depending on infeasibility row
-            for(int nonbasic_index = 0; nonbasic_index<infeas_row.size(); nonbasic_index++){
+            for(std::size_t nonbasic_index = 0; nonbasic_index<infeas_row.size(); nonbasic_index++){
                 if(infeas_row[nonbasic_index] > 0 && !mColumns[nonbasic_index]->pInfimum()->isInfinite()){
                     conflict.push_back(mColumns[nonbasic_index]->pInfimum());
                 }
@@ -1766,7 +1766,7 @@ namespace smtrat
 
             // rebuild set of error variables
             std::vector<Variable<T1, T2>*> errorVars;
-            for(int row = 0; row < mRows.size(); row++){
+            for(std::size_t row = 0; row < mRows.size(); row++){
                 assert( mRows[row] != NULL ); // non_basic variable must exist 
 
                 const Variable<T1,T2>& bVar = *mRows[row];
@@ -1799,7 +1799,7 @@ namespace smtrat
                 }
             }
             SMTRAT_LOG_DEBUG("smtrat", "Found multiline-conflict:");
-            for(auto c: conflict){
+            for([[maybe_unused]] auto c: conflict){
                 SMTRAT_LOG_DEBUG("smtrat", *c->origins().begin());
             }
             return conflict;
@@ -2095,7 +2095,7 @@ namespace smtrat
                 Value<T1> columnVarMargin = increaseColumnVar ?
                         (columnVar.supremum().isInfinite() ? infinityValue : (columnVar.supremum().limit() - columnVar.assignment())) :
                         (columnVar.infimum().isInfinite() ? infinityValue : (columnVar.assignment() - columnVar.infimum().limit()));
-                if( !columnVarMargin.isZero() )
+                if( !columnVarMargin.is_zero() )
                 {
                     // Calculate the change we minimally need on the column variable in order to improve the objective
                     // more than with the currently best found pivoting entry.
@@ -2683,7 +2683,7 @@ namespace smtrat
                     }
                 }
             }
-            return std::move(conflicts);
+            return conflicts;
         }
 
         template<class Settings, typename T1, typename T2>
@@ -2832,7 +2832,7 @@ namespace smtrat
                     mNonActiveBasics.erase( basicVar.positionInNonActives() );
                     basicVar.setPositionInNonActives( mNonActiveBasics.end() );
                     assert( columnVar->isBasic() );
-                    mVariableIdAllocator.free( columnVar->getId() );
+                    mVariableIdAllocator.free( columnVar->id() );
                     delete columnVar;
                 }
             }
@@ -3421,7 +3421,7 @@ namespace smtrat
                 sumOfNonbasics += -(*mRows[_rowNumber]->pExpression()) * typename Poly::PolyType( mRows[_rowNumber]->factor() );
             else
                 sumOfNonbasics += -(*mRows[_rowNumber]->pExpression());
-            if( !carl::isZero(sumOfNonbasics) )
+            if( !carl::is_zero(sumOfNonbasics) )
             {
                 return false;
             }

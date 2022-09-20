@@ -8,7 +8,7 @@ FormulaT ClauseChain::resolve() const {
 
     // initialize with conflicting clause
     assert(mClauseChain.back().isConflicting());
-    if (mClauseChain.back().clause().isNary()) {
+    if (mClauseChain.back().clause().is_nary()) {
         for (const auto& lit : mClauseChain.back().clause()) {
             if (isTseitinVar(lit)) {
                 toProcess.insert(lit);
@@ -37,7 +37,7 @@ FormulaT ClauseChain::resolve() const {
             toProcess.erase(iter->impliedTseitinLiteral().negated());
 
             // add literals of clauses to respective sets
-            if (iter->clause().isNary()) {
+            if (iter->clause().is_nary()) {
                 for (const auto& lit : iter->clause().subformulas()) {
                     if (lit != iter->impliedTseitinLiteral()) {
                         if (isTseitinVar(lit)) {
@@ -68,7 +68,7 @@ FormulaT ClauseChain::to_formula() const {
 }
 
 FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& model, ClauseChain& chain, bool withEquivalences) {
-    switch(formula.getType()) {
+    switch(formula.type()) {
         case carl::FormulaType::TRUE:
         case carl::FormulaType::FALSE:
         case carl::FormulaType::CONSTRAINT:
@@ -115,7 +115,7 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
                 newFormula.push_back(std::move(tseitinSub));
                 const auto& lit = newFormula.back();
                 // tseitinVar -> newFormula_1 && ... && newFormula_n
-                carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(sub, model);
+                carl::ModelValue<Rational,Poly> eval = carl::evaluate(sub, model);
                 assert(eval.isBool());
                 if (!eval.asBool()) {
                     chain.appendPropagating(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})), tseitinVar.negated());

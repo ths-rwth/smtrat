@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+#include <carl-arith/constraint/Substitution.h>
+
 namespace smtrat::cad {
 
 void Preprocessor::apply_assignments(const ConstraintT& c) {
@@ -15,10 +17,10 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 		auto it = mAssignments.find(mTrail[tid].first);
 		if (it != mAssignments.end()) {
 			m.emplace(it->second, mModel.at(it->second));
-			auto tmp = carl::model::substitute(cur, m);
+			auto tmp = carl::substitute(cur, m);
 			if (tmp != cur) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << cur << " -> " << tmp << " with " << *it);
-				if (tmp.isConsistent() != 1) {
+				if (tmp.is_consistent() != 1) {
 					toAdd.emplace_back(tmp);
 				}
 				Origins o({cur, it->first});
@@ -33,7 +35,7 @@ void Preprocessor::apply_assignments(const ConstraintT& c) {
 }
 
 void Preprocessor::resolve_conflict() {
-	assert(mTrail[mTrailID].first.isConsistent() == 0);
+	assert(mTrail[mTrailID].first.is_consistent() == 0);
 	mConflict = std::set<FormulaT>();
 	std::transform(mTrail[mTrailID].second.begin(), mTrail[mTrailID].second.end(), std::inserter(*mConflict, mConflict->begin()), [](const ConstraintT& c) { return FormulaT(c); });
 	postprocessConflict(*mConflict);
@@ -41,7 +43,7 @@ void Preprocessor::resolve_conflict() {
 
 carl::Variable Preprocessor::main_variable_of(const ConstraintT& c) const {
 	carl::carlVariables vars;
-	c.gatherVariables(vars);
+	variables(c, vars);
 	for (auto v: mVars) {
 		if (vars.has(v)) return v;
 	}
@@ -53,26 +55,30 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 	Rational r;
 	Poly p;
 	bool foundAssignment = false;
-	if (cur.getAssignment(v, r)) {
-		auto mit = mModel.find(v);
+	auto assignment = carl::get_assignment(cur);
+	if (assignment) {
+		auto mit = mModel.find(assignment->first);
 		if (mit != mModel.end()) {
-			assert(mModel.at(v).isRational() && mModel.at(v).asRational() == r);
+			assert(mModel.at(assignment->first).isRational() && mModel.at(assignment->first).asRational() == assignment->second);
 			return false;
 		}
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
-		mModel.emplace(v, r);
-		mAssignments.emplace(cur, v);
+		mModel.emplace(assignment->first, assignment->second);
+		mAssignments.emplace(cur, assignment->first);
 		foundAssignment = true;
-	} else if (cur.getSubstitution(v, p)) {
-		auto mit = mModel.find(v);
-		if (mit != mModel.end()) {
-			return false;
+	} else {
+		auto substitution = carl::get_substitution(cur);
+		if (substitution) {
+			auto mit = mModel.find(substitution->first);
+			if (mit != mModel.end()) {
+				return false;
+			}
+			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << substitution->first << " = " << substitution->second);
+			mModel.emplace(substitution->first, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(substitution->second));
+			mAssignments.emplace(cur, substitution->first);
+			foundAssignment = true;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << p);
-		mModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(p));
-		mAssignments.emplace(cur, v);
-		foundAssignment = true;
-	}
+	} 
 	if (foundAssignment) {
 		SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying with new assignment");
 		std::vector<ConstraintT> toAdd;
@@ -81,11 +87,11 @@ bool Preprocessor::try_variable_elimination(const ConstraintT& cur) {
 				it = mCurrent.erase(it);
 				continue;
 			}
-			auto tmp = carl::model::substitute(*it, mModel);
+			auto tmp = carl::substitute(*it, mModel);
 			if (tmp != *it) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplifying " << *it << " -> " << tmp);
 				if (mCurrent.find(tmp) == mCurrent.end()) {
-					if (tmp.isConsistent() != 1) {
+					if (tmp.is_consistent() != 1) {
 						toAdd.emplace_back(tmp);
 					}
 					Origins o({cur, *it});
@@ -113,7 +119,7 @@ void Preprocessor::compute_resultants(const ConstraintT& cur) {
 		if (mainvar == main_variable_of(c)) {
 			auto q = carl::to_univariate_polynomial(c.lhs(), mainvar);
 			auto r = projection::resultant(mainvar, p, q);
-			if (!r.isNumber()) {
+			if (!r.is_number()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Resultant of " << p << " and " << q << " is " << r);
 				toAdd.emplace_back(Poly(r), carl::Relation::EQ);
 				Origins o({cur, c});
@@ -166,7 +172,7 @@ void Preprocessor::removeConstraint(const ConstraintT& c) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Replace " << cur.first << " by " << cur.second);
 			mCurrent.erase(it);
 			mCurrent.insert(cur.second.begin(), cur.second.end());
-		} else if (cur.first.isConsistent() == 1) {
+		} else if (cur.first.is_consistent() == 1) {
 			for (const auto& o: cur.second) {
 				auto it = std::find(removals.begin(), removals.end(), o);
 				if (it != removals.end()) {
@@ -214,7 +220,7 @@ bool Preprocessor::preprocess() {
 	mConflict = std::nullopt;
 	while (mTrailID < mTrail.size()) {
 		auto cur = mTrail[mTrailID].first;
-		if (cur.isConsistent() == 0) {
+		if (cur.is_consistent() == 0) {
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Found conflict in " << mTrail[mTrailID]);
 			SMTRAT_LOG_DEBUG("smtrat.cad.pp", "After preprocessing:" << std::endl << *this);
 			resolve_conflict();

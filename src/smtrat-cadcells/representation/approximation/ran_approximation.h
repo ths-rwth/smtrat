@@ -52,7 +52,7 @@ Rational approximate_root_above<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner
     assert(inner < outer);
     Rational inner_simple, outer_simple;
 
-    if (outer.is_integral()) outer_simple = outer.value() - 1;
+    if (carl::is_integer(outer)) outer_simple = outer.value() - 1;
     else if (outer.is_numeric()) outer_simple = carl::floor(outer.value());
     else outer_simple = carl::floor(outer.interval().lower());
     // If an integer is between inner and outer, return the closest to outer
@@ -70,7 +70,7 @@ Rational approximate_root_below<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner
     assert(inner > outer);
     Rational inner_simple, outer_simple;
 
-    if (outer.is_integral()) outer_simple = outer.value() + 1;
+    if (carl::is_integer(outer)) outer_simple = outer.value() + 1;
     else if (outer.is_numeric()) outer_simple = carl::ceil(outer.value());
     else outer_simple = carl::ceil(outer.interval().upper());
     // If an integer is between inner and outer, return the closest to outer

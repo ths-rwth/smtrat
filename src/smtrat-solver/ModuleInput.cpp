@@ -7,17 +7,17 @@
 
 #include "ModuleInput.h"
 
-#include <carl-model/Assignment.h>
+#include <carl-formula/model/Assignment.h>
 
 // Main smtrat namespace.
 namespace smtrat
 {   
-    unsigned ModuleInput::satisfiedBy( const EvalRationalMap& _assignment ) const
+    unsigned ModuleInput::satisfiedBy( const RationalAssignment& _assignment ) const
     {
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
-            switch( carl::model::satisfiedBy(fwo.formula(), Model(_assignment)) )
+            switch( carl::satisfied_by(fwo.formula(), Model(_assignment)) )
             {
                 case 0:
                     return 0;
@@ -35,10 +35,10 @@ namespace smtrat
         unsigned result = 1;
         for( const FormulaWithOrigins& fwo : *this )
         {
-			auto res = carl::model::substitute(fwo.formula(), _assignment);
+			auto res = carl::substitute(fwo.formula(), _assignment);
 			SMTRAT_LOG_DEBUG("smtrat.module", "Checking whether model satisfies " << fwo.formula() << " -> " << res);
-			if (res.isFalse()) return 0;
-			if (!res.isTrue()) result = 2;
+			if (res.is_false()) return 0;
+			if (!res.is_true()) result = 2;
         }
         return result;
     }
@@ -111,7 +111,7 @@ namespace smtrat
         auto iter = origs.begin();
         while( iter != origs.end() )
         {
-            if( *iter == _origin || (iter->getType() == carl::FormulaType::AND && iter->contains( _origin )) )
+            if( *iter == _origin || (iter->type() == carl::FormulaType::AND && iter->contains( _origin )) )
             {
                 if (iter != --origs.end())
                 {
@@ -188,7 +188,7 @@ namespace smtrat
 
     std::pair<ModuleInput::iterator,bool> ModuleInput::add( const FormulaT& _formula, bool _hasSingleOrigin, const FormulaT& _origin, const std::shared_ptr<std::vector<FormulaT>>& _origins, bool _mightBeConjunction )
     {
-        if( _mightBeConjunction && _formula.getType() == carl::FormulaType::AND )
+        if( _mightBeConjunction && _formula.type() == carl::FormulaType::AND )
         {
             std::pair<iterator,bool> res = std::pair<iterator,bool>(end(), false);
             auto formulaIter = _formula.subformulas().begin();

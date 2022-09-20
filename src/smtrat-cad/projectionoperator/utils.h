@@ -1,10 +1,10 @@
 #pragma once
 
-#include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl/core/polynomialfunctions/PrimitivePart.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
-#include <carl/core/polynomialfunctions/SquareFreePart.h>
-#include <carl/core/polynomialfunctions/to_univariate_polynomial.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/PrimitivePart.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/SquareFreePart.h>
+#include <carl-arith/poly/umvpoly/functions/to_univariate_polynomial.h>
 
 namespace smtrat {
 namespace cad {
@@ -17,8 +17,8 @@ namespace projection {
  */
 template<typename Poly>
 bool doesNotVanish(const Poly& p) {
-	if (isZero(p)) return false;
-	if (p.isConstant()) return true;
+	if (is_zero(p)) return false;
+	if (p.is_constant()) return true;
 	auto def = carl::definiteness(p);
 	if (def == carl::Definiteness::POSITIVE) return true;
 	if (def == carl::Definiteness::NEGATIVE) return true;
@@ -74,7 +74,7 @@ template<typename Poly>
 struct Reducta : std::vector<Poly> {
 	Reducta(const Poly& p) {
 		this->emplace_back(p);
-		while (!isZero(this->back())) {
+		while (!is_zero(this->back())) {
 			this->emplace_back(this->back());
 			this->back().truncate();
 		}
@@ -95,7 +95,7 @@ template<typename Poly, typename Callback>
 void returnPoly(const Poly& p, Callback&& cb) {
 	if (true) {
 		for (const auto& fact: carl::factorization(carl::MultivariatePolynomial<Rational>(p), false)) {
-			auto uf = carl::to_univariate_polynomial(fact.first, p.mainVar());
+			auto uf = carl::to_univariate_polynomial(fact.first, p.main_var());
 			SMTRAT_LOG_DEBUG("smtrat.cad.projection", "-> " << uf);
 			cb(uf);
 		}

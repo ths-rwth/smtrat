@@ -13,7 +13,7 @@
 #include <deque>
 #include <limits>
 #include "Variable.h"
-#include <carl/util/IDPool.h>
+#include <carl-common/memory/IDPool.h>
 
 namespace smtrat
 {
@@ -322,6 +322,16 @@ namespace smtrat
                             mEntryID( _iter.entryID() ),
                             mpEntries( _iter.pEntries() )
                         {}
+
+                        void operator=(const Iterator& _iter ) {
+                            mEntryID = _iter.entryID();
+                            mpEntries = _iter.pEntries();
+                        }
+
+                        void operator=(Iterator&& _iter ) {
+                            mEntryID = _iter.entryID();
+                            mpEntries = std::move(_iter.pEntries());
+                        }
 
                         /**
                          * @return 
@@ -655,7 +665,7 @@ namespace smtrat
                  * 
                  * @return 
                  */
-                EvalRationalMap getRationalAssignment() const;
+                RationalAssignment getRationalAssignment() const;
                 
                 void adaptDelta( const Variable<T1,T2>& _variable, bool _upperBound, T1& _minDelta ) const;
                 
@@ -728,7 +738,7 @@ namespace smtrat
                 * @param i : Index if entering (nonbasic ) variable.
                 * @param leaving_candidates : Used as storage object for update candidates.
                 */
-                void computeLeavingCandidates(const int& i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates);
+                void computeLeavingCandidates(const std::size_t i, std::vector< std::pair< Value<T1>, Variable<T1,T2>* > >& leaving_candidates);
                 
                 /**
                  * Updates a nonbasic variable by the assignment stored in mpTheta and triggers updates of depending basic variables. 

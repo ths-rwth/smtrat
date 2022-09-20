@@ -57,7 +57,7 @@ public:
 	/** Assert a constraint/literal */
 	void pushConstraint(const FormulaT& f) {
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Adding " << f);
-		switch (f.getType()) {
+		switch (f.type()) {
 			case carl::FormulaType::CONSTRAINT:
 				mConstraints.emplace_back(f);
 				break;
@@ -72,7 +72,7 @@ public:
 	
 	void popConstraint(const FormulaT& f) {
 		SMTRAT_LOG_TRACE("smtrat.nlsat", "Removing " << f);
-		switch (f.getType()) {
+		switch (f.type()) {
 			case carl::FormulaType::CONSTRAINT:
 				assert(mConstraints.back() == f);
 				mConstraints.pop_back();

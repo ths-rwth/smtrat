@@ -127,6 +127,8 @@ solvers,root = load_xml(args.input)
 results = []
 for file in root.findall('./benchmarks/file'):
 	filename = file.attrib["name"]
+	if not filename.endswith('.smt2'):
+		continue
 	res = {}
 	for run in file.findall('./run'):
 		solver = run.attrib['solver_id']

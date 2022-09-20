@@ -30,7 +30,7 @@ public:
         
         std::vector<carl::Variable> relaxationVars;
         for (const auto& clause : softClauses) {
-            carl::Variable relaxationVar = carl::freshBooleanVariable();
+            carl::Variable relaxationVar = carl::fresh_boolean_variable();
             mSolver.add(FormulaT(carl::FormulaType::OR, clause, FormulaT(relaxationVar)));
 
             relaxationVars.push_back(relaxationVar);

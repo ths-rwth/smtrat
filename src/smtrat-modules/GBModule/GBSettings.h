@@ -7,7 +7,7 @@
 
 #pragma once
 
-#include <carl/core/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat
@@ -286,7 +286,7 @@ namespace smtrat
 	struct decidePassingPolynomial {
         template<typename O, typename P>
 		static bool evaluate (const carl::MultivariatePolynomial<Rational, O, P>& original, const carl::MultivariatePolynomial<Rational, O, P>& reduced) {
-			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nrTerms() > reduced.nrTerms() );
+			return (original.lterm().tdeg() >= reduced.lterm().tdeg() && original.nr_terms() > reduced.nr_terms() );
 		}
 	};
     

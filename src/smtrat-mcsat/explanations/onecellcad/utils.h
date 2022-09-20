@@ -1,10 +1,10 @@
 #pragma once
 
-#include <carl/core/polynomialfunctions/Derivative.h>
-#include <carl/core/polynomialfunctions/Factorization.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
-#include <carl/core/polynomialfunctions/Definiteness.h>
-#include <carl/core/polynomialfunctions/Representation.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/umvpoly/functions/Factorization.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/functions/Definiteness.h>
+#include <carl-arith/poly/umvpoly/functions/Representation.h>
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
@@ -18,9 +18,8 @@
 #include <variant>
 #include <vector>
 
-#include <carl/ran/ran.h>
-#include <carl/ran/RealAlgebraicPoint.h>
-#include <carl/ran/interval/ran_interval_extra.h>
+#include <carl-arith/ran/ran.h>
+#include "RealAlgebraicPoint.h"
 
 #include "OCStatistics.h"
 #include "Assertables.h"
@@ -29,7 +28,6 @@ namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
 
-using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -133,13 +131,13 @@ inline std::size_t getDegree(TagPoly p, carl::Variable v) {
  * - polyLevel(x*y+2) == 1 wrt. [y < x < z] because of x
  * - polyLevel(x*y+2) == 2 wrt. [x < z < y] because of y
  * Preconditions:
- * - 'poly.gatherVariables()' must be a subset of 'variableOrder'.
+ * - 'variables(poly)' must be a subset of 'variableOrder'.
  */
 inline std::optional<std::size_t> levelOf(
         const std::vector<carl::Variable>& variableOrder,
         const Poly& poly) {
     // precondition:
-    //assert(isSubset(asVector(poly.gatherVariables()), variableOrder));
+    //assert(isSubset(asVector(variables(poly)), variableOrder));
 
     // Algorithm:
     // Iterate through each variable inside 'variableOrder' in ascending order
@@ -174,10 +172,10 @@ inline std::vector<TagPoly> nonConstIrreducibleFactors(
         InvarianceType tag) {
 
     std::vector<TagPoly> factors;
-    for (const Poly& factor : carl::irreducibleFactors(poly, false)) {
+    for (const Poly& factor : carl::irreducible_factors(poly, false)) {
         factors.emplace_back(TagPoly{tag, factor, *levelOf(variableOrder, factor)}); // inherit poly's tag
         //SMTRAT_LOG_DEBUG("smtrat.cad", "factor " << factor);
-        assert(!factor.isConstant());
+        assert(!factor.is_constant());
     }
 
     return factors;
@@ -189,7 +187,7 @@ inline void appendOnCorrectLevel(const Poly& poly, InvarianceType tag, std::vect
     std::vector<TagPoly> factors = nonConstIrreducibleFactors(variableOrder, poly, tag);
     // to do carl::normalize()
     for (const auto& factor : factors) {
-        if (!factor.poly.isConstant()) {
+        if (!factor.poly.is_constant()) {
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCStatistics& mStatistics = getStatistic();
                 // change this to en-/disable mMaxDegree Statistic
@@ -330,20 +328,18 @@ bool contains(const std::vector<T>& list, const T& elem) {
 inline MultivariateRootT asRootExpr(carl::Variable rootVariable, Poly poly, std::size_t rootIdx) {
     assert(carl::variables(poly).has(rootVariable));
     // Apparently we need this complicated construction. I forgot why a simple substitute is not okay.
-    return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(),
-                                                                   carl::to_univariate_polynomial(poly, rootVariable).coefficients())),
-                             rootIdx);
+    return MultivariateRootT(poly, rootIdx, rootVariable);
 }
 
-inline carl::RealAlgebraicPoint<smtrat::Rational> asRANPoint(
+inline RealAlgebraicPoint<smtrat::Rational> asRANPoint(
         const mcsat::Bookkeeping& data) {
-    std::vector<carl::RealAlgebraicNumber<smtrat::Rational>> point;
+    std::vector<RAN> point;
     for (const auto variable : data.assignedVariables()) {
         const auto& modelValue = data.model().evaluated(variable);
         assert(modelValue.isRational() || modelValue.isRAN());
         modelValue.isRational() ? point.emplace_back(modelValue.asRational()) : point.emplace_back(modelValue.asRAN());
     }
-    return carl::RealAlgebraicPoint<smtrat::Rational>(std::move(point));
+    return RealAlgebraicPoint<smtrat::Rational>(std::move(point));
 }
 
 
@@ -455,10 +451,10 @@ public:
      * Variables can also be indexed by level. Polys with mathematical level 1 contain the variable in variableOrder[0]
      */
     const std::vector<carl::Variable>& variableOrder;
-    const carl::RealAlgebraicPoint<Rational>& point;
+    const RealAlgebraicPoint<Rational>& point;
 
 
-    OneCellCAD(const std::vector<carl::Variable>& variableOrder, const carl::RealAlgebraicPoint<Rational>& point)
+    OneCellCAD(const std::vector<carl::Variable>& variableOrder, const RealAlgebraicPoint<Rational>& point)
             : variableOrder(variableOrder),
               point(point) {
         // precondition:
@@ -501,15 +497,13 @@ public:
             const std::size_t polyLevel,
             const Poly& poly) {
         // precondition:
-        assert(!poly.isConstant());
-        if (poly.isLinear())
+        assert(!poly.is_constant());
+        if (poly.is_linear())
             return false; // cannot vanish early
 
         const carl::Variable mainVariable = variableOrder[polyLevel];
 
-        return carl::ran::interval::vanishes(
-                carl::to_univariate_polynomial(poly, mainVariable),
-                prefixPointToStdMap(polyLevel));
+        return carl::real_roots(carl::to_univariate_polynomial(poly, mainVariable), prefixPointToStdMap(polyLevel)).is_nullified();
     }
 
     bool isPointRootOfPoly(
@@ -519,7 +513,7 @@ public:
 
         //No fail-check here
         auto res = carl::evaluate(
-                ConstraintT(poly, carl::Relation::EQ),
+                carl::BasicConstraint<Poly>(poly, carl::Relation::EQ),
                 prefixPointToStdMap(componentCount));
         assert(!indeterminate(res));
         return (bool) res;
@@ -543,7 +537,7 @@ public:
 
         // Do early-exit tests:
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
-            if (coeff.isConstant() && !carl::isZero(coeff))
+            if (coeff.is_constant() && !carl::is_zero(coeff))
                 return std::nullopt;
         }
 
@@ -566,7 +560,7 @@ public:
 
         for (const auto& coeff : boundCandidateUniPoly.coefficients()) {
             // find first non-vanishing coefficient:
-            if (carl::isZero(coeff)) continue;
+            if (carl::is_zero(coeff)) continue;
             const size_t coeffLevel = *levelOf(variableOrder, coeff); // certainly non-constant
             if (!isPointRootOfPoly(coeffLevel, coeff)) {
                 return coeff;

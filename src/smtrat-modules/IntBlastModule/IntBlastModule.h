@@ -41,12 +41,12 @@ namespace smtrat
             return mSigned;
         }
 
-        bool isConstant() const {
+        bool is_constant() const {
             return mBounds.lower() == mBounds.upper();
         }
 
         bool hasOffset() const {
-            return ! carl::isZero(mOffset);
+            return ! carl::is_zero(mOffset);
         }
 
         BVAnnotation withOffset(Integer _newOffset) const {
@@ -65,11 +65,11 @@ namespace smtrat
             return mBounds;
         }
 
-        const Integer& lowerBound() const {
+        const Integer& lower_bound() const {
             return mBounds.lower();
         }
 
-        const Integer& upperBound() const {
+        const Integer& upper_bound() const {
             return mBounds.upper();
         }
 
@@ -126,7 +126,7 @@ namespace smtrat
         AnnotatedBVTerm(const BVAnnotation& _type) :
         mType(_type), mTerm()
         {
-            carl::Variable var = carl::freshBitvectorVariable();
+            carl::Variable var = carl::fresh_bitvector_variable();
             carl::Sort bvSort = carl::SortManager::getInstance().getSort("BitVec", std::vector<std::size_t>({_type.width()}));
             carl::BVVariable bvVar(var, bvSort);
             mTerm = carl::BVTerm(carl::BVTermType::VARIABLE, bvVar);
@@ -179,7 +179,7 @@ namespace smtrat
         mIsConstant(false), mConstant(), mTerm(_term), mConstraints(_constraints)
         { }
 
-        bool isConstant() const {
+        bool is_constant() const {
             return mIsConstant;
         }
 
@@ -197,24 +197,24 @@ namespace smtrat
             return mConstraints;
         }
 
-        const Integer& lowerBound() const {
+        const Integer& lower_bound() const {
             if(mIsConstant) {
                 return mConstant;
             } else {
-                return mTerm.type().lowerBound();
+                return mTerm.type().lower_bound();
             }
         }
 
-        const Integer& upperBound() const {
+        const Integer& upper_bound() const {
             if(mIsConstant) {
                 return mConstant;
             } else {
-                return mTerm.type().upperBound();
+                return mTerm.type().upper_bound();
             }
         }
 
         friend std::ostream& operator<<( std::ostream& _out, const BlastedPoly& _poly ) {
-            if(_poly.isConstant()) {
+            if(_poly.is_constant()) {
                 return (_out << _poly.constant() << " (const)");
             } else {
                 return (_out << _poly.term());
@@ -270,8 +270,8 @@ namespace smtrat
         ConstrTree(const ConstraintT& _constraint) :
         mRelation(_constraint.relation()), mpLeftPoly(nullptr), mpRightPoly(nullptr), mConstraint(_constraint)
         {
-            Poly rightPoly(- _constraint.constantPart());
-            Poly leftPoly(_constraint.lhs() - _constraint.constantPart());
+            Poly rightPoly(- _constraint.lhs().constant_part());
+            Poly leftPoly(_constraint.lhs() - _constraint.lhs().constant_part());
 
             if(leftPoly.lcoeff() < 0) {
                 rightPoly *= Rational(-1);
@@ -577,7 +577,7 @@ return SettingsType::moduleName;
             const BlastedConstr& blastConstrTree(const ConstrTree& _constraint, FormulasT& _collectedFormulas);
             void addBoundRestrictionsToICP(carl::Variable _variable, const BVAnnotation& blastedType);
             void removeBoundRestrictionsFromICP(carl::Variable _variable);
-            IntegerInterval getNum(const RationalInterval& _interval) const;
+            IntegerInterval get_num(const RationalInterval& _interval) const;
             void addPolyParents(const ConstraintT& _constraint);
             void addPolyParent(const Poly& _child, const Poly& _parent);
             std::set<Poly> parentalClosure(std::set<Poly> _children);

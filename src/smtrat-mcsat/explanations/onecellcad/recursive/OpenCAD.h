@@ -18,15 +18,15 @@
 #include <unordered_map>
 #include <vector>
 
-#include <carl/converter/CoCoAAdaptor.h>
-#include <carl/core/MultivariatePolynomial.h>
-#include <carl/core/polynomialfunctions/Resultant.h>
-#include <carl/core/UnivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/core/VariablePool.h>
-#include <carl/ran/real_roots.h>
-#include <carl/ran/ran.h>
-#include <carl/ran/RealAlgebraicPoint.h>
+#include <carl-arith/poly/umvpoly/CoCoAAdaptor.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/umvpoly/UnivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/core/VariablePool.h>
+
+#include <carl-arith/ran/ran.h>
+#include <carl-arith/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-common/smtrat-common.h>
 
@@ -37,8 +37,7 @@ namespace recursive {
 using UniPoly = carl::UnivariatePolynomial<smtrat::Rational>;
 using MultiPoly = carl::MultivariatePolynomial<smtrat::Rational>;
 using MultiCoeffUniPoly = carl::UnivariatePolynomial<MultiPoly>;
-using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
-using RANPoint = carl::RealAlgebraicPoint<smtrat::Rational>;
+using RANPoint = RealAlgebraicPoint<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 
 /**
@@ -129,11 +128,11 @@ OpenCADCell createFullspaceCoveringCell(size_t level) {
    * - levelOf(x*y+2) == 2 wrt. [y < x < z] because of x
    * - levelOf(x*y+2) == 3 wrt. [x < z < y] because of y
    * Preconditions:
-   * - 'poly.gatherVariables()' must be a subset of 'variableOrder'.
+   * - 'variables(poly)' must be a subset of 'variableOrder'.
    */
 size_t levelOf(const MultiPoly& poly,
 			   const std::vector<carl::Variable>& variableOrder) {
-	// 'gatherVariables()' collects only vars with positive degree
+	// 'variables()' collects only vars with positive degree
 	std::set<carl::Variable> polyVarSet = carl::variables(poly).as_set();
 	// Algorithm:
 	// Iterate through each variable inside 'variableOrder' in ascending order
@@ -185,7 +184,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 	const std::vector<carl::Variable>& variableOrder,
 	const MultiPoly poly) {
 	SMTRAT_LOG_INFO("smtrat.opencad", "Merge poly" << poly);
-	assert(!poly.isZero());
+	assert(!carl::is_zero(poly));
 	size_t level = levelOf(poly, variableOrder);
 	// level for first variable starts at 1, but need it as index to start at 0.
 	size_t levelVariableIdx = level - 1;
@@ -194,7 +193,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 		return std::optional<OpenCADCell>(cell);
 
 	auto result = carl::evaluate(
-			ConstraintT(poly, carl::Relation::EQ),
+			carl::BasicConstraint<Poly>(poly, carl::Relation::EQ),
 			toStdMap(point, level, variableOrder));
 	assert(result);
 	if (*result) {
@@ -235,7 +234,7 @@ std::optional<OpenCADCell> mergeCellWithPoly(
 		// factors.
 		carl::CoCoAAdaptor<MultiPoly> factorizer(projectionPolys);
 		for (auto& p : projectionPolys) {
-			for (const auto& factor : factorizer.irreducibleFactors(p, false)) {
+			for (const auto& factor : factorizer.irreducible_factors(p, false)) {
 				SMTRAT_LOG_DEBUG("smtrat.opencad", "Merge irreducible factor: " << factor);
 				if (!(newCell = mergeCellWithPoly(
 						  *newCell,

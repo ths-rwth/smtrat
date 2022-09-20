@@ -1,9 +1,6 @@
 #pragma once
 
-
-// Datastructures from GiNaCRA
-
-#include <carl/groebner/groebner.h>
+#include <carl-arith/groebner/groebner.h>
 
 // Compile time settings structures
 #include "GBSettings.h"

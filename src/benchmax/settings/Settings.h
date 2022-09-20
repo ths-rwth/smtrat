@@ -6,7 +6,7 @@
 #pragma once
 
 #include <benchmax/utils/filesystem.h>
-#include <carl/util/Singleton.h>
+#include <carl-common/memory/Singleton.h>
 #include <carl-settings/Settings.h>
 
 #include <any>

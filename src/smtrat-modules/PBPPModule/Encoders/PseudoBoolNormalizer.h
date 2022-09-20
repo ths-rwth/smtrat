@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/optional.hpp>
+#include <optional>
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
@@ -19,7 +19,7 @@ namespace smtrat {
              * In this particular case we can later on remove y again since the constraint is trivially satisfied.
              * 
              */
-            std::pair<boost::optional<FormulaT>, ConstraintT> normalize(const ConstraintT& constraint);
+            std::pair<std::optional<FormulaT>, ConstraintT> normalize(const ConstraintT& constraint);
 
             /**
              * returns all variable substitutions done by this normalizer instance. An entry {x: y} correlates to the boolean expression
@@ -35,7 +35,7 @@ namespace smtrat {
         private:
             std::map<carl::Variable, carl::Variable> mVariablesCache;
 
-            std::pair<boost::optional<FormulaT>, ConstraintT> removePositiveCoeff(const ConstraintT& constraint);
+            std::pair<std::optional<FormulaT>, ConstraintT> removePositiveCoeff(const ConstraintT& constraint);
 
             ConstraintT gcd(const ConstraintT& constraint);
 

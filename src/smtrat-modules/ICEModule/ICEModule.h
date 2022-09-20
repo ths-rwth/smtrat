@@ -87,7 +87,7 @@ namespace smtrat
 				Coefficient sum;
 				for (const auto& edge: edges) sum += edge->coeff;
 				
-				if (carl::isZero(sum.r)) {
+				if (carl::is_zero(sum.r)) {
 					FormulaT origin = buildFormula(edges);
 					if (sum.strict) {
 						// Sum is zero but there is a strict inequality -> UNSAT
@@ -129,14 +129,14 @@ namespace smtrat
 			void removeFormula(const FormulaT& f);
 			Answer processConstraints();
 			
-			bool isZero(const TermT& t) const {
-				return mBounds.getInterval(t).isZero();
+			bool is_zero(const TermT& t) const {
+				return mBounds.getInterval(t).is_zero();
 			}
 			bool isSemiPositive(const TermT& t) const {
-				return mBounds.getInterval(t).isSemiPositive();
+				return mBounds.getInterval(t).is_semi_positive();
 			}
 			bool isSemiNegative(const TermT& t) const {
-				return mBounds.getInterval(t).isSemiNegative();
+				return mBounds.getInterval(t).is_semi_negative();
 			}
 			bool isSuitable(const ConstraintT& c, TermT& src, std::vector<TermT>& dest, Coefficient& coeff);
 			

@@ -77,7 +77,7 @@ public:
                 bool alreadyRelaxed = std::find(relaxedConstraints.begin(), relaxedConstraints.end(), f) != relaxedConstraints.end();
                 if (alreadyRelaxed) continue;
 
-                carl::Variable relaxationVar = carl::freshBooleanVariable();
+                carl::Variable relaxationVar = carl::fresh_boolean_variable();
                 mSolver.remove(formulaPositionMap[f]); // first erase non-relaxed clause
                 addToSolver(FormulaT(carl::FormulaType::OR, f, FormulaT(relaxationVar))); // ...then add relaxed clause
 

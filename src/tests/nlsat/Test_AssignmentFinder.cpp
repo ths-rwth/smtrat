@@ -3,7 +3,7 @@
 #include <smtrat-modules/SATModule/mcsat/BaseBackend.h>
 #include <smtrat-common/smtrat-common.h>
 
-#include <carl-model/evaluation/ModelEvaluation.h>
+#include <carl-formula/model/evaluation/ModelEvaluation.h>
 #include <smtrat-mcsat/assignments/arithmetic/AssignmentFinder.h>
 #include <smtrat-mcsat/explanations/nlsat/Explanation.h>
 
@@ -17,8 +17,8 @@ BOOST_AUTO_TEST_SUITE(Test_AssignmentFinder);
 BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 {
 	
-	carl::Variable x = carl::freshRealVariable("x");
-	carl::Variable y = carl::freshRealVariable("y");
+	carl::Variable x = carl::fresh_real_variable("x");
+	carl::Variable y = carl::fresh_real_variable("y");
 	
 	// Original constraints
 	FormulaT c1(Poly(x)+Rational(1), carl::Relation::LEQ);
@@ -86,8 +86,8 @@ BOOST_AUTO_TEST_CASE(Test_NLSATPaper_Ex3)
 
 BOOST_AUTO_TEST_CASE(CoverComputation)
 {
-	carl::Variable a = carl::freshRealVariable("a");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable a = carl::fresh_real_variable("a");
+	carl::Variable b = carl::fresh_real_variable("b");
 	Poly p = Poly(20)*a*a*b - Poly(a)*a*a*a*b - Poly(120)*b;
 	carl::UnivariatePolynomial<Rational> q(a, {
 		Rational(900),
@@ -104,35 +104,35 @@ BOOST_AUTO_TEST_CASE(CoverComputation)
 	FormulaT f(p, carl::Relation::LESS);
 	
 	std::cout << "Constructing RAN on " << q << " / " << i << std::endl;
-	carl::RealAlgebraicNumber<Rational> ran(q, i);
+	RAN ran(q, i);
 	std::cout << "-> " << ran << std::endl;
 	
 	Model model;
 	model.assign(a, ran);
 	model.assign(b, Rational(-3));
 	
-	auto res = carl::model::evaluate(f, model);
+	auto res = carl::evaluate(f, model);
 	std::cout << f << " on " << model << " -> " << res << std::endl;
 	
 	model.assign(b, Rational(1));
-	res = carl::model::evaluate(f, model);
+	res = carl::evaluate(f, model);
 	std::cout << f << " on " << model << " -> " << res << std::endl;
 }
 
 BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	// assign variable b with constraints (a ! > rootExpr(1 + 3*__z^3 + -3*b^3 + 3*__z^6 + -6*__z^3*b^3 + 3*b^6 + __z^9 + -3*__z^6*b^3 + 3*__z^3*b^6 + -1*b^9, 1, __z)) under a = 2
 	
-	carl::Variable a = carl::freshRealVariable("a");
-	carl::Variable b = carl::freshRealVariable("b");
+	carl::Variable a = carl::fresh_real_variable("a");
+	carl::Variable b = carl::fresh_real_variable("b");
 
 	Model model;
 	model.assign(a, Rational(2));
 
-	const carl::Variable& z = MultivariateRootT::var();
+	carl::Variable z = a;
 	Poly poly = Poly(Rational(1)) + Rational(3)*z*z*z - Rational(3)*b*b*b + Rational(3)*z*z*z*z*z*z - Rational(6)*z*z*z*b*b*b
 				+ Rational(3)*b*b*b*b*b*b + z*z*z*z*z*z*z*z*z - Rational(3)*z*z*z*z*z*z*b*b*b + Rational(3)*z*z*z*b*b*b*b*b*b
 				- b*b*b*b*b*b*b*b*b;
-	MultivariateRootT mvroot(poly, 1);
+	MultivariateRootT mvroot(poly, 1, a);
 	VariableComparisonT varcomp(a, mvroot, carl::Relation::GREATER, true);
 	FormulaT formula(varcomp);
 	std::cout << "Looking at " << varcomp << std::endl;
@@ -140,7 +140,7 @@ BOOST_AUTO_TEST_CASE(AssignmentFinderBug) {
 	// proof that an assignment for b exist
 	Model model2 = model;
 	model2.assign(b, Rational(3));
-	auto res = carl::model::evaluate(formula, model2);
+	auto res = carl::evaluate(formula, model2);
 	BOOST_CHECK(res.isBool());
 	BOOST_CHECK(res.asBool());
 

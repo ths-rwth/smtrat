@@ -122,7 +122,7 @@ namespace smtrat
                     for( EvalDoubleIntervalMap::const_iterator intervalIt = mIntervals.begin(); intervalIt != mIntervals.end();
                             ++intervalIt )
                     {
-                        if( (*intervalIt).second.isEmpty() )
+                        if( (*intervalIt).second.is_empty() )
                             return true;
                     }
                     return false;

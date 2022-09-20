@@ -1,6 +1,7 @@
 #pragma once
 
 #include "VSHelper.h"
+#include <carl-formula/formula/functions/Substitution.h>
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
@@ -34,7 +35,8 @@ private:
 	std::pair<std::vector<carl::Variable>::const_iterator, std::vector<carl::Variable>::const_iterator> getUnassignedVariables() const {
 		std::unordered_set<carl::Variable> freeVariables;
 		for (const auto& constr : mConstraints) {
-			freeVariables.insert(constr.variables().begin(), constr.variables().end());
+			auto vars = carl::variables(constr);
+			freeVariables.insert(vars.begin(), vars.end());
 		}
 		
 		auto firstVar = std::find(mVariableOrdering.begin(), mVariableOrdering.end(), mTargetVar);
@@ -81,7 +83,7 @@ private:
 
 						// check if current constraint is part of the conflict
 						if (Settings::reduceConflictConstraints) {
-							carl::ModelValue<Rational,Poly> eval = carl::model::evaluate(substitutionResult, mModel);
+							carl::ModelValue<Rational,Poly> eval = carl::evaluate(substitutionResult, mModel);
 							// If constraint is not fully evaluated or evaluates to false, we take it in.
 							if (!eval.isBool() || !eval.asBool()) {
 								SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Use constraint " << constr << " for explanation");
@@ -93,8 +95,7 @@ private:
 						}
 
 						// substitute into formula
-						carl::FormulaSubstitutor<FormulaT> substitutor;
-						branchResult = substitutor.substitute(branchResult, constr, substitutionResult);
+						branchResult = carl::substitute(branchResult, constr, substitutionResult);
 					//}
 				}
 
@@ -131,7 +132,7 @@ private:
 		}
 
 		#ifndef NDEBUG
-		carl::ModelValue<Rational,Poly> evalRes = carl::model::evaluate(*res, mModel);
+		carl::ModelValue<Rational,Poly> evalRes = carl::evaluate(*res, mModel);
 		assert(evalRes.isBool());
 		assert(!evalRes.asBool());
 		#endif

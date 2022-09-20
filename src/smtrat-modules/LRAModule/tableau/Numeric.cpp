@@ -212,7 +212,7 @@ namespace smtrat
          */
         Numeric Numeric::numer() const
         {
-            return Numeric( carl::getNum( this->content() ) );
+            return Numeric( carl::get_num( this->content() ) );
         }
 
         /**
@@ -220,7 +220,7 @@ namespace smtrat
          */
         Numeric Numeric::denom() const
         {
-            return Numeric( carl::getDenom( this->content() ) );
+            return Numeric( carl::get_denom( this->content() ) );
         }
         
         /**
@@ -236,7 +236,7 @@ namespace smtrat
          * @return True, if this Numeric corresponds to a positive rational number;
          *          False, otherwise.
          */
-        bool Numeric::isPositive() const
+        bool Numeric::is_positive() const
         {
             return ( this->content() > 0 );
         }
@@ -245,7 +245,7 @@ namespace smtrat
          * @return true, if this Numeric corresponds to a positive rational number;
          *         false, otherwise.
          */
-        bool Numeric::isNegative() const
+        bool Numeric::is_negative() const
         {
             return ( this->content() < 0 );
         }
@@ -254,7 +254,7 @@ namespace smtrat
          * @return true, if this Numeric corresponds to zero;
          *         false, otherwise.
          */
-        bool Numeric::isZero() const
+        bool Numeric::is_zero() const
         {
             return ( this->content() == 0 );
         }
@@ -263,7 +263,7 @@ namespace smtrat
          * @return true, if this Numeric is integer;
          *         false, otherwise.
          */
-        bool Numeric::isInteger() const
+        bool Numeric::is_integer() const
         {
             return ( this->denom() == 1 );
         }
@@ -287,9 +287,9 @@ namespace smtrat
          */
         Numeric mod( const Numeric& _valueA, const Numeric& _valueB )
         {
-            assert( _valueA.isInteger() && _valueB.isInteger() );
-            assert( !_valueB.isZero() );
-            return Numeric( carl::mod( carl::getNum( _valueA.content() ), carl::getNum( _valueB.content() ) ) );
+            assert( _valueA.is_integer() && _valueB.is_integer() );
+            assert( !_valueB.is_zero() );
+            return Numeric( carl::mod( carl::get_num( _valueA.content() ), carl::get_num( _valueB.content() ) ) );
         }
         
         /**
@@ -301,10 +301,10 @@ namespace smtrat
          */
         Numeric lcm( const Numeric& _valueA, const Numeric& _valueB )
         {
-            assert( _valueA.isInteger() && _valueB.isInteger() );
-            if( _valueA.isZero() || _valueB.isZero() )
+            assert( _valueA.is_integer() && _valueB.is_integer() );
+            if( _valueA.is_zero() || _valueB.is_zero() )
                 return Numeric( 0 );
-            return Numeric( carl::lcm( carl::getNum( _valueA.content() ), carl::getNum( _valueB.content() ) ) );
+            return Numeric( carl::lcm( carl::get_num( _valueA.content() ), carl::get_num( _valueB.content() ) ) );
         }
         
         /**
@@ -316,10 +316,10 @@ namespace smtrat
          */
         Numeric gcd( const Numeric& _valueA, const Numeric& _valueB )
         {
-            assert( _valueA.isInteger() && _valueB.isInteger() );
-            if( _valueA.isZero() || _valueB.isZero() )
+            assert( _valueA.is_integer() && _valueB.is_integer() );
+            if( _valueA.is_zero() || _valueB.is_zero() )
                 return Numeric( 0 );
-            return Numeric( carl::gcd( carl::getNum( _valueA.content() ), carl::getNum( _valueB.content() ) ) );
+            return Numeric( carl::gcd( carl::get_num( _valueA.content() ), carl::get_num( _valueB.content() ) ) );
         }
 
         /**

@@ -3,7 +3,7 @@
 #include "config.h"
 #include "ExitCodes.h"
 #include "tools/compile_information.h"
-#include <carl/util/CompileInfo.h>
+#include <carl-common/compile_info/CompileInfo.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/settings/Settings.h>
 

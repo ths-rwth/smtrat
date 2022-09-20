@@ -2,7 +2,7 @@
 
 namespace smtrat {
 
-	boost::optional<FormulaT> PseudoBoolEncoder::encode(const ConstraintT& constraint) {
+	std::optional<FormulaT> PseudoBoolEncoder::encode(const ConstraintT& constraint) {
 		assert(constraint.isPseudoBoolean());
 		assert(constraint.relation() != carl::Relation::GEQ);
 		assert(constraint.relation() != carl::Relation::GREATER);

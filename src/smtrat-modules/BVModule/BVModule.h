@@ -31,8 +31,8 @@
 #include <smtrat-solver/Module.h>
 #include "BVSettings.h"
 #include "BVDirectEncoder.h"
-#include "carl/formula/bitvector/BVConstraint.h"
-#include "carl/formula/bitvector/BVConstraintPool.h"
+#include "carl-formula/bitvector/BVConstraint.h"
+#include "carl-formula/bitvector/BVConstraintPool.h"
 
 namespace smtrat
 {

@@ -23,26 +23,25 @@ elif [[ ${TASK} == "documentation" ]]; then
 		sudo rm -f /etc/ImageMagick-6/policy.xml
 	fi
 
-	make doxygen-build || return 1
 	make doc || return 1
 	
-	git config --global user.email "gereon.kremer@cs.rwth-aachen.de"
-	git config --global user.name "Travis doxygen daemon"
+	git config --global user.email "admin@ths.rwth-aachen.de"
+	git config --global user.name "Documentation daemon"
 	
-	git clone https://${GH_TOKEN}@github.com/smtrat/smtrat.github.io.git
-	cd smtrat.github.io/ || return 1
+	git clone https://${GH_TOKEN}@github.com/ths-rwth/ths-rwth.github.io.git
+	cd ths-rwth.github.io/ || return 1
 	git branch -m master old_master
 	git checkout --orphan master
 	
 	# Update cloned copy
-	cp -r ../doc/apidoc-html/* ./ || return 1
+	cp -r ../doc/apidoc-html/* smtrat/ || return 1
 	cp ../doc/doc_smtrat-*.pdf .  || return 1
 	cp ../doc/doc_smtrat-*.pdf doc_smtrat-latest.pdf  || return 1
 	cp ../doc/manual_smtrat-*.pdf . || return 1
 	cp ../doc/manual_smtrat-*.pdf manual_smtrat-latest.pdf || return 1
 	
 	# Check if something has changed
-	git diff --summary --exit-code && return 0
+	# git diff --summary --exit-code && return 0
 	git add . || return 1
 	
 	# Commit and push

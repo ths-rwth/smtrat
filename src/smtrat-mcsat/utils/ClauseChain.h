@@ -28,11 +28,11 @@ class ClauseChain {
                     mClause(clause), mImpliedTseitinLiteral(std::nullopt) {};
 
                 bool isPropagating() const {
-                    return mImpliedTseitinLiteral && (*mImpliedTseitinLiteral).getType() != carl::FormulaType::FALSE;
+                    return mImpliedTseitinLiteral && (*mImpliedTseitinLiteral).type() != carl::FormulaType::FALSE;
                 }
 
                 bool isConflicting() const {
-                    return mImpliedTseitinLiteral && (*mImpliedTseitinLiteral).getType() == carl::FormulaType::FALSE;
+                    return mImpliedTseitinLiteral && (*mImpliedTseitinLiteral).type() == carl::FormulaType::FALSE;
                 }
 
                 bool isOptional() const {

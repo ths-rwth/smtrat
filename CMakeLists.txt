@@ -1,6 +1,13 @@
 cmake_minimum_required (VERSION 3.7 FATAL_ERROR)
 
+#set(CMAKE_DISABLE_SOURCE_CHANGES ON)
+set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
+
 project(smtrat CXX)
+
+if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
+   message(SEND_ERROR "In-source builds are not allowed.")
+endif()
 
 # path to find own modules
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
@@ -8,7 +15,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Include own macros.
 include(macros)
 
-set_version(21 11)
+set_version(22 09)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
@@ -28,11 +35,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # options
 option( DEVELOPER "Compile with extra warnings" OFF )
 option( LOGGING "Enable logging within the carl library" OFF )
+option( ENABLE_UNSUPPORTED "Enable unsupported features (e.g. features that are not actively maintained anymore)" OFF)
 option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
-option( USE_GINAC "If disabled, all implementations using the ginac library are disabled." OFF )
-option( USE_COCOA "Use CoCoALib" ON )
+option( USE_MIMALLOC "Build mimalloc" OFF )
 
 # Strategy
 set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
@@ -127,9 +134,9 @@ include(resources/resources.cmake)
 # C.5. Development and debug libraries.
 # # # # # # # # # # # # # # # # # # # # # #
 
-if (TARGET Doxygen::doxygen)
-	add_subdirectory(doc EXCLUDE_FROM_ALL)
-endif()
+# if (TARGET Doxygen::doxygen)
+ 	add_subdirectory(doc EXCLUDE_FROM_ALL)
+# endif()
 
 # # # # # # # # # # # # # # # # # # # # # #
 # D. Writen information files

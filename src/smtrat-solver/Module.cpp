@@ -20,9 +20,6 @@
 #include <limits.h>
 #include <cmath>
 
-// Flag activating some informative and not exaggerated output about module calls.
-//#define DEBUG_MODULE_CALLS_IN_SMTLIB
-
 using namespace carl;
 
 namespace smtrat
@@ -97,12 +94,6 @@ namespace smtrat
         #ifdef SMTRAT_DEVOPTION_Statistics
 		++mStatistics.check_count;
         #endif
-        #ifdef DEBUG_MODULE_CALLS_IN_SMTLIB
-        std::cout << "(assert (and";
-        for( auto& subformula : *mpReceivedFormula )
-            std::cout << " " << subformula.formula();
-        std::cout << "))\n";
-        #endif
         clearLemmas();
         if( rReceivedFormula().empty() )
         {
@@ -115,7 +106,7 @@ namespace smtrat
         assert( result != UNSAT || hasValidInfeasibleSubset() );
         if( result != UNKNOWN && !mpReceivedFormula->empty() )
         {
-            SMTRAT_VALIDATION_ADD("smtrat.module.theory_call",moduleName(),(FormulaT)*mpReceivedFormula,result);
+            SMTRAT_VALIDATION_ADD("smtrat.module.theory_call",moduleName(),(FormulaT)*mpReceivedFormula,result==SAT);
         }
         
 		receivedFormulaChecked();
@@ -283,7 +274,7 @@ namespace smtrat
             {
                 for( std::map<ModelVariable,ModelValue>::const_iterator iter = mModel.begin(); iter != mModel.end(); )
                 {
-                    if( iter->first.isVariable() )
+                    if( iter->first.is_variable() )
                     {
                         auto tmp = std::find( iterRV, receivedVariables.end(), iter->first.asVariable() );
                         if( tmp == receivedVariables.end() )
@@ -319,7 +310,7 @@ namespace smtrat
         std::list<std::vector<carl::Variable>> res;
         for( auto& it : this->mModel )
         {
-            if( it.first.isVariable() )
+            if( it.first.is_variable() )
             {
                 carl::Variable v = it.first.asVariable();
                 ModelValue a = it.second;
@@ -362,13 +353,13 @@ namespace smtrat
     {
         if( mpReceivedFormula->contains( _origin ) )
             return true;
-        if( _origin.getType() == carl::FormulaType::AND )
+        if( _origin.type() == carl::FormulaType::AND )
         {
             FormulasT subFormulasInRF;
             for( auto fwo = mpReceivedFormula->begin();  fwo != mpReceivedFormula->end(); ++fwo )
             {
                 const FormulaT& subform = fwo->formula();
-                if( subform.getType() == carl::FormulaType::AND )
+                if( subform.type() == carl::FormulaType::AND )
                     subFormulasInRF.insert(subFormulasInRF.end(), subform.subformulas().begin(), subform.subformulas().end() );
                 else
                     subFormulasInRF.push_back( subform );
@@ -393,11 +384,11 @@ namespace smtrat
             while( originSetB != _vecSetB.end() )
             {
                 FormulasT subformulas;
-                if( originSetA->getType() == carl::FormulaType::AND )
+                if( originSetA->type() == carl::FormulaType::AND )
                     subformulas = originSetA->subformulas();
                 else
                     subformulas.push_back( *originSetA );
-                if( originSetB->getType() == carl::FormulaType::AND )
+                if( originSetB->type() == carl::FormulaType::AND )
                     subformulas.insert(subformulas.end(), originSetB->begin(), originSetB->end() );
                 else
                     subformulas.push_back( *originSetB );
@@ -436,7 +427,7 @@ namespace smtrat
 #endif
     {
         if( mpManager == nullptr ) return false;
-        assert( _branchingPolynomial.constantPart() == 0 );
+        assert( _branchingPolynomial.constant_part() == 0 );
         auto iter = mLastBranches.begin();
         for( ; iter != mLastBranches.end(); ++iter )
         {
@@ -487,7 +478,7 @@ namespace smtrat
     bool Module::branchAt( const Poly& _polynomial, bool _integral, const Rational& _value, std::vector<FormulaT>&& _premise, bool _leftCaseWeak, bool _preferLeftCase, bool _useReceivedFormulaAsPremise )
     {
         assert( !_useReceivedFormulaAsPremise || _premise.empty() );
-        assert( !_polynomial.hasConstantTerm() );
+        assert( !_polynomial.has_constant_term() );
         ConstraintT constraintA;
         ConstraintT constraintB;
         if( _integral )
@@ -521,20 +512,20 @@ namespace smtrat
                 constraintB = ConstraintT( std::move(constraintLhs), Relation::GEQ );   
             }
         }
-        if( constraintA.isConsistent() == 2 )
+        if( constraintA.is_consistent() == 2 )
         {
             // Create splitting variables
             FormulaT s1, s2;
             OLD_SPLITTING_VARS_LOCK
             if( mOldSplittingVariables.empty() )
-                s1 = FormulaT( carl::freshBooleanVariable() );
+                s1 = FormulaT( carl::fresh_boolean_variable() );
             else
             {
                 s1 = mOldSplittingVariables.back();
                 mOldSplittingVariables.pop_back();
             }
             if( mOldSplittingVariables.empty() )
-                s2 = FormulaT( carl::freshBooleanVariable() );
+                s2 = FormulaT( carl::fresh_boolean_variable() );
             else
             {
                 s2 = mOldSplittingVariables.back();
@@ -567,13 +558,13 @@ namespace smtrat
             mLemmas.emplace_back( FormulaT( carl::FormulaType::OR, s2.negated(), FormulaT( constraintB ) ), LemmaType::NORMAL, FormulaT( carl::FormulaType::TRUE ) );
             return true;
         }
-        assert( constraintB.isConsistent() != 2  );
+        assert( constraintB.is_consistent() != 2  );
         return false;
     }
     
     void Module::splitUnequalConstraint( const FormulaT& _unequalConstraint )
     {
-        assert( _unequalConstraint.getType() == CONSTRAINT );
+        assert( _unequalConstraint.type() == CONSTRAINT );
         assert( _unequalConstraint.constraint().relation() == Relation::NEQ );
         const Poly& lhs = _unequalConstraint.constraint().lhs();
         FormulaT lessConstraint = FormulaT( lhs, Relation::LESS );
@@ -895,8 +886,8 @@ namespace smtrat
 		carl::carlVariables variables;
 		std::set<carl::UninterpretedFunction> functions;
 		for (const auto& f: *mpReceivedFormula) {
-			f.formula().gatherVariables(variables);
-			f.formula().gatherUFs(functions);
+			carl::variables(f.formula(),variables);
+			carl::uninterpreted_functions(f.formula(),functions);
 		}
 		// Filter model
 		for (auto it = mModel.begin(); it != mModel.end(); ) {
@@ -907,7 +898,7 @@ namespace smtrat
 				}
 			} else {
 				carl::Variable v;
-				if (it->first.isVariable()) v = it->first.asVariable();
+				if (it->first.is_variable()) v = it->first.asVariable();
 				else if (it->first.isBVVariable()) v = it->first.asBVVariable().variable();
 				else if (it->first.isUVariable()) v = it->first.asUVariable().variable();
 				if (!variables.has(v)) {
@@ -971,10 +962,10 @@ namespace smtrat
         }
         else
         {
-            if(_formula.getType() != carl::FormulaType::AND ){
-                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
+            if(_formula.type() != carl::FormulaType::AND ){
+                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.type() << ", not AND-Type");
             }
-            assert( _formula.getType() != carl::FormulaType::AND );
+            assert( _formula.type() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
@@ -991,10 +982,10 @@ namespace smtrat
         }
         else
         {
-            if(_formula.getType() != carl::FormulaType::AND ){
-                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.getType() << ", not AND-Type");
+            if(_formula.type() != carl::FormulaType::AND ){
+                SMTRAT_LOG_ERROR("smtrat", "Formula " << _formula << " has type: " << _formula.type() << ", not AND-Type");
             }
-            assert( _formula.getType() == carl::FormulaType::AND );
+            assert( _formula.type() == carl::FormulaType::AND );
             for( auto& subformula : _formula.subformulas() )
             {
                 assert( mpReceivedFormula->contains( subformula ) );
@@ -1025,7 +1016,7 @@ namespace smtrat
     {
 		carl::carlVariables vars(carl::variable_type_filter::arithmetic());
 		for( auto it = _infsubset->begin(); it != _infsubset->end(); ++it ) {
-			it->gatherVariables(vars);
+			carl::variables(*it, vars);
 		}
         std::stringstream filename;
         filename << _filename << "_" << moduleName() << "_" << mSmallerMusesCheckCounter << ".smt2";

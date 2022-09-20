@@ -33,7 +33,7 @@ namespace parser {
 				carl::Variable var = mappedFormulaIt->second;
 				result = Poly(var);
 			} else {
-				carl::Variable var = carl::freshBooleanVariable();
+				carl::Variable var = carl::fresh_boolean_variable();
 				FormulaT subst = FormulaT(carl::FormulaType::IFF, FormulaT(var), formula);
 
 				state->global_formulas.emplace_back(subst);
@@ -116,8 +116,8 @@ namespace arithmetic {
 			// There are many ITEs, we keep the auxiliary variables.
 			for (const auto& v: vars) {
 				auto t = at.mITEs[v];
-				FormulaT consThen = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<1>(t)), carl::Relation::EQ);
-				FormulaT consElse = FormulaT(std::move(carl::makePolynomial<Poly>(v) - std::get<2>(t)), carl::Relation::EQ);
+				FormulaT consThen = FormulaT(std::move(Poly(v) - std::get<1>(t)), carl::Relation::EQ);
+				FormulaT consElse = FormulaT(std::move(Poly(v) - std::get<2>(t)), carl::Relation::EQ);
 
 				at.state->global_formulas.emplace_back(FormulaT(carl::FormulaType::ITE, {std::get<0>(t),consThen,consElse}));
 //				state->global_formulas.emplace(FormulaT(carl::FormulaType::IMPLIES,std::get<0>(t), consThen));
@@ -173,6 +173,7 @@ namespace arithmetic {
 		ops.emplace("<=", arithmetic::OperatorType(carl::Relation::LEQ));
 		ops.emplace("=", arithmetic::OperatorType(carl::Relation::EQ));
 		ops.emplace("!=", arithmetic::OperatorType(carl::Relation::NEQ));
+		ops.emplace("<>", arithmetic::OperatorType(carl::Relation::NEQ));
 		ops.emplace(">=", arithmetic::OperatorType(carl::Relation::GEQ));
 		ops.emplace(">", arithmetic::OperatorType(carl::Relation::GREATER));
 	}
@@ -183,7 +184,7 @@ namespace arithmetic {
 			case carl::VariableType::VT_INT:
 			case carl::VariableType::VT_REAL: {
 				assert(state->isSymbolFree(name));
-				carl::Variable var = carl::freshVariable(name, sm.getType(sort));
+				carl::Variable var = carl::fresh_variable(name, sm.getType(sort));
 				state->variables[name] = var;
 				result = var;
 				return true;
@@ -210,7 +211,7 @@ namespace arithmetic {
                     result = thenpoly;
                     return true;
                 }
-                if( ifterm.getType() == carl::FormulaType::CONSTRAINT )
+                if( ifterm.type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( ifterm.constraint().relation() == carl::Relation::EQ )
                     {
@@ -229,7 +230,7 @@ namespace arithmetic {
                         }
                     }
                 }
-                else if( ifterm.getType() == carl::FormulaType::NOT && ifterm.subformula().getType() == carl::FormulaType::CONSTRAINT )
+                else if( ifterm.type() == carl::FormulaType::NOT && ifterm.subformula().type() == carl::FormulaType::CONSTRAINT )
                 {
                     if( ifterm.subformula().constraint().relation() == carl::Relation::EQ )
                     {
@@ -248,10 +249,10 @@ namespace arithmetic {
                         }
                     }   
                 }
-		carl::Variable auxVar = thenpoly.integerValued() && elsepoly.integerValued() ? carl::freshIntegerVariable() : carl::freshRealVariable();
+		carl::Variable auxVar = thenpoly.integer_valued() && elsepoly.integer_valued() ? carl::fresh_integer_variable() : carl::fresh_real_variable();
 		state->artificialVariables.emplace_back(auxVar);
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
-		result = carl::makePolynomial<Poly>(auxVar);
+		result = Poly(auxVar);
 		return true;
 	}
 	bool ArithmeticTheory::handleDistinct(const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors) {
@@ -297,7 +298,7 @@ namespace arithmetic {
 				errors.next() << "to_int should be called with a variable";
 				return false;
 			}
-			carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
+			carl::Variable v = carl::fresh_variable(carl::VariableType::VT_INT);
 			FormulaT lower(Poly(v) - arg, carl::Relation::LEQ);
 			FormulaT greater(Poly(v) - arg - Rational(1), carl::Relation::GREATER);
 			state->global_formulas.emplace_back(FormulaT(carl::FormulaType::AND, {lower, greater}));
@@ -319,8 +320,8 @@ namespace arithmetic {
 			carl::Variable arg;
 			Rational rarg;
 			if (cv(arguments[0], arg)) {
-				carl::Variable v = carl::freshVariable(carl::VariableType::VT_INT);
-				carl::Variable u = carl::freshVariable(carl::VariableType::VT_INT);
+				carl::Variable v = carl::fresh_variable(carl::VariableType::VT_INT);
+				carl::Variable u = carl::fresh_variable(carl::VariableType::VT_INT);
 				FormulaT relation(Poly(v) - arg + u * modulus, carl::Relation::EQ);
 				FormulaT geq(Poly(v), carl::Relation::GEQ);
 				FormulaT less(Poly(v) - modulus, carl::Relation::LESS);
@@ -328,8 +329,8 @@ namespace arithmetic {
 				result = v;
 				return true;
 			} else if (ci(arguments[0], rarg)) {
-				Integer lhs = carl::toInt<Integer>(rarg);
-				Integer rhs = carl::toInt<Integer>(modulus);
+				Integer lhs = carl::to_int<Integer>(rarg);
+				Integer rhs = carl::to_int<Integer>(modulus);
 				result = carl::mod(lhs, rhs);
 				return true;
 			} else {
@@ -337,12 +338,45 @@ namespace arithmetic {
 				return false;
 			}
 		}
+		if (identifier.symbol == "root") {
+			if (arguments.size() != 3) {
+				errors.next() << "root should have exactly three arguments.";
+				return false;
+			}
+			Poly p;
+			if (!convertTerm(arguments[0], p)) {
+				errors.next() << "root should be called with a polynomial as first argument.";
+				return false;
+			}
+			conversion::VariantConverter<Rational> ci;
+			Rational k;
+			if (!ci(arguments[1], k)) {
+				errors.next() << "root should be called with an integer as second argument.";
+				return false;
+			}
+			conversion::VariantConverter<carl::Variable> cv;
+			carl::Variable var;
+			if (!cv(arguments[2], var)) {
+				errors.next() << "root should be called with a variable as third argument.";
+				return false;
+			}
+			result = carl::MultivariateRoot<Poly>(p,carl::to_int<std::size_t>(carl::get_num(k)),var);
+			return true;
+		}
 		auto it = ops.find(identifier.symbol);
 		if (it == ops.end()) {
 			errors.next() << "Invalid operator \"" << identifier << "\".";
 			return false;
 		}
 		arithmetic::OperatorType op = it->second;
+		if (boost::get<carl::Relation>(&op) != nullptr && arguments.size() == 3 && boost::get<FormulaT>(&arguments[0]) != nullptr && boost::get<carl::Variable>(&arguments[1]) != nullptr && boost::get<carl::MultivariateRoot<Poly>>(&arguments[2]) != nullptr) {
+			bool negated = boost::get<FormulaT>(arguments[0]).type() == carl::FormulaType::TRUE;
+			carl::Variable var = boost::get<carl::Variable>(arguments[1]);
+			carl::MultivariateRoot<Poly> root = boost::get<carl::MultivariateRoot<Poly>>(arguments[2]);
+			carl::Relation rel = boost::get<carl::Relation>(op);
+			result = FormulaT(carl::VariableComparison<Poly>(var, root, rel, negated));
+			return true;
+		}
 		if (arithmetic::isBooleanIdentity(op, arguments, errors)) return false;
 		if (!convertArguments(op, arguments, args, errors)) return false;
 		

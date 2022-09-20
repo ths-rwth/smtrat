@@ -65,10 +65,10 @@ namespace smtrat
             Numeric denom() const;
             Numeric floor() const;
 
-            bool isPositive() const;
-            bool isNegative() const;
-            bool isZero() const;
-            bool isInteger() const;
+            bool is_positive() const;
+            bool is_negative() const;
+            bool is_zero() const;
+            bool is_integer() const;
         };
 
         Numeric abs( const Numeric& );

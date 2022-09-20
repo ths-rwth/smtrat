@@ -1,7 +1,7 @@
 #pragma once
 
 #include <smtrat-common/smtrat-common.h>
-#include <carl-model/Model.h>
+#include <carl-formula/model/Model.h>
 #include <smtrat-solver/Module.h>
 
 namespace smtrat {
@@ -25,14 +25,14 @@ private:
 	carl::Variable mOptimizationVarReal;
 
 	const carl::Variable& objectiveVariable(const Objective& objective) const {
-		return objective.function.integerValued() ? mOptimizationVarInt : mOptimizationVarReal;
+		return objective.function.integer_valued() ? mOptimizationVarInt : mOptimizationVarReal;
 	} 
 
 public:
 	Optimization(Solver& s) :
 		mSolver(s) ,
-		mOptimizationVarInt(carl::freshIntegerVariable("__opt_int")),
-		mOptimizationVarReal(carl::freshRealVariable("__opt_real"))
+		mOptimizationVarInt(carl::fresh_integer_variable("__opt_int")),
+		mOptimizationVarReal(carl::fresh_real_variable("__opt_real"))
 	{}
 
 	void add_objective(const Poly& objective, bool minimize = true) {

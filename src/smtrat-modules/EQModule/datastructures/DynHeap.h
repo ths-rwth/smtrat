@@ -61,7 +61,7 @@ namespace smtrat {
 			}
 			
 			
-			inline bool isEmpty() const {
+			inline bool is_empty() const {
 				return size()==0;
 			}
 			
@@ -79,7 +79,7 @@ namespace smtrat {
 			}
 			
 			KeyType extractMin() {
-				assert(!isEmpty());
+				assert(!is_empty());
 				
 				KeyType res = m_heapitems[1].lookupNode->first;
 				

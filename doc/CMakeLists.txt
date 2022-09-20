@@ -1,7 +1,3 @@
-option(DOC_CREATE_HTML "Create API HTML documentation" ON)
-option(DOC_CREATE_PDF "Create API PDF documentation" ON)
-option(DOC_CREATE_MANUAL "Create PDF manual" ON)
-
 # Check if doxygen is available
 if(NOT TARGET Doxygen::doxygen)
 	message(STATUS "Doxygen not available, no documentation can be built.")
@@ -85,16 +81,6 @@ add_custom_target(doc-manual
 
 # umbrella target for the whole documentation
 add_custom_target(doc)
-
-if(DOC_CREATE_HTML)
-	# Build api html documentation by default
-	add_dependencies(doc doc-apidoc-html)
-endif()
-if(DOC_CREATE_PDF)
-	# Build api pdf documentation by default
-	add_dependencies(doc doc-apidoc-pdf)
-endif(DOC_CREATE_PDF)
-if(DOC_CREATE_MANUAL)
-	# Build manual by default
-	add_dependencies(doc doc-manual)
-endif(DOC_CREATE_MANUAL)
+add_dependencies(doc doc-apidoc-html)
+add_dependencies(doc doc-apidoc-pdf)
+add_dependencies(doc doc-manual)

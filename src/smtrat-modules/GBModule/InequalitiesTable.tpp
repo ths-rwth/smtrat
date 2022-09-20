@@ -102,9 +102,9 @@ namespace smtrat
                             }
                             else
                             {
-                                FormulaT simplifiedConstraint = FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType(std::get<2>(it->second).back().second)), std::get<1>(it->second) );
-                                assert( simplifiedConstraint.getType() != carl::FormulaType::FALSE );
-                                if( simplifiedConstraint.getType() == carl::FormulaType::TRUE )
+                                FormulaT simplifiedConstraint = FormulaT( Poly(typename smtrat::Poly::PolyType(std::get<2>(it->second).back().second)), std::get<1>(it->second) );
+                                assert( simplifiedConstraint.type() != carl::FormulaType::FALSE );
+                                if( simplifiedConstraint.type() == carl::FormulaType::TRUE )
                                 {
                                     std::get < 0 > (it->second) = mModule->passedFormulaEnd();
                                 }
@@ -236,7 +236,7 @@ namespace smtrat
 
         bool reductionOccured = false;
         bool rewriteOccured = false;
-        if( !carl::isZero(p) && !p.isConstant( ) )
+        if( !carl::is_zero(p) && !p.is_constant( ) )
         {
             if(rules.size() == 0)
             {
@@ -249,7 +249,7 @@ namespace smtrat
                 Polynomial ptemp = groebner::rewritePolynomial(p, rules);
 				
                 rewriteOccured = (ptemp != p);
-                if( !carl::isZero(ptemp) && !ptemp.isConstant() )
+                if( !carl::is_zero(ptemp) && !ptemp.is_constant() )
                 {
                     typename Settings::Reductor reductor( gb, ptemp );
                     reduced = reductor.fullReduce( );
@@ -267,17 +267,17 @@ namespace smtrat
         if( rewriteOccured || reductionOccured )
         {
             assert(std::get < 0 > (it->second) != mModule->passedFormulaEnd());
-            if( carl::isZero(reduced) || reduced.isConstant( ) )
+            if( carl::is_zero(reduced) || reduced.is_constant( ) )
             {
                 bool satisfied = false;
-                if( carl::isZero(reduced) && isWeak( relation ) )
+                if( carl::is_zero(reduced) && is_weak( relation ) )
                 {
-                    assert( isWeak( relation ) );
+                    assert( is_weak( relation ) );
                     satisfied = true;
                 }
-                else if( !carl::isZero(reduced) )
+                else if( !carl::is_zero(reduced) )
                 { // non zero
-                    assert( reduced.nrTerms( ) > 0 );
+                    assert( reduced.nr_terms( ) > 0 );
                     assert( reduced.lcoeff( ) != 0 );
 
                     smtrat::Rational reducedConstant = reduced.lcoeff( );
@@ -374,8 +374,8 @@ namespace smtrat
                 std::get < 2 > (it->second).push_back( CellEntry( mBtnumber, reduced ) );
                 if( Settings::passInequalities == FULL_REDUCED || (Settings::passInequalities == FULL_REDUCED_IF && pass) )
                 {
-                    FormulaT redResult = FormulaT( carl::makePolynomial<Poly>(typename smtrat::Poly::PolyType(reduced)), relation );
-                    switch( redResult.getType() )
+                    FormulaT redResult = FormulaT( Poly(typename smtrat::Poly::PolyType(reduced)), relation );
+                    switch( redResult.type() )
                     {
                         case carl::FormulaType::TRUE:
                         {
@@ -397,7 +397,7 @@ namespace smtrat
                         }
                         default:
                         {
-                            assert( redResult.getType() == carl::FormulaType::CONSTRAINT );
+                            assert( redResult.type() == carl::FormulaType::CONSTRAINT );
                             // get the reason set for the reduced polynomial
                             FormulasT originals = mModule->generateReasons( reduced.getReasons( ) );
                             originals.push_back( it->first->formula() );
@@ -411,10 +411,10 @@ namespace smtrat
                 }
                 // new constraint learning
                 // If the original constraint is nonlinear
-                /*if( !((*(it->first))->pConstraint( ))->isLinear() )
+                /*if( !((*(it->first))->pConstraint( ))->is_linear() )
                 {
                     // We only want to learn linear constraints.
-                    if( reduced.isLinear() )
+                    if( reduced.is_linear() )
                     {
                         // get the reason set for the reduced polynomial
                         FormulasT subformulas;

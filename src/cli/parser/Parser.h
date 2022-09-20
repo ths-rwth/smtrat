@@ -100,7 +100,7 @@ public:
 	}
 	void declareSort(const std::string& name, Integer arity) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(declare-sort " << name << " " << arity << ")");
-		if (!carl::SortManager::getInstance().declare(name, carl::toInt<carl::uint>(arity))) {
+		if (!carl::SortManager::getInstance().declare(name, carl::to_int<carl::uint>(arity))) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "A sort \"" << name << "\" with arity " << arity << " has already been declared.");
 		}
 	}
@@ -153,8 +153,9 @@ public:
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-unsat-core)");
 		callHandler(&InstructionHandler::getUnsatCore);
 	}
-	void getValue(const std::vector<types::TermType>& vars) {
+	void getValue([[maybe_unused]] const std::vector<types::TermType>& vars) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(get-value " << vars << ")");
+		// TODO callHandler(&InstructionHandler::getValue, vars);
 	}
 	void addObjective(const types::TermType& t, OptimizationType ot) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(" << ot << " " << t << ")");
@@ -168,7 +169,7 @@ public:
 	}
 	void pop(const Integer& n) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(pop " << n << ")");
-		auto nint = carl::toInt<carl::uint>(n);
+		auto nint = carl::to_int<carl::uint>(n);
 		if (nint > state.script_scope_size()) {
 			SMTRAT_LOG_ERROR("smtrat.parser", "Can not pop " << nint << " scopes, we only have " << state.script_scope_size() << " right now.");
 			handler.error() << "Can not pop " << nint << " scopes, we only have " << state.script_scope_size() << " right now.";
@@ -179,8 +180,8 @@ public:
 	}
 	void push(const Integer& n) {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(push " << n << ")");
-		theories.pushScriptScope(carl::toInt<carl::uint>(n));
-		callHandler(&InstructionHandler::push, carl::toInt<carl::uint>(n));
+		theories.pushScriptScope(carl::to_int<carl::uint>(n));
+		callHandler(&InstructionHandler::push, carl::to_int<carl::uint>(n));
 	}
 	void reset() {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(reset)");

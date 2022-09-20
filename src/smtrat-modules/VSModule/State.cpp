@@ -7,13 +7,15 @@
 
 #include "State.h"
 //#include <smtrat-modules/Module.h>
-#include <carl/interval/set_theory.h>
-#include <carl/core/polynomialfunctions/SturmSequence.h>
+#include <carl-arith/interval/set_theory.h>
+#include <carl-arith/poly/umvpoly/functions/SturmSequence.h>
 #include <cmath>
 #include <float.h>
 #include <numeric>
-#include <carl/core/polynomialfunctions/RootBounds.h>
-#include <carl/core/polynomialfunctions/RootCounting.h>
+#include <carl-arith/poly/umvpoly/functions/RootBounds.h>
+#include <carl-arith/poly/umvpoly/functions/RootCounting.h>
+#include <carl-arith/constraint/IntervalEvaluation.h>
+#include <carl-arith/poly/umvpoly/functions/Evaluation.h>
 
 //#define VS_DEBUG_VARIABLE_VALUATIONS
 //#define VS_DEBUG_VARIABLE_BOUNDS
@@ -133,7 +135,7 @@ namespace vs
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
                 mpVariableBounds->removeBound( pCond->constraint(), pCond );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -152,7 +154,7 @@ namespace vs
                     {
                         const Condition* rpCond = mpSubstitutionResults->back().back().first.back();
                         mpSubstitutionResults->back().back().first.pop_back();
-                        mpConditionIdAllocator->free( rpCond->getId() );
+                        mpConditionIdAllocator->free( rpCond->id() );
                         delete rpCond;
                         rpCond = NULL;
                     }
@@ -275,7 +277,7 @@ namespace vs
     bool State::occursInEquation( const carl::Variable& _variable ) const
     {
         for( auto cond = conditions().begin(); cond != conditions().end(); ++cond )
-            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().hasVariable( _variable ) )
+            if( (*cond)->constraint().relation() == carl::Relation::EQ && (*cond)->constraint().variables().has( _variable ) )
                 return true;
         return false;
     }
@@ -333,7 +335,7 @@ namespace vs
             _nextIntTestCandidate = father().maxIntTestCandidate();
             ++_nextIntTestCandidate;
         }
-        assert( carl::isInteger( _nextIntTestCandidate ) );
+        assert( carl::is_integer( _nextIntTestCandidate ) );
         ++mCurrentIntRange;
         return true;
     }
@@ -356,9 +358,9 @@ namespace vs
                 assert( plusInfChild == NULL );
                 plusInfChild = child;
             }
-            else if( child->substitution().term().isInteger() )
+            else if( child->substitution().term().is_integer() )
             {
-                smtrat::Rational currentTc = child->substitution().term().constantPart().constantPart();
+                smtrat::Rational currentTc = child->substitution().term().constant_part().constant_part();
                 if( currentTc < mMinIntTestCanidate ) leastIntTc = currentTc;
                 if( currentTc > mMaxIntTestCanidate ) greatestIntTc = currentTc;
             }
@@ -463,7 +465,7 @@ namespace vs
                             {
                                 const Condition* rpCond = condConjunction->first.back();
                                 condConjunction->first.pop_back();
-                                mpConditionIdAllocator->free( rpCond->getId() );
+                                mpConditionIdAllocator->free( rpCond->id() );
                                 delete rpCond;
                                 rpCond = NULL;
                             }
@@ -501,7 +503,7 @@ namespace vs
                             {
                                 const Condition* rpCond = subResult->back().first.back();
                                 subResult->back().first.pop_back();
-                                mpConditionIdAllocator->free( rpCond->getId() );
+                                mpConditionIdAllocator->free( rpCond->id() );
                                 delete rpCond;
                                 rpCond = NULL;
                             }
@@ -590,10 +592,10 @@ namespace vs
             for( auto iter = _conditionVectorToSimplify.begin(); iter != _conditionVectorToSimplify.end(); ++iter )
             {
                 const smtrat::ConstraintT& constr = (*iter)->constraint();
-                if( !constr.isBound() )
+                if( !carl::is_bound(constr) )
                 {
                     carl::Relation stricterRelation = constr.relation();
-                    switch( constr.consistentWith( varIntervals, stricterRelation ) )
+                    switch( consistent_with(constr.constr(), varIntervals, stricterRelation ) )
                     {
                         case 0:
                         {
@@ -620,7 +622,7 @@ namespace vs
                                 size_t nValuation = (*iter)->valuation();
                                 bool nFlag = (*iter)->flag();
                                 smtrat::ConstraintT nConstraint = smtrat::ConstraintT( constr.lhs(), stricterRelation );
-                                unsigned nConstraintConsistency = nConstraint.isConsistent();
+                                unsigned nConstraintConsistency = nConstraint.is_consistent();
                                 if( nConstraintConsistency == 2 )
                                 {
                                     if( _stateConditions )
@@ -639,7 +641,7 @@ namespace vs
                                     }
                                     redundantConditionSet.insert( *iter );
                                 }
-                                else if( nConstraint.isConsistent() == 0 )
+                                else if( nConstraint.is_consistent() == 0 )
                                 {
                                     auto tmp = mpVariableBounds->getOriginsOfBounds( constr.variables().as_set() );
                                     carl::PointerSet<Condition> condSet(tmp.begin(), tmp.end());
@@ -728,7 +730,7 @@ namespace vs
                         }
                         else
                             assert( false );
-                        unsigned nConstraintConsistency = nConstraint.isConsistent();
+                        unsigned nConstraintConsistency = nConstraint.is_consistent();
                         if( nConstraintConsistency == 2 )
                         {
                             if( _stateConditions )
@@ -746,7 +748,7 @@ namespace vs
                             redundantConditionSet.insert( condA );
                             redundantConditionSet.insert( condB );
                         }
-                        else if( nConstraint.isConsistent() == 0 )
+                        else if( nConstraint.is_consistent() == 0 )
                         {
                             carl::PointerSet<Condition> condSet;
                             condSet.insert( condA );
@@ -795,7 +797,7 @@ namespace vs
                         redundantConditionSet.erase( iter );
                         const Condition* toDel = *cond;
                         cond = _conditionVectorToSimplify.erase( cond );
-                        mpConditionIdAllocator->free( toDel->getId() );
+                        mpConditionIdAllocator->free( toDel->id() );
                         delete toDel;
                         toDel = NULL;
                     }
@@ -886,9 +888,9 @@ namespace vs
                 (**child).rSubstitution().rOriginalConditions().insert( _substitution.originalConditions().begin(), _substitution.originalConditions().end() );
                 return true;
             }
-            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().isInteger() )
+            else if( index().type() == carl::VariableType::VT_INT && _substitution.term().is_integer() )
             {
-                smtrat::Rational intTc = _substitution.term().constantPart().constantPart();
+                smtrat::Rational intTc = _substitution.term().constant_part().constant_part();
                 if( (**child).substitution().type() == Substitution::MINUS_INFINITY )
                 {
                     if( intTc < (mMinIntTestCanidate - Rational(1)) )
@@ -1130,7 +1132,7 @@ namespace vs
                             (**cond).pOriginalConditions()->insert( (**newCond).originalConditions().begin(), (**newCond).originalConditions().end() );
                         const Condition* pCond = *newCond;
                         newCond = newCombination.erase( newCond );
-                        mpConditionIdAllocator->free( pCond->getId() );
+                        mpConditionIdAllocator->free( pCond->id() );
                         delete pCond;
                         pCond = NULL;
                         condOccursInNewConds = true;
@@ -1161,7 +1163,7 @@ namespace vs
             {
                 const Condition* rpCond = newCombination.back();
                 newCombination.pop_back();
-                mpConditionIdAllocator->free( rpCond->getId() );
+                mpConditionIdAllocator->free( rpCond->id() );
                 delete rpCond; // TODO: this has to be done maybe in some situations or somewhere else
                 rpCond = NULL;
             }
@@ -1182,7 +1184,7 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         for( auto cond = rConditions().begin(); cond != conditions().end(); ++cond )
         {
-            (**cond).rFlag() = !(**cond).constraint().hasVariable( index() );//  || (**cond).constraint().isUpperBound();
+            (**cond).rFlag() = !(**cond).constraint().variables().has( index() );//  || (**cond).constraint().isUpperBound();
         }
     }
 
@@ -1436,7 +1438,7 @@ namespace vs
     void State::addCondition( const smtrat::ConstraintT& _constraint, const carl::PointerSet<Condition>& _originalConditions, size_t _valutation, bool _recentlyAdded, ValuationMap& _ranking )
     {
         // Check if the constraint is variable-free and consistent. If so, discard it.
-        unsigned constraintConsistency = _constraint.isConsistent();
+        unsigned constraintConsistency = _constraint.is_consistent();
         assert( constraintConsistency != 0 );
         if( constraintConsistency != 1 )
         {
@@ -1557,7 +1559,7 @@ namespace vs
                                     (*condB)->rRecentlyAdded() = true;
                                     recentlyAddedConditionLeft = true;
                                     if( index() != carl::Variable::NO_VARIABLE )
-                                        (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                        (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                                 }
                             }
                             delete changedVar;
@@ -1595,7 +1597,7 @@ namespace vs
         {
             const Condition* pCond = *deletedConditions.begin();
             deletedConditions.erase( deletedConditions.begin() );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -1638,7 +1640,7 @@ namespace vs
                                 (*condB)->rRecentlyAdded() = true;
                                 recentlyAddedConditionLeft = true;
                                 if( index() != carl::Variable::NO_VARIABLE )
-                                    (*condB)->rFlag() = !(*condB)->constraint().hasVariable( index() );
+                                    (*condB)->rFlag() = !(*condB)->constraint().variables().has( index() );
                             }
                         }
                         delete changedVar;
@@ -1668,7 +1670,7 @@ namespace vs
         {
             const Condition* condToDel = condsToDelete.back();
             condsToDelete.pop_back();
-            mpConditionIdAllocator->free( condToDel->getId() );
+            mpConditionIdAllocator->free( condToDel->id() );
             delete condToDel;
             condToDel = NULL;
         }
@@ -1689,7 +1691,7 @@ namespace vs
             if( result < 1 )
             {
                 if( index().type() == carl::VariableType::VT_INT && (*child)->substitution().type() != Substitution::MINUS_INFINITY 
-                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().isInteger() )
+                    && (*child)->substitution().type() != Substitution::PLUS_INFINITY && (*child)->substitution().term().is_integer() )
                 {
                     childWithIntTcDeleted = true;
                 }
@@ -1882,7 +1884,7 @@ namespace vs
                             const Condition* rpCond = *cond;
                             cond             = condConj->first.erase( cond );
                             condConj->second = false;
-                            mpConditionIdAllocator->free( rpCond->getId() );
+                            mpConditionIdAllocator->free( rpCond->id() );
                             delete rpCond;
                             rpCond = NULL;
                             rSubResultsSimplified() = false;
@@ -1957,9 +1959,9 @@ namespace vs
         std::vector<State*> result;
         if( !updateOCondsOfSubstitutions( _substitution, result ) )
         {
-            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().isInteger() )
+            if( index().type() == carl::VariableType::VT_INT && _substitution.type() == Substitution::NORMAL && _substitution.term().is_integer() )
             {
-                smtrat::Rational intTC = _substitution.term().constantPart().constantPart();
+                smtrat::Rational intTC = _substitution.term().constant_part().constant_part();
                 if( intTC > mMaxIntTestCanidate )
                 {
                     mMaxIntTestCanidate = intTC;
@@ -2119,7 +2121,7 @@ namespace vs
                     while( oCond != (**cond).originalConditions().end() )
                     {
                         assert( father().index() != carl::Variable::NO_VARIABLE );
-                        if( (**oCond).constraint().hasVariable( father().index() ) )
+                        if( (**oCond).constraint().variables().has( father().index() ) )
                             coverSetOCondsContainIndexOfFather = true;
                         coverSetOConds.insert( *oCond );
                         oCond++;
@@ -2172,7 +2174,7 @@ namespace vs
             rConditions().pop_back();
             if( mpVariableBounds != NULL )
                 mpVariableBounds->removeBound( pCond->constraint(), pCond );
-            mpConditionIdAllocator->free( pCond->getId() );
+            mpConditionIdAllocator->free( pCond->id() );
             delete pCond;
             pCond = NULL;
         }
@@ -2325,8 +2327,8 @@ namespace vs
         assert( !isRoot() );
         if( substitution().type() == Substitution::MINUS_INFINITY )
         {
-            if( father().variableBounds().getDoubleInterval( substitution().variable() ).lowerBoundType() == carl::BoundType::INFTY )
-                result.push_back( smtrat::DoubleInterval::unboundedInterval() );
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).lower_bound_type() == carl::BoundType::INFTY )
+                result.push_back( smtrat::DoubleInterval::unbounded_interval() );
             else
             {
                 auto conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
@@ -2336,8 +2338,8 @@ namespace vs
         }
         else if( substitution().type() == Substitution::PLUS_INFINITY )
         {
-            if( father().variableBounds().getDoubleInterval( substitution().variable() ).upperBoundType() == carl::BoundType::INFTY )
-                result.push_back( smtrat::DoubleInterval::unboundedInterval() );
+            if( father().variableBounds().getDoubleInterval( substitution().variable() ).upper_bound_type() == carl::BoundType::INFTY )
+                result.push_back( smtrat::DoubleInterval::unbounded_interval() );
             else
             {
                 auto conflictBounds = father().variableBounds().getOriginsOfBounds( substitution().variable() );
@@ -2349,11 +2351,11 @@ namespace vs
         else
         {
             smtrat::EvalDoubleIntervalMap intervals = father().variableBounds().getIntervalMap();
-            smtrat::DoubleInterval solutionSpaceConst = carl::IntervalEvaluation::evaluate( substitution().term().constantPart(), intervals );
-            smtrat::DoubleInterval solutionSpaceFactor = carl::IntervalEvaluation::evaluate( substitution().term().factor(), intervals );
-            smtrat::DoubleInterval solutionSpaceRadicand = carl::IntervalEvaluation::evaluate( substitution().term().radicand(), intervals );
+            smtrat::DoubleInterval solutionSpaceConst = carl::evaluate( substitution().term().constant_part(), intervals );
+            smtrat::DoubleInterval solutionSpaceFactor = carl::evaluate( substitution().term().factor(), intervals );
+            smtrat::DoubleInterval solutionSpaceRadicand = carl::evaluate( substitution().term().radicand(), intervals );
             smtrat::DoubleInterval solutionSpaceSqrt = carl::sqrt(solutionSpaceRadicand);
-            smtrat::DoubleInterval solutionSpaceDenom = carl::IntervalEvaluation::evaluate( substitution().term().denominator(), intervals );
+            smtrat::DoubleInterval solutionSpaceDenom = carl::evaluate( substitution().term().denominator(), intervals );
             smtrat::DoubleInterval solutionSpace = solutionSpaceFactor * solutionSpaceSqrt;
             solutionSpace = solutionSpace + solutionSpaceConst;
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
@@ -2369,9 +2371,9 @@ namespace vs
             smtrat::DoubleInterval resB;
             bool splitOccurred = solutionSpace.div_ext( solutionSpaceDenom, resA, resB );
             const smtrat::DoubleInterval& subVarInterval = intervals[substitution().variable()];
-            if( substitution().type() == Substitution::PLUS_EPSILON && resA.lowerBoundType() != carl::BoundType::INFTY )
+            if( substitution().type() == Substitution::PLUS_EPSILON && resA.lower_bound_type() != carl::BoundType::INFTY )
             {
-                if( resA.upperBoundType() == carl::BoundType::INFTY || resA.upper() == DBL_MAX )
+                if( resA.upper_bound_type() == carl::BoundType::INFTY || resA.upper() == DBL_MAX )
                 {
                     resA = smtrat::DoubleInterval( resA.lower(), carl::BoundType::STRICT, (double)0, carl::BoundType::INFTY );
                     if( splitOccurred )
@@ -2392,7 +2394,7 @@ namespace vs
             #ifdef VS_DEBUG_VARIABLE_BOUNDS
             std::cout << ">>>    intersection part 1: " << std::setprecision(100) << resA << std::endl;
             #endif
-            if( !resA.isEmpty() )
+            if( !resA.is_empty() )
                 result.push_back( resA );
             if( splitOccurred )
             {
@@ -2403,7 +2405,7 @@ namespace vs
                 #ifdef VS_DEBUG_VARIABLE_BOUNDS
                 std::cout << ">>>    intersection part 1: " << resB << std::endl;
                 #endif
-                if( !resB.isEmpty() )
+                if( !resB.is_empty() )
                     result.push_back( resB );
             }
             if( result.empty() )
@@ -2426,7 +2428,7 @@ namespace vs
         assert( index() != carl::Variable::NO_VARIABLE );
         const smtrat::ConstraintT& cons = _condition->constraint();
         smtrat::EvalDoubleIntervalMap intervals;
-        if( cons.lhs().isUnivariate() )
+        if( cons.lhs().is_univariate() )
         {
             smtrat::DoubleInterval varDomain = variableBounds().getDoubleInterval( index() );
             smtrat::Rational cb = carl::cauchyBound(carl::to_univariate_polynomial(cons.lhs()));
@@ -2446,10 +2448,10 @@ namespace vs
         if( rel == carl::Relation::GREATER || rel == carl::Relation::LESS || rel == carl::Relation::NEQ )
         {
             auto indexDomain = intervals.find( index() );
-            if( indexDomain->second.lowerBoundType() == carl::BoundType::STRICT )
-                indexDomain->second.setLowerBoundType( carl::BoundType::WEAK );
+            if( indexDomain->second.lower_bound_type() == carl::BoundType::STRICT )
+                indexDomain->second.set_lower_bound_type( carl::BoundType::WEAK );
         }
-        smtrat::DoubleInterval solutionSpace = carl::IntervalEvaluation::evaluate( cons.lhs(), intervals );
+        smtrat::DoubleInterval solutionSpace = carl::evaluate( cons.lhs(), intervals );
         // TODO: if the condition is an equation and the degree in the index less than 3, 
         // then it is maybe better to consider the according test candidates
         #ifdef VS_DEBUG_ROOTS_CHECK
@@ -2466,15 +2468,15 @@ namespace vs
                 smtrat::RationalInterval interv( leftBound, carl::BoundType::WEAK, rightBound, carl::BoundType::WEAK );
                 int numberOfRoots = carl::count_real_roots( seq, interv );
                 assert( index() != carl::Variable::NO_VARIABLE );
-                smtrat::Rational imageOfLeftBound = rup.evaluate( leftBound );
-                smtrat::Rational imageOfRightBound = rup.evaluate( rightBound );
+                smtrat::Rational imageOfLeftBound = carl::evaluate(rup, leftBound);
+                smtrat::Rational imageOfRightBound = carl::evaluate(rup, rightBound);
                 if( imageOfLeftBound == Rational(0) )
                     ++numberOfRoots;
                 if( imageOfRightBound == Rational(0) )
                 {
-                    if( intervals.begin()->second.upperBoundType() == carl::BoundType::STRICT && numberOfRoots != 0 )
+                    if( intervals.begin()->second.upper_bound_type() == carl::BoundType::STRICT && numberOfRoots != 0 )
                         --numberOfRoots;
-                    if( intervals.begin()->second.upperBoundType() == carl::BoundType::WEAK )
+                    if( intervals.begin()->second.upper_bound_type() == carl::BoundType::WEAK )
                         ++numberOfRoots;
                 }
                 #ifdef VS_DEBUG_ROOTS_CHECK

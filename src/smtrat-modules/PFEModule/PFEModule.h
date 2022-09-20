@@ -23,7 +23,6 @@ namespace smtrat
         private:
             // Members.
             ///
-			carl::FormulaVisitor<FormulaT> visitor;
 			/// Collection of bounds of all received formulas.
 			vb::VariableBounds<FormulaT> varbounds;
 			bool boundsChanged = false;
@@ -94,7 +93,7 @@ namespace smtrat
 			
 			void generateVariableAssignments() {
 				for (const auto& bound: varbounds.getEvalIntervalMap()) {
-					if (bound.second.isPointInterval()) {
+					if (bound.second.is_point_interval()) {
 						FormulasT origins = varbounds.getOriginsOfBounds(bound.first);
 						addSubformulaToPassedFormula(FormulaT(bound.first - bound.second.lower(), carl::Relation::EQ), std::make_shared<std::vector<FormulaT>>(std::move(origins)));
 					}
@@ -105,7 +104,7 @@ namespace smtrat
 				auto res = varbounds.getEvalIntervalMap();
 				for (auto var: carl::variables(p)) {
 					if (res.find(var) == res.end()) {
-						res[var] = RationalInterval::unboundedInterval();
+						res[var] = RationalInterval::unbounded_interval();
 					}
 				}
 				return res;

@@ -4,6 +4,9 @@
 
 #include <smtrat-mcsat/smtrat-mcsat.h>
 
+#include <carl-arith/extended/Encoding.h>
+#include <carl-formula/formula/functions/Visit.h>
+
 namespace smtrat {
 namespace mcsat {
 
@@ -37,19 +40,8 @@ public:
 		return mBookkeeping;
 	}
 	
-	template<typename Constraints>
-	void initVariables(const Constraints& c) {
-		if (mBookkeeping.variables().empty()) {
-			carl::carlVariables vars;
-			for (int i = 0; i < c.size(); ++i) {
-				if (c[i].first == nullptr) continue;
-				if (c[i].first->reabstraction.getType() != carl::FormulaType::CONSTRAINT) continue;
-				const ConstraintT& constr = c[i].first->reabstraction.constraint(); 
-				constr.gatherVariables(vars);
-			}
-			mBookkeeping.updateVariables(vars.as_set());
-			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Got variables " << variables());
-		}
+	void initVariables(const carl::Variables& variables) {
+		mBookkeeping.updateVariables(variables);
 	}
 	
 	const auto& variables() const {
@@ -93,16 +85,46 @@ public:
 		std::optional<Explanation> res = mExplanation(getTrail(), var, reason, force_use_core);
 		if (res) {
 			SMTRAT_LOG_INFO("smtrat.mcsat", "Got explanation " << *res);
-			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", "explanation", validation_point);
+			#ifdef SMTRAT_DEVOPTION_Validation
+			SMTRAT_VALIDATION_INIT_STATIC("smtrat.mcsat.base", validation_point);
+			FormulaT formula;
 			if (std::holds_alternative<FormulaT>(*res)) {
 				// Checking validity: forall x. phi(x) = ~exists x. ~phi(x)
-				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<FormulaT>(*res).negated(), false);
+				formula = std::get<FormulaT>(*res);
 			} else {
 				// Tseitin: phi(x) = exists t. phi'(x,t)
 				// Checking validity: exists t. phi'(x,t) = ~exists x. ~(exists t. phi'(x,t)) = ~exists x. forall t. ~phi'(x,t)
 				// this is kind of ugly, so we just resolve the clause chain
-				SMTRAT_VALIDATION_ADD_TO(validation_point, std::get<ClauseChain>(*res).resolve().negated(), false);
+				formula = std::get<ClauseChain>(*res).resolve();
 			}
+			if (false) {
+				// Note that we can only encode some properties of the indexed root expressions. Thus, some explanation might wrongly be detected as incorrect.
+				carl::Assignment<RAN> ass;
+				for (const auto& [key, value] : getTrail().model()) {
+					if (value.isRAN()) {
+						ass.emplace(key.asVariable(), value.asRAN());
+					} else {
+						assert(value.isRational());
+						ass.emplace(key.asVariable(), RAN(value.asRational()));
+					}
+				}
+				carl::EncodingCache<Poly> cache;
+				formula = carl::visit_result(formula, [&](const FormulaT& f) {
+					if (f.type() == carl::FormulaType::VARCOMPARE) {
+						auto [conds, constr] = carl::encode_as_constraints(f.variable_comparison(), ass, cache);
+						FormulasT fs;
+						for (const auto& c: conds) {
+							fs.emplace_back(FormulaT(ConstraintT(c)));
+						}
+						fs.emplace_back(ConstraintT(constr));
+						return FormulaT(carl::FormulaType::AND, std::move(fs));
+					} else {
+						return f;
+					}
+				});
+			}
+			SMTRAT_VALIDATION_ADD_TO(validation_point, "explanation", formula.negated(), false);
+			#endif
 			return *res;
 		} else {
 			SMTRAT_LOG_ERROR("smtrat.mcsat", "Explanation backend failed.");

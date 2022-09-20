@@ -1,5 +1,8 @@
 #include "CADPreprocessor.h"
 
+#include <carl-arith/constraint/Substitution.h>
+#include <carl-formula/formula/functions/Complexity.h>
+
 namespace smtrat::cad {
 
 const bool CADPreprocessorSettings::dummy = CADPreprocessorSettings::register_hook();
@@ -8,7 +11,7 @@ namespace preprocessor {
 
 inline std::size_t complexity(const std::vector<FormulaT>& origin) {
     return std::accumulate(origin.begin(), origin.end(), static_cast<std::size_t>(0), 
-        [](std::size_t i, const auto& f){ return i + f.complexity(); }
+        [](std::size_t i, const auto& f){ return i + carl::complexity(f); }
     );
 }
 
@@ -76,15 +79,14 @@ bool Origins::resolve(std::set<FormulaT>& conflict) const {
 }
 
 bool AssignmentCollector::extractValueAssignments(std::map<ConstraintT, ConstraintT>& constraints) {
-    carl::Variable v;
-    Rational r;
     bool foundAssignment = false;
     for (auto it = constraints.begin(); it != constraints.end(); ) {
-        if (it->second.getAssignment(v, r) && mModel.find(v) == mModel.end()) {
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
-            mModel.emplace(v, r);
-            mReasons.emplace(v, it->first);
-            mConstraints.emplace(it->first, v);
+        auto assignment = get_assignment(it->second);
+        if (assignment && mModel.find(assignment->first) == mModel.end()) {
+            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << assignment->first << " = " << assignment->second);
+            mModel.emplace(assignment->first, assignment->second);
+            mReasons.emplace(assignment->first, it->first);
+            mConstraints.emplace(it->first, assignment->first);
             it = constraints.erase(it);
             foundAssignment = true;
         } else {
@@ -95,15 +97,14 @@ bool AssignmentCollector::extractValueAssignments(std::map<ConstraintT, Constrai
     return foundAssignment;
 }
 bool AssignmentCollector::extractParametricAssignments(std::map<ConstraintT, ConstraintT>& constraints) {
-    carl::Variable v;
-    Poly r;
     bool foundAssignment = false;
     for (auto it = constraints.begin(); it != constraints.end(); ) {
-        if (it->second.getSubstitution(v, r) && mModel.find(v) == mModel.end()) {
-            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << v << " = " << r);
-            mModel.emplace(v, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(r));
-            mReasons.emplace(v, it->first);
-            mConstraints.emplace(it->first, v);
+        auto substitution = carl::get_substitution(it->second);
+        if (substitution && mModel.find(substitution->first) == mModel.end()) {
+            SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Newly extracted " << substitution->first << " = " << substitution->second);
+            mModel.emplace(substitution->first, carl::createSubstitution<Rational,Poly,ModelPolynomialSubstitution>(substitution->second));
+            mReasons.emplace(substitution->first, it->first);
+            mConstraints.emplace(it->first, substitution->first);
             it = constraints.erase(it);
             foundAssignment = true;
             break;
@@ -123,12 +124,12 @@ bool AssignmentCollector::extractAssignments(std::map<ConstraintT, ConstraintT>&
 AssignmentCollector::CollectionResult AssignmentCollector::simplify(std::map<ConstraintT, ConstraintT>& constraints) {
 	bool changed = false;
     for (auto& c: constraints) {
-        auto tmp = carl::model::substitute(c.second, mModel);
+        auto tmp = carl::substitute(c.second, mModel);
 		if (tmp != c.second && constraints.find(tmp) == constraints.end()) {
 			changed = true;
 			c.second = tmp;
 		}
-        if (c.second.isConsistent() == 0) {
+        if (c.second.is_consistent() == 0) {
             SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Simplification found conflict in " << c.first << " (" << c.second << ")");
             return c.first;
         }
@@ -159,7 +160,7 @@ AssignmentCollector::CollectionResult AssignmentCollector::collect(std::map<Cons
 }
 
 bool ResultantRule::addPoly(const Poly& poly) {
-    if (isZero(poly)) return true;
+    if (is_zero(poly)) return true;
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     std::size_t level = 0;
     UPoly p = carl::to_univariate_polynomial(poly, mVars[level]);
@@ -174,11 +175,11 @@ bool ResultantRule::addPoly(const Poly& poly) {
 }
 
 bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vector<FormulaT>& origin) {
-    if (poly.isNumber()) return true;
+    if (poly.is_number()) return true;
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Adding poly " << poly << " under ordering " << mVars);
     Poly mp(poly);
     UPoly p = poly;
-    assert(p.mainVar() == mVars[level]);
+    assert(p.main_var() == mVars[level]);
     while (carl::is_constant(p)) {
         ++level;
         p = carl::to_univariate_polynomial(mp, mVars[level]);
@@ -193,7 +194,7 @@ bool ResultantRule::addPoly(const UPoly& poly, std::size_t level, const std::vec
     mOrigins.add(FormulaT(mp, carl::Relation::EQ), origin);
     SMTRAT_LOG_TRACE("smtrat.cad.pp", "Origins: " << mOrigins.mOrigins);
     mNewECs.emplace_back(cons);
-    if (cons.isConsistent() == 0) return false;
+    if (cons.is_consistent() == 0) return false;
     return true;
 }
 
@@ -291,7 +292,7 @@ bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Var
     SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Adding necessary parts of model to conflict: " << conflict);
     carl::carlVariables vars;
     bool changed = false;
-    for (const auto& f: conflict) f.gatherVariables(vars);
+    for (const auto& f: conflict) carl::variables(f,vars);
     while (!vars.empty()) {
         carl::carlVariables newvars;
         for (auto v: vars) {
@@ -302,7 +303,7 @@ bool CADPreprocessor::addModelToConflict(std::set<FormulaT>& conflict, carl::Var
             auto cit = conflict.emplace(it->second);
             changed = true;
             if (cit.second) {
-                cit.first->gatherVariables(newvars);
+                carl::variables(*cit.first, newvars);
                 SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Added " << it->second << " to conflict.");
             }
         }
@@ -381,8 +382,8 @@ bool CADPreprocessor::preprocess() {
 		}
     }
     for (auto& c: mInequalities) {
-        carl::model::substituteIn(c.second, mModel);
-        if (c.second.isConsistent() == 0) {
+        carl::substitute_inplace(c.second, mModel);
+        if (c.second.is_consistent() == 0) {
             mConflict = { FormulaT(c.first) };
             SMTRAT_LOG_DEBUG("smtrat.cad.pp", "Immediate conflict due to " << *mConflict);
             return false;

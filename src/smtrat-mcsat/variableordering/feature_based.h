@@ -2,7 +2,7 @@
 
 #include "helper.h"
 
-#include <carl/core/Variable.h>
+#include <carl-arith/core/Variable.h>
 #include <smtrat-common/smtrat-common.h>
 
 #include <numeric>
@@ -92,7 +92,7 @@ double max_coefficient(const Constraints& constraints, carl::Variable v) {
 		[v](const auto& c){
 			double max = 0.0;
 			for (const auto& t: c.lhs()) {
-				if (t.has(v)) max = std::max(max, carl::toDouble(carl::log(carl::abs(t.coeff()))));
+				if (t.has(v)) max = std::max(max, carl::to_double(carl::log(carl::abs(t.coeff()))));
 			}
 			return static_cast<double>(max);
 		}
@@ -104,7 +104,7 @@ double num_occurrences(const Constraints& constraints, carl::Variable v) {
 	return abstract_feature(constraints, 0.0,
 		[](double a, double b){ return a+b; },
 		[v](const auto& c){ 
-			if (c.hasVariable(v)) {
+			if (c.variables().has(v)) {
 				return 1;
 			} else {
 				return 0;

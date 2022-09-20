@@ -45,7 +45,7 @@ public:
         // NB! if we added the soft clauses directly to the backend we would need to remove them later on which is not what we want
         // in an incremental approach
         for (const FormulaT& clause : softClauses) {
-            carl::Variable blockingVar = carl::freshBooleanVariable();
+            carl::Variable blockingVar = carl::fresh_boolean_variable();
 
             // remember the blockingVar associated to clause
             blockingVars[clause] = blockingVar;
@@ -80,8 +80,8 @@ public:
                 if (std::find(softClauses.begin(), softClauses.end(), it) == softClauses.end() &&
                     std::find(newSoftClauses.begin(), newSoftClauses.end(), it) == newSoftClauses.end() ) continue; 
 
-                relaxationVars.push_back(carl::freshBooleanVariable()); // r
-                carl::Variable blockingRelaxationVar = carl::freshBooleanVariable(); // b_r
+                relaxationVars.push_back(carl::fresh_boolean_variable()); // r
+                carl::Variable blockingRelaxationVar = carl::fresh_boolean_variable(); // b_r
 
                 // build new clause to add to formula
                 assert(extendedClauses.find(it) != extendedClauses.end());

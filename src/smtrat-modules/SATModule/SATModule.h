@@ -493,9 +493,7 @@ namespace smtrat
             int64_t simpDB_props;
             /// Current set of assumptions provided to solve by the user.
             Minisat::vec<Minisat::Lit> assumptions;
-            /// A priority queue of variables ordered with respect to the variable activity.
-            Minisat::Heap<VarOrderLt> order_heap;
-            /// Alternative approach to order_heap
+            /// A priority queue of variables.
             VarScheduler var_scheduler;
             /// Set by 'search()'.
             double progress_estimate;
@@ -744,7 +742,7 @@ namespace smtrat
              * Note: Assignments in the given map are not overwritten.
              * @param _rationalAssignment The assignments to add the Boolean assignments to.
              */
-            void addBooleanAssignments( EvalRationalMap& _rationalAssignment ) const;
+            void addBooleanAssignments( RationalAssignment& _rationalAssignment ) const;
 
             /**
              * Prints everything.
@@ -995,20 +993,20 @@ namespace smtrat
 				if (std::holds_alternative<FormulaT>(explanation)) {
                     // add conflict clause
                     const auto& clause = std::get<FormulaT>(explanation);
-                    bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                    bool added = addClauseIfNew(clause.is_nary() ? clause.subformulas() : FormulasT({clause}));
                     assert(added);
                 } else {
                     const auto& chain = std::get<mcsat::ClauseChain>(explanation);
                     if (Settings::mcsat_resolve_clause_chains) {
                         FormulaT clause = chain.resolve();
                         SMTRAT_LOG_DEBUG("smtrat.sat", "Resolved clause chain to " << clause);
-                        bool added = addClauseIfNew(clause.isNary() ? clause.subformulas() : FormulasT({clause}));
+                        bool added = addClauseIfNew(clause.is_nary() ? clause.subformulas() : FormulasT({clause}));
                         assert(added);
                     } else {
                         // add propagations
                         bool added = false;
                         for (const auto& link : chain) {
-                            added |= addClauseIfNew(link.clause().isNary() ? link.clause().subformulas() : FormulasT({link.clause()}));
+                            added |= addClauseIfNew(link.clause().is_nary() ? link.clause().subformulas() : FormulasT({link.clause()}));
                         }
                         assert(added);
                     }                    
@@ -1168,21 +1166,16 @@ namespace smtrat
                     // Note: insertVarOrder should never be called with a VARASSIGN when it's created
                     if (mBooleanConstraintMap.size() > x && mBooleanConstraintMap[x].first != nullptr) {
                         const auto& reabstr = mBooleanConstraintMap[x].first->reabstraction;
-                        if (reabstr.getType() == carl::FormulaType::VARASSIGN) {
+                        if (reabstr.type() == carl::FormulaType::VARASSIGN) {
                             SMTRAT_LOG_DEBUG("smtrat.sat", "Converting " << x << " (" << reabstr << ")...")
-                            const carl::Variable tvar = reabstr.variableAssignment().var();
+                            const carl::Variable tvar = reabstr.variable_assignment().var();
                             x = mMCSAT.minisatVar(tvar);
                             SMTRAT_LOG_DEBUG("smtrat.sat", "..to " << x << " (" << tvar << ")");
                         }
                     }
                 }
 
-                if (Settings::use_new_var_scheduler) {
-                    var_scheduler.insert(x);
-                } else {
-                    if( !order_heap.inHeap( x ) && decision[x] )
-                        order_heap.insert( x );
-                }
+                var_scheduler.insert(x);
             }
             
             /**
@@ -1213,11 +1206,6 @@ namespace smtrat
 					assert(ptr1->updateInfo * ptr2->updateInfo <= 0);
 				}
 			}
-            
-            /**
-             * @return The best decision variable under consideration of the decision heuristic.
-             */
-            Minisat::Lit bestBranchLit();
             
             /**
              * Begins a new decision level.
@@ -1463,12 +1451,7 @@ namespace smtrat
                 if ((activity[v] += inc) > 1e100) {
                     rescale = true;
                 }
-                if (Settings::use_new_var_scheduler) {
-                    var_scheduler.increaseActivity(v);
-                } else {
-                    if( order_heap.inHeap( v ) )
-                        order_heap.decrease( v );
-                }
+                var_scheduler.increaseActivity(v);
 
                 if( rescale )
                 {
@@ -1720,11 +1703,11 @@ namespace smtrat
             bool supportedConstraintType( const FormulaT& _formula ) const
             {
                 return
-					_formula.getType() == carl::FormulaType::CONSTRAINT ||
-					_formula.getType() == carl::FormulaType::VARCOMPARE ||
-					_formula.getType() == carl::FormulaType::VARASSIGN ||
-					_formula.getType() == carl::FormulaType::UEQ ||
-					_formula.getType() == carl::FormulaType::BITVECTOR;
+					_formula.type() == carl::FormulaType::CONSTRAINT ||
+					_formula.type() == carl::FormulaType::VARCOMPARE ||
+					_formula.type() == carl::FormulaType::VARASSIGN ||
+					_formula.type() == carl::FormulaType::UEQ ||
+					_formula.type() == carl::FormulaType::BITVECTOR;
             }
             
             /**

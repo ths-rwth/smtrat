@@ -1,12 +1,12 @@
 #pragma once
 
-#include <carl/core/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/core/VariableInformation.h>
-#include <carl/formula/Formula.h>
-#include <carl/formula/Logic.h>
-#include <carl/io/streamingOperators.h>
-#include <carl/util/enum_util.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/poly/VarInfo.h>
+#include <carl-formula/formula/Formula.h>
+#include <carl-formula/formula/Logic.h>
+#include <carl-common/util/streamingOperators.h>
+#include <carl-common/util/enum_util.h>
 
 #include <atomic>
 
@@ -42,9 +42,9 @@ using FormulaSetT = carl::FormulaSet<Poly>;
 
 using FormulasMultiT = std::multiset<FormulaT>;
 
-using EvalRationalMap = std::map<carl::Variable, Rational>;
+using RationalAssignment = carl::Assignment<Rational>;
 
-using VarPolyInfo = carl::VariableInformation<true, Poly>;
+using RAN = carl::IntRepRealAlgebraicNumber<Rational>;
 
 // Pair of priority and module id (within the respective strategy graph)
 using thread_priority = std::pair<std::size_t, std::size_t>;

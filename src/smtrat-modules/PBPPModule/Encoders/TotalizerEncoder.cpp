@@ -1,7 +1,7 @@
 #include"TotalizerEncoder.h"
 
 namespace smtrat {
-	boost::optional<FormulaT> TotalizerEncoder::doEncode(const ConstraintT& constraint) {
+	std::optional<FormulaT> TotalizerEncoder::doEncode(const ConstraintT& constraint) {
 		assert(canEncode(constraint) && "Input must be <=-cardinality constraint.");
 
 		auto treeIt = mTreeCache.find(constraint.variables().as_set());
@@ -15,7 +15,7 @@ namespace smtrat {
 
 		// traverse non-leaf nodes and construct formula
 		FormulaT sumPropagation = mSumPropagationFormulaCache[constraint.variables().as_set()];
-		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.constantPart()));
+		FormulaT cardinalityRestriction = encodeCardinalityRestriction(*tree, carl::abs(constraint.lhs().constant_part()));
 
 		return FormulaT(carl::FormulaType::AND, sumPropagation, cardinalityRestriction);
 	}
@@ -88,7 +88,7 @@ namespace smtrat {
 		bool allCoeffNegative = true;
 
 		for (const auto& it : constraint.lhs()) {
-			if (it.isConstant()) continue;
+			if (it.is_constant()) continue;
 
 			encodable = encodable && (it.coeff() == 1 || it.coeff() == -1);
 			if (it.coeff() < 0) allCoeffPositive = false;
@@ -117,7 +117,7 @@ namespace smtrat {
 
 		// create size() many new variables save it to this node
 		for (size_t i = 0; i < variables.size(); i++) {
-			mNodeVariables.push_back(carl::freshBooleanVariable());
+			mNodeVariables.push_back(carl::fresh_boolean_variable());
 		}
 
 		SMTRAT_LOG_TRACE("smtrat.pbpp.total", "Partitioning node variables " << mNodeVariables);

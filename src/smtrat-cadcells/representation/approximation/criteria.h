@@ -1,5 +1,5 @@
 #pragma once
-#include <carl/util/Singleton.h>
+#include <carl-common/memory/Singleton.h>
 
 namespace smtrat::cadcells::representation::approximation {
 
@@ -11,9 +11,9 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
         std::size_t m_considered_count = 0;
         std::size_t m_apx_count = 0;
         bool m_curr_apx = false;
-        std::unordered_map<FormulaT, std::size_t> m_constraint_involved_counter;
-        std::map<std::pair<Poly,  std::size_t>, std::size_t> m_poly_apx_counter;
-        FormulasT m_curr_constraints;
+        std::unordered_map<Atom, std::size_t> m_constraint_involved_counter;
+        std::map<std::pair<Polynomial,  std::size_t>, std::size_t> m_poly_apx_counter;
+        std::vector<Atom> m_curr_constraints;
 
         bool crit_considered_count() {
             if (!apx_settings().crit_considered_count_enabled) return true;
@@ -58,7 +58,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             return false;
         }
 
-        bool crit_involved_count(const FormulasT& constraints) {
+        bool crit_involved_count(const std::vector<Atom>& constraints) {
             if (!apx_settings().crit_involved_count_enabled) return true;
             bool res = true;
             for (const auto& c : constraints) {
@@ -78,21 +78,21 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             if (!apx_settings().crit_side_degree_enabled) return false;
             for(auto it = start; it != end; it++) {
                 for (const auto& ir_outer : it->second) {
-                    if (ir.poly == ir_outer.poly) continue;
-                    if (crit_pair_degree(proj, ir, ir_outer)) return true;
+                    if (ir.poly == ir_outer.root.poly) continue;
+                    if (crit_pair_degree(proj, ir, ir_outer.root)) return true;
                 }
             }
             return false;
         }
 
-        void new_cell(const FormulasT& constraints) {
+        void new_cell(const std::vector<Atom>& constraints) {
             m_curr_constraints = constraints;
             m_curr_apx = false;
         }
 
 
     public:
-        static void inform(const Poly& p, std::size_t root_index) {
+        static void inform(const Polynomial& p, std::size_t root_index) {
             ApxCriteria& ac = getInstance();
             auto pr = std::make_pair(p, root_index);
             ++(ac.m_poly_apx_counter[pr]);
@@ -109,7 +109,7 @@ class ApxCriteria : public carl::Singleton<ApxCriteria> {
             }
         }
 
-        static bool cell(const FormulasT& constraints) {
+        static bool cell(const std::vector<Atom>& constraints) {
             ApxCriteria& ac = getInstance();
             ac.new_cell(constraints);
             return ac.crit_considered_count() && ac.crit_apx_count() && ac.crit_involved_count(constraints);

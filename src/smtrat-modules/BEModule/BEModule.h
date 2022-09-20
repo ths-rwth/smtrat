@@ -12,6 +12,7 @@
 
 #include <smtrat-solver/PModule.h>
 #include "BESettings.h"
+#include <carl-formula/formula/functions/ConstraintBounds.h>
 
 namespace smtrat
 {
@@ -21,7 +22,6 @@ namespace smtrat
         private:
             // Members.
             ///
-			carl::FormulaVisitor<FormulaT> mVisitor;
 			
 			using Choice = std::tuple<carl::Variable,FormulaT>;
 			std::map<Choice, carl::Variable> mReplacements;
@@ -49,7 +49,7 @@ namespace smtrat
             FormulaT extractBounds( const FormulaT& formula );
 			std::function<FormulaT(FormulaT)> extractBoundsFunction;
 			
-			void collectBounds(FormulaT::ConstraintBounds& cb, const FormulaT& formula, bool conjunction) const;
+			void collectBounds(carl::ConstraintBounds<Poly>& cb, const FormulaT& formula, bool conjunction) const;
 			FormulaT applyReplacements(const FormulaT& f) const;
     };
 }

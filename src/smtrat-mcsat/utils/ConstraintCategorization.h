@@ -3,7 +3,7 @@
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
 
-#include <carl/util/enum_util.h>
+#include <carl-common/util/enum_util.h>
 
 #include <iostream>
 
@@ -38,7 +38,7 @@ namespace constraint_type {
 	ConstraintType categorize(const T& t, const Model& model, carl::Variable next) {
 		assert(model.find(next) == model.end());
 		carl::carlVariables vars;
-		t.gatherVariables(vars);
+		carl::variables(t,vars);
 		if (vars.empty()) return ConstraintType::Constant;
 		bool foundNext = false;
 		for (const auto& var: vars) {
@@ -58,10 +58,10 @@ namespace constraint_type {
 	* Checks whether the constraint is constant, i.e. whether it contains no variables.
 	 */
 	template<typename T>
-	bool isConstant(const T& t) {
+	bool is_constant(const T& t) {
 		// Avoid unnecessary overhead of categorize()
 		carl::carlVariables vars;
-		t.gatherVariables(vars);
+		carl::variables(t,vars);
 		return vars.empty();
 	}
 	
@@ -73,7 +73,7 @@ namespace constraint_type {
 	bool isAssigned(const T& t, const Model& model) {
 		// Avoid unnecessary overhead of categorize()
 		carl::carlVariables vars;
-		t.gatherVariables(vars);
+		carl::variables(t,vars);
 		for (const auto& var: vars) {
 			if (model.find(var) == model.end()) return false;
 		}
@@ -84,7 +84,7 @@ namespace constraint_type {
 	 * Checks whether the constraint contains only a single unassigned variable, and this is the next one.
 	 */
 	template<typename T>
-	bool isUnivariate(const T& t, const Model& model, carl::Variable next) {
+	bool is_univariate(const T& t, const Model& model, carl::Variable next) {
 		return categorize(t, model, next) == ConstraintType::Univariate;
 	}
 	

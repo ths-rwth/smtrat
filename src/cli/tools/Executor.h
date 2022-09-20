@@ -169,7 +169,7 @@ public:
 		}
 	}
 	void declareFun(const carl::Variable&) {
-		//if (smtrat::parser::TypeOfTerm::get(var.getType()) == smtrat::parser::ExpressionType::THEORY) {
+		//if (smtrat::parser::TypeOfTerm::get(var.type()) == smtrat::parser::ExpressionType::THEORY) {
 		//	this->solver.quantifierManager().addUnquantifiedVariable(var);
 		//}
 	}
@@ -179,7 +179,7 @@ public:
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
-#ifdef CLI_ENABLE_QE
+#ifdef ENABLE_UNSUPPORTED
 	void eliminateQuantifiers(const smtrat::qe::QEQuery& q) {
 		FormulaT qfree(this->solver.formula());
 		regular() << "Quantified Formula: " << q << " " << qfree << std::endl;
@@ -188,7 +188,7 @@ public:
 	}
 #else
 	void eliminateQuantifiers(const smtrat::qe::QEQuery&) {
-		SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for quantifier elimination.");
+		SMTRAT_LOG_ERROR("smtrat", "Quantifier elimination is not actively maintained and thus disabled by default.");
 	}
 #endif
 	void exit() {
@@ -199,7 +199,7 @@ public:
 			for (const auto& assertion : state.assertions()) {
 				regular() << assertion.formula << " ";
 			}
-			regular() << ")";
+			regular() << ")" << std::endl;
 		} else {
 			error() << "nothing is asserted";
 		}
@@ -207,7 +207,7 @@ public:
 	void getAllModels() { // non-standard
 		if (state.is_mode(execution::Mode::SAT)) {
 			for (const auto& m: this->solver.allModels()) {
-				regular() << carl::asSMTLIB(m) << std::endl;
+				regular() << carl::io::asSMTLIB(m) << std::endl;
 			}
 		} else {
 			error() << "Can only be called after a call that returned sat.";
@@ -221,7 +221,7 @@ public:
 	}
 	void getModel() {
 		if (state.is_mode(execution::Mode::SAT)) {
-			regular() << carl::asSMTLIB(state.model()) << std::endl;
+			regular() << carl::io::asSMTLIB(state.model()) << std::endl;
 		} else {
 			error() << "Can only be called after a call that returned sat.";
 		}

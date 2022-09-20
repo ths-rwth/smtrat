@@ -2,7 +2,7 @@
 
 #include "Common.h"
 
-#include <carl/util/mpl_utils.h>
+#include <carl-common/util/mpl_utils.h>
 
 #include <boost/mpl/vector.hpp>
 #include <boost/spirit/include/support_unused.hpp>
@@ -67,8 +67,8 @@ namespace types {
 	struct ArithmeticTheory  {
 		typedef mpl::vector<Rational, FixedWidthConstant<Integer>> ConstTypes;
 		typedef mpl::vector<carl::Variable> VariableTypes;
-		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly> ExpressionTypes;
-		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly> TermTypes;
+		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly, carl::MultivariateRoot<Poly>> ExpressionTypes;
+		typedef mpl::vector<carl::Variable, Rational, FixedWidthConstant<Integer>, Poly, carl::MultivariateRoot<Poly>> TermTypes;
 		typedef carl::mpl_variant_of<TermTypes>::type TermType;
 	};
 #endif

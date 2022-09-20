@@ -2,9 +2,9 @@
 
 #include <boost/test/unit_test.hpp>
 
-#include <carl/core/MultivariatePolynomial.h>
-#include <carl/core/Variable.h>
-#include <carl/ran/RealAlgebraicPoint.h>
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/core/Variable.h>
+#include <carl-arith/ran/RealAlgebraicPoint.h>
 
 #include <smtrat-mcsat/explanations/onecellcad/OpenCAD.h>
 
@@ -25,13 +25,12 @@ namespace {
   using namespace smtrat::onecellcad;
   using carl::Variable;
   using MultiPoly = carl::MultivariatePolynomial<Rational>;
-	using RAN = carl::RealAlgebraicNumber<Rational>;
-	using RANPoint = carl::RealAlgebraicPoint<Rational>;
+	using RANPoint = RealAlgebraicPoint<Rational>;
 
 struct VariableFixture {
-  Variable x = carl::freshRealVariable("x");
-  Variable y = carl::freshRealVariable("y");
-  Variable z = carl::freshRealVariable("z");
+  Variable x = carl::fresh_real_variable("x");
+  Variable y = carl::fresh_real_variable("y");
+  Variable z = carl::fresh_real_variable("z");
 };
 
 BOOST_FIXTURE_TEST_CASE(polylevel, VariableFixture) {
