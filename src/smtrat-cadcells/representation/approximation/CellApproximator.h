@@ -40,7 +40,7 @@ class CellApproximator {
 };
 
 template<>
-IR CellApproximator::apx_bound<ApxPoly::SIMPLE>(const IR& p, const RAN& bound, bool below) {
+IR CellApproximator::apx_bound<ApxPoly::SIMPLE>(const IR& /*p*/, const RAN& bound, bool below) {
     Rational root = approximate_root<ApxSettings::root>(main_sample(),bound,below);
     return IR(proj().polys()(carl::get_denom(root)*Polynomial(proj().polys().get_context(),var()) - carl::get_num(root)), 1); // TODO poly context
 }
@@ -217,70 +217,6 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RAN& boun
     return IR(proj().polys()(result_lp), 1);
 }
 
-/*template<>
-IR CellApproximator::apx_bound<ApxPoly::HYPERPLANE>(const IR& p, const RAN& bound, bool below) {
-    std::size_t dimensions =sample().size()-1;
-    if (apx_settings().hyperplane_dim != 0) dimensions = std::min(apx_settings().hyperplane_dim, dimensions);
-    if (dimensions == 0) return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
-    datastructures::PolyRef discriminant = proj.disc(p.poly);
-    datastructures::PolyRef leading_coeff = proj.ldcf(p.poly);
-    carl::UnivariatePolynomial<Poly> poly = carl::to_univariate_polynomial(proj.polys()(p.poly), var());
-    VariableOrdering var_order = proj.polys().var_order();
-    Poly result = Poly(var()) - Poly(approximate_root<ApxSettings::root>(main_sample(), bound, below));
-    for (std::size_t i = 1; i <= dimensions; i++) {
-        carl::Variable v = var_order[sample.size()-i -1];
-        auto restricted_sample =sample();
-        restricted_sample.erase(v);
-        Rational sample_below = carl::floor(sample()[v]);
-        Rational sample_above = carl::ceil(sample()[v]);
-        if (sample_below == sample_above) {
-            sample_below = sample_below - (Rational(1)/Rational(2));
-            sample_above = sample_above + (Rational(1)/Rational(2));
-        }
-        carl::UnivariatePolynomial<Poly> discriminant_u = carl::to_univariate_polynomial(proj.polys()(discriminant), v);
-        auto roots_disc = carl::real_roots(discriminant_u, restricted_sample, carl::Interval<Rational>(sample_below, sample_above));
-        carl::UnivariatePolynomial<Poly> leading_coeff_u = carl::to_univariate_polynomial(proj.polys()(leading_coeff), v);
-        
-        // it should not be possible that the discriminant is nullified and it does not matter if the ldcf is nullified.
-        assert(roots_disc.is_univariate());
-        std::vector<RAN> roots = roots_disc.roots();
-        // Find suitable samples
-        if (roots.size() > 0) {
-            std::size_t ub_index = 0;
-            while (ub_index < roots.size() && roots[ub_index] < sample()[v]) ub_index++;
-            if (ub_index < roots.size()) {
-                // if the discriminant has a root at the actual sample, we cannot find two good samples, so we skip this level
-                if (roots[ub_index] == sample()[v]) continue;
-                sample_above = carl::sample_between(sample()[v], roots[ub_index]);
-            }
-            if (ub_index > 0) sample_below = carl::sample_between(roots[ub_index-1], sample()[v]);
-
-            auto roots_ldcf = carl::real_roots(leading_coeff_u, restricted_sample, carl::Interval<Rational>(sample_below, sample()_above));
-            if (roots_ldcf.is_univariate()) {
-                roots = roots_ldcf.roots();
-                ub_index = 0;
-                while (ub_index < roots.size() && roots[ub_index] < sample()[v]) ub_index++;
-                if (ub_index < roots.size()) {
-                    if (roots[ub_index] == sample()[v]) continue; // TODO: does this even happen?
-                    sample_above = carl::sample_between(sample()[v], roots[ub_index]);
-                }
-                if (ub_index > 0) sample_below = carl::sample_between(roots[ub_index-1],sample()[v]);
-            }
-        }
-        // calculate roots corresponding to samples
-        restricted_sample.erase(var());
-        restricted_sample[v] = sample_below;
-        RAN root_at_sample_below = carl::real_roots(poly, restricted_sample).roots()[p.index-1];
-        Rational apx_root_below = carl::branching_point(root_at_sample_below);
-        restricted_sample[v] = sample_above;
-        RAN root_at_sample_above = carl::real_roots(poly, restricted_sample).roots()[p.index-1];
-        Rational apx_root_above = carl::branching_point(root_at_sample_above);
-        Rational direction_gradient = (apx_root_above - apx_root_below) / (sample_above - sample_below);
-        result = result - direction_gradient*(Poly(v) - Poly(carl::branching_point(sample()[v]))); // TODO: branching point only approximates ...
-    }
-    return IR(proj.polys()(result), 1);
-}*/
-
 template<>
 IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound, bool below) {
 
@@ -365,7 +301,7 @@ IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound,
 }
 
 template<>
-IR CellApproximator::apx_between<ApxPoly::SIMPLE>(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u) {
+IR CellApproximator::apx_between<ApxPoly::SIMPLE>(const IR& /*p_l*/, const IR& /*p_u*/, const RAN& l, const RAN& u) {
     Rational root = approximate_root<ApxSettings::root>(l,u,false);
     return IR(proj().polys()(carl::get_denom(root) * Polynomial(proj().polys().get_context(),var()) - carl::get_num(root)), 1);
 }
