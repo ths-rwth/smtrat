@@ -128,7 +128,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->root.poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->root.poly)) continue;
-                if (!util::compare_simplest(der->proj(),ir->root.poly,response.description.section_defining().poly)) {
+                if (!util::compare_simplest(der->proj(),ir->root,response.description.section_defining())) {
                     response.equational.insert(ir->root.poly);
                 }
             }
@@ -141,7 +141,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (ir->root.poly == response.description.section_defining().poly) continue;
                 if (response.equational.contains(ir->root.poly)) continue;
-                if (!util::compare_simplest(der->proj(),ir->root.poly,response.description.section_defining().poly)) {
+                if (!util::compare_simplest(der->proj(),ir->root,response.description.section_defining())) {
                     response.equational.insert(ir->root.poly);
                 }
             }
@@ -161,22 +161,26 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             auto old_barrier = barrier;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (section && response.equational.contains(ir->root.poly)) continue;
-                if (util::compare_simplest(der->proj(),ir->root.poly,barrier.poly)) {
+                if (util::compare_simplest(der->proj(),ir->root,barrier)) {
                     barrier = ir->root;
                 }
             }
             assert(it != reduced_cell.lower() || barrier == response.description.lower().value());
             if (barrier != old_barrier) {
                 response.ordering.add_less(barrier, old_barrier);
-                resultants.try_emplace(barrier.poly).first->second.insert(old_barrier.poly);
-                resultants.try_emplace(old_barrier.poly).first->second.insert(barrier.poly);
+                if (barrier.is_root() && old_barrier.is_root()) {
+                    resultants.try_emplace(barrier.root().poly).first->second.insert(old_barrier.root().poly);
+                    resultants.try_emplace(old_barrier.root().poly).first->second.insert(barrier.root().poly);
+                }
             }
             for (const auto& ir : it->second) {
                 if (section && response.equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
                     response.ordering.add_less(ir.root, barrier);
-                    resultants.try_emplace(ir.root.poly).first->second.insert(barrier.poly);
-                    resultants.try_emplace(barrier.poly).first->second.insert(ir.root.poly);
+                    if (barrier.is_root()) {
+                        resultants.try_emplace(ir.root.poly).first->second.insert(barrier.root().poly);
+                        resultants.try_emplace(barrier.root().poly).first->second.insert(ir.root.poly);
+                    }
                 } 
             }
             if (it != reduced_delineation.roots().begin()) it--;
@@ -184,7 +188,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
         }
     }
 
-    std::vector<datastructures::IndexedRoot> reached;
+    std::vector<datastructures::RootFunction> reached;
     if (!reduced_cell.upper_unbounded()) {
         auto it = reduced_cell.upper();
         auto barrier = response.description.upper().value();
@@ -193,15 +197,15 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             auto old_barrier = barrier;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (section && response.equational.contains(ir->root.poly)) continue;
-                if (util::compare_simplest(der->proj(),ir->root.poly,barrier.poly)) {
+                if (util::compare_simplest(der->proj(),ir->root,barrier)) {
                     barrier = ir->root;
                 }
             }
             assert(it != reduced_cell.upper() || barrier == response.description.upper().value());
             if (barrier != old_barrier) {
                 bool rchd = false;
-                for (const auto r : reached) {
-                    if(resultants.try_emplace(barrier.poly).first->second.contains(r.poly)) {
+                for (const auto& r : reached) {
+                    if(barrier.is_root() && r.is_root() && resultants.try_emplace(barrier.root().poly).first->second.contains(r.root().poly)) {
                         response.ordering.add_less(r, barrier);
                         rchd = true;
                     }
@@ -215,8 +219,8 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
                 if (section && response.equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
                     bool rchd = false;
-                    for (const auto r : reached) {
-                        if(resultants.try_emplace(ir.root.poly).first->second.contains(r.poly)) {
+                    for (const auto& r : reached) {
+                        if(r.is_root() && resultants.try_emplace(ir.root.poly).first->second.contains(r.root().poly)) {
                             response.ordering.add_less(r, ir.root);
                             rchd = true;
                         }
