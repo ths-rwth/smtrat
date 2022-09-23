@@ -10,13 +10,14 @@
 
 namespace smtrat::mcsat::onecell {
 
-using Settings = LDBSettings; // current default
+// using Settings = LDBSettings; // current default
 // using Settings = BCSettings;
 // using Settings = BCFilteredSettings;
 // using Settings = BCFilteredAllSettings;
 // using Settings = BCFilteredBoundsSettings;
 // using Settings = BCFilteredSamplesSettings;
 // using Settings = BCFilteredAllSelectiveSettings;
+using Settings = LDBFilteredAllSelectiveSettings;
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 

@@ -25,6 +25,12 @@ struct LDBSettings {
     constexpr static auto op = cadcells::operators::op::mccallum;
 };
 
+struct LDBFilteredAllSelectiveSettings {
+    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EW;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
+    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
+};
+
 struct BCSettings {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;

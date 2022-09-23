@@ -113,8 +113,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
 
 template<typename T>
 inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response, bool section, bool enable_weak = false) {
-    assert(!enable_weak); // TODO not supported yet
-
+    // TODO refactor
     datastructures::Delineation reduced_delineation;
     util::PolyDelineations poly_delins;
     util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
@@ -154,20 +153,29 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
     }
 
     boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> resultants;
-    if (!reduced_cell.lower_unbounded())  {
+    if (!reduced_cell.lower_unbounded()) {
         auto it = reduced_cell.lower();
         auto barrier = response.description.lower().value();
+        bool barrier_incl = response.description.lower().is_weak();
         while(true) {
             auto old_barrier = barrier;
+            bool old_barrier_incl = barrier_incl;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (section && response.equational.contains(ir->root.poly)) continue;
-                if (util::compare_simplest(der->proj(),ir->root,barrier)) {
+                if (util::compare_simplest(der->proj(),ir->root,barrier) || barrier == ir->root) {
+                    if (barrier == ir->root) {
+                        barrier_incl = ir->is_inclusive && barrier_incl;
+                    }
                     barrier = ir->root;
                 }
             }
             assert(it != reduced_cell.lower() || barrier == response.description.lower().value());
             if (barrier != old_barrier) {
-                response.ordering.add_less(barrier, old_barrier);
+                if (enable_weak && (response.description.lower().is_strict() || barrier_incl || !old_barrier_incl)) {
+                    response.ordering.add_leq(barrier, old_barrier);
+                } else {
+                    response.ordering.add_less(barrier, old_barrier);
+                }
                 if (barrier.is_root() && old_barrier.is_root()) {
                     resultants.try_emplace(barrier.root().poly).first->second.insert(old_barrier.root().poly);
                     resultants.try_emplace(old_barrier.root().poly).first->second.insert(barrier.root().poly);
@@ -176,7 +184,11 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
             for (const auto& ir : it->second) {
                 if (section && response.equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
-                    response.ordering.add_less(ir.root, barrier);
+                    if (enable_weak && (response.description.lower().is_strict() || ir.is_inclusive || !barrier_incl)) {
+                        response.ordering.add_leq(ir.root, barrier);
+                    } else {
+                        response.ordering.add_less(ir.root, barrier);
+                    }
                     if (barrier.is_root()) {
                         resultants.try_emplace(ir.root.poly).first->second.insert(barrier.root().poly);
                         resultants.try_emplace(barrier.root().poly).first->second.insert(ir.root.poly);
@@ -192,12 +204,17 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
     if (!reduced_cell.upper_unbounded()) {
         auto it = reduced_cell.upper();
         auto barrier = response.description.upper().value();
+        bool barrier_incl = response.description.upper().is_weak();
         reached.push_back(barrier);
         while(it != reduced_delineation.roots().end()) {
             auto old_barrier = barrier;
+            bool old_barrier_incl = barrier_incl;
             for (auto ir = it->second.begin(); ir != it->second.end(); ir++) {
                 if (section && response.equational.contains(ir->root.poly)) continue;
-                if (util::compare_simplest(der->proj(),ir->root,barrier)) {
+                if (util::compare_simplest(der->proj(),ir->root,barrier) || barrier == ir->root) {
+                    if (barrier == ir->root) {
+                        barrier_incl = ir->is_inclusive && barrier_incl;
+                    }
                     barrier = ir->root;
                 }
             }
@@ -206,27 +223,44 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
                 bool rchd = false;
                 for (const auto& r : reached) {
                     if(barrier.is_root() && r.is_root() && resultants.try_emplace(barrier.root().poly).first->second.contains(r.root().poly)) {
-                        response.ordering.add_less(r, barrier);
+                        if (enable_weak && response.description.upper().is_strict()) {
+                            response.ordering.add_leq(r, barrier);
+                        } else {
+                            response.ordering.add_less(r, barrier);
+                        }
                         rchd = true;
                     }
                 }
                 if (!rchd) {
-                    response.ordering.add_less(old_barrier, barrier);
+                    if (enable_weak && (response.description.upper().is_strict() || barrier_incl || !old_barrier_incl)) {
+                        response.ordering.add_leq(old_barrier, barrier);
+                    } else {
+                        response.ordering.add_less(old_barrier, barrier);
+                    }
                 }
                 reached.push_back(barrier);
             }
             for (const auto& ir : it->second) {
+                std::cout << ir << std::endl;
                 if (section && response.equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
                     bool rchd = false;
                     for (const auto& r : reached) {
                         if(r.is_root() && resultants.try_emplace(ir.root.poly).first->second.contains(r.root().poly)) {
-                            response.ordering.add_less(r, ir.root);
+                            if (enable_weak && response.description.upper().is_strict()) {
+                                response.ordering.add_leq(r, ir.root);
+                            } else {
+                                response.ordering.add_less(r, ir.root);
+                            }
                             rchd = true;
                         }
                     }
                     if (!rchd) {
-                        response.ordering.add_less(barrier, ir.root);
+                        if (enable_weak && (response.description.upper().is_strict() || ir.is_inclusive || !barrier_incl)) {
+                            response.ordering.add_leq(barrier, ir.root);
+                        } else {
+                            response.ordering.add_less(barrier, ir.root);
+                        }
                     }
                     reached.push_back(ir.root);
                 } 
@@ -279,6 +313,32 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
         } else { // sector
             if (!der->delin().nullified().empty()) return std::nullopt;
             compute_barriers(der, response, false);
+        }
+        maintain_connectedness(der, response);
+        return response;
+    }
+};
+
+template <>
+struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EW> {
+    template<typename T>
+    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        response.description = util::compute_simplest_cell(der->proj(), der->cell(), true);
+
+        if (der->cell().is_section()) {
+            for (const auto& poly : der->delin().nullified()) {
+                response.equational.insert(poly);
+            }
+            for (const auto& poly : der->delin().nonzero()) {
+                response.equational.insert(poly);
+            }
+
+            compute_barriers(der, response, true, true);
+        } else { // sector
+            if (!der->delin().nullified().empty()) return std::nullopt;
+            compute_barriers(der, response, false, true);
+            util::add_weird_ordering(response.ordering, der->delin(), der->cell(), response.description);
         }
         maintain_connectedness(der, response);
         return response;
