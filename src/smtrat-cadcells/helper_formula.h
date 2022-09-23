@@ -7,35 +7,46 @@
 namespace smtrat::cadcells::helper {
 
 /**
- * Converts an @ref datastructures::IndexedRoot to a @ref MultivariateRootT.
+ * Converts an @ref datastructures::IndexedRoot to a @ref MultivariateRoot.
  */
-inline MultivariateRootT as_multivariate_root(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::IndexedRoot r) {
-    const Poly& poly = pool(r.poly);
+inline MultivariateRoot as_multivariate_root(const datastructures::PolyPool& pool, carl::Variable main_var, datastructures::IndexedRoot r) {
+    const Polynomial& poly = pool(r.poly);
     assert(carl::variables(poly).has(main_var));
-    return MultivariateRootT(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), carl::to_univariate_polynomial(poly, main_var).coefficients())), r.index);
+    return MultivariateRoot(poly, r.index, main_var);
 }
 
 /**
- * Converts a @ref datastructures::SymbolicInterval to a @ref FormulaT.
+ * Converts a @ref datastructures::SymbolicInterval to an @ref Atom.
  */
-FormulaT to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, const datastructures::SymbolicInterval& c) {
+std::vector<Atom> to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, const datastructures::SymbolicInterval& c) {
+    std::vector<Atom> atoms;
     if (c.is_section()) {
-        return FormulaT(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.section_defining()), carl::Relation::EQ));
+        atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,c.section_defining()), carl::Relation::EQ));
     } else {
-        FormulasT subformulas;
-        if (c.lower().is_strict()) {
-            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.lower().value()), carl::Relation::GREATER));
-        } else if (c.lower().is_weak()) {
-            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.lower().value()), carl::Relation::GEQ));
+        if (!c.lower().is_infty()) {
+            auto rel = c.lower().is_strict() ? carl::Relation::GREATER : carl::Relation::GEQ;
+            if (c.lower().value().is_root()) {
+                atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,c.lower().value().root()), rel));
+            } else {
+                assert(c.lower().value().is_cmax());
+                for (const auto& r : c.lower().value().cmax().roots) {
+                    atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,r), rel));
+                }
+            }
         }
-        FormulaT lower(carl::FormulaType::TRUE);
-        if (c.upper().is_strict()) {
-            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.upper().value()), carl::Relation::LESS));
-        } else if (c.upper().is_weak()) {
-            subformulas.emplace_back(VariableComparisonT(main_var, as_multivariate_root(pool,main_var,c.upper().value()), carl::Relation::LEQ));
+        if (!c.upper().is_infty()) {
+            auto rel = c.upper().is_strict() ? carl::Relation::LESS : carl::Relation::LEQ;
+            if (c.upper().value().is_root()) {
+                atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,c.upper().value().root()), rel));
+            } else {
+                assert(c.upper().value().is_cmin());
+                for (const auto& r : c.upper().value().cmin().roots) {
+                    atoms.emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,r), rel));
+                }
+            }
         }
-        return FormulaT(carl::FormulaType::AND, std::move(subformulas));
     } 
+    return atoms;
 }
 
 }

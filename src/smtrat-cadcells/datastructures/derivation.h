@@ -125,14 +125,18 @@ public:
     }
 
     template<typename P>
-    friend bool operator==(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
-        return lhs.m_data == rhs.m_data;
-    }
+    friend bool operator==(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs);
     template<typename P>
-    friend bool operator<(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
-        return lhs.m_data < rhs.m_data;
-    }
+    friend bool operator<(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs);
 };
+template<typename P>
+bool operator==(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
+    return lhs.m_data == rhs.m_data;
+}
+template<typename P>
+bool operator<(const DerivationRef<P>& lhs, const DerivationRef<P>& rhs) {
+    return lhs.m_data < rhs.m_data;
+}
 
 /**
  * A BaseDerivation has a level and a set of properties of this level, and an underlying derivation representing the lower levels.
@@ -152,12 +156,13 @@ class BaseDerivation {
 
 public:
     // should be private, but does not work with make_shared:
-    BaseDerivation(Projections& Projections, DerivationRef<Properties> underlying, size_t level) : m_underlying(underlying), m_projections(Projections), m_level(level) {
+    BaseDerivation(Projections& projections, DerivationRef<Properties> underlying, size_t level) : m_underlying(underlying), m_projections(projections), m_level(level) {
         assert((level == 0 && m_underlying.is_null()) || (level > 0 && !m_underlying.is_null()));
     }
+    BaseDerivation(const BaseDerivation& other) : m_underlying(other.m_underlying), m_projections(other.m_projections), m_level(other.m_level), m_properties(other.m_properties) {}
 
     DerivationRef<Properties>& underlying() { return m_underlying; }
-    DerivationRef<Properties>& underlying() const { return m_underlying; }
+    const DerivationRef<Properties>& underlying() const { return m_underlying; }
 
     PolyPool& polys() { return m_projections.polys(); }
     Projections& proj() { return m_projections; }
@@ -169,6 +174,7 @@ public:
 
     template<typename P>
     void insert(P property) {
+        SMTRAT_LOG_FUNC("smtrat.cadcells.derivation", property);
         assert(property.level() <= m_level && property.level() >= 0);
 
         if (property.level() == m_level) {
@@ -220,11 +226,15 @@ public:
         : m_base(base) {
         assert(base->level() == 0 || base->underlying().is_sampled());
     }
+    DelineatedDerivation(BaseDerivationRef<Properties> base, const Delineation& delineation)
+        : m_base(base), m_delineation(delineation) {
+        assert(base->level() == 0 || base->underlying().is_sampled());
+    }
 
     BaseDerivationRef<Properties>& base() {
         return m_base;
     };
-    BaseDerivationRef<Properties>& base() const {
+    const BaseDerivationRef<Properties>& base() const {
         return m_base;
     };
 
@@ -242,7 +252,7 @@ public:
     DerivationRef<Properties>& underlying() {
         return m_base->underlying();
     };
-    DerivationRef<Properties>& underlying() const {
+    const DerivationRef<Properties>& underlying() const {
         return m_base->underlying();
     };
     PolyPool& polys() {
@@ -298,7 +308,7 @@ public:
     }
 
     DelineatedDerivationRef<Properties>& delineated() { return m_delineated; };
-    DelineatedDerivationRef<Properties>& delineated() const { return m_delineated; };
+    const DelineatedDerivationRef<Properties>& delineated() const { return m_delineated; };
 
     const DelineationInterval& cell() const { return *m_cell; }
     /**
@@ -315,7 +325,7 @@ public:
     const RAN& main_var_sample() const { return m_sample.at(m_delineated->main_var()); };
 
     BaseDerivationRef<Properties>& base() { return m_delineated->base(); };
-    BaseDerivationRef<Properties>& base() const { return m_delineated->base(); };
+    const BaseDerivationRef<Properties>& base() const { return m_delineated->base(); };
     Delineation& delin() { return m_delineated->delin(); };
     const Assignment& underlying_sample() const { return m_delineated->underlying_sample(); }
     DerivationRef<Properties>& underlying() { return m_delineated->underlying(); };
@@ -331,8 +341,8 @@ public:
     const PropertiesTSet<P>& properties() const { return m_delineated->template properties<P>(); };
 
     void merge_with(const SampledDerivation<Properties>& other) {
-        assert(!m_cell && other.m_cell);
-        m_delineated->merge_with(other);
+        assert(!m_cell && !other.m_cell);
+        m_delineated->merge_with(*other.delineated());
     };
 };
 
@@ -365,9 +375,11 @@ DerivationRef<Properties> make_derivation(Projections& proj, const Assignment& a
  */
 template<typename Properties>
 SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef<Properties> delineated, const RAN& main_sample) {
-    auto sampled_der = std::make_shared<SampledDerivation<Properties>>(delineated, main_sample);
-    sampled_der->delineate_cell();
-    return sampled_der;
+    auto base_ref = std::make_shared<BaseDerivation<Properties>>(*delineated->base());
+    auto delineated_ref = std::make_shared<DelineatedDerivation<Properties>>(base_ref, delineated->delin());
+    auto sampled_ref = std::make_shared<SampledDerivation<Properties>>(delineated_ref, main_sample);
+    sampled_ref->delineate_cell();
+    return sampled_ref;
 }
 
 /**

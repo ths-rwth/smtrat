@@ -27,7 +27,7 @@ std::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(con
 #endif
 
 	#if not (defined USE_COCOA || defined USE_GINAC)
-		// OneCellCAD needs carl::irreducibleFactors to be implemented
+		// OneCellCAD needs carl::irreducible_factors to be implemented
 		#warning OneCellCAD may be incorrect as USE_COCOA is disabled
 	#endif
 
@@ -162,19 +162,16 @@ std::optional<mcsat::Explanation> Explanation<Setting1,Setting2>::operator()(con
 		auto cellVariable = oneCellCADVarOrder[i];
 		if (std::holds_alternative<Section>(cellComponent)) {
 			auto section = std::get<Section>(cellComponent).boundFunction;
-			// Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 			auto param = std::make_pair(section.poly(), section.k());
 			explainLiterals.emplace_back(nlsat::helper::buildEquality(cellVariable, param).negated());
 		} else {
 			auto sectorLowBound = std::get<Sector>(cellComponent).lowBound;
 			if (sectorLowBound) {
-				// Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 				auto param = std::make_pair(sectorLowBound->boundFunction.poly(), sectorLowBound->boundFunction.k());
 				explainLiterals.emplace_back(nlsat::helper::buildAbove(cellVariable, param).negated());
 			}
 			auto sectorHighBound = std::get<Sector>(cellComponent).highBound;
 			if (sectorHighBound) {
-				// Need to use poly with its main variable replaced by the special MultivariateRootT::var().
 				auto param = std::make_pair(sectorHighBound->boundFunction.poly(), sectorHighBound->boundFunction.k());
 				explainLiterals.emplace_back(nlsat::helper::buildBelow(cellVariable, param).negated());
 			}

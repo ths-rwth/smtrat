@@ -6,8 +6,8 @@
 
 #include "polynomials.h"
 
-#include <carl-arith/poly/umvpoly/functions/Factorization.h>
-#include <carl-arith/poly/umvpoly/functions/Resultant.h>
+#include <carl-arith/poly/ctxpoly/Functions.h>
+#include <carl-arith/poly/libpoly/Functions.h>
 
 namespace smtrat::cadcells::datastructures {
 
@@ -21,7 +21,7 @@ struct PolyProperties {
 };
 
 struct AssignmentProperties {
-    std::map<PolyRef, carl::ran::real_roots_result<RAN>> real_roots;
+    std::map<PolyRef, carl::RealRootsResult<RAN>> real_roots;
     std::map<PolyRef, bool> is_zero;
 };
 
@@ -69,10 +69,6 @@ public:
     }
 
 private:
-    auto as_univariate(PolyRef p) const {
-        return carl::to_univariate_polynomial(m_pool(p), main_var(p));
-    }
-
     Assignment restrict_assignment(Assignment ass, PolyRef p) {
         auto vars = carl::variables(m_pool(p));
         for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
@@ -102,8 +98,21 @@ public:
 
     /// Clears all projections cached with respect to this assignment.
     void clear_assignment_cache(const Assignment& assignment) {
-        if (level_of(assignment) < m_assignment_cache.size()) {
-            m_assignment_cache[level_of(assignment)].erase(assignment);
+        for (auto lvl = level_of(assignment); lvl < m_assignment_cache.size(); lvl++) {
+            for (auto it = m_assignment_cache[lvl].begin(); it != m_assignment_cache[lvl].end(); ) {
+                bool is_subset = true;
+                for (const auto& e : it->first) {
+                    if (assignment.find(e.first) == assignment.end() || assignment.at(e.first) != e.second) {
+                        is_subset = false;
+                        break;
+                    }
+                }
+                if (is_subset) {
+                    it = m_assignment_cache[lvl].erase(it);
+                } else {
+                    it++;
+                }
+            }
         }
     }
     
@@ -116,9 +125,7 @@ public:
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
-            auto upoly = carl::resultant(as_univariate(p), as_univariate(q));
-            assert(carl::is_constant(upoly));
-            auto result = m_pool(Poly(upoly));
+            auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
             return result;
@@ -129,7 +136,7 @@ public:
         return (bool) cache(p).disc;
     }
 
-    bool known(const Poly& p) const {
+    bool known(const Polynomial& p) const {
         return m_pool.known(p);
     } 
 
@@ -137,9 +144,7 @@ public:
         if (cache(p).disc) {
             return *cache(p).disc;
         } else {
-            auto upoly = carl::discriminant(as_univariate(p));
-            assert(carl::is_constant(upoly));
-            auto result = m_pool(Poly(upoly));
+            auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
             cache(p).disc = result;
             return result;
@@ -150,7 +155,7 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
-            auto result = m_pool(m_pool(p).lcoeff(main_var(p)));
+            auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
             cache(p).ldcf = result;
             return result;
@@ -159,7 +164,7 @@ public:
 
     const std::vector<PolyRef>& factors_nonconst(PolyRef p) {
         if (cache(p).factors_nonconst.empty()) {
-            for (const auto& factor : carl::irreducibleFactors(m_pool(p), false)) {
+            for (const auto& factor : carl::irreducible_factors(m_pool(p), false)) {
                 cache(p).factors_nonconst.emplace_back(m_pool(factor));
             }
         }
@@ -171,7 +176,7 @@ public:
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
-            auto mv = carl::evaluate(carl::BasicConstraint<Poly>(m_pool(p), carl::Relation::EQ), restricted_sample);
+            auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
             assert(!indeterminate(mv));
             cache(restricted_sample).is_zero[p] = (bool) mv;
         }
@@ -180,9 +185,9 @@ public:
 
     size_t num_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
-        assert(!m_pool(p).is_constant());
+        assert(!carl::is_constant(m_pool(p)));
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
-            cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
+            cache(sample).real_roots.emplace(p, carl::real_roots(m_pool(p), sample));
         }
         assert(cache(sample).real_roots.at(p).is_univariate());
         return cache(sample).real_roots.at(p).roots().size();
@@ -190,21 +195,27 @@ public:
 
     std::vector<RAN> real_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
-        assert(!m_pool(p).is_constant());
+        assert(!carl::is_constant(m_pool(p)));
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
-            cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
+            cache(sample).real_roots.emplace(p, carl::real_roots(m_pool(p), sample));
         }
         assert(cache(sample).real_roots.at(p).is_univariate());
         return cache(sample).real_roots.at(p).roots();
     }
 
+    RAN evaluate(const Assignment& sample, IndexedRoot r) {
+        auto roots = real_roots(sample, r.poly);
+        assert(r.index <= roots.size());
+        return roots[r.index-1];
+    }
+
     bool is_nullified(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
         auto poly = m_pool(p);
-		assert(!poly.is_constant());
-		if (poly.is_linear()) return false;
+		assert(!carl::is_constant(poly));
+		if (carl::is_linear(poly)) return false;
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {
-            cache(sample).real_roots.emplace(p, carl::real_roots(as_univariate(p), sample));
+            cache(sample).real_roots.emplace(p, carl::real_roots(m_pool(p), sample));
         }
 		return cache(sample).real_roots.at(p).is_nullified();
     }
@@ -226,18 +237,16 @@ public:
     }
 
     bool has_const_coeff(PolyRef p) const {
-        auto poly = as_univariate(p);
-        for (const auto& coeff :  poly.coefficients()) {
-            if (coeff.is_constant() && !carl::is_zero(coeff)) return true;
+        for (const auto& coeff :  m_pool(p).coefficients()) {
+            if (carl::is_constant(coeff) && !carl::is_zero(coeff)) return true;
         }
         return false;
     }
 
-    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Poly&,const Poly&)> compare) const {
-        std::optional<Poly> result;
-        auto poly = as_univariate(p);
-        for (const auto& coeff : poly.coefficients()) {
-            auto mv = carl::evaluate(carl::BasicConstraint<Poly>(coeff, carl::Relation::NEQ), sample);
+    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) const {
+        std::optional<Polynomial> result;
+        for (const auto& coeff : m_pool(p).coefficients()) {
+            auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);
             assert(!indeterminate(mv));
             if (mv) {
                 if (!result || compare(coeff,*result)) {
@@ -250,17 +259,17 @@ public:
     }
 
     std::size_t degree(PolyRef p) {
-        return m_pool(p).degree(main_var(p));
+        return m_pool(p).degree();
     }
 
-    std::size_t max_degree(PolyRef p) {
-        const auto& poly = m_pool(p);
-        size_t deg = 0;
-        for (const auto var : carl::variables(poly)) {
-            deg = std::max(deg, poly.degree(var));
-        }
-        return deg;
-    }
+    // std::size_t max_degree(PolyRef p) {
+    //     const auto& poly = m_pool(p);
+    //     size_t deg = 0;
+    //     for (const auto var : carl::variables(poly)) {
+    //         deg = std::max(deg, poly.degree(var));
+    //     }
+    //     return deg;
+    // }
 
 };
 

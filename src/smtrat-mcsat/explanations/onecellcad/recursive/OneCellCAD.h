@@ -294,7 +294,7 @@ public:
 	ShrinkResult shrinkCellWithIrreducibleFactorsOfPoly(
 		const TagPoly& poly,
 		CADCell& cell) {
-		for (const auto& factor : carl::irreducibleFactors(poly.poly, false)) {
+		for (const auto& factor : carl::irreducible_factors(poly.poly, false)) {
 			SMTRAT_LOG_TRACE("smtrat.cad", "Shrink with irreducible factor: Poly: "
 											   << poly.poly << " Factor: " << factor);
 			if (factor.is_constant())
@@ -369,7 +369,7 @@ public:
 		const auto mainVariable = variableOrder[boundCandidate.level];
 		if (std::holds_alternative<Section>(cell[boundCandidate.level])) {
 		    Poly res = resultant(mainVariable, boundCandidate.poly,
-		            std::get<Section>(cell[boundCandidate.level]).boundFunction.poly(mainVariable));
+		            std::get<Section>(cell[boundCandidate.level]).boundFunction.poly());
             if(!res.is_constant()){
                 projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res, *levelOf(variableOrder, res)});
             }
@@ -399,13 +399,13 @@ public:
 			Sector& sectorAtLvl = std::get<Sector>(cell[boundCandidate.level]);
 
 			if (sectorAtLvl.lowBound) {
-			    Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.lowBound->boundFunction.poly(mainVariable));
+			    Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.lowBound->boundFunction.poly());
                 if(!res.is_constant()) {
                     projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res, *levelOf(variableOrder, res)});
                 }
 			}
 			if (sectorAtLvl.highBound) {
-                Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.highBound->boundFunction.poly(mainVariable));
+                Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.highBound->boundFunction.poly());
                 if(!res.is_constant()) {
                     projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res, *levelOf(variableOrder, res)});
                 }
@@ -464,7 +464,7 @@ public:
 		const auto mainVariable = variableOrder[boundCandidate.level];
 		if (std::holds_alternative<Section>(cell[boundCandidate.level])) {
 			Section sectionAtLvl = std::get<Section>(cell[boundCandidate.level]);
-            Poly res = resultant(mainVariable, boundCandidate.poly, sectionAtLvl.boundFunction.poly(mainVariable));
+            Poly res = resultant(mainVariable, boundCandidate.poly, sectionAtLvl.boundFunction.poly());
             if(!res.is_constant()) {
                 projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res, *levelOf(variableOrder, res)});
             }
@@ -488,13 +488,13 @@ public:
 			}
 
 			if (sectorAtLvl.lowBound) {
-                Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.lowBound->boundFunction.poly(mainVariable));
+                Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.lowBound->boundFunction.poly());
                 if(!res.is_constant()) {
                     projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res, *levelOf(variableOrder, res)});
                 }
 			}
 			if (sectorAtLvl.highBound) {
-                Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.highBound->boundFunction.poly(mainVariable));
+                Poly res = resultant(mainVariable, boundCandidate.poly, sectorAtLvl.highBound->boundFunction.poly());
                 if(!res.is_constant()) {
                     projectionResult.emplace_back(TagPoly{InvarianceType::ORD_INV, res, *levelOf(variableOrder, res)});
                 }

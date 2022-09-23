@@ -2172,7 +2172,7 @@ namespace smtrat
         ca.free( cr );
     }
 
-    template<class Settings> // TODO REFACTOR can be replaced by bool_satisfied?
+    template<class Settings>
     bool SATModule<Settings>::satisfied( const Clause& c ) const
     {
         for( int i = 0; i < c.size(); i++ )
@@ -3045,7 +3045,6 @@ namespace smtrat
 		SMTRAT_CHECKPOINT("nlsat", "backtrack", backtrack_level);
        
         if(Settings::mc_sat) {
-            // TODO testing necessary
             cancelUntil( backtrack_level, true );
         } else {
             cancelUntil( backtrack_level );
@@ -3062,32 +3061,6 @@ namespace smtrat
 			Minisat::sort(learnt_clause, lemma_lt(*this));
 		}
 		
-		if (false && Settings::mc_sat) {
-			while (true) {
-				bool isConflicting = true;
-				// Check whether the asserting clause is conflicting in the current decision level.
-				SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Current model: " << mMCSAT.model());
-				for (int i = 0; i < learnt_clause.size(); i++) {
-					auto lit = learnt_clause[i];
-					Abstraction* abstrptr = sign(lit) ? mBooleanConstraintMap[var(lit)].second : mBooleanConstraintMap[var(lit)].first;
-					assert(abstrptr != nullptr);
-					auto res = carl::evaluate(abstrptr->reabstraction, mMCSAT.model());
-					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Evaluated " << abstrptr->reabstraction << " to " << res);
-					if (!res.isBool() || res.asBool()) {
-						isConflicting = false;
-						break;
-					}
-				}
-				if (isConflicting) {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Asserting clause is still conflicting, backtracking to " << (decisionLevel() - 1));
-					assert(decisionLevel() > 0);
-					cancelUntil( decisionLevel() - 1 );
-				} else {
-					break;
-				}
-			}
-		}
-
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Learning clause " << learnt_clause);
 		SMTRAT_LOG_DEBUG("smtrat.sat.mc", "Conflict clause " << _confl);
         assert( value( learnt_clause[0] ) == l_Undef );
@@ -3180,12 +3153,22 @@ namespace smtrat
         }
         SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
         Lit next = var_scheduler.pop();
+        if (Settings::mc_sat) {
+            std::vector<Minisat::Var> vars;
+            while(mMCSAT.hasUnassignedDep(Minisat::var(next))) {
+                SMTRAT_LOG_TRACE("smtrat.sat", "Variable " <<  Minisat::var(next) << " has undecided dependency");
+                vars.push_back(Minisat::var(next));
+                assert(!var_scheduler.empty());
+                next = var_scheduler.pop();
+            }
+            for (auto it = vars.rbegin(); it != vars.rend(); it++) {
+                var_scheduler.insert(*it);
+            }
+        }
         assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
         assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.type() != carl::FormulaType::VARASSIGN);
         SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
         return next;
-        assert(false);
-        return lit_Undef;
     }
     
     template<class Settings>

@@ -173,6 +173,7 @@ namespace arithmetic {
 		ops.emplace("<=", arithmetic::OperatorType(carl::Relation::LEQ));
 		ops.emplace("=", arithmetic::OperatorType(carl::Relation::EQ));
 		ops.emplace("!=", arithmetic::OperatorType(carl::Relation::NEQ));
+		ops.emplace("<>", arithmetic::OperatorType(carl::Relation::NEQ));
 		ops.emplace(">=", arithmetic::OperatorType(carl::Relation::GEQ));
 		ops.emplace(">", arithmetic::OperatorType(carl::Relation::GREATER));
 	}
@@ -337,12 +338,45 @@ namespace arithmetic {
 				return false;
 			}
 		}
+		if (identifier.symbol == "root") {
+			if (arguments.size() != 3) {
+				errors.next() << "root should have exactly three arguments.";
+				return false;
+			}
+			Poly p;
+			if (!convertTerm(arguments[0], p)) {
+				errors.next() << "root should be called with a polynomial as first argument.";
+				return false;
+			}
+			conversion::VariantConverter<Rational> ci;
+			Rational k;
+			if (!ci(arguments[1], k)) {
+				errors.next() << "root should be called with an integer as second argument.";
+				return false;
+			}
+			conversion::VariantConverter<carl::Variable> cv;
+			carl::Variable var;
+			if (!cv(arguments[2], var)) {
+				errors.next() << "root should be called with a variable as third argument.";
+				return false;
+			}
+			result = carl::MultivariateRoot<Poly>(p,carl::to_int<std::size_t>(carl::get_num(k)),var);
+			return true;
+		}
 		auto it = ops.find(identifier.symbol);
 		if (it == ops.end()) {
 			errors.next() << "Invalid operator \"" << identifier << "\".";
 			return false;
 		}
 		arithmetic::OperatorType op = it->second;
+		if (boost::get<carl::Relation>(&op) != nullptr && arguments.size() == 3 && boost::get<FormulaT>(&arguments[0]) != nullptr && boost::get<carl::Variable>(&arguments[1]) != nullptr && boost::get<carl::MultivariateRoot<Poly>>(&arguments[2]) != nullptr) {
+			bool negated = boost::get<FormulaT>(arguments[0]).type() == carl::FormulaType::TRUE;
+			carl::Variable var = boost::get<carl::Variable>(arguments[1]);
+			carl::MultivariateRoot<Poly> root = boost::get<carl::MultivariateRoot<Poly>>(arguments[2]);
+			carl::Relation rel = boost::get<carl::Relation>(op);
+			result = FormulaT(carl::VariableComparison<Poly>(var, root, rel, negated));
+			return true;
+		}
 		if (arithmetic::isBooleanIdentity(op, arguments, errors)) return false;
 		if (!convertArguments(op, arguments, args, errors)) return false;
 		

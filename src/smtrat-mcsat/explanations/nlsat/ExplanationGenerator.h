@@ -17,7 +17,7 @@ namespace helper {
 	 * Simplify to a regular constraint if possible.
 	 */
 	inline FormulaT buildFormulaFromVC(VariableComparisonT&& vc) {
-		auto constraint = vc.as_constraint();
+		auto constraint = carl::as_constraint(vc);
 		if (constraint) {
 			SMTRAT_LOG_DEBUG("smtrat.nlsat", "Simplified " << vc << " to " << *constraint);
 			return FormulaT(ConstraintT(*constraint));
@@ -30,24 +30,24 @@ namespace helper {
 	 */
 	template<typename MVRootParams>
 	FormulaT buildEquality(carl::Variable var, const MVRootParams& mvp) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " = " << MultivariateRootT(mvp.first, mvp.second));
-		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::EQ));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " = " << MultivariateRootT(mvp.first, mvp.second, var));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second, var), carl::Relation::EQ));
 	}
 	/**
 	 * Construct an atomic formula representing a variable being less than the given multivariate root. "v < root(..)"
 	 */
 	template<typename MVRootParams>
 	FormulaT buildBelow(carl::Variable var, const MVRootParams& mvp) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " < " << MultivariateRootT(mvp.first, mvp.second));
-		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::LESS));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " < " << MultivariateRootT(mvp.first, mvp.second, var));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second, var), carl::Relation::LESS));
 	}
 	/**
 	 * Construct an atomic formula representing a variable being greater than the given multivariate root. "v > root(..)"
 	 */
 	template<typename MVRootParams>
 	FormulaT buildAbove(carl::Variable var, const MVRootParams& mvp) {
-		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " > " << MultivariateRootT(mvp.first, mvp.second));
-		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second), carl::Relation::GREATER));
+		SMTRAT_LOG_DEBUG("smtrat.nlsat", "building: " << var << " > " << MultivariateRootT(mvp.first, mvp.second, var));
+		return buildFormulaFromVC(VariableComparisonT(var, MultivariateRootT(mvp.first, mvp.second, var), carl::Relation::GREATER));
 	}
 
 	/**
@@ -67,17 +67,17 @@ namespace helper {
 				// var ~ rootexpr(poly)
 				// -> poly to ensure that the root exists
 				//carl::Relation rel = cAtom.variable_comparison().negated() ? inverse(cAtom.variable_comparison().relation()) : cAtom.variable_comparison().relation();
-				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << cAtom.variable_comparison().defining_polynomial());
-				cons.emplace(cAtom.variable_comparison().defining_polynomial(), carl::Relation::NEQ);
+				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding bound " << cAtom << " -> " << carl::defining_polynomial(cAtom.variable_comparison()));
+				cons.emplace(carl::defining_polynomial(cAtom.variable_comparison()), carl::Relation::NEQ);
 				// removed (makes no sense):
 				// -> var - poly to ensure that the relation still holds
-				//cons.emplace(Poly(cAtom.variable_comparison().var()) - cAtom.variable_comparison().defining_polynomial(), rel);
+				//cons.emplace(Poly(cAtom.variable_comparison().var()) - carl::defining_polynomial(cAtom.variable_comparison()), rel);
 			} else if (cAtom.type() == carl::FormulaType::VARASSIGN) {
 				SMTRAT_LOG_WARN("smtrat.nlsat", "Variable assignment " << cAtom << " should never get here!");
 				assert(false);
 				SMTRAT_LOG_DEBUG("smtrat.nlsat", "Adding assignment " << cAtom);
 				const VariableComparisonT& vc = cAtom.variable_assignment();
-				cons.emplace(vc.defining_polynomial(), carl::Relation::EQ);
+				cons.emplace(carl::defining_polynomial(vc), carl::Relation::EQ);
 			} else {
 				SMTRAT_LOG_ERROR("smtrat.nlsat", "Unsupported formula type: " << cAtom);
 				assert(false);
@@ -91,7 +91,6 @@ namespace helper {
 
 class ExplanationGenerator {
 private:
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 	struct ProjectionSettings: public cad::BaseSettings {	
 		static constexpr cad::Incrementality incrementality = cad::Incrementality::NONE;
 		static constexpr cad::Backtracking backtracking = cad::Backtracking::ORDERED;
@@ -129,8 +128,7 @@ private:
 			// Find the closest roots/rootIdx around value.
 			std::size_t rootID = 1;
 			for (const auto& root: list.roots()) {
-			  // Need to use poly with its main variable replaced by the special MultivariateRootT::var().
-				auto param = std::make_pair(Poly(carl::UnivariatePolynomial<Poly>(MultivariateRootT::var(), poly.coefficients())), rootID);
+				auto param = std::make_pair(Poly(poly), rootID);
 				SMTRAT_LOG_TRACE("smtrat.nlsat", root << " -> " << param);
 				if (root < value) {
 					if (!lower || (root > lower->first)) {

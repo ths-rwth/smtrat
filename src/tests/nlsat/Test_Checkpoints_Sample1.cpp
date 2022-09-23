@@ -36,7 +36,6 @@ void initializeVerifier() {
 	carl::checkpoints::CheckpointVerifier::getInstance().mayExceed("nlsat") = true;
 	carl::checkpoints::CheckpointVerifier::getInstance().printDebug("nlsat") = true;
 	
-	auto z = MultivariateRootT::var();
 	auto a = verifier::getVar("a");
 	auto b = verifier::getVar("b");
 	auto c = verifier::getVar("c");

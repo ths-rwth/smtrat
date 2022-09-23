@@ -23,16 +23,25 @@ namespace smtrat::cadcells::representation {
     }
 
     template<typename T>
-    datastructures::IndexedRootOrdering compute_default_ordering(const std::vector<datastructures::CellRepresentation<T>>& cells) {
+    datastructures::IndexedRootOrdering compute_default_ordering(const std::vector<datastructures::CellRepresentation<T>>& cells, bool enable_weak = false) {
         datastructures::IndexedRootOrdering ordering;
         for (auto it = cells.begin(); it != cells.end()-1; it++) {
-            ordering.add_leq(std::next(it)->description.lower().value(), it->description.upper().value());
+            if (enable_weak && (!std::next(it)->description.lower().is_strict() || !it->description.upper().is_strict())) {
+                ordering.add_leq(std::next(it)->description.lower().value(), it->description.upper().value());
+            } else {
+                if (std::next(it)->description.lower().value() == it->description.upper().value()) {
+                    ordering.add_eq(std::next(it)->description.lower().value(), it->description.upper().value());
+                } else {
+                    ordering.add_less(std::next(it)->description.lower().value(), it->description.upper().value());
+                }
+                
+            }
         }
         return ordering;
     }
 
     template <>
-    struct covering<CoveringHeuristic::DEFAULT_COVERING> {
+    struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING> {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
             datastructures::CoveringRepresentation<T> result;
@@ -43,6 +52,22 @@ namespace smtrat::cadcells::representation {
                 result.cells.emplace_back(*cell_result);
             }
             result.ordering = compute_default_ordering(result.cells);
+            return result;
+        }
+    };
+
+    template <>
+    struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_EW> {
+        template<typename T>
+        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders) {
+            datastructures::CoveringRepresentation<T> result;
+            auto min_ders = compute_min_ders(ders);
+            for (auto& iter : min_ders) {
+                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL_EW>::compute(iter);
+                if (!cell_result) return std::nullopt;
+                result.cells.emplace_back(*cell_result);
+            }
+            result.ordering = compute_default_ordering(result.cells, true);
             return result;
         }
     };
@@ -65,7 +90,7 @@ namespace smtrat::cadcells::representation {
 
                 if ((iter)->cell().is_section()) {
                     compute_section_all_equational(iter, cell_result);
-                    delineation.add_root((iter)->cell().lower()->first,cell_result.description.section_defining());
+                    delineation.add_root((iter)->cell().lower()->first,datastructures::TaggedIndexedRoot {cell_result.description.section_defining() });
                 } else {
                     ord_idx.push_back(result.cells.size()-1);
                     if (!(iter)->delin().nullified().empty()) return std::nullopt;

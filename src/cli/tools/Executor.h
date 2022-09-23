@@ -179,7 +179,7 @@ public:
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {
 		//error() << "(define-sort <name> <sort>) is not implemented.";
 	}
-#ifdef CLI_ENABLE_QE
+#ifdef ENABLE_UNSUPPORTED
 	void eliminateQuantifiers(const smtrat::qe::QEQuery& q) {
 		FormulaT qfree(this->solver.formula());
 		regular() << "Quantified Formula: " << q << " " << qfree << std::endl;
@@ -188,7 +188,7 @@ public:
 	}
 #else
 	void eliminateQuantifiers(const smtrat::qe::QEQuery&) {
-		SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for quantifier elimination.");
+		SMTRAT_LOG_ERROR("smtrat", "Quantifier elimination is not actively maintained and thus disabled by default.");
 	}
 #endif
 	void exit() {
@@ -199,7 +199,7 @@ public:
 			for (const auto& assertion : state.assertions()) {
 				regular() << assertion.formula << " ";
 			}
-			regular() << ")";
+			regular() << ")" << std::endl;
 		} else {
 			error() << "nothing is asserted";
 		}

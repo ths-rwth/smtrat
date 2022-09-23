@@ -6,4 +6,4 @@
 #cmakedefine CLI_ENABLE_FORMULAPARSER
 #cmakedefine CLI_ENABLE_OPB_PARSER
 #cmakedefine CLI_ENABLE_PREPROCESSOR
-#cmakedefine CLI_ENABLE_QE
+#cmakedefine ENABLE_UNSUPPORTED

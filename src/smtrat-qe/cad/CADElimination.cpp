@@ -7,7 +7,7 @@ namespace qe {
 namespace cad {
 
 using smtrat::cad::Assignment;
-using smtrat::cad::RAN;
+using smtrat::RAN;
 
 CADElimination::CADElimination(const FormulaT& quantifierFreePart, const QEQuery& quantifiers) {
 	mQuantifierFreePart = quantifierFreePart;
