@@ -1,0 +1,21 @@
+name: Install Dependencies
+description: Install all necessary dependencies for smtrat
+runs:
+  using: "composite"
+  steps:
+    - name: Install Linux Dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        echo "::group::Install Linux Dependencies"
+        sudo apt update
+        sudo apt install -y libgmp-dev libboost-all-dev libeigen3-dev libreadline-dev libgtest-dev clang-12
+        echo "::group::Install Linux Dependencies done"
+
+    - name: "Install macOS Dependencies"
+      if: runner.os == 'macOS'
+      shell: bash 
+      run: |
+        echo "::group::Install macOS Dependencies"
+        brew install gmp boost eigen readline flex gnu-sed cln 
+        echo "::group::Install macOS Dependencies done"
