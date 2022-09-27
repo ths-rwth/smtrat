@@ -4,7 +4,24 @@ inline bool compare_simplest(datastructures::Projections& proj, datastructures::
     return proj.degree(p1) < proj.degree(p2);
     //return proj.max_degree(p1) < proj.max_degree(p2);
 }
-    
+
+inline bool max_degree(datastructures::Projections& proj, datastructures::RootFunction rf) {
+    if (rf.is_root()) {
+        return proj.degree(rf.root().poly);
+    } else {
+        std::size_t deg = 0;
+        for (const auto& p : rf.polys()) {
+            auto d = proj.degree(p);
+            if (deg < d) deg = d;
+        }
+        return deg;
+    }
+}
+
+inline bool compare_simplest(datastructures::Projections& proj, datastructures::RootFunction rf1, datastructures::RootFunction rf2) {
+    return max_degree(proj, rf1) < max_degree(proj, rf2);
+}
+
 inline std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::TaggedIndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring, bool enable_weak = false) {
     assert(!bounds.empty());
     auto simplest = bounds.begin();

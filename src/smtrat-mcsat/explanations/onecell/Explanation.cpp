@@ -17,7 +17,8 @@ namespace smtrat::mcsat::onecell {
 // using Settings = BCFilteredBoundsSettings;
 // using Settings = BCFilteredSamplesSettings;
 // using Settings = BCFilteredAllSelectiveSettings;
-using Settings = BCApproximationSettings;
+using Settings = LDBFilteredAllSelectiveSettings;
+// using Settings = BCApproximationSettings;
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
