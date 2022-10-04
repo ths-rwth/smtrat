@@ -8,19 +8,15 @@
 
 #pragma once
 
+#include <smtrat-cadcells/datastructures/polynomials.h>
+#include <smtrat-cadcells/datastructures/projections.h>
+#include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/representation/heuristics.h>
 #include "NewCoveringSettings.h"
 #include <boost/container/flat_set.hpp>
 #include <smtrat-solver/Module.h>
 
 #include <smtrat-cadcells/common.h>
-
-// Import Datastructures used for caching etc.
-#include <smtrat-cadcells/datastructures/polynomials.h>
-#include <smtrat-cadcells/datastructures/projections.h>
-
-#include <smtrat-cadcells/operators/operator_mccallum.h>
-#include <smtrat-cadcells/representation/heuristics.h>
-
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
 #include "Backend.h"
@@ -28,6 +24,11 @@
 
 #include "NewCoveringStatistics.h"
 #include "Sampling.h"
+
+#include <carl-arith/ran/Conversion.h>
+#include <carl-arith/poly/Conversion.h>
+#include <carl-arith/ran/ran.h>
+
 
 namespace smtrat {
 
@@ -50,7 +51,7 @@ private:
     Answer mLastAnswer = Answer::UNKNOWN;
 
 	// Contains the last assignment which satisfied all the given known constraints (empty otherwise)
-	carl::Assignment<RAN> mLastAssignment;
+	carl::Assignment<cadcells::RAN> mLastAssignment;
 
     // The actual algorithm
     Backend<Settings> backend;
