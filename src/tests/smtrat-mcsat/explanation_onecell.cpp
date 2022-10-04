@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <smtrat-common/logging.h>
+#include <carl-logging/logging.h>
 #include <carl-logging/logging-internals.h>
 #include <smtrat-mcsat/explanations/onecell/onecell.h>
 
