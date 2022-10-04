@@ -40,13 +40,13 @@ class CellApproximator {
 };
 
 template<>
-IR CellApproximator::apx_bound<ApxPoly::SIMPLE>(const IR& /*p*/, const RAN& bound, bool below) {
+inline IR CellApproximator::apx_bound<ApxPoly::SIMPLE>(const IR& /*p*/, const RAN& bound, bool below) {
     Rational root = approximate_root<ApxSettings::root>(main_sample(),bound,below);
     return IR(proj().polys()(carl::get_denom(root)*Polynomial(proj().polys().get_context(),var()) - carl::get_num(root)), 1); // TODO poly context
 }
 
 template<>
-IR CellApproximator::apx_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, const RAN& bound, bool below) {
+inline IR CellApproximator::apx_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, const RAN& bound, bool below) {
     Poly carl_poly = carl::convert<Poly,Polynomial>(proj().polys()(p.poly));
     Poly derivative = carl::derivative(carl_poly, var());
     Poly gradient = carl::substitute(derivative, var(), Poly(approximate_RAN(bound)));
@@ -57,7 +57,7 @@ IR CellApproximator::apx_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, const RAN&
 }
 
 template<>
-IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, bool below) {
+inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, bool below) {
     assert(apx_settings().taylor_deg < proj().degree(p.poly));
     assert(apx_settings().taylor_deg <= 2);
 
@@ -144,7 +144,7 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, b
 }
 
 template<>
-IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RAN& bound, bool below) {
+inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RAN& bound, bool below) {
     assert(apx_settings().taylor_deg < proj().degree(p.poly));
     assert(apx_settings().taylor_deg <= 2);
 
@@ -218,7 +218,7 @@ IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RAN& boun
 }
 
 template<>
-IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound, bool below) {
+inline IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound, bool below) {
 
     Rational inner = below ? approximate_RAN_below(main_sample()) : approximate_RAN_above(main_sample());
     Rational outer = below ? approximate_RAN_above(bound) : approximate_RAN_below(bound);
@@ -301,12 +301,12 @@ IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound,
 }
 
 template<>
-IR CellApproximator::apx_between<ApxPoly::SIMPLE>(const IR& /*p_l*/, const IR& /*p_u*/, const RAN& l, const RAN& u) {
+inline IR CellApproximator::apx_between<ApxPoly::SIMPLE>(const IR& /*p_l*/, const IR& /*p_u*/, const RAN& l, const RAN& u) {
     Rational root = approximate_root<ApxSettings::root>(l,u,false);
     return IR(proj().polys()(carl::get_denom(root) * Polynomial(proj().polys().get_context(),var()) - carl::get_num(root)), 1);
 }
 
-IR CellApproximator::approximate_bound(const IR& p, const RAN& bound, bool below) {
+inline IR CellApproximator::approximate_bound(const IR& p, const RAN& bound, bool below) {
     #ifdef SMTRAT_DEVOPTION_Statistics
         OCApproximationStatistics::get_instance().approximated(proj().degree(p.poly));
     #endif
@@ -315,14 +315,14 @@ IR CellApproximator::approximate_bound(const IR& p, const RAN& bound, bool below
     return result;
 }
 
-IR CellApproximator::approximate_between(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u) {
+inline IR CellApproximator::approximate_between(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u) {
     #ifdef SMTRAT_DEVOPTION_Statistics
         OCApproximationStatistics::get_instance().approximated(std::max(proj().degree(p_l.poly), proj().degree(p_u.poly)));
     #endif
     return apx_between<ApxSettings::between>(p_l, p_u, l, u);
 }
 
-datastructures::SymbolicInterval CellApproximator::compute_cell() {
+inline datastructures::SymbolicInterval CellApproximator::compute_cell() {
     if (cell().is_section()) { // Section case as before
         return datastructures::SymbolicInterval(util::simplest_bound(proj(), cell().lower()->second));
     } else if (cell().lower_unbounded() && cell().upper_unbounded()) {
