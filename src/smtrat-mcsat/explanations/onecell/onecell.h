@@ -59,6 +59,12 @@ struct BCFilteredAllSelectiveSettings : BCFilteredSettings{
     constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
 };
 
+constexpr static bool use_approximation = false;
+
+struct BCApproximationSettings : BCSettings {
+    constexpr static auto cell_apx_heuristic = cadcells::representation::BIGGEST_CELL_APPROXIMATION;
+};
+
 /**
  * An MCSAT-style single cell explanation function.
  * 
@@ -72,6 +78,16 @@ struct BCFilteredAllSelectiveSettings : BCFilteredSettings{
  */
 template<typename Settings>
 std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
+        stats.newCell();
+    #endif
+
+    bool consider_approximation = use_approximation && cadcells::representation::approximation::ApxCriteria::cell(constraints);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        if (consider_approximation) stats.approximationConsidered();
+    #endif
+    
     SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
     cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);
@@ -103,7 +119,16 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
 
     std::vector<cadcells::Atom> description;
     while ((*derivation)->level() > 0) {
-        auto lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_heuristic>(*derivation);
+        std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
+        if constexpr (use_approximation) {
+            if (consider_approximation && cadcells::representation::approximation::ApxCriteria::level((*derivation)->level())) {
+                lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_apx_heuristic>(*derivation);
+            } else {
+                lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_heuristic>(*derivation);
+            }
+        } else {
+            lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_heuristic>(*derivation);
+        }
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
         if (!lvl) {
             return std::nullopt;

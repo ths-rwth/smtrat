@@ -1,0 +1,24 @@
+name: Run tests
+description: Run all tests for smtrat
+
+runs:
+  using: "composite"
+  steps:
+    - name: Build Tests
+      shell: bash
+      run: | 
+        echo "::group::Build Tests"
+        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all-tests -j$(nproc)
+        echo "::group::Build Tests done"
+
+    - name: Run CTest
+      shell: bash
+      run: |
+        echo "::group::Run CTest"
+        cd build 
+        if ! ctest -C ${{env.BUILD_TYPE}} -j$(nproc) --output-on-failure 
+        then
+          echo "::error::Tests failed"
+          ctest --output-on-failure --rerun-failed
+        fi
+        echo "::group::Run CTest done"

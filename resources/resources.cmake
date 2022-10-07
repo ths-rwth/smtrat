@@ -66,7 +66,7 @@ add_custom_target(carl-required-version
 )
 
 ##### Doxygen
-find_package(Doxygen 1.8.14 QUIET)
+find_package(Doxygen 1.9.1 QUIET)
 if(DOXYGEN_FOUND AND ${CMAKE_VERSION} VERSION_LESS "3.9.0")
 	add_executable(Doxygen::doxygen IMPORTED GLOBAL)
 	set_target_properties(Doxygen::doxygen PROPERTIES IMPORTED_LOCATION "${DOXYGEN_EXECUTABLE}")

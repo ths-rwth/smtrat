@@ -13,7 +13,7 @@ cache:
 
 variables:
   COMPILE_JOBS: 6
-  SMTRAT_STRATEGY: "AllModulesStrategy" #Change to your need!
+  SMTRAT_STRATEGY: "SMTCOMP" #Change to your need!
 
 
 stages:
