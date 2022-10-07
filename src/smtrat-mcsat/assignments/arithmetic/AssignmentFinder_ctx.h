@@ -22,7 +22,11 @@ namespace arithmetic {
 using carl::operator<<;
 
 class AssignmentFinder_ctx {
+#ifdef USE_LIBPOLY
 using Polynomial = carl::LPPolynomial;
+#else 
+using Polynomial = carl::ContextPolynomial<Rational>;
+#endif
 
 private:
 	typename Polynomial::ContextType m_context;
