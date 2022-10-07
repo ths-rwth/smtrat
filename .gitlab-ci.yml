@@ -33,7 +33,7 @@ build-gcc12:
 build-gcc9:
   stage: build-gcc
   script:
-     - export CC=/usr/bin/gcc-98 && export CXX=/usr/bin/g++-9
+     - export CC=/usr/bin/gcc-9 && export CXX=/usr/bin/g++-9
      - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
      - TASK=parallel MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
   only:
