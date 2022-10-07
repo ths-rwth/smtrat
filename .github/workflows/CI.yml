@@ -1,0 +1,42 @@
+name: Build and Test
+
+on:
+  push:
+    branches: ["master"]
+env:
+  BUILD_TYPE: Release
+
+jobs:
+  build: 
+    strategy:
+      matrix:
+        include: 
+          - name: ubuntu:gcc
+            os: ubuntu-22.04
+            env: CC=gcc CXX=g++
+
+          - name: ubuntu:clang
+            os: ubuntu-22.04
+            env: CC=clang CXX=clang++
+
+          #- name: macos
+          #  os: macos-latest
+          #  bliss: OFF
+          #  env: CC=cc CXX=c++
+    
+    name: ${{matrix.name}}
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        uses: ./.github/actions/install_dependencies
+
+      - name: Compile
+        uses: ./.github/actions/compile
+        with:
+          build-env: ${{matrix.env}}
+
+      - name: Run Tests
+        uses: ./.github/actions/run_tests

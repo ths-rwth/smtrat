@@ -1,39 +1,89 @@
-% stylesheet for doxygen 1.8.16
+% stylesheet for doxygen 1.9.1
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesPackage{doxygen}
 
 % Packages used by this style file
 \RequirePackage{alltt}
+%%\RequirePackage{array} %% moved to refman.tex due to workaround for LaTex 2019 version and unmaintained tabu package
 \RequirePackage{calc}
 \RequirePackage{float}
+%%\RequirePackage{ifthen} %% moved to refman.tex due to workaround for LaTex 2019 version and unmaintained tabu package
 \RequirePackage{verbatim}
 \RequirePackage[table]{xcolor}
-\RequirePackage{longtable}
-\RequirePackage{tabu}
+\RequirePackage{longtable_doxygen}
+\RequirePackage{tabu_doxygen}
 \RequirePackage{fancyvrb}
-\RequirePackage{enumitem}
+\RequirePackage{tabularx}
+\RequirePackage{multicol}
+\RequirePackage{multirow}
+\RequirePackage{hanging}
+\RequirePackage{ifpdf}
+\RequirePackage{adjustbox}
 \RequirePackage{amssymb}
-\RequirePackage{amstext}
+\RequirePackage{stackengine}
 \RequirePackage[normalem]{ulem} % for strikeout, but don't modify emphasis
-
-\newcounter{@stackindex}
-
-%\newlength{\tabulinesep}
 
 %---------- Internal commands used in this style file ----------------
 
+\newcommand{\ensurespace}[1]{%
+  \begingroup%
+    \setlength{\dimen@}{#1}%
+    \vskip\z@\@plus\dimen@%
+    \penalty -100\vskip\z@\@plus -\dimen@%
+    \vskip\dimen@%
+    \penalty 9999%
+    \vskip -\dimen@%
+    \vskip\z@skip% hide the previous |\vskip| from |\addvspace|
+  \endgroup%
+}
+
+\newcommand{\DoxyHorRuler}[1]{%
+  \setlength{\parskip}{0ex plus 0ex minus 0ex}%
+  \ifthenelse{#1=0}%
+  {%
+    \hrule%
+  }%
+  {%
+    \hrulefilll%
+  }%
+}
 \newcommand{\DoxyLabelFont}{}
+\newcommand{\entrylabel}[1]{%
+  {%
+    \parbox[b]{\labelwidth-4pt}{%
+      \makebox[0pt][l]{\DoxyLabelFont#1}%
+      \vspace{1.5\baselineskip}%
+    }%
+  }%
+}
 
 \newenvironment{DoxyDesc}[1]{%
+  \ensurespace{4\baselineskip}%
   \begin{list}{}{%
     \settowidth{\labelwidth}{20pt}%
     %\setlength{\parsep}{0pt}%
     \setlength{\itemsep}{0pt}%
     \setlength{\leftmargin}{\labelwidth+\labelsep}%
+    \renewcommand{\makelabel}{\entrylabel}%
   }%
   \item[#1]%
 }{%
   \end{list}%
+}
+
+\newsavebox{\xrefbox}
+\newlength{\xreflength}
+\newcommand{\xreflabel}[1]{%
+  \sbox{\xrefbox}{#1}%
+  \setlength{\xreflength}{\wd\xrefbox}%
+  \ifthenelse{\xreflength>\labelwidth}{%
+    \begin{minipage}{\textwidth}%
+      \setlength{\parindent}{0pt}%
+      \hangindent=15pt\bfseries #1\vspace{1.2\itemsep}%
+    \end{minipage}%
+  }{%
+   \parbox[b]{\labelwidth}{\makebox[0pt][l]{\textbf{#1}}}%
+  }%
 }
 
 %---------- Commands used by doxygen LaTeX output generator ----------
@@ -46,13 +96,15 @@
   \end{alltt}%
   \normalsize%
 }
-% Necessary for redefining not defined charcaters, i.e. "Replacement Character" in tex output.
+% Necessary for redefining not defined characters, i.e. "Replacement Character" in tex output.
+\newlength{\CodeWidthChar}
 \newlength{\CodeHeightChar}
+\settowidth{\CodeWidthChar}{?}
 \settoheight{\CodeHeightChar}{?}
 % Necessary for hanging indent
 \newlength{\DoxyCodeWidth}
 
-\newcommand\DoxyCodeLine[1]{#1\par}
+\newcommand\DoxyCodeLine[1]{\hangpara{\DoxyCodeWidth}{1}{#1}\par}
 
 \newcommand\NiceSpace{%
      \discretionary{}{\kern\fontdimen2\font}{\kern\fontdimen2\font}%
@@ -65,6 +117,7 @@
   \normalfont\ttfamily%
   \rightskip0pt plus 1fil%
   \settowidth{\DoxyCodeWidth}{000000}%
+  \settowidth{\CodeWidthChar}{?}%
   \settoheight{\CodeHeightChar}{?}%
   \setlength{\parskip}{0ex plus 0ex minus 0ex}%
   \ifthenelse{\equal{#1}{0}}
@@ -78,8 +131,14 @@
 }{%
   \normalfont%
   \normalsize%
+  \settowidth{\CodeWidthChar}{?}%
   \settoheight{\CodeHeightChar}{?}%
 }
+
+% Redefining not defined characters, i.e. "Replacement Character" in tex output.
+\def\ucr{\adjustbox{width=\CodeWidthChar,height=\CodeHeightChar}{\stackinset{c}{}{c}{-.2pt}{%
+   \textcolor{white}{\sffamily\bfseries\small ?}}{%
+   \rotatebox{45}{$\blacksquare$}}}}
 
 % Used by @example, @include, @includelineno and @dontinclude
 \newenvironment{DoxyCodeInclude}[1]{%
@@ -113,9 +172,9 @@
 
 % Used by bullet lists (using '-', @li, @arg, or <ul> ... </ul>)
 \newenvironment{DoxyItemize}{%
-  \begin{DoxyCompactItemize}%
+  \itemize%
 }{%
-  \end{DoxyCompactItemize}%
+  \enditemize%
 }
 
 % Used by description lists (using <dl> ... </dl>)
@@ -129,9 +188,8 @@
 % (only if caption is specified)
 \newenvironment{DoxyImage}{%
   \begin{figure}[H]%
-    \begin{center}%
+    \centering%
 }{%
-    \end{center}%
   \end{figure}%
 }
 
@@ -369,7 +427,11 @@
 
 % Used for member lists
 \newenvironment{DoxyCompactItemize}{%
-  \begin{itemize}[topsep=-10pt, itemsep=-1pt, parsep=0pt]%
+  \begin{itemize}%
+    \setlength{\itemsep}{-3pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\topsep}{0pt}%
+    \setlength{\partopsep}{0pt}%
 }{%
   \end{itemize}%
 }
@@ -378,9 +440,9 @@
 \newenvironment{DoxyCompactList}{%
   \begin{list}{}{%
     \setlength{\leftmargin}{0.5cm}%
-    %\setlength{\itemsep}{0pt}%
-    %\setlength{\parsep}{0pt}%
-    %\setlength{\topsep}{0pt}%
+    \setlength{\itemsep}{0pt}%
+    \setlength{\parsep}{0pt}%
+    \setlength{\topsep}{0pt}%
     \renewcommand{\makelabel}{\hfill}%
   }%
 }{%
@@ -393,6 +455,7 @@
     \setlength{\labelwidth}{10pt}%
     \setlength{\leftmargin}{\labelwidth}%
     \addtolength{\leftmargin}{\labelsep}%
+    \renewcommand{\makelabel}{\xreflabel}%
   }%
 }{%
   \end{list}%
@@ -416,6 +479,7 @@
     \setlength{\parsep}{0pt}%
     \setlength{\itemsep}{0pt}%
     \setlength{\leftmargin}{\labelwidth+\labelsep}%
+    \renewcommand{\makelabel}{\entrylabel}%
   }
 }{%
   \end{list}%
@@ -489,15 +553,15 @@
                                    {2.3ex \@plus.2ex}%
                                    {\raggedright\normalfont\Large\bfseries}}
 \newcommand\doxysubsection{\@startsection{subsection}{2}{\z@}%
-                                     {-0.25ex\@plus -1ex \@minus -.2ex}%
-                                     {0.1ex}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
                                      {\raggedright\normalfont\large\bfseries}}
 \newcommand\doxysubsubsection{\@startsection{subsubsection}{3}{\z@}%
-                                     {0ex}%
-                                     {-1em}%
+                                     {-3.25ex\@plus -1ex \@minus -.2ex}%
+                                     {1.5ex \@plus .2ex}%
                                      {\raggedright\normalfont\normalsize\bfseries}}
 \newcommand\doxyparagraph{\@startsection{paragraph}{4}{\z@}%
-                                    {0ex}%
+                                    {3.25ex \@plus1ex \@minus.2ex}%
                                     {-1em}%
                                     {\raggedright\normalfont\normalsize\bfseries}}
 \newcommand\doxysubparagraph{\@startsection{subparagraph}{5}{\parindent}%
@@ -508,6 +572,6 @@
 % Define caption that is also suitable in a table
 \makeatletter
 \def\doxyfigcaption{%
-\refstepcounter{figure}%
+\H@refstepcounter{figure}%
 \@dblarg{\@caption{figure}}}
 \makeatother
