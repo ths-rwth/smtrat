@@ -5,6 +5,7 @@
 #include "../common.h"
 
 #include "polynomials.h"
+#include "roots.h"
 
 #include <carl-arith/poly/ctxpoly/Functions.h>
 #include <carl-arith/poly/libpoly/Functions.h>

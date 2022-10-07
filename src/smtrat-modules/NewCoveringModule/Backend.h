@@ -10,20 +10,19 @@
 
 #pragma once
 
+#include <smtrat-cadcells/algorithms/unsat_intervals.h>
 #include <smtrat-cadcells/common.h>
-
 #include "LevelWiseInformation.h"
 #include "NewCoveringModule.h"
 #include "NewCoveringSettings.h"
-
-#include <smtrat-cadcells/algorithms/unsat_intervals.h>
-
 #include <carl-arith/constraint/Conversion.h>
 
 namespace smtrat {
 
 namespace helper {
-static size_t level_of(const VariableOrdering& order, const Poly& poly) {
+
+template<typename Pol>
+static size_t level_of(const VariableOrdering& order, const Pol& poly) {
     auto poly_variables = carl::variables(poly).as_set();
     if (poly_variables.empty()) {
         return 0;
@@ -37,23 +36,22 @@ static size_t level_of(const VariableOrdering& order, const Poly& poly) {
 }
 }
 
-using namespace cadcells;
 
 template<typename Settings>
 class Backend {
 
     static constexpr cadcells::operators::op op = Settings::op;
-    using PropSet = typename operators::PropertiesSet<Settings::op>::type;
+    using PropSet = typename cadcells::operators::PropertiesSet<Settings::op>::type;
 
 private:
     // Context
     std::shared_ptr<cadcells::Polynomial::ContextType> mContext;
 
     // Ordered List of unique unknown Constraints (flat_set by level)
-    std::vector<boost::container::flat_set<ConstraintT>> mUnknownConstraints;
+    std::vector<boost::container::flat_set<cadcells::Constraint>> mUnknownConstraints;
 
     // Ordered List of unique known Constraints (flat_set by level)
-    std::vector<boost::container::flat_set<ConstraintT>> mKnownConstraints;
+    std::vector<boost::container::flat_set<cadcells::Constraint>> mKnownConstraints;
 
     // Cache for Polynomials
     std::shared_ptr<datastructures::PolyPool> mPool;
@@ -62,13 +60,13 @@ private:
     std::shared_ptr<datastructures::Projections> mProjections;
 
     // Current (partial) satisfying assignment
-    carl::Assignment<RAN> mCurrentAssignment;
+    carl::Assignment<cadcells::RAN> mCurrentAssignment;
 
     // Current Covering Information, only contains partial coverings
     std::vector<LevelWiseInformation<Settings>> mCoveringInformation;
 
     // Mapping from derivation to the constraints which resulted in its creation
-    std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>> mDerivationToConstraint;
+    std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<cadcells::Constraint>> mDerivationToConstraint;
 
 public:
     // Init with empty variable ordering
@@ -94,7 +92,11 @@ public:
         return mContext->variable_ordering().size();
     }
 
-    const carl::Assignment<RAN>& getCurrentAssignment() {
+    std::shared_ptr<cadcells::Polynomial::ContextType> getContext() {
+        return mContext;
+    }
+
+    const carl::Assignment<cadcells::RAN>& getCurrentAssignment() {
         return mCurrentAssignment;
     }
 
@@ -111,7 +113,8 @@ public:
         FormulaSetT infeasibleSubset;
         // We can just take the constraints used in level 0, as all the constraints of higher levels get pushed down if used in the covering
         for (auto& infeasibleConstraint : mCoveringInformation[0].getConstraintsOfCovering(mDerivationToConstraint)) {
-            infeasibleSubset.insert(FormulaT(infeasibleConstraint));
+            auto conv_constraint = carl::convert<Poly>(infeasibleConstraint);
+            infeasibleSubset.insert(FormulaT(ConstraintT(conv_constraint)));
         }
         SMTRAT_LOG_DEBUG("smtrat.covering", "getInfeasibleSubset done: " << infeasibleSubset);
         return infeasibleSubset;
@@ -122,7 +125,8 @@ public:
         // We can substract 1 from level because we dont have constant polynomials
         std::size_t level = helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1;
         SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
-        mUnknownConstraints[level].insert(constraint);
+        auto conv_constraint = carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()) ;
+        mUnknownConstraints[level].insert(std::move(conv_constraint));
     }
 
     // Adds a constraint into the right level, already given the level
@@ -130,7 +134,8 @@ public:
         SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraints : " << constraints << " on level " << level);
         for (const auto& constraint : constraints) {
             assert((helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1) == level);
-            mUnknownConstraints[level].insert(std::move(constraint));
+            auto conv_constraint = carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()) ;
+            mUnknownConstraints[level].insert(std::move(conv_constraint));
         }
     }
 
@@ -179,25 +184,27 @@ public:
     // Return true if the constraint to remove was used in the current covering
     void removeConstraint(const ConstraintT& constraint) {
         // We can substract 1 from level because we dont have constant polynomials
-        std::size_t level = helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1;
-        SMTRAT_LOG_DEBUG("smtrat.covering", "Removing Constraint : " << constraint << " on level " << level);
+        auto conv_constraint = carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()) ;
+
+        std::size_t level = helper::level_of(mContext->variable_ordering(), conv_constraint.lhs()) - 1;
+        SMTRAT_LOG_DEBUG("smtrat.covering", "Removing Constraint : " << conv_constraint << " on level " << level);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Known Constraints: " << mKnownConstraints);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Unknown Constraints: " << mUnknownConstraints);
 
         // If we find the constraint in the unknown constraints we have the easy case -> Just remove it and not care about the stored data
-        if (mUnknownConstraints[level].find(constraint) != mUnknownConstraints[level].end()) {
-            assert(mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end());
+        if (mUnknownConstraints[level].find(conv_constraint) != mUnknownConstraints[level].end()) {
+            assert(mKnownConstraints[level].find(conv_constraint) == mKnownConstraints[level].end());
             // remove all stored information which resulted from the constraint
             for (std::size_t cur_level = 0; cur_level <= level; cur_level++) {
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Removing on level " << cur_level);
-                mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
+                mCoveringInformation[cur_level].removeConstraint(conv_constraint, mDerivationToConstraint);
             }
-            mUnknownConstraints[level].erase(constraint);
+            mUnknownConstraints[level].erase(conv_constraint);
             SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was in unknown constraints");
             return;
         }
 
-        if (mKnownConstraints[level].find(constraint) == mKnownConstraints[level].end()) {
+        if (mKnownConstraints[level].find(conv_constraint) == mKnownConstraints[level].end()) {
             SMTRAT_LOG_DEBUG("smtrat.covering", "Constraint to remove was not in known constraints");
             // This can happen if the constraint is to be added in the same iteration
             // TODO: what to do then?
@@ -209,11 +216,11 @@ public:
         // remove all stored information which resulted from the constraint
         for (std::size_t cur_level = 0; cur_level <= level; cur_level++) {
             SMTRAT_LOG_DEBUG("smtrat.covering", "Removing on level " << cur_level);
-            mCoveringInformation[cur_level].removeConstraint(constraint, mDerivationToConstraint);
+            mCoveringInformation[cur_level].removeConstraint(conv_constraint, mDerivationToConstraint);
         }
 
         // remove the constraint from the known constraints
-        mKnownConstraints[level].erase(constraint);
+        mKnownConstraints[level].erase(conv_constraint);
     }
 
     void setConstraintsKnown(const std::size_t& level) {
@@ -237,22 +244,22 @@ public:
         SMTRAT_LOG_DEBUG("smtrat.covering", "Processing unknown constraints on level " << level << " with " << mUnknownConstraints[level].size() << " constraints");
         SMTRAT_LOG_DEBUG("smtrat.covering", "Need to prune the assignment: " << prune_assignment);
 
-        for (const ConstraintT& constraint : mUnknownConstraints[level]) {
+        for (const cadcells::Constraint& constraint : mUnknownConstraints[level]) {
             std::vector<datastructures::SampledDerivationRef<PropSet>> intervals;
             if (prune_assignment) {
-                intervals = algorithms::get_unsat_intervals<op>(carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()), *mProjections, mCurrentAssignment);
+                intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, mCurrentAssignment);
             } else {
                 // create copy of the assignment with mContext->variable_ordering()[level] and following not present
-                carl::Assignment<RAN> assignment;
+                carl::Assignment<cadcells::RAN> assignment;
                 for (std::size_t i = 0; i < level; i++) {
                     assignment[mContext->variable_ordering()[i]] = mCurrentAssignment[mContext->variable_ordering()[i]];
                 }
-                intervals = algorithms::get_unsat_intervals<op>(carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()), *mProjections, assignment);
+                intervals = algorithms::get_unsat_intervals<op>(constraint, *mProjections, assignment);
             }
             for (const auto& interval : intervals) {
                 SMTRAT_LOG_DEBUG("smtrat.covering", "Found UNSAT Interval: " << interval->cell() << "  from constraint: " << constraint);
                 // Insert into the derivation to constraint map
-                mDerivationToConstraint.insert(std::make_pair(interval, std::vector<ConstraintT>{constraint}));
+                mDerivationToConstraint.insert(std::make_pair(interval, std::vector<cadcells::Constraint>{constraint}));
                 mCoveringInformation[level].addDerivation(std::move(interval));
             }
         }

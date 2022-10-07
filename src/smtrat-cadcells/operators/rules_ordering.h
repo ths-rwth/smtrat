@@ -99,7 +99,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         if (roots_first[index_first-1] == roots_second[index_second-1]) {
                             bool relevant = true; 
                             if (pair.second.is_cmin()) {
-                                auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>( pair.second.polys() ));
+                                auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>( pair.second.polys().begin(), pair.second.polys().end() ));
                                 assert(delineable_interval_cb);
                                 if (delineable_interval_cb->contains(ran)) {
                                     for (const auto& root : pair.second.roots()) {
@@ -126,7 +126,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         if (roots_first[index_first-1] == roots_second[index_second-1]) {
                             bool relevant = true; 
                             if (pair.second.is_cmax()) {
-                                auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>( pair.second.polys() ));
+                                auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>( pair.second.polys().begin(), pair.second.polys().end() ));
                                 assert(delineable_interval_cb);
                                 if (delineable_interval_cb->contains(ran)) {
                                     for (const auto& root : pair.first.roots()) {

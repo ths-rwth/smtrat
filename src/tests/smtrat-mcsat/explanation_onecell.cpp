@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <smtrat-common/logging.h>
+#include <carl-logging/logging.h>
 #include <carl-logging/logging-internals.h>
 #include <smtrat-mcsat/explanations/onecell/onecell.h>
 
@@ -38,10 +39,10 @@ TEST(smtrat_mcsat, onecell)
 	constrs.emplace_back(constr_q);
 
 	std::cout << "--- DEFAULT ---" << std::endl;
-	auto res_default = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::DefaultSettings>(constrs, ctx, ass);
+	auto res_default = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::LDBSettings>(constrs, ctx, ass);
 	std::cout << res_default << std::endl;
 	std::cout << "--- FILTERED ---" << std::endl;
-	auto res_filtered = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::FilteredSettings>(constrs, ctx, ass);
+	auto res_filtered = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::LDBFilteredAllSelectiveSettings>(constrs, ctx, ass);
 	std::cout << res_filtered << std::endl;
 
 	ASSERT_EQ(res_default, res_filtered);

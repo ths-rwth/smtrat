@@ -3,7 +3,7 @@
 namespace smtrat::cadcells::operators::rules::filter_util {
 
 template<typename P>
-void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const boost::container::flat_set<datastructures::PolyRef>& considered_polys) {
+inline void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const boost::container::flat_set<datastructures::PolyRef>& considered_polys) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "pseudo_ord_inv(" << poly << ") wrt " << considered_polys);
     auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).delineated_ref();
     if (deriv.proj().is_const(poly)) return;
@@ -38,7 +38,7 @@ void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, const d
 }
 
 template<typename P>
-std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const std::vector<datastructures::PolyRef>& polys) {
+inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const std::vector<datastructures::PolyRef>& polys) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
     auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
     for (const auto& poly : polys) {
@@ -73,7 +73,7 @@ enum class result {
 };
 
 template<typename P>
-void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastructures::PolyRef poly, std::function<result(const RAN&)> filter_condition) {
+inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastructures::PolyRef poly, std::function<result(const RAN&)> filter_condition) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_roots " << poly);
     datastructures::RootMapPlain root_map;
     if (deriv.proj().is_const(poly)) return;
@@ -129,13 +129,13 @@ void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastru
 }
 
 template<typename P>
-auto projection_root(const datastructures::DelineatedDerivation<P>& deriv, const RAN& root) {
+inline auto projection_root(const datastructures::DelineatedDerivation<P>& deriv, const RAN& root) {
     Assignment ass = deriv.underlying_sample();
     ass.emplace(deriv.main_var(), root);
     return ass;
 }
 
-bool has_common_real_root(datastructures::Projections& proj, Assignment ass, const datastructures::PolyRef& poly1, const datastructures::PolyRef& poly2) {
+inline bool has_common_real_root(datastructures::Projections& proj, Assignment ass, const datastructures::PolyRef& poly1, const datastructures::PolyRef& poly2) {
     if (proj.is_nullified(ass,poly1) || proj.is_nullified(ass,poly2)) return true;
     auto roots1 = proj.real_roots(ass,poly1);
     auto roots2 = proj.real_roots(ass,poly2);

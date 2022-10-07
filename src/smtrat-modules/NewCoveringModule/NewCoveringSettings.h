@@ -11,8 +11,9 @@
 #include "Sampling.h"
 #include <smtrat-cadcells/operators/operator.h>
 #include <smtrat-cadcells/representation/heuristics.h>
-
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
+
+
 
 namespace smtrat {
 

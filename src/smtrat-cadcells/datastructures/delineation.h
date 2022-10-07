@@ -20,10 +20,10 @@ inline std::ostream& operator<<(std::ostream& os, const TaggedIndexedRoot& data)
     if (data.is_optional) os << "_opt";
     return os;
 }
-bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
+inline bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
     return lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional == rhs.is_optional;
 }
-bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
+inline bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
     return lhs.root < rhs.root || (lhs.root == rhs.root && lhs.is_inclusive < rhs.is_inclusive) || (lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional < rhs.is_optional);
 }
 

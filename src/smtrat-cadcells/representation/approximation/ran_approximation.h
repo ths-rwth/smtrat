@@ -1,20 +1,20 @@
 namespace smtrat::cadcells::representation::approximation {
 
-Rational mediant(Rational a, Rational b) {
+inline Rational mediant(Rational a, Rational b) {
     return Rational(a.get_num()+b.get_num(), a.get_den()+b.get_den());
 }
 
-Rational approximate_RAN(const RAN& r) {
+inline Rational approximate_RAN(const RAN& r) {
     if (r.is_numeric()) return r.value();
     return carl::branching_point(r);
 }
 
-Rational approximate_RAN_sb(const RAN& r) {
+inline Rational approximate_RAN_sb(const RAN& r) {
     if (r.is_numeric()) return r.value();
     return carl::sample_stern_brocot(r.interval(), false);
 }
 
-Rational approximate_RAN_below(const RAN& r) {
+inline Rational approximate_RAN_below(const RAN& r) {
     if (r.is_numeric()) return r.value();
     Rational res = carl::branching_point(r);
     while (res > r) {
@@ -23,7 +23,7 @@ Rational approximate_RAN_below(const RAN& r) {
     return res;
 }
 
-Rational approximate_RAN_above(const RAN& r) {
+inline Rational approximate_RAN_above(const RAN& r) {
     if (r.is_numeric()) return r.value();
     Rational res = carl::branching_point(r);
     while (res < r) {
@@ -34,21 +34,21 @@ Rational approximate_RAN_above(const RAN& r) {
 
 // inner is closer to the sample point
 template<ApxRoot AR>
-Rational approximate_root_above(const RAN& inner, const RAN& outer);
+inline Rational approximate_root_above(const RAN& inner, const RAN& outer);
 template<ApxRoot AR>
 Rational approximate_root_below(const RAN& inner, const RAN& outer);
 
 template<>
-Rational approximate_root_above<ApxRoot::SAMPLE_MID>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_above<ApxRoot::SAMPLE_MID>(const RAN& inner, const RAN& outer) {
     return carl::sample_between(inner, outer);
 }
 template<>
-Rational approximate_root_below<ApxRoot::SAMPLE_MID>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_below<ApxRoot::SAMPLE_MID>(const RAN& inner, const RAN& outer) {
     return carl::sample_between(outer, inner);
 }
 
 template<>
-Rational approximate_root_above<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_above<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner, const RAN& outer) {
     assert(inner < outer);
     Rational inner_simple, outer_simple;
 
@@ -66,7 +66,7 @@ Rational approximate_root_above<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner
 }
 
 template<>
-Rational approximate_root_below<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_below<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner, const RAN& outer) {
     assert(inner > outer);
     Rational inner_simple, outer_simple;
 
@@ -85,7 +85,7 @@ Rational approximate_root_below<ApxRoot::SIMPLE_REPRESENTATION>(const RAN& inner
 }
 
 template<>
-Rational approximate_root_above<ApxRoot::STERN_BROCOT>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_above<ApxRoot::STERN_BROCOT>(const RAN& inner, const RAN& outer) {
     Rational inner_simple, outer_simple, mid;
     
     if (inner.is_numeric()) inner_simple = carl::ceil(inner.value());
@@ -112,7 +112,7 @@ Rational approximate_root_above<ApxRoot::STERN_BROCOT>(const RAN& inner, const R
 }
 
 template<>
-Rational approximate_root_below<ApxRoot::STERN_BROCOT>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_below<ApxRoot::STERN_BROCOT>(const RAN& inner, const RAN& outer) {
     Rational inner_simple, outer_simple, mid;
 
     if (inner.is_numeric()) inner_simple = carl::floor(inner.value());
@@ -139,7 +139,7 @@ Rational approximate_root_below<ApxRoot::STERN_BROCOT>(const RAN& inner, const R
 }
 
 template<>
-Rational approximate_root_above<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_above<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer) {
     Rational apx_outer = approximate_RAN_below(outer);
     Rational apx_inner = approximate_RAN_above(inner);
     Rational upper_bound = (apx_settings().root_ratio_upper * apx_outer) + ((1 - apx_settings().root_ratio_upper) * apx_inner);
@@ -149,7 +149,7 @@ Rational approximate_root_above<ApxRoot::FIXED_RATIO>(const RAN& inner, const RA
 }
 
 template<>
-Rational approximate_root_below<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer) {
+inline Rational approximate_root_below<ApxRoot::FIXED_RATIO>(const RAN& inner, const RAN& outer) {
     Rational apx_outer = approximate_RAN_above(outer);
     Rational apx_inner = approximate_RAN_below(inner);
     Rational lower_bound = (apx_settings().root_ratio_upper * apx_outer) + ((1 - apx_settings().root_ratio_upper) * apx_inner);
@@ -159,7 +159,7 @@ Rational approximate_root_below<ApxRoot::FIXED_RATIO>(const RAN& inner, const RA
 }
 
 template<ApxRoot AR> 
-Rational approximate_root(const RAN& inner, const RAN& outer, bool below) {
+inline Rational approximate_root(const RAN& inner, const RAN& outer, bool below) {
     return below ? approximate_root_below<AR>(inner, outer) : approximate_root_above<AR>(inner, outer);
 }
 
