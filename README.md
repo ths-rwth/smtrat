@@ -1,5 +1,7 @@
 # SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
 
+[![Build and Test](https://github.com/ths-rwth/smtrat/actions/workflows/CI.yml/badge.svg)](https://github.com/ths-rwth/smtrat/actions/workflows/CI.yml)
+
 **Contact**
 
     Jasper Nalbach <nalbach@cs.rwth-aachen.de>
