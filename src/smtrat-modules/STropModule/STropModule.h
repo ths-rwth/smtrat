@@ -14,6 +14,7 @@
 #include "../SATModule/SATModule.h"
 #include "../LRAModule/LRAModule.h"
 #include "STropSettings.h"
+#include "STropModuleStatistics.h"
 
 namespace smtrat
 {
@@ -21,6 +22,9 @@ namespace smtrat
 	class STropModule : public Module
 	{
 		private:
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			STropModuleStatistics& mStatistics = statistics_get<STropModuleStatistics>("STropModule");
+			#endif
 			/**
 			 * Represents the normal vector component and the sign variable
 			 * assigned to a variable in an original constraint.
@@ -85,12 +89,15 @@ namespace smtrat
 				std::set<carl::Relation> mRelations;
 				/// Direction currently used for linearization
 				std::optional<Direction> mActiveDirection;
+				/// Check if relations induce an equational constraint
+				bool mEquationInduced;
 				
 				Separator(const Poly& normalization)
 					: mBias(carl::fresh_real_variable())
 					, mVertices(normalization.begin(), normalization.end())
 					, mRelations()
 					, mActiveDirection(std::nullopt)
+					, mEquationInduced(false)
 				{}
 			};
 			
@@ -191,5 +198,23 @@ namespace smtrat
 			 * 				 False, if formula shall be removed.
 			 */
 			inline void propagateFormula(const FormulaT& formula, bool assert);
+
+			/**
+			 * Requires a quantifier-free real arithmetic formula with no negations 
+			 * 
+			 * @param formula The formula to translate
+			 * 
+			 * @return linear formula
+			 */
+			inline FormulaT translateFormula(FormulaT formula);
+
+			/**
+			 * Requires a quantifier-free real arithmetic formula with no negations 
+			 * 
+			 * @param formula The formula to transform
+			 * 
+			 * @return an equisatisfiable equation
+			 */
+			inline FormulaT transformFormulaToEquation(FormulaT formula);
 	};
 }

@@ -7,6 +7,12 @@
  */
 
 #include "STropModule.h"
+#ifdef SMTRAT_DEVOPTION_Statistics
+#include <chrono>
+#endif
+#include <carl-formula/formula/functions/NNF.h>
+
+// TODO refactor
 
 namespace smtrat
 {
@@ -28,7 +34,14 @@ namespace smtrat
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.type() == carl::FormulaType::FALSE)
 			mInfeasibleSubsets.push_back({formula});
-		else if (formula.type() == carl::FormulaType::CONSTRAINT)
+		if(Settings::transformationOn || Settings::jasperTransformation){
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::PARSER);
+			#endif
+			return mInfeasibleSubsets.empty();
+		}
+		
+		if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
 			/// Normalize the left hand side of the constraint and turn the relation accordingly
 			const ConstraintT& constraint{formula.constraint()};
@@ -42,14 +55,15 @@ namespace smtrat
 			separator.mRelations.insert(relation);
 			mChangedSeparators.insert(&separator);
 			
-			/// Check if the asserted constraint prohibits the application of this method
-			if (relation == carl::Relation::EQ
-				|| (relation == carl::Relation::LEQ
-					&& separator.mRelations.count(carl::Relation::GEQ))
-				|| (relation == carl::Relation::GEQ
-					&& separator.mRelations.count(carl::Relation::LEQ)))
-				++mRelationalConflicts;
-			
+			/// Check if the asserted constraint affects the amount of equations
+			if(!separator.mEquationInduced){
+				if(separator.mRelations.count(carl::Relation::GEQ) * separator.mRelations.count(carl::Relation::LEQ) 
+				+ separator.mRelations.count(carl::Relation::EQ) > 0){
+					separator.mEquationInduced = true;
+					++mRelationalConflicts;
+				}
+			}
+
 			/// Check if the asserted relation trivially conflicts with other asserted relations
 			switch (relation)
 			{
@@ -119,12 +133,18 @@ namespace smtrat
 					assert(false);
 			}
 		}
+#ifdef SMTRAT_DEVOPTION_Statistics
+		mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::TRIVIALUNSAT);
+#endif
 		return mInfeasibleSubsets.empty();
 	}
 	
 	template<class Settings>
 	void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
+		if(Settings::transformationOn || Settings::jasperTransformation){
+			return;
+		}
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.type() == carl::FormulaType::CONSTRAINT)
 		{
@@ -140,19 +160,24 @@ namespace smtrat
 			separator.mRelations.erase(relation);
 			mChangedSeparators.insert(&separator);
 			
-			/// Check if the removed constraint prohibited the application of this method
-			if (relation == carl::Relation::EQ
-				|| (relation == carl::Relation::LEQ
-					&& separator.mRelations.count(carl::Relation::GEQ))
-				|| (relation == carl::Relation::GEQ
-					&& separator.mRelations.count(carl::Relation::LEQ)))
-				--mRelationalConflicts;
+			/// Check if the removed constraint affects the amount of equations 
+			if(separator.mEquationInduced){
+				if(separator.mRelations.count(carl::Relation::GEQ) * separator.mRelations.count(carl::Relation::LEQ) 
+				+ separator.mRelations.count(carl::Relation::EQ) == 0){
+					separator.mEquationInduced = false;
+					--mRelationalConflicts;
+				}
+			}
 		}
 	}
 	
 	template<class Settings>
 	void STropModule<Settings>::updateModel() const
 	{
+		if(Settings::transformationOn || Settings::jasperTransformation){
+			//[TODO: model computation]
+			return;
+		}
 		if (!mModelComputed)
 		{
 			if (mCheckedWithBackends)
@@ -226,9 +251,18 @@ namespace smtrat
 	template<class Settings>
 	Answer STropModule<Settings>::checkCore()
 	{
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		auto theoryStart = SMTRAT_TIME_START();
+		#endif
 		/// Report unsatisfiability if the already found conflicts are still unresolved
-		if (!mInfeasibleSubsets.empty())
+		if (!mInfeasibleSubsets.empty()){
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+			mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::TRIVIALUNSAT);
+			#endif
 			return Answer::UNSAT;
+		}
+			
 		
 		/// Predicate that decides if the given conflict is a subset of the asserted constraints
 		const auto hasConflict = [&](const Conflict& conflict) {
@@ -252,6 +286,8 @@ namespace smtrat
 		
 		/// Apply the method only if the asserted formula is not trivially undecidable
 		if (!mRelationalConflicts
+			&& !Settings::transformationOn
+			&& !Settings::jasperTransformation
 			&& rReceivedFormula().is_constraint_conjunction()
 			&& std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict))
 		{
@@ -313,17 +349,22 @@ namespace smtrat
 			{
 				const carl::Variable& variable{momentsEntry.first};
 				Moment& moment{momentsEntry.second};
-				if (variable.type() == carl::VariableType::VT_INT
-					&& moment.mUsed != receivedVariable(variable))
-				{
+				if(moment.mUsed != receivedVariable(variable)){
 					moment.mUsed = !moment.mUsed;
-					propagateFormula(FormulaT(Poly(moment.mNormalVector), carl::Relation::GEQ), moment.mUsed);
+					if (variable.type() == carl::VariableType::VT_INT)
+					{
+						propagateFormula(FormulaT(Poly(moment.mNormalVector), carl::Relation::GEQ), moment.mUsed);
+					}
 				}
 			}
 			
 			/// Check the constructed linearization with the LRA solver
 			if (mLRAModule.check(true) == Answer::SAT)
 			{
+				#ifdef SMTRAT_DEVOPTION_Statistics
+				SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+				mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::THEORYSOLVED);
+				#endif
 				mCheckedWithBackends = false;
 				return Answer::SAT;
 			}
@@ -348,10 +389,91 @@ namespace smtrat
 				}
 			}
 		}
-		
+
+		///###################################################################################
+		if(Settings::transformationOn){
+			/// Remove Negations from formula
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			auto transformationStart = SMTRAT_TIME_START();
+			#endif
+			/// Transform formula
+			FormulaT negationFreeFormula = carl::to_nnf(rReceivedFormula());
+			FormulaT equation = transformFormulaToEquation(negationFreeFormula);
+			if(equation.type() != carl::FormulaType::FALSE){
+				#ifdef SMTRAT_DEVOPTION_Statistics
+				SMTRAT_TIME_FINISH(mStatistics.transformationTimer(), transformationStart);
+				#endif
+				/// Check
+				Separator separatorEQ(equation.constraint().lhs().normalize());
+
+				/// Compute point (1,...,1) at polynomial
+				Rational sumOfCoeffs = 0;
+				for(const Vertex& v : separatorEQ.mVertices){
+					sumOfCoeffs += v.mCoefficient;
+				}
+				/// If sum is 0 then root found
+				if(sumOfCoeffs == 0){
+					#ifdef SMTRAT_DEVOPTION_Statistics
+					SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+					mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::THEORYSOLVED);
+					#endif
+					mCheckedWithBackends = false;
+					return Answer::SAT;
+				}
+
+				/// Reduce problem to linear problem
+				LAModule LRAModule;
+				separatorEQ.mActiveDirection = (sumOfCoeffs < 0) ? Direction::POSITIVE : Direction::NEGATIVE;
+				LRAModule.add(createLinearization(separatorEQ));
+
+				/// Solve using LRA solver
+				if (LRAModule.check(true) == Answer::SAT) {
+					#ifdef SMTRAT_DEVOPTION_Statistics
+					SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+					mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::THEORYSOLVED);
+					#endif					
+					mCheckedWithBackends = false;
+					return Answer::SAT;
+				}
+			}
+		}
+
+		///###################################################################################
+		if(Settings::jasperTransformation){
+			
+			///Remove negations from formula
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			auto transformationStart = SMTRAT_TIME_START();
+			#endif
+			FormulaT negationFreeFormula = carl::to_nnf(rReceivedFormula());
+			if(negationFreeFormula.type() != carl::FormulaType::FALSE){
+				/// Reduce problem to linear problem
+				LAModule LRAModule;
+				FormulaT translatedFormula = translateFormula(negationFreeFormula);
+				#ifdef SMTRAT_DEVOPTION_Statistics
+				SMTRAT_TIME_FINISH(mStatistics.transformationTimer(), transformationStart);
+				#endif
+				LRAModule.add(translatedFormula);
+				/// Solve using LRA solver
+				if (LRAModule.check(true) == Answer::SAT) {
+					#ifdef SMTRAT_DEVOPTION_Statistics
+					SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+					mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::THEORYSOLVED);
+					#endif
+					mCheckedWithBackends = false;
+					return Answer::SAT;
+				}
+			}
+		}
+
+
 		/// Check the asserted formula with the backends
 		mCheckedWithBackends = true;
 		Answer answer{runBackends()};
+		#ifdef SMTRAT_DEVOPTION_Statistics
+		SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+		mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::BACKEND);
+		#endif
 		if (answer == Answer::UNSAT)
 			getInfeasibleSubsets();
 		return answer;
@@ -468,6 +590,125 @@ namespace smtrat
 		else
 			mLRAModule.remove(std::find(mLRAModule.formulaBegin(), mLRAModule.formulaEnd(), formula));
 	}
+
+	template<class Settings>
+	inline FormulaT STropModule<Settings>::translateFormula(FormulaT formula){
+		///Base case
+		if(formula.type() == carl::FormulaType::TRUE || formula.type() == carl::FormulaType::FALSE){
+			return formula;
+		}
+		if(formula.type() == carl::FormulaType::CONSTRAINT){
+			carl::Relation relation = formula.constraint().relation();
+			Poly polynomial = formula.constraint().lhs();
+			if (carl::is_negative(polynomial.lcoeff()))
+				relation = carl::turn_around(relation);
+			if(relation == carl::Relation::EQ){
+				return FormulaT(carl::FormulaType::FALSE);
+			}
+			
+			Separator separator(polynomial.normalize());
+			switch(relation){
+				case carl::Relation::GREATER:
+				case carl::Relation::GEQ:
+					separator.mActiveDirection = Direction::POSITIVE;
+					break;
+				case carl::Relation::LESS:
+				case carl::Relation::LEQ:
+					separator.mActiveDirection = Direction::NEGATIVE;
+					break;
+				case carl::Relation::NEQ:
+					separator.mActiveDirection = Direction::BOTH;
+					break;
+				default:
+					assert(false);
+					return FormulaT();
+			}
+			return createLinearization(separator);
+		}
+		///Resolve Syntax Tree using recursion
+		switch(formula.type()){
+			case carl::FormulaType::OR:{
+				FormulasT disjunctions;
+				FormulasT subformulas = formula.subformulas();
+				for(auto subformula : subformulas){
+					disjunctions.push_back(translateFormula(subformula));
+				}
+				return FormulaT(carl::FormulaType::OR, disjunctions);
+			}
+			case carl::FormulaType::AND:{
+				FormulasT conjunctions;
+				FormulasT subformulas = formula.subformulas();
+				for(auto subformula : subformulas){
+					conjunctions.push_back(translateFormula(subformula));
+				}
+				return FormulaT(carl::FormulaType::AND, conjunctions);
+			}
+			default:
+					assert(false);
+					return FormulaT();
+		}
+	}
+
+	template<class Settings>
+	inline FormulaT STropModule<Settings>::transformFormulaToEquation(FormulaT formula){
+		///Base Case
+		if(formula.type() == carl::FormulaType::TRUE || formula.type() == carl::FormulaType::FALSE){
+			return formula;
+		}
+		if(formula.type() == carl::FormulaType::CONSTRAINT){
+			carl::Relation relation = formula.constraint().relation();
+			Poly polynomial = formula.constraint().lhs();
+
+			if(relation == carl::Relation::EQ)
+				return formula;
+		
+			Poly transformedPolynomial{polynomial};
+			Poly parameter{carl::fresh_real_variable()};
+			switch(relation){
+				case carl::Relation::GREATER:
+					transformedPolynomial *= (parameter *= parameter);
+					transformedPolynomial -= Poly{Rational(1)};
+					break;
+				case carl::Relation::GEQ:
+					transformedPolynomial -= (parameter *= parameter);
+					break;
+				case carl::Relation::LESS:
+					transformedPolynomial *= (parameter *= parameter);
+					transformedPolynomial += Poly{Rational(1)};
+					break;
+				case carl::Relation::LEQ:
+					transformedPolynomial += (parameter *= parameter);
+					break;
+				case carl::Relation::NEQ:
+					transformedPolynomial *= parameter;
+					transformedPolynomial += Poly{Rational(1)};
+					break;		
+				default:
+					assert(false);
+					return FormulaT();
+			}
+			return FormulaT(transformedPolynomial, carl::Relation::EQ);
+		}
+
+		/// Resolve Syntax Tree using recursion
+		switch(formula.type()){
+			case carl::FormulaType::OR:{
+				FormulasT subformulas = formula.subformulas();
+				Poly product{Rational(1)};
+				for(auto subformula : subformulas){
+					FormulaT transformedSubformula = transformFormulaToEquation(subformula);
+					if(transformedSubformula.type() != carl::FormulaType::FALSE){
+						product *= transformedSubformula.constraint().lhs();
+					}
+				}
+				return FormulaT(product, carl::Relation::EQ);
+			}
+			case carl::FormulaType::AND:{
+				return FormulaT(carl::FormulaType::FALSE);
+			}
+			default:
+				assert(false);
+				return FormulaT();
+		}
+	}
 }
-
-
