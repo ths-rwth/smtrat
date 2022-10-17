@@ -12,8 +12,6 @@
 #endif
 #include <carl-formula/formula/functions/NNF.h>
 
-// TODO refactor
-
 namespace smtrat
 {
 	template<class Settings>
@@ -34,7 +32,7 @@ namespace smtrat
 		const FormulaT& formula{_subformula->formula()};
 		if (formula.type() == carl::FormulaType::FALSE)
 			mInfeasibleSubsets.push_back({formula});
-		if(Settings::transformationOn || Settings::jasperTransformation){
+		if(Settings::mode != Mode::INCREMENTAL_CONSTRAINTS){
 			#ifdef SMTRAT_DEVOPTION_Statistics
 			mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::PARSER);
 			#endif
@@ -142,7 +140,7 @@ namespace smtrat
 	template<class Settings>
 	void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
 	{
-		if(Settings::transformationOn || Settings::jasperTransformation){
+		if(Settings::mode != Mode::INCREMENTAL_CONSTRAINTS){
 			return;
 		}
 		const FormulaT& formula{_subformula->formula()};
@@ -174,7 +172,7 @@ namespace smtrat
 	template<class Settings>
 	void STropModule<Settings>::updateModel() const
 	{
-		if(Settings::transformationOn || Settings::jasperTransformation){
+		if(Settings::mode != Mode::INCREMENTAL_CONSTRAINTS){
 			//[TODO: model computation]
 			return;
 		}
@@ -262,142 +260,137 @@ namespace smtrat
 			#endif
 			return Answer::UNSAT;
 		}
-			
-		
-		/// Predicate that decides if the given conflict is a subset of the asserted constraints
-		const auto hasConflict = [&](const Conflict& conflict) {
-			return std::all_of(
-				conflict.begin(),
-				conflict.end(),
-				[&](const auto& conflictEntry) {
-					return ((conflictEntry.second == Direction::NEGATIVE
-						|| conflictEntry.second == Direction::BOTH)
-							&& (conflictEntry.first->mRelations.count(carl::Relation::LESS)
-								|| conflictEntry.first->mRelations.count(carl::Relation::LEQ)))
-						|| ((conflictEntry.second == Direction::POSITIVE
-							|| conflictEntry.second == Direction::BOTH)
-								&& (conflictEntry.first->mRelations.count(carl::Relation::GREATER)
-									|| conflictEntry.first->mRelations.count(carl::Relation::GEQ)))
-						|| (conflictEntry.second == Direction::BOTH
-							&& conflictEntry.first->mRelations.count(carl::Relation::NEQ));
-				}
-			);
-		};
-		
-		/// Apply the method only if the asserted formula is not trivially undecidable
-		if (!mRelationalConflicts
-			&& !Settings::transformationOn
-			&& !Settings::jasperTransformation
-			&& rReceivedFormula().is_constraint_conjunction()
-			&& std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict))
-		{
-			/// Update the linearization of all changed separators
-			for (Separator *separatorPtr : mChangedSeparators)
-			{
-				Separator& separator{*separatorPtr};
-				
-				/// Determine the direction that shall be active
-				std::optional<Direction> direction;
-				if (!separator.mRelations.empty())
-				{
-					if (separator.mActiveDirection
-						&& *separator.mActiveDirection == Direction::NEGATIVE
-						&& ((separator.mRelations.count(carl::Relation::LESS)
-							|| separator.mRelations.count(carl::Relation::LEQ))))
-						direction = Direction::NEGATIVE;
-					else if (separator.mActiveDirection
-						&& *separator.mActiveDirection == Direction::POSITIVE
-						&& ((separator.mRelations.count(carl::Relation::GREATER)
-							|| separator.mRelations.count(carl::Relation::GEQ))))
-						direction = Direction::POSITIVE;
-					else
-						switch (*separator.mRelations.rbegin())
-						{
-							case carl::Relation::EQ:
-								direction = std::nullopt;
-								break;
-							case carl::Relation::NEQ:
-								direction = Direction::BOTH;
-								break;
-							case carl::Relation::LESS:
-							case carl::Relation::LEQ:
-								direction = Direction::NEGATIVE;
-								break;
-							case carl::Relation::GREATER:
-							case carl::Relation::GEQ:
-								direction = Direction::POSITIVE;
-								break;
-							default:
-								assert(false);
-						}
-				}
-				
-				/// Update the linearization if the direction has changed
-				if (separator.mActiveDirection != direction)
-				{
-					if (separator.mActiveDirection)
-						propagateFormula(createLinearization(separator), false);
-					separator.mActiveDirection = direction;
-					if (separator.mActiveDirection)
-						propagateFormula(createLinearization(separator), true);
-				}
-			}
-			mChangedSeparators.clear();
-			
-			/// Restrict the normal vector component of integral variables to positive values
-			for (auto& momentsEntry : mMoments)
-			{
-				const carl::Variable& variable{momentsEntry.first};
-				Moment& moment{momentsEntry.second};
-				if(moment.mUsed != receivedVariable(variable)){
-					moment.mUsed = !moment.mUsed;
-					if (variable.type() == carl::VariableType::VT_INT)
-					{
-						propagateFormula(FormulaT(Poly(moment.mNormalVector), carl::Relation::GEQ), moment.mUsed);
-					}
-				}
-			}
-			
-			/// Check the constructed linearization with the LRA solver
-			if (mLRAModule.check(true) == Answer::SAT)
-			{
-				#ifdef SMTRAT_DEVOPTION_Statistics
-				SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
-				mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::THEORYSOLVED);
-				#endif
-				mCheckedWithBackends = false;
-				return Answer::SAT;
-			}
-			else
-			{
-				/// Learn the conflicting set of separators to avoid its recheck in the future
-				const std::vector<FormulaSetT> LRAConflicts{mLRAModule.infeasibleSubsets()};
-				for (const FormulaSetT& LRAConflict : LRAConflicts)
-				{
-					carl::carlVariables variables;
-					for (const FormulaT& formula : LRAConflict)
-						carl::variables(formula, variables);
-					Conflict conflict;
-					for (const auto& separatorsEntry : mSeparators)
-					{
-						const Separator& separator{separatorsEntry.second};
-						if (separator.mActiveDirection
-							&& variables.has(separator.mBias))
-							conflict.emplace_back(&separator, *separator.mActiveDirection);
-					}
-					mLinearizationConflicts.emplace_back(std::move(conflict));
-				}
-			}
-		}
 
-		///###################################################################################
-		if(Settings::transformationOn){
+		if constexpr(Settings::mode == Mode::INCREMENTAL_CONSTRAINTS) {
+			/// Predicate that decides if the given conflict is a subset of the asserted constraints
+			const auto hasConflict = [&](const Conflict& conflict) {
+				return std::all_of(
+					conflict.begin(),
+					conflict.end(),
+					[&](const auto& conflictEntry) {
+						return ((conflictEntry.second == Direction::NEGATIVE
+							|| conflictEntry.second == Direction::BOTH)
+								&& (conflictEntry.first->mRelations.count(carl::Relation::LESS)
+									|| conflictEntry.first->mRelations.count(carl::Relation::LEQ)))
+							|| ((conflictEntry.second == Direction::POSITIVE
+								|| conflictEntry.second == Direction::BOTH)
+									&& (conflictEntry.first->mRelations.count(carl::Relation::GREATER)
+										|| conflictEntry.first->mRelations.count(carl::Relation::GEQ)))
+							|| (conflictEntry.second == Direction::BOTH
+								&& conflictEntry.first->mRelations.count(carl::Relation::NEQ));
+					}
+				);
+			};
+			
+			/// Apply the method only if the asserted formula is not trivially undecidable
+			if (!mRelationalConflicts
+				&& rReceivedFormula().is_constraint_conjunction()
+				&& std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict)) {
+				/// Update the linearization of all changed separators
+				for (Separator *separatorPtr : mChangedSeparators)
+				{
+					Separator& separator{*separatorPtr};
+					
+					/// Determine the direction that shall be active
+					std::optional<Direction> direction;
+					if (!separator.mRelations.empty())
+					{
+						if (separator.mActiveDirection
+							&& *separator.mActiveDirection == Direction::NEGATIVE
+							&& ((separator.mRelations.count(carl::Relation::LESS)
+								|| separator.mRelations.count(carl::Relation::LEQ))))
+							direction = Direction::NEGATIVE;
+						else if (separator.mActiveDirection
+							&& *separator.mActiveDirection == Direction::POSITIVE
+							&& ((separator.mRelations.count(carl::Relation::GREATER)
+								|| separator.mRelations.count(carl::Relation::GEQ))))
+							direction = Direction::POSITIVE;
+						else
+							switch (*separator.mRelations.rbegin())
+							{
+								case carl::Relation::EQ:
+									direction = std::nullopt;
+									break;
+								case carl::Relation::NEQ:
+									direction = Direction::BOTH;
+									break;
+								case carl::Relation::LESS:
+								case carl::Relation::LEQ:
+									direction = Direction::NEGATIVE;
+									break;
+								case carl::Relation::GREATER:
+								case carl::Relation::GEQ:
+									direction = Direction::POSITIVE;
+									break;
+								default:
+									assert(false);
+							}
+					}
+					
+					/// Update the linearization if the direction has changed
+					if (separator.mActiveDirection != direction)
+					{
+						if (separator.mActiveDirection)
+							propagateFormula(createLinearization(separator), false);
+						separator.mActiveDirection = direction;
+						if (separator.mActiveDirection)
+							propagateFormula(createLinearization(separator), true);
+					}
+				}
+				mChangedSeparators.clear();
+				
+				/// Restrict the normal vector component of integral variables to positive values
+				for (auto& momentsEntry : mMoments)
+				{
+					const carl::Variable& variable{momentsEntry.first};
+					Moment& moment{momentsEntry.second};
+					if(moment.mUsed != receivedVariable(variable)){
+						moment.mUsed = !moment.mUsed;
+						if (variable.type() == carl::VariableType::VT_INT)
+						{
+							propagateFormula(FormulaT(Poly(moment.mNormalVector), carl::Relation::GEQ), moment.mUsed);
+						}
+					}
+				}
+				
+				/// Check the constructed linearization with the LRA solver
+				if (mLRAModule.check(true) == Answer::SAT)
+				{
+					#ifdef SMTRAT_DEVOPTION_Statistics
+					SMTRAT_TIME_FINISH(mStatistics.theoryTimer(), theoryStart);
+					mStatistics.setAnswerBy(STropModuleStatistics::AnswerBy::THEORYSOLVED);
+					#endif
+					mCheckedWithBackends = false;
+					return Answer::SAT;
+				}
+				else
+				{
+					/// Learn the conflicting set of separators to avoid its recheck in the future
+					const std::vector<FormulaSetT> LRAConflicts{mLRAModule.infeasibleSubsets()};
+					for (const FormulaSetT& LRAConflict : LRAConflicts)
+					{
+						carl::carlVariables variables;
+						for (const FormulaT& formula : LRAConflict)
+							carl::variables(formula, variables);
+						Conflict conflict;
+						for (const auto& separatorsEntry : mSeparators)
+						{
+							const Separator& separator{separatorsEntry.second};
+							if (separator.mActiveDirection
+								&& variables.has(separator.mBias))
+								conflict.emplace_back(&separator, *separator.mActiveDirection);
+						}
+						mLinearizationConflicts.emplace_back(std::move(conflict));
+					}
+				}
+			}
+		} else if constexpr(Settings::mode == Mode::TRANSFORM_EQUATION) {
 			/// Remove Negations from formula
 			#ifdef SMTRAT_DEVOPTION_Statistics
 			auto transformationStart = SMTRAT_TIME_START();
 			#endif
 			/// Transform formula
-			FormulaT negationFreeFormula = carl::to_nnf(rReceivedFormula());
+			FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
 			FormulaT equation = transformFormulaToEquation(negationFreeFormula);
 			if(equation.type() != carl::FormulaType::FALSE){
 				#ifdef SMTRAT_DEVOPTION_Statistics
@@ -436,16 +429,13 @@ namespace smtrat
 					return Answer::SAT;
 				}
 			}
-		}
-
-		///###################################################################################
-		if(Settings::jasperTransformation){
-			
+		} else {
+			static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
 			///Remove negations from formula
 			#ifdef SMTRAT_DEVOPTION_Statistics
 			auto transformationStart = SMTRAT_TIME_START();
 			#endif
-			FormulaT negationFreeFormula = carl::to_nnf(rReceivedFormula());
+			FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
 			if(negationFreeFormula.type() != carl::FormulaType::FALSE){
 				/// Reduce problem to linear problem
 				LAModule LRAModule;
@@ -465,7 +455,6 @@ namespace smtrat
 				}
 			}
 		}
-
 
 		/// Check the asserted formula with the backends
 		mCheckedWithBackends = true;
