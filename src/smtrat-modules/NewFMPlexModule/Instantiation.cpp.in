@@ -1,0 +1,13 @@
+/**
+ * @file NewFMPlexInstantiation.cpp.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2022-10-07
+ * Created on 2022-10-07.
+ */
+
+#include "${Prefix}Module.tpp"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
