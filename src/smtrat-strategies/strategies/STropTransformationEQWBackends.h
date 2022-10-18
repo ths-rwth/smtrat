@@ -12,10 +12,10 @@
 
 namespace smtrat
 {
-	class STropTransformationEQ: public Manager
+	class STropTransformationEQWBackends: public Manager
 	{
 		public:
-			STropTransformationEQ(): Manager() {
+			STropTransformationEQWBackends(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
 						addBackend<STropModule<STropSettings2>>({

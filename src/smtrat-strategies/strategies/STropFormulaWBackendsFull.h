@@ -12,10 +12,10 @@
 
 namespace smtrat
 {
-	class STropOnlyFormula: public Manager
+	class STropFormulaWBackendsFull: public Manager
 	{
 		public:
-			STropOnlyFormula(): Manager() {
+			STropFormulaWBackendsFull(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
 						addBackend<STropModule<STropSettings2>>({
