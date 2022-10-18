@@ -50,7 +50,7 @@ inline IR CellApproximator::apx_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, con
     Poly carl_poly = carl::convert<Poly,Polynomial>(proj().polys()(p.poly));
     Poly derivative = carl::derivative(carl_poly, var());
     Poly gradient = carl::substitute(derivative, var(), Poly(approximate_RAN(bound)));
-    if (gradient.is_zero()) return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
+    if (carl::is_zero(gradient)) return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
     Poly carl_res = gradient*Poly(var()) - gradient*approximate_root<ApxSettings::root>(main_sample(),bound,below);
     Polynomial res = carl::convert<Polynomial, Poly>(proj().polys().get_context(), carl_res);
     return IR(proj().polys()(res), 1);
