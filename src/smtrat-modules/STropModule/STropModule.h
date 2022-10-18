@@ -22,7 +22,7 @@ template<typename Settings>
 class STropModule : public Module {
 private:
 #ifdef SMTRAT_DEVOPTION_Statistics
-	STropModuleStatistics& mStatistics = statistics_get<STropModuleStatistics>("STropModule");
+	STropModuleStatistics& mStatistics = statistics_get<STropModuleStatistics>(Settings::moduleName);
 #endif
 
 	/// Holds encoding information.

@@ -3,32 +3,58 @@
 #include <smtrat-common/smtrat-common.h>
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include <smtrat-common/statistics/Statistics.h>
-namespace smtrat{
-    class STropModuleStatistics : public Statistics{
-        public:
-            enum class AnswerBy {NOMEANING = 0, TRIVIALUNSAT = 1, THEORYSOLVED = 2, BACKEND = 3, PARSER = 4};
-        private:
-            AnswerBy mAnswerBy = AnswerBy::NOMEANING;
-            carl::statistics::timer mTheoryTimer;
-            carl::statistics::timer mTransformationTimer;
-        public:
-            void collect(){
-                Statistics::addKeyValuePair("Answered_by", (int)mAnswerBy);
-                Statistics::addKeyValuePair("Theory_Time_[ms]", mTheoryTimer);
-                Statistics::addKeyValuePair("Transformation_Time_[ms]", mTransformationTimer);
-            }
+namespace smtrat {
+class STropModuleStatistics : public Statistics {
+public:
+	enum class AnswerBy { NONE = 0,
+						  TRIVIAL_UNSAT = 1,
+						  METHOD = 2,
+						  BACKEND = 3,
+						  PARSER = 4 };
 
-            void setAnswerBy(AnswerBy answerBy){
-                mAnswerBy = answerBy;
-            }
+private:
+	carl::statistics::timer m_theory_timer;
+	carl::statistics::timer m_transformation_timer;
+	std::size_t m_answer_by_TRIVIAL_UNSAT = 0;
+	std::size_t m_answer_by_METHOD = 0;
+	std::size_t m_answer_by_BACKEND = 0;
+	std::size_t m_answer_by_PARSER = 0;
 
-            auto& theoryTimer(){
-                return mTheoryTimer;
-            }
+public:
+	void collect() {
+		Statistics::addKeyValuePair("theory_call_time", m_theory_timer);
+		Statistics::addKeyValuePair("transformation_time", m_transformation_timer);
+		Statistics::addKeyValuePair("answer_by_TRIVIAL_UNSAT", m_answer_by_TRIVIAL_UNSAT);
+		Statistics::addKeyValuePair("answer_by_METHOD", m_answer_by_METHOD);
+		Statistics::addKeyValuePair("answer_by_BACKEND", m_answer_by_BACKEND);
+		Statistics::addKeyValuePair("answer_by_PARSER", m_answer_by_PARSER);
+	}
 
-            auto& transformationTimer(){
-                return mTransformationTimer;
-            }
-    };
-}
+	void answer_by(AnswerBy answer_by) {
+		switch (answer_by) {
+		case TRIVIAL_UNSAT:
+			m_answer_by_TRIVIAL_UNSAT++;
+			break;
+		case METHOD:
+			m_answer_by_METHOD++;
+			break;
+		case BACKEND:
+			m_answer_by_BACKEND++;
+			break;
+		case PARSER:
+			m_answer_by_PARSER++;
+			break;
+		default:
+		}
+	}
+
+	auto& theory_timer() {
+		return m_theory_timer;
+	}
+
+	auto& transformation_timer() {
+		return m_transformation_timer;
+	}
+};
+} // namespace smtrat
 #endif
