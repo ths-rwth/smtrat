@@ -52,7 +52,7 @@ enum class Direction { BOTH = 0,
 					   NEGATIVE = 1,
 					   POSITIVE = 2 };
 
-carl::BasicConstraint<Poly> normalize(const carl::BasicConstraint<Poly>& c) {
+inline carl::BasicConstraint<Poly> normalize(const carl::BasicConstraint<Poly>& c) {
 	assert(c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::EQ || c.relation() == carl::Relation::NEQ);
 	return carl::BasicConstraint<Poly>(c.lhs().normalize(), carl::is_negative(c.lhs().lcoeff()) ? carl::turn_around(c.relation()) : c.relation());
 }
