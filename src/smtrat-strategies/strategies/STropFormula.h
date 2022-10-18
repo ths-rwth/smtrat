@@ -2,6 +2,7 @@
 
 #include <smtrat-solver/Manager.h>
 
+#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/STropModule/STropModule.h>
 
 namespace smtrat
@@ -11,7 +12,9 @@ namespace smtrat
 		public:
 			STropOnlyFormula(): Manager() {
 				setStrategy({
-					addBackend<STropModule<STropSettings2>>()
+					addBackend<FPPModule<FPPSettings1>>({
+						addBackend<STropModule<STropSettings2>>()
+					})
 				});
 			}
 	};
