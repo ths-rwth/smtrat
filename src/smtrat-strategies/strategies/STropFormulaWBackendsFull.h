@@ -18,7 +18,7 @@ namespace smtrat
 			STropFormulaWBackendsFull(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
-						addBackend<STropModule<STropSettings2>>({
+						addBackend<STropModule<STropSettings3>>({
 							addBackend<SATModule<SATSettings1>>({
 								addBackend<STropModule<STropSettings1>>({
 									addBackend<ICPModule<ICPSettings1>>({
