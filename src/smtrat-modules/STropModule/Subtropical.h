@@ -224,6 +224,7 @@ public:
 		Model result;
 		Rational base = 0;
 		do {
+			result.clear();
 			++base;
 			for (const Weight& weight : weights) {
 				Rational value{carl::is_negative(weight.exponent) ? carl::reciprocal(base) : base};
@@ -305,6 +306,11 @@ inline FormulaT transform_to_equation(const FormulaT& formula) {
  */
 inline FormulaT encode_as_formula(const FormulaT& formula, Encoding& encoding, SeparatorType separator_type) {
 	if (formula.type() == carl::FormulaType::TRUE || formula.type() == carl::FormulaType::FALSE) {
+		return formula;
+	} else if (formula.type() == carl::FormulaType::BOOL) {
+		return formula;
+	} else if (formula.type() == carl::FormulaType::NOT) {
+		assert(formula.subformula().type() == carl::FormulaType::BOOL);
 		return formula;
 	} else if (formula.type() == carl::FormulaType::CONSTRAINT) {
 		if (formula.constraint().relation() == carl::Relation::EQ) {
