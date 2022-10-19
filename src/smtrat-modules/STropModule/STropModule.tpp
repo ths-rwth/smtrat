@@ -312,9 +312,9 @@ Answer STropModule<Settings>::checkCore() {
 				mCheckedWithBackends = false;
 				return Answer::SAT;
 			} else {
-				LAModule lra_module;
-				lra_module.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
-				if (lra_module.check(true) == Answer::SAT) {
+				mLRAModule.reset();
+				mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
+				if (mLRAModule.check(true) == Answer::SAT) {
 					#ifdef SMTRAT_DEVOPTION_Statistics
 					SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 					mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD);
@@ -336,9 +336,9 @@ Answer STropModule<Settings>::checkCore() {
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		#endif
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
-			LAModule lra_module;
-			lra_module.add(translatedFormula);
-			if (lra_module.check(true) == Answer::SAT) {
+			mLRAModule.reset();
+			mLRAModule.add(translatedFormula);
+			if (mLRAModule.check(true) == Answer::SAT) {
 				#ifdef SMTRAT_DEVOPTION_Statistics
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD);
