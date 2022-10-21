@@ -42,7 +42,7 @@ option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are i
 option( USE_MIMALLOC "Build mimalloc" OFF )
 
 # Strategy
-set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Strategy "Default" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
