@@ -284,7 +284,9 @@ inline FormulaT transform_to_equation(const FormulaT& formula) {
 		Poly product{Rational(1)};
 		for (const auto& subformula : formula.subformulas()) {
 			FormulaT transformed = transform_to_equation(subformula);
-			if (transformed.type() != carl::FormulaType::FALSE) {
+			if (transformed.type() == carl::FormulaType::TRUE) {
+				return transformed;
+			} else if (transformed.type() != carl::FormulaType::FALSE) {
 				product *= transformed.constraint().lhs();
 			}
 		}
