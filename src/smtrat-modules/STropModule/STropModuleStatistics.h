@@ -19,6 +19,7 @@ private:
 	std::size_t m_answer_by_METHOD = 0;
 	std::size_t m_answer_by_BACKEND = 0;
 	std::size_t m_answer_by_PARSER = 0;
+	std::size_t m_failed = 0;
 
 public:
 	void collect() {
@@ -28,6 +29,7 @@ public:
 		Statistics::addKeyValuePair("answer_by_METHOD", m_answer_by_METHOD);
 		Statistics::addKeyValuePair("answer_by_BACKEND", m_answer_by_BACKEND);
 		Statistics::addKeyValuePair("answer_by_PARSER", m_answer_by_PARSER);
+		Statistics::addKeyValuePair("failed", m_failed);
 	}
 
 	void answer_by(AnswerBy answer_by) {
@@ -46,6 +48,10 @@ public:
 			break;
 		default:
 		}
+	}
+
+	void failed() {
+		m_failed++;
 	}
 
 	auto& theory_timer() {

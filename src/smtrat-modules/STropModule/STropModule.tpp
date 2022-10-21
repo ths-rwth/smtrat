@@ -350,6 +350,9 @@ Answer STropModule<Settings>::checkCore() {
 	}
 
 	// Check the asserted formula with the backends
+	#ifdef SMTRAT_DEVOPTION_Statistics
+	mStatistics.failed();
+	#endif
 	mCheckedWithBackends = true;
 	Answer answer = runBackends();
 	#ifdef SMTRAT_DEVOPTION_Statistics
