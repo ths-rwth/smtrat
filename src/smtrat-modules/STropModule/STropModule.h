@@ -21,9 +21,7 @@ namespace smtrat {
 template<typename Settings>
 class STropModule : public Module {
 private:
-#ifdef SMTRAT_DEVOPTION_Statistics
-	STropModuleStatistics& mStatistics = statistics_get<STropModuleStatistics>(Settings::moduleName);
-#endif
+	SMTRAT_STATISTICS_INIT(STropModuleStatistics, mStatistics, Settings::moduleName);
 
 	/// Holds encoding information.
 	subtropical::Encoding mEncoding;

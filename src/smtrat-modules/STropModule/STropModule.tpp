@@ -7,9 +7,6 @@
  */
 
 #include "STropModule.h"
-#ifdef SMTRAT_DEVOPTION_Statistics
-#include <chrono>
-#endif
 #include <carl-formula/formula/functions/NNF.h>
 
 namespace smtrat {
@@ -28,9 +25,7 @@ bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 	addReceivedSubformulaToPassedFormula(_subformula);
 	const FormulaT& formula{_subformula->formula()};
 	if (formula.type() == carl::FormulaType::FALSE) {
-		#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER);
-		#endif
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
 		mInfeasibleSubsets.push_back({formula});
 		return false;
 	}
@@ -123,11 +118,9 @@ bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {
 				assert(false);
 		}
 	}
-	#ifdef SMTRAT_DEVOPTION_Statistics
 	if (mInfeasibleSubsets.empty()) {
-		mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT);
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT));
 	}
-	#endif
 	return mInfeasibleSubsets.empty();
 }
 
@@ -177,15 +170,11 @@ void STropModule<Settings>::updateModel() const {
 
 template<class Settings>
 Answer STropModule<Settings>::checkCore() {
-	#ifdef SMTRAT_DEVOPTION_Statistics
-	auto theoryStart = SMTRAT_TIME_START();
-	#endif
+	SMTRAT_TIME_START(theoryStart);
 	// Report unsatisfiability if the already found conflicts are still unresolved
 	if (!mInfeasibleSubsets.empty()){
-		#ifdef SMTRAT_DEVOPTION_Statistics
 		SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-		mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT);
-		#endif
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT));
 		return Answer::UNSAT;
 	}
 
@@ -268,10 +257,8 @@ Answer STropModule<Settings>::checkCore() {
 			
 			// Check the constructed linearization with the LRA solver
 			if (mLRAModule.check(true) == Answer::SAT) {
-				#ifdef SMTRAT_DEVOPTION_Statistics
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-				mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD);
-				#endif
+				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
 				mCheckedWithBackends = false;
 				return Answer::SAT;
 			} else {
@@ -292,33 +279,25 @@ Answer STropModule<Settings>::checkCore() {
 			}
 		}
 	} else if constexpr(Settings::mode == Mode::TRANSFORM_EQUATION) {
-		#ifdef SMTRAT_DEVOPTION_Statistics
-		auto transformationStart = SMTRAT_TIME_START();
-		#endif
+		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
 		assert(negationFreeFormula.type() != carl::FormulaType::FALSE);
 		FormulaT equation = subtropical::transform_to_equation(negationFreeFormula);
-		#ifdef SMTRAT_DEVOPTION_Statistics
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
-		#endif
 		if(equation.type() != carl::FormulaType::FALSE) {
 			subtropical::Separator separator(equation.constraint().lhs().normalize());
 			auto direction = subtropical::direction_for_equality(separator);
 			if(!direction) {
-				#ifdef SMTRAT_DEVOPTION_Statistics
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-				mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD);
-				#endif
+				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
 				mCheckedWithBackends = false;
 				return Answer::SAT;
 			} else {
 				mLRAModule.reset();
 				mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
 				if (mLRAModule.check(true) == Answer::SAT) {
-					#ifdef SMTRAT_DEVOPTION_Statistics
 					SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-					mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD);
-					#endif					
+					SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
 					mCheckedWithBackends = false;
 					return Answer::SAT;
 				}
@@ -326,23 +305,17 @@ Answer STropModule<Settings>::checkCore() {
 		}
 	} else {
 		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
-		#ifdef SMTRAT_DEVOPTION_Statistics
-		auto transformationStart = SMTRAT_TIME_START();
-		#endif
+		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
 		assert(negationFreeFormula.type() != carl::FormulaType::FALSE);
 		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
-		#ifdef SMTRAT_DEVOPTION_Statistics
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
-		#endif
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
 			mLRAModule.reset();
 			mLRAModule.add(translatedFormula);
 			if (mLRAModule.check(true) == Answer::SAT) {
-				#ifdef SMTRAT_DEVOPTION_Statistics
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-				mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD);
-				#endif
+				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
 				mCheckedWithBackends = false;
 				return Answer::SAT;
 			}
@@ -350,15 +323,11 @@ Answer STropModule<Settings>::checkCore() {
 	}
 
 	// Check the asserted formula with the backends
-	#ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.failed();
-	#endif
+	SMTRAT_STATISTICS_CALL(mStatistics.failed());
 	mCheckedWithBackends = true;
 	Answer answer = runBackends();
-	#ifdef SMTRAT_DEVOPTION_Statistics
 	SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-	mStatistics.answer_by(STropModuleStatistics::AnswerBy::BACKEND);
-	#endif
+	SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::BACKEND));
 	if (answer == Answer::UNSAT)
 		getInfeasibleSubsets();
 	return answer;

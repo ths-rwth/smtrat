@@ -47,6 +47,7 @@ public:
 			m_answer_by_PARSER++;
 			break;
 		default:
+			break;
 		}
 	}
 
