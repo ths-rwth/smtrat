@@ -14,13 +14,14 @@ NewCoveringModule<Settings>::NewCoveringModule(const ModuleInput* _formula, Cond
     : Module(_formula, _conditionals, _manager) {
     SMTRAT_LOG_DEBUG("smtrat.covering", "Init New Covering Module");
     // Pass informations about the settings to the statistics
-    SMTRAT_STATISTICS_CALL(getStatistics().setVariableOrderingType(mcsat::get_name(Settings::variableOrderingStrategy)));
-    SMTRAT_STATISTICS_CALL(getStatistics().setCoveringHeuristicType(cadcells::representation::get_name(Settings::covering_heuristic)));
-    SMTRAT_STATISTICS_CALL(getStatistics().setOperatorType(cadcells::operators::get_name(Settings::op)));
-    SMTRAT_STATISTICS_CALL(getStatistics().setSamplingAlgorithm(get_name(Settings::sampling_algorithm)));
-    SMTRAT_STATISTICS_CALL(getStatistics().setIsSampleOutsideAlgorithm(get_name(Settings::is_sample_outside_algorithm)));
-    SMTRAT_STATISTICS_CALL(getStatistics().setIncremental(Settings::incremental));
-    SMTRAT_STATISTICS_CALL(getStatistics().setBacktracking(Settings::backtracking));
+    // TODO re-enable statistics
+    // SMTRAT_STATISTICS_CALL(getStatistics().setVariableOrderingType(mcsat::get_name(Settings::variableOrderingStrategy)));
+    // SMTRAT_STATISTICS_CALL(getStatistics().setCoveringHeuristicType(cadcells::representation::get_name(Settings::covering_heuristic)));
+    // SMTRAT_STATISTICS_CALL(getStatistics().setOperatorType(cadcells::operators::get_name(Settings::op)));
+    // SMTRAT_STATISTICS_CALL(getStatistics().setSamplingAlgorithm(get_name(Settings::sampling_algorithm)));
+    // SMTRAT_STATISTICS_CALL(getStatistics().setIsSampleOutsideAlgorithm(get_name(Settings::is_sample_outside_algorithm)));
+    // SMTRAT_STATISTICS_CALL(getStatistics().setIncremental(Settings::incremental));
+    // SMTRAT_STATISTICS_CALL(getStatistics().setBacktracking(Settings::backtracking));
 }
 
 template<class Settings>

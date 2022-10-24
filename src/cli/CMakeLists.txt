@@ -44,6 +44,8 @@ configure_everything()
 
 file(GLOB_RECURSE smtrat_cli_sources "*.cpp")
 
+string(REPLACE "/" "_" strategy ${SMTRAT_Strategy})
+
 add_library(smtrat-objects OBJECT ${smtrat_cli_sources})
 add_dependencies(smtrat-objects
 	carl-arith-shared
@@ -51,7 +53,7 @@ add_dependencies(smtrat-objects
 	smtrat-common-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
-	smtrat-strategy-${SMTRAT_Strategy}-shared
+	smtrat-strategy-${strategy}-shared
 )
 target_include_dirs_from(smtrat-objects "" PUBLIC
 	carl-arith-shared
@@ -59,7 +61,7 @@ target_include_dirs_from(smtrat-objects "" PUBLIC
 	smtrat-common-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
-	smtrat-strategy-${SMTRAT_Strategy}-shared
+	smtrat-strategy-${strategy}-shared
 )
 
 add_executable(smtrat-shared $<TARGET_OBJECTS:smtrat-objects>)
@@ -71,7 +73,7 @@ target_link_libraries(smtrat-shared
 	smtrat-common-shared
 	smtrat-solver-shared
 	smtrat-unsat-cores-shared
-	smtrat-strategy-${SMTRAT_Strategy}-shared
+	smtrat-strategy-${strategy}-shared
 )
 target_link_libraries(smtrat-static
 	"-static"
@@ -80,7 +82,7 @@ target_link_libraries(smtrat-static
 	smtrat-common-static
 	smtrat-solver-static
 	smtrat-unsat-cores-static
-	smtrat-strategy-${SMTRAT_Strategy}-static
+	smtrat-strategy-${strategy}-static
 )
 
 if(CLI_ENABLE_PREPROCESSOR)
