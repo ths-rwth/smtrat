@@ -18,7 +18,7 @@ namespace smtrat {
 /**
  * The default SMT-RAT strategy.
  * 
- * For QF_NRA, MCSAT is used. For all other logics (QF_LRA, QF_LIRA, QF_NIRA, QF_NIA, QF_LIA), the 
+ * For QF_NRA, MCSAT is used. For all other logics (QF_LRA, QF_LIRA, QF_NIRA, QF_NIA, QF_LIA), the classical SMT framework is employed.
  *
  * @author
  * @since
