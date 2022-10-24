@@ -12,18 +12,20 @@
 
 namespace smtrat
 {
-	class STropFormulaWBackends: public Manager
+	class STrop_FormulaWBackendsFull: public Manager
 	{
 		public:
-			STropFormulaWBackends(): Manager() {
+			STrop_FormulaWBackendsFull(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
 						addBackend<STropModule<STropSettings3>>({
 							addBackend<SATModule<SATSettings1>>({
-								addBackend<ICPModule<ICPSettings1>>({
-									addBackend<VSModule<VSSettings234>>({
-										addBackend<NewCoveringModule<NewCoveringSettings2>>({
-											addBackend<NewCADModule<NewCADSettingsFOS>>()
+								addBackend<STropModule<STropSettings1>>({
+									addBackend<ICPModule<ICPSettings1>>({
+										addBackend<VSModule<VSSettings234>>({
+											addBackend<NewCoveringModule<NewCoveringSettings2>>({
+												addBackend<NewCADModule<NewCADSettingsFOS>>()
+											})
 										})
 									})
 								})

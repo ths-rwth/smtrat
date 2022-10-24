@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class STropFormula: public Manager
+	class STrop_TransformationEQ: public Manager
 	{
 		public:
-			STropFormula(): Manager() {
+			STrop_TransformationEQ(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
-						addBackend<STropModule<STropSettings3>>()
+						addBackend<STropModule<STropSettings2>>()
 					})
 				});
 			}

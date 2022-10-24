@@ -12,10 +12,10 @@
 
 namespace smtrat
 {
-	class STropIncrementalWBackends: public Manager
+	class STrop_IncrementalWBackends: public Manager
 	{
 		public:
-			STropIncrementalWBackends(): Manager() {
+			STrop_IncrementalWBackends(): Manager() {
 				setStrategy({
 					addBackend<FPPModule<FPPSettings1>>({
 						addBackend<SATModule<SATSettings1>>({

@@ -19,11 +19,11 @@ namespace smtrat
      * @version
      *
      */
-    class STropBackendsOnly:
+    class STrop_BackendsOnly:
         public Manager
     {
         public:
-            STropBackendsOnly(): Manager()
+            STrop_BackendsOnly(): Manager()
             {
                 setStrategy(
                 {

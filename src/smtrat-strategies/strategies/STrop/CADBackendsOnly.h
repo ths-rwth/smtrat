@@ -17,11 +17,11 @@ namespace smtrat
      * @version
      *
      */
-    class STropCADBackendsOnly:
+    class STrop_CADBackendsOnly:
         public Manager
     {
         public:
-            STropCADBackendsOnly(): Manager()
+            STrop_CADBackendsOnly(): Manager()
             {
                 setStrategy(
                 {
