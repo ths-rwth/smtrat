@@ -34,16 +34,16 @@ public:
 
 	void answer_by(AnswerBy answer_by) {
 		switch (answer_by) {
-		case TRIVIAL_UNSAT:
+		case AnswerBy::TRIVIAL_UNSAT:
 			m_answer_by_TRIVIAL_UNSAT++;
 			break;
-		case METHOD:
+		case AnswerBy::METHOD:
 			m_answer_by_METHOD++;
 			break;
-		case BACKEND:
+		case AnswerBy::BACKEND:
 			m_answer_by_BACKEND++;
 			break;
-		case PARSER:
+		case AnswerBy::PARSER:
 			m_answer_by_PARSER++;
 			break;
 		default:
