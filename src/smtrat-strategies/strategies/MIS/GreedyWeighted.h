@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class MISExact: public Manager
+	class MIS_GreedyWeighted: public Manager
 	{
 		public:
-			MISExact(): Manager() {
+			MIS_GreedyWeighted(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<NewCADModule<NewCADSettingsMISExact>>()
+						addBackend<NewCADModule<NewCADSettingsMISGreedyWeighted>>()
 					})
 				});
 			}

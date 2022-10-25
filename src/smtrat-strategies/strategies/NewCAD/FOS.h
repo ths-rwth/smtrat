@@ -9,10 +9,10 @@
 
 namespace smtrat
 {
-	class NewCADFOS: public Manager
+	class NewCAD_FOS: public Manager
 	{
 		public:
-			NewCADFOS(): Manager() {
+			NewCAD_FOS(): Manager() {
 				setStrategy(
 					//addBackend<CNFerModule>(
 					//	addBackend<FPPModule<FPPSettings1>>(

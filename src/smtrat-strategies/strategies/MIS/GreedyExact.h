@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class MISHybrid: public Manager
+	class MIS_Trivial: public Manager
 	{
 		public:
-			MISHybrid(): Manager() {
+			MIS_Trivial(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<NewCADModule<NewCADSettingsMISHybrid>>()
+						addBackend<NewCADModule<NewCADSettingsMISTrivial>>()
 					})
 				});
 			}

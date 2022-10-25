@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class MISTrivial: public Manager
+	class OnlyCAD: public Manager
 	{
 		public:
-			MISTrivial(): Manager() {
+			OnlyCAD(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<NewCADModule<NewCADSettingsMISTrivial>>()
+						addBackend<NewCADModule<NewCADSettingsFOS>>()
 					})
 				});
 			}

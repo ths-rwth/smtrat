@@ -16,12 +16,12 @@ namespace smtrat
      * @version
      *
      */
-    class JustVS:
+    class OnlyVS:
         public Manager
     {
         public:
 
-        JustVS(): Manager()
+        OnlyVS(): Manager()
         {
             setStrategy(
             {

@@ -7,10 +7,10 @@
 
 namespace smtrat
 {
-	class MISGreedyPre: public Manager
+	class MIS_GreedyPre: public Manager
 	{
 		public:
-			MISGreedyPre(): Manager() {
+			MIS_GreedyPre(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
 						addBackend<NewCADModule<NewCADSettingsMISGreedyPre>>()

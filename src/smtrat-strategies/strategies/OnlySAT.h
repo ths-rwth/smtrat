@@ -1,6 +1,3 @@
-/**
- * @file PureSAT.h
- */
 #pragma once
 
 #include <smtrat-solver/Manager.h>
@@ -10,18 +7,13 @@
 namespace smtrat
 {
     /**
-     * Strategy description.
-     *
-     * @author
-     * @since
-     * @version
-     *
+     * A pure SAT solver.
      */
-    class PureSAT:
+    class OnlySAT:
         public Manager
     {
         public:
-            PureSAT(): Manager() {
+            OnlySAT(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>()
 				});

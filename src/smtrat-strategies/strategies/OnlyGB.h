@@ -7,10 +7,10 @@
 
 namespace smtrat
 {
-	class GBOnly: public Manager
+	class OnlyGB: public Manager
 	{
 		public:
-			GBOnly(): Manager() {
+			OnlyGB(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
 						addBackend<GBModule<GBSettings1>>()

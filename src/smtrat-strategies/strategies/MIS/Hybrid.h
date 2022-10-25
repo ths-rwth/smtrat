@@ -7,13 +7,13 @@
 
 namespace smtrat
 {
-	class CADOnly: public Manager
+	class MIS_Hybrid: public Manager
 	{
 		public:
-			CADOnly(): Manager() {
+			MIS_Hybrid(): Manager() {
 				setStrategy({
 					addBackend<SATModule<SATSettings1>>({
-						addBackend<NewCADModule<NewCADSettingsFOS>>()
+						addBackend<NewCADModule<NewCADSettingsMISHybrid>>()
 					})
 				});
 			}

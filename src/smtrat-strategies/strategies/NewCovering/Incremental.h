@@ -5,13 +5,13 @@
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
-class NewCovering1 : public Manager {
+class NewCovering_Incremental : public Manager {
 public:
-    NewCovering1()
+    NewCovering_Incremental()
         : Manager() {
         setStrategy(
             addBackend<SATModule<SATSettings1>>(
-                addBackend<NewCoveringModule<NewCoveringSettings1>>()));
+                addBackend<NewCoveringModule<NewCoveringSettings2>>()));
     }
 };
 } // namespace smtrat

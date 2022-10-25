@@ -19,12 +19,12 @@ namespace smtrat
      * @version     0.1
      *
      */
-    class UFStrategy:
+    class UFSolver:
         public Manager
     {
         public:
 
-        UFStrategy(): Manager()
+        UFSolver(): Manager()
         {
             setStrategy(
             {
