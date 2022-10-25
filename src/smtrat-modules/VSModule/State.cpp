@@ -7,7 +7,7 @@
 
 #include "State.h"
 //#include <smtrat-modules/Module.h>
-#include <carl-arith/interval/set_theory.h>
+#include <carl-arith/interval/SetTheory.h>
 #include <carl-arith/poly/umvpoly/functions/SturmSequence.h>
 #include <cmath>
 #include <float.h>

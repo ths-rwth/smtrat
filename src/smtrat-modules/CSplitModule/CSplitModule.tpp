@@ -8,7 +8,7 @@
 
 #include "CSplitModule.h"
 
-#include <carl-arith/interval/set_theory.h>
+#include <carl-arith/interval/SetTheory.h>
 
 namespace smtrat
 {

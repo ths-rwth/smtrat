@@ -4,7 +4,7 @@
 
 #include <carl-arith/interval/Interval.h>
 #include <carl-arith/intervalcontraction/Contractor.h>
-#include <carl-arith/interval/sampling.h>
+#include <carl-arith/interval/Sampling.h>
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-mcsat/utils/Bookkeeping.h>
 
