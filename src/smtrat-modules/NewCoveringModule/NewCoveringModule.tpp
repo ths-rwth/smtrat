@@ -227,7 +227,7 @@ std::optional<Answer> NewCoveringModule<Settings>::doIncremental() {
 }
 
 template<typename Settings>
-std::optional<Answer> NewCoveringModule<Settings>::doIncremtalAndBacktracking() {
+std::optional<Answer> NewCoveringModule<Settings>::doIncrementalAndBacktracking() {
     // This function is called when we have constraints to add and constraints to remove
     // assert(mBacktracking && mIncremental);
 
@@ -361,7 +361,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
             // INCREMENTAL AND BACKTRACKING CALL
             if (Settings::incremental && Settings::backtracking) {
 
-                auto ans = doIncremtalAndBacktracking();
+                auto ans = doIncrementalAndBacktracking();
                 // check if we can trivially deduce the answer
                 if (ans) {
                     mLastAnswer = *ans;
