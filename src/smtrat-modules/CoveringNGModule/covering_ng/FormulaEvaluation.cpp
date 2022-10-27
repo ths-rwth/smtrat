@@ -10,49 +10,90 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 void sort_by_complexity(FormulaEvaluation& f, const std::function<bool(const FormulaEvaluation&, const FormulaEvaluation&)>& compare) {
     return std::visit(overloaded{
-        [&](TRUE& c) {
-            // TODO update
+        [&](TRUE&) {
+            f.c().num_subformulas = 1;
         },
-        [&](FALSE& c) {
-            // TODO update
+        [&](FALSE&) {
+            f.c().num_subformulas = 1;
         },
         [&](NOT& c) {
             sort_by_complexity(c.subformula, compare);
-            // TODO update
+            f.c().max_level = c.subformula.c().max_level;
+            f.c().max_degree = c.subformula.c().max_degree;
+            f.c().max_total_degree = c.subformula.c().max_total_degree;
+            f.c().num_subformulas = c.subformula.c().num_subformulas + 1;
+            f.c().num_constraints = c.subformula.c().num_constraints;
+            f.c().boolean_variables = c.subformula.c().boolean_variables;
+            f.c().arithmetic_variables = c.subformula.c().arithmetic_variables;
         },
         [&](AND& c) {
+            f.c().num_subformulas = 1;
             for (auto& sf : c.subformulas) {
                 sort_by_complexity(sf, compare);
+                f.c().max_level = std::max(f.c().max_level, sf.c().max_level);
+                f.c().max_degree = std::max(f.c().max_degree, sf.c().max_degree);
+                f.c().max_total_degree = std::max(f.c().max_total_degree, sf.c().max_total_degree);
+                f.c().num_subformulas += sf.c().num_subformulas;
+                f.c().num_constraints += sf.c().num_constraints;
+                f.c().boolean_variables.insert(sf.c().boolean_variables.begin(), sf.c().boolean_variables.end());
+                f.c().arithmetic_variables.insert(sf.c().arithmetic_variables.begin(), sf.c().arithmetic_variables.end());
             }
-            // TODO sort
-            // TODO update
+            std::sort(c.subformulas.begin(), c.subformulas.end(), compare);
         },
         [&](OR& c) {
+            f.c().num_subformulas = 1;
             for (auto& sf : c.subformulas) {
                 sort_by_complexity(sf, compare);
+                f.c().max_level = std::max(f.c().max_level, sf.c().max_level);
+                f.c().max_degree = std::max(f.c().max_degree, sf.c().max_degree);
+                f.c().max_total_degree = std::max(f.c().max_total_degree, sf.c().max_total_degree);
+                f.c().num_subformulas += sf.c().num_subformulas;
+                f.c().num_constraints += sf.c().num_constraints;
+                f.c().boolean_variables.insert(sf.c().boolean_variables.begin(), sf.c().boolean_variables.end());
+                f.c().arithmetic_variables.insert(sf.c().arithmetic_variables.begin(), sf.c().arithmetic_variables.end());
             }
-            // TODO sort
-            // TODO update
+            std::sort(c.subformulas.begin(), c.subformulas.end(), compare);
         },
         [&](IFF& c) {
+            f.c().num_subformulas = 1;
             for (auto& sf : c.subformulas) {
                 sort_by_complexity(sf, compare);
+                f.c().max_level = std::max(f.c().max_level, sf.c().max_level);
+                f.c().max_degree = std::max(f.c().max_degree, sf.c().max_degree);
+                f.c().max_total_degree = std::max(f.c().max_total_degree, sf.c().max_total_degree);
+                f.c().num_subformulas += sf.c().num_subformulas;
+                f.c().num_constraints += sf.c().num_constraints;
+                f.c().boolean_variables.insert(sf.c().boolean_variables.begin(), sf.c().boolean_variables.end());
+                f.c().arithmetic_variables.insert(sf.c().arithmetic_variables.begin(), sf.c().arithmetic_variables.end());
             }
-            // TODO sort
-            // TODO update
+            std::sort(c.subformulas.begin(), c.subformulas.end(), compare);
         },
         [&](XOR& c) {
+            f.c().num_subformulas = 1;
             for (auto& sf : c.subformulas) {
                 sort_by_complexity(sf, compare);
+                f.c().max_level = std::max(f.c().max_level, sf.c().max_level);
+                f.c().max_degree = std::max(f.c().max_degree, sf.c().max_degree);
+                f.c().max_total_degree = std::max(f.c().max_total_degree, sf.c().max_total_degree);
+                f.c().num_subformulas += sf.c().num_subformulas;
+                f.c().num_constraints += sf.c().num_constraints;
+                f.c().boolean_variables.insert(sf.c().boolean_variables.begin(), sf.c().boolean_variables.end());
+                f.c().arithmetic_variables.insert(sf.c().arithmetic_variables.begin(), sf.c().arithmetic_variables.end());
             }
-            // TODO sort
-            // TODO update
+            std::sort(c.subformulas.begin(), c.subformulas.end(), compare);
         },
         [&](BOOL& c) {
-            // TODO update
+            f.c().num_subformulas = 1;
+            f.c().boolean_variables.insert(c.variable);
         },
         [&](CONSTRAINT& c) {
-            // TODO update
+            f.c().max_level = carl::level_of(c.constraint.lhs());
+            f.c().max_degree = c.constraint.lhs().degree();
+            f.c().max_total_degree = c.constraint.lhs().total_degree();
+            f.c().num_subformulas = 1;
+            f.c().num_constraints = 1;
+            auto vars = carl::arithmetic_variables(c.constraint);
+            f.c().arithmetic_variables.insert(vars.begin(), vars.end());
         },
     }, f.c().content);
 }
@@ -66,10 +107,10 @@ void sort_by_complexity(FormulaEvaluation& f, const std::function<bool(const For
 void extend_valuation(FormulaEvaluation& f, const cadcells::Assignment& ass) {
     if (f.c().valuation == Valuation::TRUE || f.c().valuation == Valuation::FALSE) return;
     return std::visit(overloaded{
-        [&](TRUE& c) {
+        [&](TRUE&) {
             f.c().valuation = Valuation::TRUE;
         },
-        [&](FALSE& c) {
+        [&](FALSE&) {
             f.c().valuation = Valuation::FALSE;
         },
         [&](NOT& c) {

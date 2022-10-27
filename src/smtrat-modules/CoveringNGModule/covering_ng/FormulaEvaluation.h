@@ -43,11 +43,11 @@ struct CONSTRAINT { carl::BasicConstraint<cadcells::Polynomial> constraint; };
 struct Content {
 	std::variant<TRUE,FALSE,NOT,AND,OR,IFF,XOR,BOOL,CONSTRAINT> content;
     Valuation valuation;
-    std::size_t max_level;
-    std::size_t max_degree;
-    std::size_t max_total_degree;
-    std::size_t num_subformulas;
-    std::size_t num_constraints;
+    std::size_t max_level = 0;
+    std::size_t max_degree = 0;
+    std::size_t max_total_degree = 0;
+    std::size_t num_subformulas = 0;
+    std::size_t num_constraints = 0;
     carl::Variables boolean_variables;
     carl::Variables arithmetic_variables;
 
