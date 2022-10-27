@@ -6,7 +6,7 @@
 
 namespace smtrat::covering_ng {
 
-carl::Variable first_unassigned_var(const cadcells::Assignment& ass, const cadcells::VariableOrdering& var_order) {
+inline carl::Variable first_unassigned_var(const cadcells::Assignment& ass, const cadcells::VariableOrdering& var_order) {
     for (const auto& var : var_order) {
         if (ass.find(var) == ass.end()) return var;
     }
@@ -14,7 +14,7 @@ carl::Variable first_unassigned_var(const cadcells::Assignment& ass, const cadce
     return carl::Variable();
 }
 
-bool is_full_sample(const cadcells::Assignment& ass, const cadcells::VariableOrdering& var_order) {
+inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::VariableOrdering& var_order) {
     for (const auto& var : var_order) {
         if (ass.find(var) == ass.end()) return false;
     }
@@ -22,7 +22,7 @@ bool is_full_sample(const cadcells::Assignment& ass, const cadcells::VariableOrd
 }
 
 template<cadcells::operators::op op>
-std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const formula::FormulaEvaluation& f, const cadcells::Assignment& ass) {
+inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const formula::FormulaEvaluation& f, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
     std::vector<cadcells::Constraint> implicant;
     formula::compute_implicant(f, implicant);
@@ -58,7 +58,7 @@ std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Pro
 }
 
 template<cadcells::operators::op op, cadcells::representation::CoveringHeuristic covering_heuristic>
-std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& intervals) {
+inline std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& intervals) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", intervals);
     std::vector<Interval<op>> derivations(intervals.begin(), intervals.end());
     auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
@@ -80,7 +80,7 @@ std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& interva
 // TODO later: optionally clear caches
 
 template<cadcells::operators::op op, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm>
-CoveringResult<op> exists(cadcells::datastructures::Projections& proj, formula::FormulaEvaluation& f, cadcells::Assignment ass) {
+inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, formula::FormulaEvaluation& f, cadcells::Assignment ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
     assert(f.c().valuation != formula::Valuation::FALSE);
     IntervalSet<op> unsat_intervals;
