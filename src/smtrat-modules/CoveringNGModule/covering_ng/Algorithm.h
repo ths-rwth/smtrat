@@ -87,20 +87,25 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
     carl::Variable variable = first_unassigned_var(ass, proj.polys().var_order());
     std::optional<cadcells::RAN> sample;
     while(sample = sampling<sampling_algorithm>::template sample_outside<op>(unsat_intervals, f), sample != std::nullopt) {
+        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
         ass.emplace(variable, *sample);
         formula::extend_valuation(f, ass);
         if (is_full_sample(ass, proj.polys().var_order()) && f.c().valuation == formula::Valuation::MULTIVARIATE) {
             // TODO later: call a SAT solver on the remaining Boolean parts
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
             return CoveringResult<op>();
         }
         CoveringResult<op> res;
         if (f.c().valuation == formula::Valuation::FALSE) {
+            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to false");
             auto new_interval = get_enclosing_interval<op>(proj, f, ass);
             if (new_interval) res = CoveringResult<op>(*new_interval);
             else res = CoveringResult<op>();
         } else if (f.c().valuation == formula::Valuation::TRUE) {
+            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to true");
             res = CoveringResult<op>(ass);
         } else {
+            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula is multivariate");
             assert(!is_full_sample(ass, proj.polys().var_order()));
             res = exists<op, covering_heuristic, sampling_algorithm>(proj, f, ass);
         }
@@ -119,7 +124,10 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
     } else {
         auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
         if (new_interval) return CoveringResult<op>(*new_interval);
-        else return CoveringResult<op>();
+        else {
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed");
+            return CoveringResult<op>();
+        }
     }
 }
 

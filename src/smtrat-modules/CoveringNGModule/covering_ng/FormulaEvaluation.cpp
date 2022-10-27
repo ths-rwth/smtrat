@@ -159,7 +159,6 @@ void extend_valuation(FormulaEvaluation& f, const cadcells::Assignment& ass) {
 }
 
 void revert_valuation(FormulaEvaluation& f, std::size_t level) {
-    if (f.c().valuation != Valuation::TRUE && f.c().valuation != Valuation::FALSE) return;
     return std::visit(overloaded{
         [&](TRUE&) {
             // do nothing

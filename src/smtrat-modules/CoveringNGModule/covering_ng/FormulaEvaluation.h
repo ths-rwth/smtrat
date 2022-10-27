@@ -11,6 +11,13 @@ struct Content;
 enum class Valuation {
     TRUE, FALSE, MULTIVARIATE, UNKNOWN 
 };
+inline std::ostream& operator<<(std::ostream& o, Valuation v) {
+    if (v == Valuation::TRUE)  o << "TRUE";
+    else if (v == Valuation::FALSE)  o << "FALSE";
+    else if (v == Valuation::MULTIVARIATE)  o << "MULTIVARIATE";
+    else o << "UNKNOWN";
+    return o;
+}
 
 class FormulaEvaluation {
 	std::unique_ptr<Content> m_content;
