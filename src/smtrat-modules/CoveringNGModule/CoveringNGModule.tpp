@@ -53,6 +53,12 @@ Answer CoveringNGModule<Settings>::checkCore() {
     covering_ng::formula::sort_by_complexity(f, covering_ng::formula::complexity::default_ordering);
     covering_ng::formula::extend_valuation(f, ass);
     if (f.c().valuation == covering_ng::formula::Valuation::FALSE) {
+        mModel.clear();
+        FormulaSetT fs;
+        for (const auto& i : rReceivedFormula()) {
+            fs.emplace(i.formula());
+        }
+        mInfeasibleSubsets.emplace_back(fs);
         return Answer::UNSAT;
     } else if (f.c().valuation == covering_ng::formula::Valuation::TRUE) {
         mModel.clear();
