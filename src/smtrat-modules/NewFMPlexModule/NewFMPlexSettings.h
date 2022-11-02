@@ -10,7 +10,7 @@
 
 namespace smtrat
 {
-	struct NewFMPlexSettings1
+	struct NewFMPlexSettings
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettings1>";
