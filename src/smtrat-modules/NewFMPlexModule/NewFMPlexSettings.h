@@ -10,6 +10,10 @@
 
 namespace smtrat
 {
+	enum EQ_Handling {
+		GAUSSIAN
+	};
+
 	struct NewFMPlexSettings
 	{
 		/// Name of the Module
@@ -17,6 +21,8 @@ namespace smtrat
 		/**
 		 * Example for a setting.
 		 */
-		static const bool example_setting = true;
+		static constexpr bool incremental = false;
+		static constexpr bool use_backtracking = false;
+		static constexpr EQ_Handling eq_handling = EQ_Handling::GAUSSIAN;
 	};
 }

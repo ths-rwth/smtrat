@@ -22,8 +22,30 @@ namespace smtrat
 			// Members.
 			// stack representing the path to the current node
 			std::vector<Level> m_history;
-			// maps for converting between constraints and their tableau index
-			
+			// map for converting between constraints and their tableau index
+			std::map<FormulaT,std::size_t> m_constraint_index;
+			// index of current level in history
+			std::size_t m_current_level;
+
+			std::size_t m_max_level;
+			// variable ordering in the tableaus
+			std::vector<carl::Variable> m_variable_order;
+
+			carl::Variables m_variables;
+			// set of remaining variables to eliminate
+			carl::Variables m_elimination_variables; 
+			// 
+			FormulasT m_constraints;
+			FormulasT m_added_constraints; // TODO: is this necessary?
+			// TODO: datastructure to keep track, which eliminated variable corresponds to which constraint
+
+			void build_unsat_core(const FormulasT& reason);
+			void backtrack(const std::size_t level, const FormulasT& reason);
+			void construct_model();
+			void choose_variable(Level& level);
+			void construct_root_level();
+			void gaussian_elimination();
+
 		public:
 			using SettingsType = Settings;
 
