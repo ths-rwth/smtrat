@@ -12,9 +12,9 @@ namespace smtrat
 		public:
 			STrop_FormulaOutputOnly(): Manager() {
 				setStrategy({
-					//addBackend<FPPModule<FPPSettings1>>({
+					addBackend<FPPModule<FPPSettings1>>({
 						addBackend<STropModule<STropSettings3OutputOnly>>()
-					//})
+					})
 				});
 			}
 	};

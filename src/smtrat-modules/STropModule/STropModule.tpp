@@ -23,7 +23,7 @@ STropModule<Settings>::STropModule(const ModuleInput* _formula, Conditionals& _c
 template<class Settings>
 bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {   
 	addReceivedSubformulaToPassedFormula(_subformula);
-	const FormulaT& formula{_subformula->formula()};
+	const FormulaT& formula = _subformula->formula();
 	if (formula.type() == carl::FormulaType::FALSE) {
 		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
 		mInfeasibleSubsets.push_back({formula});
@@ -285,7 +285,24 @@ Answer STropModule<Settings>::checkCore() {
 	} else if constexpr(Settings::mode == Mode::TRANSFORM_EQUATION) {
 		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
-		assert(negationFreeFormula.type() != carl::FormulaType::FALSE);
+		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			std::set<FormulaT> infset;
+			for (const auto& f : rReceivedFormula()) {
+				infset.insert(f.formula());
+			}
+			mInfeasibleSubsets.push_back(infset);
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+			}
+			return Answer::UNSAT;
+		} else if (negationFreeFormula.type() == carl::FormulaType::TRUE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+			}
+			return Answer::SAT;
+		}
 		FormulaT equation = subtropical::transform_to_equation(negationFreeFormula);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(equation.type() != carl::FormulaType::FALSE) {
@@ -319,7 +336,24 @@ Answer STropModule<Settings>::checkCore() {
 		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
 		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
-		assert(negationFreeFormula.type() != carl::FormulaType::FALSE);
+		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			std::set<FormulaT> infset;
+			for (const auto& f : rReceivedFormula()) {
+				infset.insert(f.formula());
+			}
+			mInfeasibleSubsets.push_back(infset);
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+			}
+			return Answer::UNSAT;
+		} else if (negationFreeFormula.type() == carl::FormulaType::TRUE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+			}
+			return Answer::SAT;
+		}
 		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
