@@ -22,6 +22,8 @@ struct STropSettings1 {
 	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
 	/// incremental mode for SMT solving
 	static constexpr Mode mode = Mode::INCREMENTAL_CONSTRAINTS;
+
+	static constexpr bool output_only = false;
 };
 
 /* Transform formula into equivalent equation
@@ -36,6 +38,8 @@ struct STropSettings2 {
 	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
 	/// transformation of the formula to an equation
 	static constexpr Mode mode = Mode::TRANSFORM_EQUATION;
+
+	static constexpr bool output_only = false;
 };
 
 /// Transform to NNF then replace each constraint with its linear formula (equations become FALSE). Then let LRA solver solve.
@@ -46,5 +50,18 @@ struct STropSettings3 {
 	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
 	static constexpr Mode mode = Mode::TRANSFORM_FORMULA;
+
+	static constexpr bool output_only = false;
+};
+
+struct STropSettings3OutputOnly {
+	/// Name of the Module
+	static constexpr auto moduleName = "STropModule<STropSettings3>";
+	/// Type of linear separating hyperplane to search for
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	/// transformation of the formula to a linear formula, preserving the Boolean structure
+	static constexpr Mode mode = Mode::TRANSFORM_FORMULA;
+
+	static constexpr bool output_only = true;
 };
 } // namespace smtrat
