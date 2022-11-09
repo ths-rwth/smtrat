@@ -152,7 +152,7 @@ void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) 
 
 template<class Settings>
 void STropModule<Settings>::updateModel() const {
-	if(Settings::mode == Mode::TRANSFORM_EQUATION) {
+	if(Settings::mode == Mode::TRANSFORM_EQUATION || mSolverState != Answer::SAT) {
 		return;
 	}
 	if (!mModelComputed) {
@@ -172,7 +172,7 @@ template<class Settings>
 Answer STropModule<Settings>::checkCore() {
 	SMTRAT_TIME_START(theoryStart);
 	// Report unsatisfiability if the already found conflicts are still unresolved
-	if (!mInfeasibleSubsets.empty()){
+	if (!mInfeasibleSubsets.empty()) {
 		SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT));
 		return Answer::UNSAT;
