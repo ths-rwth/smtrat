@@ -2,25 +2,46 @@
 #include "onecell.h"
 #include <carl-formula/formula/functions/Negations.h>
 
+#include <carl-arith/ran/Conversion.h>
+#include <carl-arith/poly/Conversion.h>
+#include <carl-arith/constraint/Conversion.h>
+#include <carl-arith/extended/Conversion.h>
+
+
 namespace smtrat::mcsat::onecell {
+
+// using Settings = LDBSettings; // current default
+// using Settings = BCSettings;
+// using Settings = BCFilteredSettings;
+// using Settings = BCFilteredAllSettings;
+// using Settings = BCFilteredBoundsSettings;
+// using Settings = BCFilteredSamplesSettings;
+// using Settings = BCFilteredAllSelectiveSettings;
+using Settings = LDBFilteredAllSelectiveSettings;
+// using Settings = BCApproximationSettings;
+
+// TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
 std::optional<mcsat::Explanation>
 Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
     #ifdef SMTRAT_DEVOPTION_Statistics
         mStatistics.explanationCalled();
     #endif
+
+    cadcells::VariableOrdering vars = trail.assignedVariables();
+    vars.push_back(var);
+
+    cadcells::Polynomial::ContextType context(vars);
+
     cadcells::Assignment ass;
     for (const auto& [key, value] : trail.model()) {
         if (value.isRAN()) {
-            ass.emplace(key.asVariable(), value.asRAN());
+            ass.emplace(key.asVariable(), carl::convert<cadcells::RAN>(value.asRAN()));
         } else {
             assert(value.isRational());
             ass.emplace(key.asVariable(), cadcells::RAN(value.asRational()));
         }
-        
     }
-    cadcells::VariableOrdering vars = trail.assignedVariables();
-    vars.push_back(var);
 
     carl::carlVariables reason_vars;
     for (const auto& r : reason) carl::variables(r,reason_vars);
@@ -34,13 +55,19 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
     std::vector<cadcells::Atom> constr;
     for (const auto& r : reason) {
         if (r.type() == carl::FormulaType::CONSTRAINT) {
-            constr.emplace_back(cadcells::Constraint(r.constraint().lhs(),r.constraint().relation()));
+            constr.emplace_back(carl::convert<cadcells::Polynomial>(context, r.constraint().constr()));
         } else if (r.type() == carl::FormulaType::VARCOMPARE) {
-            constr.emplace_back(cadcells::VariableComparison(r.variable_comparison()));
+            constr.emplace_back(carl::convert<cadcells::Polynomial>(context, r.variable_comparison()));
         }
     }
     SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << constr << " with " << vars << " and " << ass);
-    auto result = onecell(constr, vars, ass); 
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        SMTRAT_TIME_START(start);
+    #endif
+    auto result = onecell<Settings>(constr, context, ass);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        SMTRAT_TIME_FINISH(mStatistics.timer(), start);
+    #endif
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");
@@ -57,9 +84,9 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         }
         for (const auto& f : *result) {
             if (std::holds_alternative<cadcells::Constraint>(f)) {
-                expl.push_back(FormulaT(ConstraintT(std::get<cadcells::Constraint>(f))).negated());
+                expl.push_back(FormulaT(ConstraintT(carl::convert<Poly>(std::get<cadcells::Constraint>(f)))).negated());
             } else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
-                expl.push_back(FormulaT(std::get<cadcells::VariableComparison>(f)).negated());
+                expl.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))).negated());
             } else {
                 assert(false);
             }

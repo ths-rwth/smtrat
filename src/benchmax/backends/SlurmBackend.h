@@ -12,6 +12,7 @@
 #include <future>
 #include <mutex>
 #include <regex>
+#include <thread>
 
 #include "../utils/parsing.h"
 namespace benchmax {

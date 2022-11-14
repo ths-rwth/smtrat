@@ -2195,7 +2195,6 @@ namespace smtrat
     template<class Settings>
     bool ICPModule<Settings>::tryTestPoints()
     {
-        bool testSuccessful = true;
         // find a point within the intervals
         carl::carlVariables originalRealVariables(carl::variable_type_filter::real());
         rReceivedFormula().gatherVariables(originalRealVariables);
@@ -2277,30 +2276,26 @@ namespace smtrat
             #endif
             mFoundSolution.emplace(iter->first, value);
         }
-        for( const auto& rf : rReceivedFormula() )
-        {
+        bool has_unknown = false;
+        bool has_conflict = false;
+        for (const auto& rf : rReceivedFormula()) {
             assert( rf.formula().type() == carl::FormulaType::CONSTRAINT );
             unsigned isSatisfied = carl::satisfied_by(rf.formula().constraint(), mFoundSolution);
-			if (isSatisfied == 2) {
-				return false;
-			}
-            assert( isSatisfied != 2 );
-            if( isSatisfied == 0 )
-            {
-                testSuccessful = false;
-                if( boxContainsOnlyOneSolution )
-                {
+			if (isSatisfied == 2) has_unknown = true;
+            else if (isSatisfied == 0) {
+                has_conflict = true;
+                if (boxContainsOnlyOneSolution) {
                     // TODO: create infeasible subset and return UNSAT in checkCore
                 }
                 break;
             }
         }
-        if( !testSuccessful )
+        if(has_conflict)
             mFoundSolution.clear();
         #ifdef ICP_MODULE_DEBUG_0
-        if( testSuccessful ) std::cout << "  Success!" << std::endl << std::endl;
+        if( !has_conflict ) std::cout << "  Success!" << std::endl << std::endl;
         #endif
-        return testSuccessful;
+        return !has_unknown && !has_conflict;
     }
 
     template<class Settings>

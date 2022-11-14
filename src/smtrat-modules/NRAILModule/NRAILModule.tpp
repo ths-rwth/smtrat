@@ -636,7 +636,7 @@ namespace smtrat
             return unsatisfiedFormulas;
         }
 
-        int unsatisfiedFormulasSize = unsatisfiedFormulas. size();
+        int unsatisfiedFormulasSize = (int)unsatisfiedFormulas.size();
 
         if (formulaSelectionStrategy == UNSATFormulaSelectionStrategy::RANDOM) {
             std::vector<FormulaT> randomlySelectedFormulas;

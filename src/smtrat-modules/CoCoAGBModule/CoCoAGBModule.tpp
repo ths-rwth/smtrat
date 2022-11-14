@@ -8,7 +8,7 @@
 
 #include "CoCoAGBModule.h"
 
-#include <carl-arith/converter/CoCoAAdaptor.h>
+#include <carl-arith/poly/umvpoly/CoCoAAdaptor.h>
 
 #include <carl-common/config.h>
 

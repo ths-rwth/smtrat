@@ -8,16 +8,14 @@
  */
 namespace smtrat::cadcells::representation {
     enum CellHeuristic {
-        BIGGEST_CELL, CHAIN_EQ, LOWEST_DEGREE_BARRIERS, LOWEST_DEGREE_BARRIERS_EQ
+        BIGGEST_CELL, CHAIN_EQ, LOWEST_DEGREE_BARRIERS, LOWEST_DEGREE_BARRIERS_EQ, BIGGEST_CELL_EW, LOWEST_DEGREE_BARRIERS_EW, BIGGEST_CELL_APPROXIMATION
     };
+    static const char * CellHeuristicStrings[] = { "BIGGEST_CELL", "CHAIN_EQ", "LOWEST_DEGREE_BARRIERS", "LOWEST_DEGREE_BARRIERS_EQ", "BIGGEST_CELL_EW", "LOWEST_DEGREE_BARRIERS_EW" };
 
     enum CoveringHeuristic {
-        DEFAULT_COVERING, CHAIN_COVERING
+        BIGGEST_CELL_COVERING, CHAIN_COVERING, BIGGEST_CELL_COVERING_EW
     };
-
-    enum DelineationHeuristic {
-        CHAIN
-    };
+    static const char * CoveringHeuristicStrings[] = { "BIGGEST_CELL_COVERING", "CHAIN_COVERING", "BIGGEST_CELL_COVERING_EW" };
 
     /**
      * Note: If connected(i) holds, then the indexed root ordering must contain an ordering between the interval bounds. 
@@ -34,50 +32,15 @@ namespace smtrat::cadcells::representation {
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders);
     };
 
-    template<DelineationHeuristic H>
-    struct delineation {
-        template<typename T>
-        static std::optional<datastructures::DelineationRepresentation<T>> compute(datastructures::DelineatedDerivationRef<T>& der);
-    };
-
-    inline std::string get_name(CellHeuristic heuristic){
-        switch (heuristic) {
-            case CellHeuristic::BIGGEST_CELL: return "BIGGEST_CELL";
-            case CellHeuristic::CHAIN_EQ: return "CHAIN_EQ";
-            case CellHeuristic::LOWEST_DEGREE_BARRIERS: return "LOWEST_DEGREE_BARRIERS";
-            case CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ: return "LOWEST_DEGREE_BARRIERS_EQ";
-            default: return "UNKNOWN";
-        }
-    }
-
-    inline std::string get_name(CoveringHeuristic heuristic){
-        switch (heuristic) {
-            case CoveringHeuristic::DEFAULT_COVERING: return "DEFAULT_COVERING";
-            case CoveringHeuristic::CHAIN_COVERING: return "CHAIN_COVERING";
-            default: return "UNKNOWN";
-        }
-    }
-
-    inline std::string get_name(DelineationHeuristic heuristic){
-        switch (heuristic) {
-            case DelineationHeuristic::CHAIN: return "CHAIN";
-            default: return "UNKNOWN";
-        }
-    }
-
     inline std::ostream& operator<<(std::ostream& os, CellHeuristic heuristic){
-        return os << get_name(heuristic);
+        return os << CellHeuristicStrings[heuristic];
     }
     inline std::ostream& operator<<(std::ostream& os, CoveringHeuristic heuristic){
-        return os << get_name(heuristic);
-    }
-    inline std::ostream& operator<<(std::ostream& os, DelineationHeuristic heuristic){
-        return os << get_name(heuristic);
+        return os << CoveringHeuristicStrings[heuristic];
     }
 }
 
 #include "util.h"
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
-#include "heuristics_delineation.h"
-
+#include "heuristics_approximation.h"

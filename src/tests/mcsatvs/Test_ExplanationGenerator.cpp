@@ -137,7 +137,7 @@ BOOST_AUTO_TEST_CASE(Test_generateZeros_VarComp_RAN_simple) {
 	carl::Variable r = carl::fresh_real_variable("r");
 	carl::UnivariatePolynomial<Rational> pol = carl::to_univariate_polynomial(Poly(r)*r-Rational(2));
 	carl::Interval<Rational> interval(Rational(1), carl::BoundType::STRICT, Rational(2), carl::BoundType::STRICT);
-	auto ran = carl::RealAlgebraicNumber<Rational>::create_safe(pol, interval);
+	auto ran = RAN::create_safe(pol, interval);
 
 	bool result = generateZeros(ran, [&](const SqrtEx&& sqrtExpression, const ConstraintsT&& sideConditions) {
 		// sqrt(2) = 0+1*sqrt(8)/2
@@ -321,7 +321,7 @@ BOOST_AUTO_TEST_CASE(Test_substitute_varComp_varNotContained) {
 	carl::Variable r = carl::fresh_real_variable("r");
 	carl::UnivariatePolynomial<Rational> pol = carl::to_univariate_polynomial(Poly(r)*r-Rational(2));
 	carl::Interval<Rational> interval(Rational(1), carl::BoundType::STRICT, Rational(2), carl::BoundType::STRICT);
-	auto ran = carl::RealAlgebraicNumber<Rational>::create_safe(pol, interval);
+	auto ran = RAN::create_safe(pol, interval);
 	
 	::vs::Substitution substitution(y, SqrtEx(Poly(Rational(1))), ::vs::Substitution::Type::NORMAL, carl::PointerSet<::vs::Condition>(), ConstraintsT());
 	VariableComparisonT varcomp(x, ran, carl::Relation::EQ);

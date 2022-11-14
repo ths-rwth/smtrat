@@ -5,14 +5,14 @@
  */
 #pragma once
 
-#include "Helper.h"
-#include "NewCoveringModule.h"
-#include "NewCoveringSettings.h"
-#include "NewCoveringStatistics.h"
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
 #include <smtrat-cadcells/operators/operator_mccallum.h>
 #include <smtrat-cadcells/representation/heuristics.h>
+#include "Helper.h"
+#include "NewCoveringModule.h"
+#include "NewCoveringSettings.h"
+#include "NewCoveringStatistics.h"
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {
@@ -58,7 +58,7 @@ private:
     std::optional<datastructures::CoveringRepresentation<PropSet>> mCovering;
 
     // sample point outside of the covering if the covering is not a full covering
-    RAN mSamplePoint;
+    cadcells::RAN mSamplePoint;
 
 public:
     // Constructor
@@ -137,7 +137,6 @@ public:
         std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end());
         mCovering = representation::covering<covering_heuristic>::compute(derivationsVector);
         if (!mCovering.has_value()) {
-            SMTRAT_LOG_DEBUG("smtrat.covering", "Covering with " << representation::get_name(covering_heuristic) << " failed");
             mCoveringStatus = CoveringStatus::failed;
             SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
             return true;
@@ -148,7 +147,7 @@ public:
     }
 
     // Get the current sample point which is outside of the current covering
-    const RAN& getSampleOutside() const {
+    const cadcells::RAN& getSampleOutside() const {
         assert(isPartialCovering());
         return mSamplePoint;
     }
@@ -225,7 +224,7 @@ public:
     /*
      * @brief Remove all derivations that were created using the given constraint, if a covering was computed before, and the derivation was used, the covering is invalidated
      */
-    void removeConstraint(const ConstraintT& constraint, const std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& derivationConstraints) {
+    void removeConstraint(const cadcells::Constraint& constraint, const std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<cadcells::Constraint>>& derivationConstraints) {
         SMTRAT_LOG_DEBUG("smtrat.covering", "Removing constraint: " << constraint);
         if (mCovering.has_value()) {
             auto usedDerivations = mCovering.value().sampled_derivations();
@@ -257,14 +256,14 @@ public:
      * @param derivationConstraints A map of derivations to constraints which created it
      * This can only be used for infeasible subset -> so assert that the covering is full and use the last full covering
      */
-    std::vector<ConstraintT> getConstraintsOfCovering(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& mDerivationToConstraint) {
+    std::vector<cadcells::Constraint> getConstraintsOfCovering(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<cadcells::Constraint>>& mDerivationToConstraint) {
         assert(isFullCovering() && mCovering.has_value());
 
-        std::vector<ConstraintT> constraints;
+        std::vector<cadcells::Constraint> constraints;
         assert(mCovering.has_value());
         for (const auto& derivation : mCovering.value().sampled_derivations()) {
             assert(mDerivationToConstraint.find(derivation) != mDerivationToConstraint.end());
-            std::vector<ConstraintT> new_constraints = mDerivationToConstraint[derivation];
+            std::vector<cadcells::Constraint> new_constraints = mDerivationToConstraint[derivation];
             constraints.insert(constraints.end(), new_constraints.begin(), new_constraints.end());
         }
 
@@ -282,7 +281,7 @@ public:
      * @param derivationConstraints A map of derivations to constraints which created it
      * @note: This represents Section 4.6 in the paper https://arxiv.org/pdf/2003.05633.pdf
      */
-    std::optional<datastructures::SampledDerivationRef<PropSet>> constructDerivation(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<ConstraintT>>& mDerivationToConstraint) {
+    std::optional<datastructures::SampledDerivationRef<PropSet>> constructDerivation(std::map<datastructures::SampledDerivationRef<PropSet>, std::vector<cadcells::Constraint>>& mDerivationToConstraint) {
         SMTRAT_TIME_START(startTime);
 
         assert(mCovering.has_value());
@@ -304,7 +303,7 @@ public:
             return std::nullopt;
         }
         operators::project_basic_properties<op>(*new_deriv->delineated());
-        operators::delineate_properties<op>(*new_deriv->delineated());
+        operators::delineate_properties<op>(*new_deriv);
         new_deriv->delineate_cell();
         SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());
 

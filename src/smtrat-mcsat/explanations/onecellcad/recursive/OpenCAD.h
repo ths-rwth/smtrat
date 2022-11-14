@@ -18,13 +18,13 @@
 #include <unordered_map>
 #include <vector>
 
-#include <carl-arith/converter/CoCoAAdaptor.h>
+#include <carl-arith/poly/umvpoly/CoCoAAdaptor.h>
 #include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl-arith/poly/umvpoly/functions/Resultant.h>
 #include <carl-arith/poly/umvpoly/UnivariatePolynomial.h>
 #include <carl-arith/core/Variable.h>
 #include <carl-arith/core/VariablePool.h>
-#include <carl-arith/ran/real_roots.h>
+
 #include <carl-arith/ran/ran.h>
 #include <carl-arith/ran/RealAlgebraicPoint.h>
 
@@ -37,7 +37,6 @@ namespace recursive {
 using UniPoly = carl::UnivariatePolynomial<smtrat::Rational>;
 using MultiPoly = carl::MultivariatePolynomial<smtrat::Rational>;
 using MultiCoeffUniPoly = carl::UnivariatePolynomial<MultiPoly>;
-using RAN = carl::RealAlgebraicNumber<smtrat::Rational>;
 using RANPoint = RealAlgebraicPoint<smtrat::Rational>;
 using RANMap = std::map<carl::Variable, RAN>;
 

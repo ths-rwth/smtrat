@@ -13,13 +13,13 @@ cache:
 
 variables:
   COMPILE_JOBS: 6
-  SMTRAT_STRATEGY: "AllModulesStrategy" #Change to your need!
+  SMTRAT_STRATEGY: "SMTCOMP" #Change to your need!
 
 
 stages:
   - build-gcc
   - build-clang
-  #- test #Todo
+  - test 
   - documentation
 
 
@@ -29,11 +29,17 @@ build-gcc12:
      - export CC=/usr/bin/gcc-12 && export CXX=/usr/bin/g++-12
      - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
      - TASK=parallel MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+#  artifacts: 
+#    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+#    paths: 
+#      - build/
+#      - cmake/
+#      - src/
 
-build-gcc9:
+build-gcc11:
   stage: build-gcc
   script:
-     - export CC=/usr/bin/gcc-98 && export CXX=/usr/bin/g++-9
+     - export CC=/usr/bin/gcc-11 && export CXX=/usr/bin/g++-11
      - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
      - TASK=parallel MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
   only:
@@ -45,15 +51,33 @@ build-clang14:
      - export CC=/usr/bin/clang-14 && export CXX=/usr/bin/clang++-14
      - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
      - TASK=parallel MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+#  artifacts: 
+#    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+#    paths: 
+#      - build/
+#      - cmake/
+#      - src/
 
-build-clang11:
+build-clang13:
   stage: build-clang
   script:
-     - export CC=/usr/bin/clang-11 && export CXX=/usr/bin/clang++-11
+     - export CC=/usr/bin/clang-13 && export CXX=/usr/bin/clang++-13
      - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
      - TASK=parallel MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
   only:
      - development
+
+test-clang: 
+  dependencies: [build-clang14]
+  stage: test
+  script: 
+    - cd build && make test
+
+test-gcc: 
+  dependencies: [build-gcc12]
+  stage: test
+  script: 
+    - cd build && make test 
 
 docs:
   stage: documentation

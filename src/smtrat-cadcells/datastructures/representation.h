@@ -92,24 +92,4 @@ std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data
     return os;
 }
 
-/**
- * Represents a delineation.
- */
-template<typename P>
-struct DelineationRepresentation {
-    /// An ordering of the roots that represents the delineation.
-    IndexedRootOrdering ordering;
-    /// Derivation.
-    DelineatedDerivationRef<P> derivation;
-
-    DelineationRepresentation(DelineatedDerivationRef<P> deriv)
-        : derivation(deriv) {}
-};
-
-template<typename P>
-std::ostream& operator<<(std::ostream& os, const DelineationRepresentation<P>& data) {
-    os << "(ordering: " << data.ordering << "; derivation: " << &data.derivation << ")";
-    return os;
-}
-
 } // namespace smtrat::cadcells::datastructures

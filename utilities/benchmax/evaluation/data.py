@@ -3,13 +3,17 @@ import pandas as pd
 def get_solvers(df):
     return df.columns.get_level_values(0).unique()
 
-def virtual_best(df, solvers, name, statistics=[]):
+def virtual_best(df, solvers, name, statistics=[], ignore_unknowns = True):
     data = []
     for _, row in df.iterrows():
         s = solvers[0]
         for solver in solvers:
-            if row[(solver,'runtime')] < row[(s,'runtime')]:
-                s = solver
+            if ignore_unknowns:
+                if row[(solver,'runtime')] < row[(s,'runtime')]:
+                    s = solver
+            else:
+                if (row[(solver,'answer')] != 'unknown' and row[(s,'answer')]=='unknown') or (row[(solver,'answer')] == row[(s,'answer')] and row[(solver,'runtime')] < row[(s,'runtime')]):
+                    s = solver
         new_row = []
         new_row.append(row[(s,'answer')])
         new_row.append(row[(s,'runtime')])

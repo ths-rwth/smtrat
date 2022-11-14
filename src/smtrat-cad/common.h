@@ -9,9 +9,9 @@ namespace smtrat {
 namespace cad {
 	using carl::operator<<;
 
+	using RAN = smtrat::RAN;
 	using ConstraintSelection = carl::Bitset;
 	using OptionalID = std::optional<std::size_t>;
-	using RAN = carl::RealAlgebraicNumber<Rational>;
 	using Assignment = std::map<carl::Variable, RAN>;
 	using SampleLiftedWith = carl::Bitset;
 	using SampleRootOf = carl::Bitset;

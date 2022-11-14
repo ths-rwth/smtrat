@@ -1,7 +1,6 @@
 #pragma once
 
 #include <vector>
-#include "../helper.h"
 
 namespace smtrat::cadcells::algorithms {
 
@@ -13,12 +12,16 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto current_var = vars[sample.size()];
     auto tmp_sample = sample;
 
-    assert(cadcells::helper::level_of(vars, c.lhs()) == sample.size()+1);
+    assert(carl::level_of(c.lhs()) == sample.size()+1);
 
     auto deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size() + 1).delineated_ref();
 
-    deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
-    operators::project_basic_properties<op>(*deriv);
+    if (carl::is_strict(c.relation())) {
+        deriv->insert(operators::properties::poly_semi_sgn_inv{ proj.polys()(c.lhs()) });
+    } else {
+        deriv->insert(operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
+    }
+    if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
     operators::delineate_properties<op>(*deriv);
 
     std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> results;
@@ -33,7 +36,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             assert(results.back()->cell().upper_unbounded());
         }
     } else {
-        if (carl::is_strict(c.relation())) { // TODO later: allow weak bounds for SampledDerivations
+        if (carl::is_strict(c.relation())) {
+            /* This block is needed if
+            * the operator does not support weak_sgn_inv
+            * a strict constraint is only violated at a single point
+            */
             for (auto root = roots.begin(); root != roots.end(); root++) {
                 results.emplace_back(datastructures::make_sampled_derivation(deriv, root->first));
                 SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
@@ -87,16 +94,17 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto tmp_sample = sample;
 
     assert(c.var() == current_var);
-    assert(std::holds_alternative<RAN>(c.value()) || cadcells::helper::level_of(vars, std::get<MultivariateRoot>(c.value()).poly()) == sample.size() + 1);
+    assert(std::holds_alternative<RAN>(c.value()) || carl::level_of(std::get<MultivariateRoot>(c.value()).poly()) == sample.size() + 1);
 
     auto deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size() + 1).delineated_ref();
 
     auto value_result = [&]() -> std::variant<std::pair<datastructures::IndexedRoot, RAN>, datastructures::PolyRef> {
         if (std::holds_alternative<RAN>(c.value())) {
+            assert(false);
             RAN root = std::get<RAN>(c.value());
             auto p = carl::defining_polynomial(c);
             auto poly = proj.polys()(p);
-            auto poly_roots = proj.real_roots(sample, poly); // TODO sample is irrelevant here, but needed for the correct level...
+            auto poly_roots = proj.real_roots(sample, poly);
             size_t index = (size_t)std::distance(poly_roots.begin(), std::find(poly_roots.begin(), poly_roots.end(), root)) + 1;
             datastructures::IndexedRoot iroot(poly, index);
             return std::make_pair(iroot, root);
@@ -120,14 +128,22 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         datastructures::IndexedRoot& iroot = std::get<std::pair<datastructures::IndexedRoot, RAN>>(value_result).first;
         RAN& root = std::get<std::pair<datastructures::IndexedRoot, RAN>>(value_result).second;
 
-        deriv->insert(operators::properties::poly_pdel{ iroot.poly });
-        deriv->insert(operators::properties::root_well_def{ iroot });
-        deriv->delin().add_root(root, iroot);
-
         auto relation = c.negated() ? carl::inverse(c.relation()) : c.relation();
         bool point = relation == carl::Relation::GREATER || relation == carl::Relation::LESS || relation == carl::Relation::NEQ;
         bool below = relation == carl::Relation::GREATER || relation == carl::Relation::GEQ || relation == carl::Relation::EQ;
         bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
+
+        deriv->insert(operators::properties::poly_pdel{ iroot.poly });
+        //deriv->insert(operators::properties::root_well_def{ iroot });
+        deriv->insert(operators::properties::poly_sgn_inv{ proj.ldcf(iroot.poly) });
+        // if (carl::is_strict(relation)) {
+        //     deriv->insert(operators::properties::root_semi_inv{ iroot });
+        // } else {
+        //     deriv->insert(operators::properties::root_inv{ iroot });
+        // }
+        // if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
+        // operators::delineate_properties<op>(*deriv);
+        deriv->delin().add_root(root, datastructures::TaggedIndexedRoot{iroot, (op == cadcells::operators::op::mccallum_filtered) && carl::is_strict(relation)});
 
         if (point) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, root));
@@ -144,9 +160,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     } else {
         datastructures::PolyRef& poly = std::get<datastructures::PolyRef>(value_result);
         if (proj.is_nullified(sample, poly)) {
+            deriv->insert(operators::properties::poly_irreducible_sgn_inv{ poly });
             deriv->delin().add_poly_nullified(poly);
         } else if (proj.num_roots(sample, poly) == 0) {
-            deriv->insert(operators::properties::poly_pdel{ poly });
+            // deriv->insert(operators::properties::poly_pdel{ poly });
+            deriv->insert(operators::properties::poly_irreducible_sgn_inv{ poly });
             deriv->delin().add_poly_nonzero(poly);
         } else {
             assert(proj.num_roots(sample, poly) > 0 && proj.num_roots(sample, poly) < std::get<MultivariateRoot>(c.value()).k());

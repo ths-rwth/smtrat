@@ -3153,12 +3153,22 @@ namespace smtrat
         }
         SMTRAT_LOG_TRACE("smtrat.sat", "Retrieving next variable from the heap");
         Lit next = var_scheduler.pop();
+        if (Settings::mc_sat) {
+            std::vector<Minisat::Var> vars;
+            while(mMCSAT.hasUnassignedDep(Minisat::var(next))) {
+                SMTRAT_LOG_TRACE("smtrat.sat", "Variable " <<  Minisat::var(next) << " has undecided dependency");
+                vars.push_back(Minisat::var(next));
+                assert(!var_scheduler.empty());
+                next = var_scheduler.pop();
+            }
+            for (auto it = vars.rbegin(); it != vars.rend(); it++) {
+                var_scheduler.insert(*it);
+            }
+        }
         assert(next == lit_Undef || (decision[Minisat::var(next)] && bool_value(next) == l_Undef));
         assert(!Settings::mc_sat || next == lit_Undef || mBooleanConstraintMap[Minisat::var(next)].first == nullptr || mBooleanConstraintMap[Minisat::var(next)].first->reabstraction.type() != carl::FormulaType::VARASSIGN);
         SMTRAT_LOG_TRACE("smtrat.sat", "Got " << next);
         return next;
-        assert(false);
-        return lit_Undef;
     }
     
     template<class Settings>

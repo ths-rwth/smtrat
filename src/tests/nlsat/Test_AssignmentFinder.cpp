@@ -104,7 +104,7 @@ BOOST_AUTO_TEST_CASE(CoverComputation)
 	FormulaT f(p, carl::Relation::LESS);
 	
 	std::cout << "Constructing RAN on " << q << " / " << i << std::endl;
-	carl::RealAlgebraicNumber<Rational> ran(q, i);
+	RAN ran(q, i);
 	std::cout << "-> " << ran << std::endl;
 	
 	Model model;

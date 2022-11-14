@@ -7,467 +7,403 @@
  */
 
 #include "STropModule.h"
+#include <carl-formula/formula/functions/NNF.h>
 
-namespace smtrat
-{
-	template<class Settings>
-	STropModule<Settings>::STropModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
-		: Module(_formula, _conditionals, _manager)
-		, mMoments()
-		, mSeparators()
-		, mChangedSeparators()
-		, mRelationalConflicts(0)
-		, mLinearizationConflicts()
-		, mCheckedWithBackends(false)
-	{}
-	
-	template<class Settings>
-	bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula)
-	{   
-		addReceivedSubformulaToPassedFormula(_subformula);
-		const FormulaT& formula{_subformula->formula()};
-		if (formula.type() == carl::FormulaType::FALSE)
-			mInfeasibleSubsets.push_back({formula});
-		else if (formula.type() == carl::FormulaType::CONSTRAINT)
-		{
-			/// Normalize the left hand side of the constraint and turn the relation accordingly
-			const ConstraintT& constraint{formula.constraint()};
-			const Poly normalization{constraint.lhs().normalize()};
-			carl::Relation relation{constraint.relation()};
-			if (carl::is_negative(constraint.lhs().lcoeff()))
-				relation = carl::turn_around(relation);
-			
-			/// Store the normalized constraint and mark the separator object as changed
-			Separator& separator{mSeparators.emplace(normalization, normalization).first->second};
-			separator.mRelations.insert(relation);
-			mChangedSeparators.insert(&separator);
-			
-			/// Check if the asserted constraint prohibits the application of this method
-			if (relation == carl::Relation::EQ
-				|| (relation == carl::Relation::LEQ
-					&& separator.mRelations.count(carl::Relation::GEQ))
-				|| (relation == carl::Relation::GEQ
-					&& separator.mRelations.count(carl::Relation::LEQ)))
-				++mRelationalConflicts;
-			
-			/// Check if the asserted relation trivially conflicts with other asserted relations
-			switch (relation)
-			{
-				case carl::Relation::EQ:
-					if (separator.mRelations.count(carl::Relation::NEQ))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::EQ),
-							FormulaT(normalization, carl::Relation::NEQ)
-						});
-					if (separator.mRelations.count(carl::Relation::LESS))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::EQ),
-							FormulaT(normalization, carl::Relation::LESS)
-						});
-					if (separator.mRelations.count(carl::Relation::GREATER))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::EQ),
-							FormulaT(normalization, carl::Relation::GREATER)
-						});
-					break;
-				case carl::Relation::NEQ:
-					if (separator.mRelations.count(carl::Relation::EQ))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::NEQ),
-							FormulaT(normalization, carl::Relation::EQ)
-						});
-					break;
-				case carl::Relation::LESS:
-					if (separator.mRelations.count(carl::Relation::EQ))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::LESS),
-							FormulaT(normalization, carl::Relation::EQ)
-						});
-					if (separator.mRelations.count(carl::Relation::GEQ))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::LESS),
-							FormulaT(normalization, carl::Relation::GEQ)
-						});
-					[[fallthrough]];
-				case carl::Relation::LEQ:
-					if (separator.mRelations.count(carl::Relation::GREATER))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, relation),
-							FormulaT(normalization, carl::Relation::GREATER)
-						});
-					break;
-				case carl::Relation::GREATER:
-					if (separator.mRelations.count(carl::Relation::EQ))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::GREATER),
-							FormulaT(normalization, carl::Relation::EQ)
-						});
-					if (separator.mRelations.count(carl::Relation::LEQ))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, carl::Relation::GREATER),
-							FormulaT(normalization, carl::Relation::LEQ)
-						});
-					[[fallthrough]];
-				case carl::Relation::GEQ:
-					if (separator.mRelations.count(carl::Relation::LESS))
-						mInfeasibleSubsets.push_back({
-							FormulaT(normalization, relation),
-							FormulaT(normalization, carl::Relation::LESS)
-						});
-					break;
-				default:
-					assert(false);
-			}
-		}
+namespace smtrat {
+template<class Settings>
+STropModule<Settings>::STropModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
+	: Module(_formula, _conditionals, _manager)
+	, mSeparators()
+	, mChangedSeparators()
+	, mRelationalConflicts(0)
+	, mLinearizationConflicts()
+	, mCheckedWithBackends(false)
+{}
+
+template<class Settings>
+bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {   
+	addReceivedSubformulaToPassedFormula(_subformula);
+	const FormulaT& formula = _subformula->formula();
+	if (formula.type() == carl::FormulaType::FALSE) {
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+		mInfeasibleSubsets.push_back({formula});
+		return false;
+	}
+	if(Settings::mode != Mode::INCREMENTAL_CONSTRAINTS) {
 		return mInfeasibleSubsets.empty();
 	}
-	
-	template<class Settings>
-	void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula)
-	{
-		const FormulaT& formula{_subformula->formula()};
-		if (formula.type() == carl::FormulaType::CONSTRAINT)
-		{
-			/// Normalize the left hand side of the constraint and turn the relation accordingly
-			const ConstraintT& constraint{formula.constraint()};
-			const Poly normalization{constraint.lhs().normalize()};
-			carl::Relation relation{constraint.relation()};
-			if (carl::is_negative(constraint.lhs().lcoeff()))
-				relation = carl::turn_around(relation);
-			
-			/// Retrieve the normalized constraint and mark the separator object as changed
-			Separator& separator{mSeparators.at(normalization)};
-			separator.mRelations.erase(relation);
-			mChangedSeparators.insert(&separator);
-			
-			/// Check if the removed constraint prohibited the application of this method
-			if (relation == carl::Relation::EQ
-				|| (relation == carl::Relation::LEQ
-					&& separator.mRelations.count(carl::Relation::GEQ))
-				|| (relation == carl::Relation::GEQ
-					&& separator.mRelations.count(carl::Relation::LEQ)))
-				--mRelationalConflicts;
-		}
-	}
-	
-	template<class Settings>
-	void STropModule<Settings>::updateModel() const
-	{
-		if (!mModelComputed)
-		{
-			if (mCheckedWithBackends)
-			{
-				clearModel();
-				getBackendsModel();
-				excludeNotReceivedVariablesFromModel();
-			}
-			else
-			{
-				/// Stores all informations retrieved from the LRA solver to construct the model
-				struct Weight
-				{
-					const carl::Variable& mVariable;
-					Rational mExponent;
-					const bool mSign;
+	if (formula.type() == carl::FormulaType::CONSTRAINT) {
+		/// Normalize the left hand side of the constraint and turn the relation accordingly
+		auto constr = subtropical::normalize(formula.constraint().constr());
 					
-					Weight(const carl::Variable& variable, const Rational& exponent, const bool sign)
-						: mVariable(variable)
-						, mExponent(exponent)
-						, mSign(sign)
-					{}
-				};
-				std::vector<Weight> weights;
-				
-				/// Retrieve the sign and exponent for every active variable
-				const Model& LRAModel{mLRAModule.model()};
-				Rational gcd(0);
-				for (const auto& momentsEntry : mMoments)
-				{
-					const carl::Variable& variable{momentsEntry.first};
-					const Moment& moment{momentsEntry.second};
-					if (moment.mUsed)
-					{
-						auto signIter{LRAModel.find(moment.mSignVariant)};
-						weights.emplace_back(
-							variable,
-							LRAModel.at(moment.mNormalVector).asRational(),
-							signIter != LRAModel.end() && signIter->second.asBool()
-						);
-						carl::gcd_assign(gcd, weights.back().mExponent);
-					}
-				}
-				
-				/// Calculate smallest possible integer valued exponents
-				if (!carl::is_zero(gcd) && !carl::is_one(gcd))
-					for (Weight& weight : weights)
-						weight.mExponent /= gcd;
-				
-				/// Find model by increasingly testing the sample base
-				Rational base = 0;
-				do
-				{
-					++base;
-					clearModel();
-					for (const Weight& weight : weights)
-					{
-						Rational value{carl::is_negative(weight.mExponent) ? carl::reciprocal(base) : base};
-						carl::pow_assign(value, carl::to_int<carl::uint>(carl::abs(weight.mExponent)));
-						if (weight.mSign)
-							value *= -1;
-						mModel.emplace(weight.mVariable, value);
-					}
-				}
-				while (!rReceivedFormula().satisfiedBy(mModel));
+		/// Store the normalized constraint and mark the separator object as changed
+		SeparatorGroup& separator{mSeparators.emplace(constr.lhs(), constr.lhs()).first->second};
+		separator.mRelations.insert(constr.relation());
+		mChangedSeparators.insert(&separator);
+		
+		/// Check if the asserted constraint affects the amount of equations
+		if(!separator.mEquationInduced){
+			if(separator.mRelations.count(carl::Relation::GEQ) * separator.mRelations.count(carl::Relation::LEQ) 
+			+ separator.mRelations.count(carl::Relation::EQ) > 0){
+				separator.mEquationInduced = true;
+				++mRelationalConflicts;
 			}
-			mModelComputed = true;
+		}
+
+		/// Check if the asserted relation trivially conflicts with other asserted relations
+		switch (constr.relation()) {
+			case carl::Relation::EQ:
+				if (separator.mRelations.count(carl::Relation::NEQ))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::EQ),
+						FormulaT(constr.lhs(), carl::Relation::NEQ)
+					});
+				if (separator.mRelations.count(carl::Relation::LESS))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::EQ),
+						FormulaT(constr.lhs(), carl::Relation::LESS)
+					});
+				if (separator.mRelations.count(carl::Relation::GREATER))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::EQ),
+						FormulaT(constr.lhs(), carl::Relation::GREATER)
+					});
+				break;
+			case carl::Relation::NEQ:
+				if (separator.mRelations.count(carl::Relation::EQ))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::NEQ),
+						FormulaT(constr.lhs(), carl::Relation::EQ)
+					});
+				break;
+			case carl::Relation::LESS:
+				if (separator.mRelations.count(carl::Relation::EQ))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::LESS),
+						FormulaT(constr.lhs(), carl::Relation::EQ)
+					});
+				if (separator.mRelations.count(carl::Relation::GEQ))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::LESS),
+						FormulaT(constr.lhs(), carl::Relation::GEQ)
+					});
+				[[fallthrough]];
+			case carl::Relation::LEQ:
+				if (separator.mRelations.count(carl::Relation::GREATER))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), constr.relation()),
+						FormulaT(constr.lhs(), carl::Relation::GREATER)
+					});
+				break;
+			case carl::Relation::GREATER:
+				if (separator.mRelations.count(carl::Relation::EQ))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::GREATER),
+						FormulaT(constr.lhs(), carl::Relation::EQ)
+					});
+				if (separator.mRelations.count(carl::Relation::LEQ))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), carl::Relation::GREATER),
+						FormulaT(constr.lhs(), carl::Relation::LEQ)
+					});
+				[[fallthrough]];
+			case carl::Relation::GEQ:
+				if (separator.mRelations.count(carl::Relation::LESS))
+					mInfeasibleSubsets.push_back({
+						FormulaT(constr.lhs(), constr.relation()),
+						FormulaT(constr.lhs(), carl::Relation::LESS)
+					});
+				break;
+			default:
+				assert(false);
 		}
 	}
-	
-	template<class Settings>
-	Answer STropModule<Settings>::checkCore()
-	{
-		/// Report unsatisfiability if the already found conflicts are still unresolved
-		if (!mInfeasibleSubsets.empty())
-			return Answer::UNSAT;
+	if (mInfeasibleSubsets.empty()) {
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT));
+	}
+	return mInfeasibleSubsets.empty();
+}
+
+template<class Settings>
+void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) {
+	if(Settings::mode != Mode::INCREMENTAL_CONSTRAINTS){
+		return;
+	}
+	const FormulaT& formula = _subformula->formula();
+	if (formula.type() == carl::FormulaType::CONSTRAINT) {
+		/// Normalize the left hand side of the constraint and turn the relation accordingly
+		auto constr = subtropical::normalize(formula.constraint().constr());
 		
-		/// Predicate that decides if the given conflict is a subset of the asserted constraints
+		/// Retrieve the normalized constraint and mark the separator object as changed
+		SeparatorGroup& separator{mSeparators.at(constr.lhs())};
+		separator.mRelations.erase(constr.relation());
+		mChangedSeparators.insert(&separator);
+		
+		/// Check if the removed constraint affects the amount of equations 
+		if(separator.mEquationInduced){
+			if(separator.mRelations.count(carl::Relation::GEQ) * separator.mRelations.count(carl::Relation::LEQ) 
+			+ separator.mRelations.count(carl::Relation::EQ) == 0){
+				separator.mEquationInduced = false;
+				--mRelationalConflicts;
+			}
+		}
+	}
+}
+
+template<class Settings>
+void STropModule<Settings>::updateModel() const {
+	if(Settings::mode == Mode::TRANSFORM_EQUATION || mSolverState != Answer::SAT) {
+		return;
+	}
+	if (!mModelComputed) {
+		if (mCheckedWithBackends) {
+			clearModel();
+			getBackendsModel();
+			excludeNotReceivedVariablesFromModel();
+		} else {
+			clearModel();
+			mModel = mEncoding.construct_assignment(mLRAModule.model(), FormulaT(rReceivedFormula()));
+		}
+		mModelComputed = true;
+	}
+}
+
+template<class Settings>
+Answer STropModule<Settings>::checkCore() {
+	SMTRAT_TIME_START(theoryStart);
+	// Report unsatisfiability if the already found conflicts are still unresolved
+	if (!mInfeasibleSubsets.empty()) {
+		SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT));
+		if (Settings::output_only) {
+			SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+		}
+		return Answer::UNSAT;
+	}
+
+	if constexpr(Settings::mode == Mode::INCREMENTAL_CONSTRAINTS) {
+		assert(!Settings::output_only);
+		// Predicate that decides if the given conflict is a subset of the asserted constraints
 		const auto hasConflict = [&](const Conflict& conflict) {
 			return std::all_of(
 				conflict.begin(),
 				conflict.end(),
 				[&](const auto& conflictEntry) {
-					return ((conflictEntry.second == Direction::NEGATIVE
-						|| conflictEntry.second == Direction::BOTH)
+					return ((conflictEntry.second == subtropical::Direction::NEGATIVE
+						|| conflictEntry.second == subtropical::Direction::BOTH)
 							&& (conflictEntry.first->mRelations.count(carl::Relation::LESS)
 								|| conflictEntry.first->mRelations.count(carl::Relation::LEQ)))
-						|| ((conflictEntry.second == Direction::POSITIVE
-							|| conflictEntry.second == Direction::BOTH)
+						|| ((conflictEntry.second == subtropical::Direction::POSITIVE
+							|| conflictEntry.second == subtropical::Direction::BOTH)
 								&& (conflictEntry.first->mRelations.count(carl::Relation::GREATER)
 									|| conflictEntry.first->mRelations.count(carl::Relation::GEQ)))
-						|| (conflictEntry.second == Direction::BOTH
+						|| (conflictEntry.second == subtropical::Direction::BOTH
 							&& conflictEntry.first->mRelations.count(carl::Relation::NEQ));
 				}
 			);
 		};
 		
-		/// Apply the method only if the asserted formula is not trivially undecidable
+		// Apply the method only if the asserted formula is not trivially undecidable
 		if (!mRelationalConflicts
 			&& rReceivedFormula().is_constraint_conjunction()
-			&& std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict))
-		{
-			/// Update the linearization of all changed separators
-			for (Separator *separatorPtr : mChangedSeparators)
-			{
-				Separator& separator{*separatorPtr};
+			&& std::none_of(mLinearizationConflicts.begin(), mLinearizationConflicts.end(), hasConflict)) {
+			// Update the linearization of all changed separators
+			for (SeparatorGroup *separatorPtr : mChangedSeparators) {
+				SeparatorGroup& separator{*separatorPtr};
 				
-				/// Determine the direction that shall be active
-				std::optional<Direction> direction;
-				if (!separator.mRelations.empty())
-				{
+				// Determine the direction that shall be active
+				std::optional<subtropical::Direction> direction;
+				if (!separator.mRelations.empty()) {
 					if (separator.mActiveDirection
-						&& *separator.mActiveDirection == Direction::NEGATIVE
+						&& *separator.mActiveDirection == subtropical::Direction::NEGATIVE
 						&& ((separator.mRelations.count(carl::Relation::LESS)
-							|| separator.mRelations.count(carl::Relation::LEQ))))
-						direction = Direction::NEGATIVE;
-					else if (separator.mActiveDirection
-						&& *separator.mActiveDirection == Direction::POSITIVE
+							|| separator.mRelations.count(carl::Relation::LEQ)))) {
+						direction = subtropical::Direction::NEGATIVE;
+					} else if (separator.mActiveDirection
+						&& *separator.mActiveDirection == subtropical::Direction::POSITIVE
 						&& ((separator.mRelations.count(carl::Relation::GREATER)
-							|| separator.mRelations.count(carl::Relation::GEQ))))
-						direction = Direction::POSITIVE;
-					else
-						switch (*separator.mRelations.rbegin())
-						{
-							case carl::Relation::EQ:
-								direction = std::nullopt;
-								break;
-							case carl::Relation::NEQ:
-								direction = Direction::BOTH;
-								break;
-							case carl::Relation::LESS:
-							case carl::Relation::LEQ:
-								direction = Direction::NEGATIVE;
-								break;
-							case carl::Relation::GREATER:
-							case carl::Relation::GEQ:
-								direction = Direction::POSITIVE;
-								break;
-							default:
-								assert(false);
-						}
+							|| separator.mRelations.count(carl::Relation::GEQ)))) {
+						direction = subtropical::Direction::POSITIVE;
+					} else {
+						direction = subtropical::direction(*separator.mRelations.rbegin());
+					}
 				}
 				
-				/// Update the linearization if the direction has changed
-				if (separator.mActiveDirection != direction)
-				{
-					if (separator.mActiveDirection)
-						propagateFormula(createLinearization(separator), false);
+				// Update the linearization if the direction has changed
+				if (separator.mActiveDirection != direction) {
+					if (separator.mActiveDirection) {
+						remove_lra_formula(separator.mActiveFormula);
+						separator.mActiveFormula = FormulaT(carl::FormulaType::FALSE);
+					}
 					separator.mActiveDirection = direction;
-					if (separator.mActiveDirection)
-						propagateFormula(createLinearization(separator), true);
+					if (separator.mActiveDirection) {
+						separator.mActiveFormula = mEncoding.encode_separator(separator.mSeparator, *separator.mActiveDirection, Settings::separatorType);
+						add_lra_formula(separator.mActiveFormula);
+					}
 				}
 			}
 			mChangedSeparators.clear();
-			
-			/// Restrict the normal vector component of integral variables to positive values
-			for (auto& momentsEntry : mMoments)
-			{
-				const carl::Variable& variable{momentsEntry.first};
-				Moment& moment{momentsEntry.second};
-				if (variable.type() == carl::VariableType::VT_INT
-					&& moment.mUsed != receivedVariable(variable))
-				{
-					moment.mUsed = !moment.mUsed;
-					propagateFormula(FormulaT(Poly(moment.mNormalVector), carl::Relation::GEQ), moment.mUsed);
+
+			// Restrict the normal vector component of integral variables to positive values
+			std::set<carl::Variable> toErase;
+			std::transform(mActiveIntegerFormulas.begin(), mActiveIntegerFormulas.end(), std::inserter(toErase, toErase.end()), [](auto pair){ return pair.first; });
+			for (auto& variable : carl::variables(FormulaT(rReceivedFormula()))) {
+				toErase.erase(variable);
+				if (variable.type() == carl::VariableType::VT_INT && mActiveIntegerFormulas.find(variable) == mActiveIntegerFormulas.end()) {
+					mActiveIntegerFormulas[variable] = mEncoding.encode_integer(variable);
+					add_lra_formula(mActiveIntegerFormulas[variable]);
 				}
 			}
+			for (const auto& variable : toErase) {
+				remove_lra_formula(mActiveIntegerFormulas[variable]);
+				mActiveIntegerFormulas.erase(variable);
+			}
 			
-			/// Check the constructed linearization with the LRA solver
-			if (mLRAModule.check(true) == Answer::SAT)
-			{
+			// Check the constructed linearization with the LRA solver
+			if (mLRAModule.check(true) == Answer::SAT) {
+				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
 				mCheckedWithBackends = false;
 				return Answer::SAT;
-			}
-			else
-			{
+			} else {
 				/// Learn the conflicting set of separators to avoid its recheck in the future
-				const std::vector<FormulaSetT> LRAConflicts{mLRAModule.infeasibleSubsets()};
-				for (const FormulaSetT& LRAConflict : LRAConflicts)
-				{
+				for (const FormulaSetT& lra_conflict : mLRAModule.infeasibleSubsets()) {
 					carl::carlVariables variables;
-					for (const FormulaT& formula : LRAConflict)
+					for (const FormulaT& formula : lra_conflict)
 						carl::variables(formula, variables);
 					Conflict conflict;
-					for (const auto& separatorsEntry : mSeparators)
-					{
-						const Separator& separator{separatorsEntry.second};
+					for (const auto& separatorsEntry : mSeparators) {
+						const SeparatorGroup& separator{separatorsEntry.second};
 						if (separator.mActiveDirection
-							&& variables.has(separator.mBias))
+							&& variables.has(separator.mSeparator.bias))
 							conflict.emplace_back(&separator, *separator.mActiveDirection);
 					}
 					mLinearizationConflicts.emplace_back(std::move(conflict));
 				}
 			}
 		}
-		
-		/// Check the asserted formula with the backends
+	} else if constexpr(Settings::mode == Mode::TRANSFORM_EQUATION) {
+		SMTRAT_TIME_START(transformationStart);
+		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
+		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			std::set<FormulaT> infset;
+			for (const auto& f : rReceivedFormula()) {
+				infset.insert(f.formula());
+			}
+			mInfeasibleSubsets.push_back(infset);
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+			}
+			return Answer::UNSAT;
+		} else if (negationFreeFormula.type() == carl::FormulaType::TRUE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+			}
+			return Answer::SAT;
+		}
+		FormulaT equation = subtropical::transform_to_equation(negationFreeFormula);
+		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
+		if(equation.type() != carl::FormulaType::FALSE) {
+			subtropical::Separator separator(equation.constraint().lhs().normalize());
+			auto direction = subtropical::direction_for_equality(separator);
+			if(!direction) {
+				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+				mCheckedWithBackends = false;
+				if (Settings::output_only) {
+					SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+				}
+				return Answer::SAT;
+			} else {
+				if (!Settings::output_only) {
+					mLRAModule.reset();
+					mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
+					if (mLRAModule.check(true) == Answer::SAT) {
+						SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+						SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+						mCheckedWithBackends = false;
+						return Answer::SAT;
+					}
+				} else {
+					SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", mEncoding.encode_separator(separator, *direction, Settings::separatorType), true);
+					return Answer::UNKNOWN;
+				}
+			}
+		}
+	} else {
+		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
+		SMTRAT_TIME_START(transformationStart);
+		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
+		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			std::set<FormulaT> infset;
+			for (const auto& f : rReceivedFormula()) {
+				infset.insert(f.formula());
+			}
+			mInfeasibleSubsets.push_back(infset);
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+			}
+			return Answer::UNSAT;
+		} else if (negationFreeFormula.type() == carl::FormulaType::TRUE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+			}
+			return Answer::SAT;
+		}
+		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
+		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
+		if(translatedFormula.type() != carl::FormulaType::FALSE){
+			if (!Settings::output_only) {
+				mLRAModule.reset();
+				mLRAModule.add(translatedFormula);
+				if (mLRAModule.check(true) == Answer::SAT) {
+					SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+					SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+					mCheckedWithBackends = false;
+					return Answer::SAT;
+				}
+			} else {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", translatedFormula, true);
+				return Answer::UNKNOWN;
+			}
+		}
+	}
+
+	// Check the asserted formula with the backends
+	if (Settings::output_only) {
+		SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+		return Answer::UNKNOWN;
+	} else {
+		SMTRAT_STATISTICS_CALL(mStatistics.failed());
 		mCheckedWithBackends = true;
-		Answer answer{runBackends()};
+		Answer answer = runBackends();
+		SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::BACKEND));
 		if (answer == Answer::UNSAT)
 			getInfeasibleSubsets();
 		return answer;
 	}
-	
-	template<class Settings>
-	inline FormulaT STropModule<Settings>::createLinearization(const Separator& separator)
-	{
-		switch (*separator.mActiveDirection)
-		{
-			case Direction::POSITIVE:
-				return createSeparator(separator, false);
-			case Direction::NEGATIVE:
-				return createSeparator(separator, true);
-			case Direction::BOTH:
-				return FormulaT(
-					carl::FormulaType::XOR,
-					createSeparator(separator, false),
-					createSeparator(separator, true)
-				);
-			default:
-				assert(false);
-				return FormulaT();
-		}
-	}
-	
-	template<class Settings>
-	FormulaT STropModule<Settings>::createSeparator(const Separator& separator, bool negated)
-	{
-		Poly totalRating;
-		FormulasT disjunctions, conjunctions;
-		for (const Vertex& vertex : separator.mVertices)
-		{
-			/// Create the hyperplane and sign change formula
-			Poly hyperplane{separator.mBias};
-			FormulaT signChangeFormula;
-			if (vertex.mMonomial)
-			{
-				FormulasT signChangeSubformulas;
-				for (const auto& exponent : vertex.mMonomial->exponents())
-				{
-					const auto& moment{mMoments[exponent.first]};
-					hyperplane += carl::from_int<Rational>(exponent.second)*moment.mNormalVector;
-					if (exponent.second % 2 == 1)
-						signChangeSubformulas.emplace_back(moment.mSignVariant);
-				}
-				signChangeFormula = FormulaT(carl::FormulaType::XOR, std::move(signChangeSubformulas));
-			}
-			
-			/// Create the rating case distinction formula
-			if (Settings::separatorType == SeparatorType::WEAK)
-			{
-				totalRating += vertex.mRating;
-				conjunctions.emplace_back(
-					carl::FormulaType::IMPLIES,
-					FormulaT(hyperplane, carl::Relation::LESS),
-					FormulaT(Poly(vertex.mRating), carl::Relation::EQ)
-				);
-				const Rational coefficient{negated ? -vertex.mCoefficient : vertex.mCoefficient};
-				conjunctions.emplace_back(
-					carl::FormulaType::IMPLIES,
-					FormulaT(hyperplane, carl::Relation::EQ),
-					FormulaT(
-						carl::FormulaType::AND,
-						FormulaT(
-							carl::FormulaType::IMPLIES,
-							signChangeFormula,
-							FormulaT(vertex.mRating+coefficient, carl::Relation::EQ)
-						),
-						FormulaT(
-							carl::FormulaType::IMPLIES,
-							signChangeFormula.negated(),
-							FormulaT(vertex.mRating-coefficient, carl::Relation::EQ)
-						)
-					)
-				);
-			}
-			
-			/// Create the strict/weak linear saparating hyperplane
-			bool positive{carl::is_positive(vertex.mCoefficient) != negated};
-			disjunctions.emplace_back(
-				FormulaT(
-					carl::FormulaType::IMPLIES,
-					positive ? signChangeFormula.negated() : signChangeFormula,
-					FormulaT(hyperplane, Settings::separatorType == SeparatorType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS)
-				).negated()
-			);
-			conjunctions.emplace_back(
-				carl::FormulaType::IMPLIES,
-				positive ? std::move(signChangeFormula) : std::move(signChangeFormula.negated()),
-				FormulaT(std::move(hyperplane), Settings::separatorType == SeparatorType::STRICT ? carl::Relation::LESS : carl::Relation::LEQ)
-			);
-		}
-		if (Settings::separatorType == SeparatorType::WEAK)
-			conjunctions.emplace_back(totalRating, carl::Relation::GREATER);
-		return FormulaT(
-			carl::FormulaType::AND,
-			FormulaT(carl::FormulaType::OR, std::move(disjunctions)),
-			FormulaT(carl::FormulaType::AND, std::move(conjunctions))
-		);
-	}
-	
-	template<class Settings>
-	inline void STropModule<Settings>::propagateFormula(const FormulaT& formula, bool assert)
-	{
-		if (assert)
-			mLRAModule.add(formula);
-		else if (formula.type() == carl::FormulaType::AND)
-		{
-			auto iter{mLRAModule.formulaBegin()};
-			for (const auto& subformula : formula.subformulas())
-				iter = mLRAModule.remove(std::find(iter, mLRAModule.formulaEnd(), subformula));
-		}
-		else
-			mLRAModule.remove(std::find(mLRAModule.formulaBegin(), mLRAModule.formulaEnd(), formula));
-	}
 }
 
+template<class Settings>
+inline void STropModule<Settings>::add_lra_formula(const FormulaT& formula) {
+	mLRAModule.add(formula);
+}
 
+template<class Settings>
+inline void STropModule<Settings>::remove_lra_formula(const FormulaT& formula) {
+	if (formula.type() == carl::FormulaType::AND) {
+		auto iter = mLRAModule.formulaBegin();
+		for (const auto& subformula : formula.subformulas()) {
+			iter = mLRAModule.remove(std::find(iter, mLRAModule.formulaEnd(), subformula));
+		}
+	}
+	else {
+		mLRAModule.remove(std::find(mLRAModule.formulaBegin(), mLRAModule.formulaEnd(), formula));
+	}
+}
+}
