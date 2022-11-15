@@ -260,6 +260,7 @@ Answer STropModule<Settings>::checkCore() {
 			}
 			
 			// Check the constructed linearization with the LRA solver
+			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 			if (mLRAModule.check(true) == Answer::SAT) {
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
@@ -317,6 +318,7 @@ Answer STropModule<Settings>::checkCore() {
 				}
 				return Answer::SAT;
 			} else {
+				SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 				if (!Settings::output_only) {
 					mLRAModule.reset();
 					mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
@@ -357,6 +359,7 @@ Answer STropModule<Settings>::checkCore() {
 		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
+			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 			if (!Settings::output_only) {
 				mLRAModule.reset();
 				mLRAModule.add(translatedFormula);

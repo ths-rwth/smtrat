@@ -54,9 +54,20 @@ struct STropSettings3 {
 	static constexpr bool output_only = false;
 };
 
+struct STropSettings2OutputOnly {
+	/// Name of the Module
+	static constexpr auto moduleName = "STropModule<STropSettings2OutputOnly>";
+	/// Type of linear separating hyperplane to search for
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	/// transformation of the formula to an equation
+	static constexpr Mode mode = Mode::TRANSFORM_EQUATION;
+
+	static constexpr bool output_only = true;
+};
+
 struct STropSettings3OutputOnly {
 	/// Name of the Module
-	static constexpr auto moduleName = "STropModule<STropSettings3>";
+	static constexpr auto moduleName = "STropModule<STropSettings3OutputOnly>";
 	/// Type of linear separating hyperplane to search for
 	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
