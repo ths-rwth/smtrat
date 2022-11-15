@@ -7,10 +7,10 @@
 
 namespace smtrat
 {
-	class TransformationEQOutputOnly: public Manager
+	class STrop_TransformationEQOutputOnly: public Manager
 	{
 		public:
-			TransformationEQOutputOnly(): Manager() {
+			STrop_TransformationEQOutputOnly(): Manager() {
 				setStrategy({
 					// addBackend<FPPModule<FPPSettings1>>({
 						addBackend<STropModule<STropSettings2OutputOnly>>()
