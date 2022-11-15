@@ -67,17 +67,17 @@ build-clang13:
   only:
      - development
 
-test-clang: 
-  dependencies: [build-clang14]
-  stage: test
-  script: 
-    - cd build && make test
+# test-clang: 
+#   dependencies: [build-clang14]
+#   stage: test
+#   script: 
+#     - cd build && make test
 
-test-gcc: 
-  dependencies: [build-gcc12]
-  stage: test
-  script: 
-    - cd build && make test 
+# test-gcc: 
+#   dependencies: [build-gcc12]
+#   stage: test
+#   script: 
+#     - cd build && make test 
 
 docs:
   stage: documentation
