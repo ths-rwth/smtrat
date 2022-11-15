@@ -10,11 +10,11 @@ namespace smtrat
     /**
      * A pure SAT solver with preprocessing.
      */
-    class OnlySAT:
+    class OnlySATPP:
         public Manager
     {
         public:
-            OnlySAT(): Manager() {
+            OnlySATPP(): Manager() {
 				setStrategy({
                     addBackend<FPPModule<FPPSettings1>>({
 					    addBackend<SATModule<SATSettings1>>()
