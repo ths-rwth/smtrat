@@ -18,15 +18,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlexSolver: public Manager {
+class FMPlexNew: public Manager {
 public:
-   FMPlexSolver(): Manager()
+   FMPlexNew(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettings>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettings1>>()
 				   })
 
 		   });

@@ -8,21 +8,41 @@
 
 #pragma once
 
-namespace smtrat
-{
-	enum EQ_Handling {
-		GAUSSIAN
+namespace smtrat {
+	enum class EQHandling {
+		GAUSSIAN,
+		SPLITTING
 	};
 
-	struct NewFMPlexSettings
+	enum class NEQHandling {
+		MULTI_MODEL,
+		SPLITTING_LEMMAS
+	};
+
+	enum class VariableHeuristic {
+		COLUMN_ORDER,
+		LEAST_BRANCHES
+	};
+
+	enum class EliminatorHeuristic {
+		ROW_ORDER,
+		LOWEST_LEVEL
+	};
+
+	// TODO: strict handling (delta or FM)
+
+	struct NewFMPlexSettings1
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettings1>";
-		/**
-		 * Example for a setting.
-		 */
+
 		static constexpr bool incremental = false;
 		static constexpr bool use_backtracking = false;
-		static constexpr EQ_Handling eq_handling = EQ_Handling::GAUSSIAN;
+		static constexpr bool ignore_pivots = false;
+		static constexpr EQHandling eq_handling = EQHandling::GAUSSIAN;
+		static constexpr NEQHandling neq_handling = NEQHandling::SPLITTING_LEMMAS;
+		static constexpr std::size_t nr_neq_splits_at_once = 2;
+		static constexpr VariableHeuristic variable_heuristic = VariableHeuristic::COLUMN_ORDER;
+		static constexpr EliminatorHeuristic eliminator_heuristic = EliminatorHeuristic::ROW_ORDER;
 	};
-}
+} // namespace smtrat
