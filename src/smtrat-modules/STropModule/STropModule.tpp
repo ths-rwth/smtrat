@@ -312,6 +312,7 @@ Answer STropModule<Settings>::checkCore() {
 			if(!direction) {
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+				SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 				mCheckedWithBackends = false;
 				if (Settings::output_only) {
 					SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
