@@ -59,7 +59,7 @@ private:
 		// if ((l.is_integer() || l.is_numeric()) && (r.is_integer() || r.is_numeric()) && (m_ri.is_root(lhs) != m_ri.is_root(rhs))) return m_ri.is_root(lhs);
 		if (carl::is_integer(l) != carl::is_integer(r)) return carl::is_integer(l);
 		if (l.is_numeric() != r.is_numeric()) return l.is_numeric();
-		if (carl::size(l) != carl::size(r)) return carl::size(l) < carl::size(r);
+		if (carl::bitsize(l) != carl::bitsize(r)) return carl::bitsize(l) < carl::bitsize(r);
 		if (carl::abs(l) != carl::abs(r)) return carl::abs(l) < carl::abs(r);
 		return l < r;
 	}
