@@ -19,38 +19,78 @@ namespace smtrat {
 	{
 		private:
 			// Members.
-			// stack representing the path to the current node
+			/// stack representing the path to the current node
 			std::vector<fmplex::Level> m_history;
-			// map for converting between constraints and their tableau index
-			std::map<FormulaT,std::size_t> m_constraint_index;
-			// index of current level in history
+			/// index of current level in history
 			std::size_t m_current_level;
-
+			/// the maximum possible level (= number of eliminable variables)
 			std::size_t m_max_level;
-			// variable ordering in the tableaus
-			std::map<std::size_t, carl::Variable> m_variable_order;
-			std::map<carl::Variable, std::size_t> m_variable_index;
 
+			/// maps for converting tableau columns into variables and vice versa
+			std::map<fmplex::ColumnIndex, carl::Variable> m_variable_order;
+			std::map<carl::Variable, fmplex::ColumnIndex> m_variable_index;
+
+			/// set of all variables ocurring in any of the received constraints
 			carl::Variables m_variables;
-			// set of remaining variables to eliminate
-			carl::Variables m_elimination_variables;
-
+			/// set of remaining variables to eliminate
+			carl::Variables m_elimination_variables; // TODO: not really used
+			
+			/// set of indices corresponding to strict inequalities in m_constraints
 			std::unordered_set<std::size_t> m_strict_origins;
-			// 
+
+			/// sets of received formulas
 			FormulasT m_constraints;
 			FormulasT m_added_constraints; // REVIEW: is this necessary?
 			FormulasT m_neqs;
 			FormulasT m_equalities;
 
+			/// initial tableau for Gauss elimination
 			fmplex::FMPlexTableau m_initial_tableau;
+			/// ordering indicating which column has been eliminated using which row
 			std::vector<std::pair<fmplex::RowIndex, fmplex::ColumnIndex>> m_gauss_order;
+
 			// REVIEW: datastructure to keep track, which eliminated variable corresponds to which constraint
 
+			/**
+			 * @brief Constructs an unsatisfiable core (a.k.a. infeasible subset) from the given set of indices
+			 * 
+			 * @param reason A set of indices corresponding to an infeasible subset of m_constraints
+			 */
 			void build_unsat_core(const std::set<std::size_t>& reason);
+
+			/**
+			 * @brief Performs backtracking in the FMPlex search tree.
+			 * Sets the current level to the latest level for which we cannot infer inconsistency from the given conflict
+			 * and adds the conflict's origins to that level's unsat core.
+			 * 
+			 * @param conflict The conflict causing the backtracking
+			 */
 			void backtrack(const fmplex::Conflict& conflict);
+
+			/**
+			 * @brief Constructs the root level of the FMPlex search tree.
+			 * Depending on the Settings, applies Gaussian elimination to the equalities.
+			 * Reserves enough space in m_history and constructs its first element, containing only inequalities.
+			 * 
+			 * @return a Conflict, if inconsistency can be easily determined after Gauss elimination, and nullopt otherwise.
+			 */
 			std::optional<fmplex::Conflict> construct_root_level();
-			// void gaussian_elimination();
+
+			/**
+			 * @brief Checks whether the current model is consistent with the received not-equal constraints.
+			 * Depending on the settings, if the model is not consistent, then splitting lemmas are passed to the SAT solver.
+			 * 
+			 * @return true if they are consistent
+			 * @return false if not
+			 */
 			bool handle_neqs();
+
+			/**
+			 * @brief Tries to construct a model from m_history if it contains a trivially satisfiable Level.
+			 * 
+			 * @return true if the model is consistent with the not-equal constraints
+			 * @return false otherwise.
+			 */
 			bool try_construct_model();
 
 		public:
