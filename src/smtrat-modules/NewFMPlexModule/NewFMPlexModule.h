@@ -10,7 +10,8 @@
 
 #include <smtrat-solver/Module.h>
 #include "NewFMPlexSettings.h"
-#include "Tableau.h"
+//#include "Tableau.h"
+#include "Level.h"
 
 namespace smtrat {
 	template<typename Settings>
@@ -19,7 +20,7 @@ namespace smtrat {
 		private:
 			// Members.
 			// stack representing the path to the current node
-			std::vector<fmplex::FMPlexTableau> m_history;
+			std::vector<fmplex::Level> m_history;
 			// map for converting between constraints and their tableau index
 			std::map<FormulaT,std::size_t> m_constraint_index;
 			// index of current level in history
@@ -37,20 +38,25 @@ namespace smtrat {
 			std::unordered_set<std::size_t> m_strict_origins;
 			// 
 			FormulasT m_constraints;
-			FormulasT m_added_constraints; // TODO: is this necessary?
+			FormulasT m_added_constraints; // REVIEW: is this necessary?
 			FormulasT m_neqs;
-			// TODO: datastructure to keep track, which eliminated variable corresponds to which constraint
+			FormulasT m_equalities;
+
+			fmplex::FMPlexTableau m_initial_tableau;
+			std::vector<std::pair<fmplex::RowIndex, fmplex::ColumnIndex>> m_gauss_order;
+			// REVIEW: datastructure to keep track, which eliminated variable corresponds to which constraint
 
 			void build_unsat_core(const std::set<std::size_t>& reason);
 			void backtrack(const fmplex::Conflict& conflict);
-			void construct_root_level();
-			void gaussian_elimination();
+			std::optional<fmplex::Conflict> construct_root_level();
+			// void gaussian_elimination();
 			bool handle_neqs();
+			bool try_construct_model();
 
 		public:
 			using SettingsType = Settings;
 
-			NewFMPlexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
+			NewFMPlexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = NULL);
 
 			~NewFMPlexModule();
 			

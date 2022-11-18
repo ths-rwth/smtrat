@@ -10,7 +10,8 @@
 
 namespace smtrat {
 	enum class EQHandling {
-		GAUSSIAN,
+		GAUSSIAN_TABLEAU,
+		GAUSSIAN_EIGEN,
 		SPLITTING
 	};
 
@@ -39,7 +40,7 @@ namespace smtrat {
 		static constexpr bool incremental = false;
 		static constexpr bool use_backtracking = false;
 		static constexpr bool ignore_pivots = false;
-		static constexpr EQHandling eq_handling = EQHandling::GAUSSIAN;
+		static constexpr EQHandling eq_handling = EQHandling::GAUSSIAN_TABLEAU;
 		static constexpr NEQHandling neq_handling = NEQHandling::SPLITTING_LEMMAS;
 		static constexpr std::size_t nr_neq_splits_at_once = 2;
 		static constexpr VariableHeuristic variable_heuristic = VariableHeuristic::COLUMN_ORDER;
