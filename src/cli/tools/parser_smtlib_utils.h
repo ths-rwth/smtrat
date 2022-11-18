@@ -12,7 +12,7 @@ public:
 	void add(const smtrat::FormulaT& f) {
 		mFormulas.emplace_back(f);
 	}
-	void addSoft(const FormulaT& f, Rational weight, const std::string& name) {
+	void addSoft(const FormulaT& f, Rational /*weight*/, const std::string& /*name*/) {
 		mFormulas.emplace_back(f);
 	}
 	void annotateName(const smtrat::FormulaT&, const std::string&) {}
@@ -30,7 +30,7 @@ public:
 	void getProof() {}
 	void getUnsatCore() {}
 	void getValue(const std::vector<carl::Variable>&) {}
-	void addObjective(const smtrat::Poly& p, smtrat::parser::OptimizationType ot) {}
+	void addObjective(const smtrat::Poly& /*p*/, smtrat::parser::OptimizationType /*ot*/) {}
 	void pop(std::size_t) {}
 	void push(std::size_t) {}
 	void reset() {}

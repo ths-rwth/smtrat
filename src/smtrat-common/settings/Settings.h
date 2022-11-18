@@ -52,18 +52,26 @@ public:
 	template<typename T>
 	T get(const std::string& key, T default_value) const {
 		if (has_option(key)) {
-			std::istringstream iss(get_option(key));
-			T value;
-			iss >> value;
-			return value;	
+			if constexpr ((std::is_same_v<T, std::string>)) {
+				return get_option(key);
+			} else {
+				std::istringstream iss(get_option(key));
+				T value;
+				iss >> value;
+				return value;	
+			}
 		} else {
 			for (const auto& param : parameters) {
 				std::string p_key = param.substr(0, param.find("="));
 				if (p_key == key) {
-					std::istringstream iss(param.substr(param.find("=")+1));
-					T value;
-					iss >> value;
-					return value;		
+					if constexpr ((std::is_same_v<T, std::string>)) {
+						return param.substr(param.find("=")+1);
+					} else {
+						std::istringstream iss(param.substr(param.find("=")+1));
+						T value;
+						iss >> value;
+						return value;	
+					}
 				}
 			}
 		}

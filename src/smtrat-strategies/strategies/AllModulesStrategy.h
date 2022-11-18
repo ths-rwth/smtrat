@@ -38,7 +38,7 @@ namespace smtrat
 					addBackend<EMModule<EMSettings1>>(),
 					addBackend<EQModule<EQSettings1>>(),
 					addBackend<EQPreprocessingModule<EQPreprocessingSettings1>>(),
-					addBackend<ESModule<ESSettings1>>(),
+					addBackend<ESModule<ESSettingsDefault>>(),
 					addBackend<FouMoModule<FouMoSettings1>>(),
 					addBackend<FPPModule<FPPSettings1>>(),
 					addBackend<GBModule<GBSettings5>>(),

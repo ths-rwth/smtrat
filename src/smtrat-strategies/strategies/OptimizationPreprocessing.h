@@ -25,7 +25,7 @@ namespace smtrat
 								addBackend<EMModule<EMSettings1>>(
 									addBackend<PFEModule<PFESettings1>>(
 								//		addBackend<SplitSOSModule<SplitSOSSettings1>>({
-											addBackend<ESModule<ESSettings1>>(
+											addBackend<ESModule<ESSettingsDefault>>(
 												// addBackend<LVEModule<LVESettings1>>()
 											)
 								//		})

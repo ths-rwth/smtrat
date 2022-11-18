@@ -20,6 +20,7 @@ private:
 	std::size_t m_answer_by_BACKEND = 0;
 	std::size_t m_answer_by_PARSER = 0;
 	std::size_t m_failed = 0;
+	std::size_t m_transformation_applicable = 0;
 
 public:
 	void collect() {
@@ -30,6 +31,7 @@ public:
 		Statistics::addKeyValuePair("answer_by_BACKEND", m_answer_by_BACKEND);
 		Statistics::addKeyValuePair("answer_by_PARSER", m_answer_by_PARSER);
 		Statistics::addKeyValuePair("failed", m_failed);
+		Statistics::addKeyValuePair("transformation_applicable", m_transformation_applicable);
 	}
 
 	void answer_by(AnswerBy answer_by) {
@@ -53,6 +55,10 @@ public:
 
 	void failed() {
 		m_failed++;
+	}
+
+	void transformation_applicable() {
+		m_transformation_applicable++;
 	}
 
 	auto& theory_timer() {

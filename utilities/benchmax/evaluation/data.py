@@ -3,12 +3,19 @@ import pandas as pd
 def get_solvers(df):
     return df.columns.get_level_values(0).unique()
 
+def compare_results(answer1,time1,answer2,time2):
+    if answer1 in ['sat','unsat'] and not answer2 in ['sat','unsat']:
+        return True
+    else:
+        return time1<time2
+    
+
 def virtual_best(df, solvers, name, statistics=[]):
     data = []
     for _, row in df.iterrows():
         s = solvers[0]
         for solver in solvers:
-            if row[(solver,'runtime')] < row[(s,'runtime')]:
+            if compare_results(row[(solver,'answer')],row[(solver,'runtime')],row[(s,'answer')],row[(s,'runtime')]):
                 s = solver
         new_row = []
         new_row.append(row[(s,'answer')])

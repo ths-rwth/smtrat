@@ -23,7 +23,7 @@ STropModule<Settings>::STropModule(const ModuleInput* _formula, Conditionals& _c
 template<class Settings>
 bool STropModule<Settings>::addCore(ModuleInput::const_iterator _subformula) {   
 	addReceivedSubformulaToPassedFormula(_subformula);
-	const FormulaT& formula{_subformula->formula()};
+	const FormulaT& formula = _subformula->formula();
 	if (formula.type() == carl::FormulaType::FALSE) {
 		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
 		mInfeasibleSubsets.push_back({formula});
@@ -152,7 +152,7 @@ void STropModule<Settings>::removeCore(ModuleInput::const_iterator _subformula) 
 
 template<class Settings>
 void STropModule<Settings>::updateModel() const {
-	if(Settings::mode == Mode::TRANSFORM_EQUATION) {
+	if(Settings::mode == Mode::TRANSFORM_EQUATION || mSolverState != Answer::SAT) {
 		return;
 	}
 	if (!mModelComputed) {
@@ -172,13 +172,17 @@ template<class Settings>
 Answer STropModule<Settings>::checkCore() {
 	SMTRAT_TIME_START(theoryStart);
 	// Report unsatisfiability if the already found conflicts are still unresolved
-	if (!mInfeasibleSubsets.empty()){
+	if (!mInfeasibleSubsets.empty()) {
 		SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::TRIVIAL_UNSAT));
+		if (Settings::output_only) {
+			SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+		}
 		return Answer::UNSAT;
 	}
 
 	if constexpr(Settings::mode == Mode::INCREMENTAL_CONSTRAINTS) {
+		assert(!Settings::output_only);
 		// Predicate that decides if the given conflict is a subset of the asserted constraints
 		const auto hasConflict = [&](const Conflict& conflict) {
 			return std::all_of(
@@ -256,6 +260,7 @@ Answer STropModule<Settings>::checkCore() {
 			}
 			
 			// Check the constructed linearization with the LRA solver
+			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 			if (mLRAModule.check(true) == Answer::SAT) {
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
@@ -281,7 +286,24 @@ Answer STropModule<Settings>::checkCore() {
 	} else if constexpr(Settings::mode == Mode::TRANSFORM_EQUATION) {
 		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
-		assert(negationFreeFormula.type() != carl::FormulaType::FALSE);
+		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			std::set<FormulaT> infset;
+			for (const auto& f : rReceivedFormula()) {
+				infset.insert(f.formula());
+			}
+			mInfeasibleSubsets.push_back(infset);
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+			}
+			return Answer::UNSAT;
+		} else if (negationFreeFormula.type() == carl::FormulaType::TRUE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+			}
+			return Answer::SAT;
+		}
 		FormulaT equation = subtropical::transform_to_equation(negationFreeFormula);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(equation.type() != carl::FormulaType::FALSE) {
@@ -290,16 +312,26 @@ Answer STropModule<Settings>::checkCore() {
 			if(!direction) {
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+				SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 				mCheckedWithBackends = false;
+				if (Settings::output_only) {
+					SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+				}
 				return Answer::SAT;
 			} else {
-				mLRAModule.reset();
-				mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
-				if (mLRAModule.check(true) == Answer::SAT) {
-					SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-					SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
-					mCheckedWithBackends = false;
-					return Answer::SAT;
+				SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
+				if (!Settings::output_only) {
+					mLRAModule.reset();
+					mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
+					if (mLRAModule.check(true) == Answer::SAT) {
+						SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+						SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+						mCheckedWithBackends = false;
+						return Answer::SAT;
+					}
+				} else {
+					SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", mEncoding.encode_separator(separator, *direction, Settings::separatorType), true);
+					return Answer::UNKNOWN;
 				}
 			}
 		}
@@ -307,30 +339,58 @@ Answer STropModule<Settings>::checkCore() {
 		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
 		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
-		assert(negationFreeFormula.type() != carl::FormulaType::FALSE);
+		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			std::set<FormulaT> infset;
+			for (const auto& f : rReceivedFormula()) {
+				infset.insert(f.formula());
+			}
+			mInfeasibleSubsets.push_back(infset);
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+			}
+			return Answer::UNSAT;
+		} else if (negationFreeFormula.type() == carl::FormulaType::TRUE) {
+			SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::PARSER));
+			if (Settings::output_only) {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
+			}
+			return Answer::SAT;
+		}
 		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
-			mLRAModule.reset();
-			mLRAModule.add(translatedFormula);
-			if (mLRAModule.check(true) == Answer::SAT) {
-				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
-				mCheckedWithBackends = false;
-				return Answer::SAT;
+			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
+			if (!Settings::output_only) {
+				mLRAModule.reset();
+				mLRAModule.add(translatedFormula);
+				if (mLRAModule.check(true) == Answer::SAT) {
+					SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+					SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+					mCheckedWithBackends = false;
+					return Answer::SAT;
+				}
+			} else {
+				SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", translatedFormula, true);
+				return Answer::UNKNOWN;
 			}
 		}
 	}
 
 	// Check the asserted formula with the backends
-	SMTRAT_STATISTICS_CALL(mStatistics.failed());
-	mCheckedWithBackends = true;
-	Answer answer = runBackends();
-	SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
-	SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::BACKEND));
-	if (answer == Answer::UNSAT)
-		getInfeasibleSubsets();
-	return answer;
+	if (Settings::output_only) {
+		SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::FALSE), true);
+		return Answer::UNKNOWN;
+	} else {
+		SMTRAT_STATISTICS_CALL(mStatistics.failed());
+		mCheckedWithBackends = true;
+		Answer answer = runBackends();
+		SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
+		SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::BACKEND));
+		if (answer == Answer::UNSAT)
+			getInfeasibleSubsets();
+		return answer;
+	}
 }
 
 template<class Settings>
