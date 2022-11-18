@@ -11,6 +11,7 @@
 
 #include <carl-arith/constraint/Substitution.h>
 #include <carl-formula/formula/functions/Substitution.h>
+#include <carl-arith/poly/umvpoly/functions/Bitsize.h>
 
 
 namespace smtrat
@@ -142,7 +143,7 @@ namespace smtrat
                             else if( tmp.type() != carl::FormulaType::TRUE )
                             {
                                 auto subs = carl::get_substitution(tmp.constraint(), false, objective());
-                                if( subs )
+                                if( subs && (Settings::substitution_bitsize_limit == 0 || carl::bitsize(subs->second) <= Settings::substitution_bitsize_limit))
                                 {
 									if (subs->first != objective()) {
 										SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subs->first << " -> " << subs->second << "]");

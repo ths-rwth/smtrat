@@ -9,6 +9,7 @@
 #pragma once
 
 #include <smtrat-strategies/strategies/PreprocessingOne.h>
+#include <smtrat-strategies/strategies/PreprocessingTwo.h>
 #include <smtrat-strategies/strategies/BVPreprocessing.h>
 #include <smtrat-strategies/strategies/PBPreprocessing.h>
 #include <smtrat-strategies/strategies/OptimizationPreprocessing.h>
@@ -25,6 +26,13 @@ namespace smtrat
         static const int max_iterations = 5;
         
         typedef PreprocessingOne Preprocessor;
+    };
+
+    struct FPPSettingsTwo
+    {
+		static constexpr auto moduleName = "FPPModule<FPPSettingsTwo>";
+        static const int max_iterations = 5;
+        typedef PreprocessingTwo Preprocessor;
     };
     
     struct FPPSettings2 : FPPSettings1
