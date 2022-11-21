@@ -340,4 +340,53 @@ inline FormulaT encode_as_formula(const FormulaT& formula, Encoding& encoding, S
 	}
 }
 
+/**
+ * Requires a quantifier-free real arithmetic formula with no negations
+ *
+ * @param formula The formula to translate
+ *
+ * @return linear formula
+ */
+inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encoding, SeparatorType separator_type) {
+	std::vector<FormulaT> constraints;
+	carl::arithmetic_constraints(formula, constraints);
+	std::set<FormulaT> constraint_set(constraints.begin(), constraints.end());
+	auto res_boolean = formula;
+	std::map<Poly, std::map<carl::Relation, std::pair<FormulaT, FormulaT>>> encodings;
+	for (const auto& c : constraint_set) {
+		if (res_boolean.contains(c)) {
+			if (c.constraint().relation() == carl::Relation::EQ) {
+				res_boolean = carl::substitute(res_boolean, c, FormulaT(carl::FormulaType::FALSE));
+			} else {
+				auto constr = normalize(c.constraint().constr());
+				Separator separator(constr.lhs());
+				Direction dir = *direction(constr.relation());
+				auto& map = encodings.try_emplace(constr.lhs()).first->second;
+				assert(map.find(constr.relation()) == map.end());
+				FormulaT var = map.find(carl::inverse(constr.relation())) == map.end() ? FormulaT(carl::fresh_boolean_variable()) : map.at(carl::inverse(constr.relation())).first.negated();
+				map.emplace(constr.relation(), std::make_pair(var, encoding.encode_separator(separator, dir, separator_type)));
+				res_boolean = carl::substitute(res_boolean, c, var);
+			}
+		}
+	}
+	std::vector<FormulaT> res({res_boolean});
+	for (auto& poly : encodings) {
+		for (auto rel = poly.second.begin(); rel != poly.second.end(); rel++) {
+			auto& enc = rel->second;
+			if (res_boolean.contains(FormulaT(enc.first))) {
+				res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
+			} else {
+				rel = poly.second.erase(rel);
+			}
+		}
+		if (poly.second.find(carl::Relation::LESS) != poly.second.end() && poly.second.find(carl::Relation::GREATER) != poly.second.end()) {
+			res.emplace_back(carl::FormulaType::AND, poly.second.at(carl::Relation::LESS).first.negated(), poly.second.at(carl::Relation::GREATER).first.negated());
+		}
+		if (poly.second.find(carl::Relation::LEQ) != poly.second.end() && poly.second.find(carl::Relation::GEQ) != poly.second.end()) {
+			res.emplace_back(carl::FormulaType::AND, poly.second.at(carl::Relation::LESS).first.negated(), poly.second.at(carl::Relation::GREATER).first.negated());
+		}
+	}
+	return FormulaT(carl::FormulaType::AND, std::move(res));
+}
+
 } // namespace smtrat::subtropical

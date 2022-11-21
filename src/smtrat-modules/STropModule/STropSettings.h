@@ -12,7 +12,8 @@
 namespace smtrat {
 enum class Mode { INCREMENTAL_CONSTRAINTS,
 				  TRANSFORM_EQUATION,
-				  TRANSFORM_FORMULA };
+				  TRANSFORM_FORMULA,
+				  TRANSFORM_FORMULA_ALT };
 
 /// Take conjunctions incrementally, construct linear formulas for LRA solver
 struct STropSettings1 {
@@ -54,6 +55,18 @@ struct STropSettings3 {
 	static constexpr bool output_only = false;
 };
 
+/// Transform to NNF then replace each constraint with its linear formula (equations become FALSE). Then let LRA solver solve.
+struct STropSettings3b {
+	/// Name of the Module
+	static constexpr auto moduleName = "STropModule<STropSettings4>";
+	/// Type of linear separating hyperplane to search for
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	/// transformation of the formula to a linear formula, preserving the Boolean structure
+	static constexpr Mode mode = Mode::TRANSFORM_FORMULA_ALT;
+
+	static constexpr bool output_only = false;
+};
+
 struct STropSettings2OutputOnly {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings2OutputOnly>";
@@ -72,6 +85,17 @@ struct STropSettings3OutputOnly {
 	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
 	static constexpr Mode mode = Mode::TRANSFORM_FORMULA;
+
+	static constexpr bool output_only = true;
+};
+
+struct STropSettings3bOutputOnly {
+	/// Name of the Module
+	static constexpr auto moduleName = "STropModule<STropSettings3bOutputOnly>";
+	/// Type of linear separating hyperplane to search for
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	/// transformation of the formula to a linear formula, preserving the Boolean structure
+	static constexpr Mode mode = Mode::TRANSFORM_FORMULA_ALT;
 
 	static constexpr bool output_only = true;
 };
