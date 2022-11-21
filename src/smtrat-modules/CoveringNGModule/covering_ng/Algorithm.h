@@ -74,7 +74,7 @@ inline std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& 
     return new_deriv;
 }
 
-// TODO later: close cell if possible based on flag
+// TODO later: close cell if possible based on flag - implement here or in smtrat-cadcells?
 // TODO later: sampling also based on formula
 // TODO later: do Boolean propagation while solving
 // TODO later: optionally clear caches

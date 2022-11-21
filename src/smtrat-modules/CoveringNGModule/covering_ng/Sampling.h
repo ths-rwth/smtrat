@@ -2,7 +2,6 @@
 
 namespace smtrat::covering_ng {
 
-// TODO adapt for closed bounds
 
 enum class SamplingAlgorithm {
     /// First checks lower bound and then upper bound, then checks between the cells if they are covered.
@@ -50,12 +49,8 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
             // Search for adjacent disjoint cells and sample between
             for (size_t i = 0; i + 1 < derivs.size(); i++) {
                 // We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
-                if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && derivs[i]->cell().upper()->first < derivs[i + 1]->cell().lower()->first) {
+                if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())) {
                     return carl::sample_between(derivs[i]->cell().upper()->first, derivs[i + 1]->cell().lower()->first);
-                    // The check above does not care for open bounds
-                    // i.e if we have (x, y), (y, z) we can still choose y as a sample point
-                } else if (derivs[i]->cell().is_sector() && derivs[i + 1]->cell().is_sector() && derivs[i]->cell().upper()->first == derivs[i + 1]->cell().lower()->first) {
-                    return derivs[i]->cell().upper()->first;
                 }
             }
             // The cells cover the number line -> There is no sample to be found
