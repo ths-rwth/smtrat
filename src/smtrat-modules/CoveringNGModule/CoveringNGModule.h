@@ -1,11 +1,3 @@
-/**
- * @file CoveringNGModule.h
- * @author Philip Kroll <Philip.Kroll@rwth-aachen.de>
- *
- * @version 2021-07-08
- * Created on 2021-07-08.
- */
-
 #pragma once
 
 #include <smtrat-solver/Module.h>

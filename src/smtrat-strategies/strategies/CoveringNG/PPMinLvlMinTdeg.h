@@ -5,12 +5,12 @@
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
-class CoveringNG_PP: public Manager {
+class CoveringNG_PPMinLvlMinTdeg: public Manager {
 public:
-	CoveringNG_PP() : Manager() {
+	CoveringNG_PPMinLvlMinTdeg() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
-                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+                addBackend<CoveringNGModule<CoveringNGSettingsMinLvlMinTdeg>>()
             })
         );
 	}

@@ -1,11 +1,3 @@
-/**
- * @file NewCovering.cpp
- * @author Philip Kroll <Philip.Kroll@rwth-aachen.de>
- *
- * @version 2021-07-08
- * Created on 2021-07-08.
- */
-
 #include "CoveringNGModule.h"
 
 #include <carl-arith/ran/Conversion.h>
@@ -50,7 +42,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
 
     cadcells::Assignment ass;
     auto f = covering_ng::formula::to_evaluation(context, input);
-    covering_ng::formula::sort_by_complexity(f, covering_ng::formula::complexity::default_ordering);
+    covering_ng::formula::sort_by_complexity(f, Settings::formula_complexity_ordering);
     covering_ng::formula::extend_valuation(f, ass);
     if (f.c().valuation == covering_ng::formula::Valuation::FALSE) {
         mModel.clear();

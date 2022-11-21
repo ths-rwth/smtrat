@@ -7,7 +7,7 @@ namespace smtrat {
 class CoveringNG_Vanilla : public Manager {
 public:
     CoveringNG_Vanilla() : Manager() {
-        setStrategy(addBackend<CoveringNGModule<CoveringNGSettings1>>());
+        setStrategy(addBackend<CoveringNGModule<CoveringNGSettingsDefault>>());
     }
 };
 } // namespace smtrat
