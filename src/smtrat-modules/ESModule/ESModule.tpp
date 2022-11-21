@@ -217,7 +217,7 @@ namespace smtrat
                         result = FormulaT( carl::FormulaType::TRUE );
                     else if( !_elimSubstitutions )
                         result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
-                    assert(!_elimSubstitutions || result == FormulaT( carl::FormulaType::TRUE ););
+                    assert(!_elimSubstitutions || result == FormulaT( carl::FormulaType::TRUE ));
                 }
                 else
                 {
