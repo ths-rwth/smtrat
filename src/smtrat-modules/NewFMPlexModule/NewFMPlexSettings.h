@@ -20,6 +20,11 @@ namespace smtrat {
 		SPLITTING_LEMMAS
 	};
 
+	enum class StrictHandling {
+		DELTA_WEAKEN,
+		FM_COMBINE
+	};
+
 	enum class VariableHeuristic {
 		COLUMN_ORDER,
 		LEAST_BRANCHES
@@ -43,6 +48,7 @@ namespace smtrat {
 		static constexpr EQHandling eq_handling = EQHandling::GAUSSIAN_TABLEAU;
 		static constexpr NEQHandling neq_handling = NEQHandling::SPLITTING_LEMMAS;
 		static constexpr std::size_t nr_neq_splits_at_once = 2;
+		static constexpr StrictHandling strict_handling = StrictHandling::FM_COMBINE;
 		static constexpr VariableHeuristic variable_heuristic = VariableHeuristic::COLUMN_ORDER;
 		static constexpr EliminatorHeuristic eliminator_heuristic = EliminatorHeuristic::ROW_ORDER;
 	};

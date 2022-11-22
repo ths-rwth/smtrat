@@ -1,5 +1,5 @@
 /**
- * @file NewFMPlex.cpp
+ * @file NewFMPlex.tpp
  * @author valentin promies
  *
  * @version 2022-10-07
@@ -23,7 +23,6 @@ namespace smtrat {
 	
 	template<class Settings>
 	bool NewFMPlexModule<Settings>::informCore( const FormulaT& _constraint ) {
-		// todo: check for non-linear?
 		if (_constraint.type() == carl::FormulaType::CONSTRAINT) {
 			for (const auto& v : _constraint.variables()) {
 				if (m_variable_index.find(v) == m_variable_index.end()) {
@@ -38,39 +37,39 @@ namespace smtrat {
 	}
 	
 	template<class Settings>
-	void NewFMPlexModule<Settings>::init()
-	{}
+	void NewFMPlexModule<Settings>::init() {}
 	
 	template<class Settings>
 	bool NewFMPlexModule<Settings>::addCore( ModuleInput::const_iterator _subformula ) {
-		// todo: check for non-linear?
 		switch (_subformula->formula().type()){
-		case carl::FormulaType::TRUE:
-			return true;
-		case carl::FormulaType::FALSE: {
-			FormulaSetT inf_subset;
-			inf_subset.insert(_subformula->formula());
-			mInfeasibleSubsets.push_back(inf_subset);
-			return false;
-		}
-		case carl::FormulaType::CONSTRAINT: {
-			// todo: other eq/neq handling NOTE: this works only for GAUSSIAN_TABLEAU and SPLITTING_LEMMAS
-			m_constraints.push_back(_subformula->formula());
-			// todo: check for trivial sat/unsat
-			if constexpr (Settings::incremental) {
-				m_added_constraints.push_back(_subformula->formula());
-				// todo: watch out for incrementality
-				// todo: need to apply Gauss to incrementally added ineq's
+			case carl::FormulaType::TRUE: return true;
+			case carl::FormulaType::FALSE: {
+				FormulaSetT inf_subset;
+				inf_subset.insert(_subformula->formula());
+				mInfeasibleSubsets.push_back(inf_subset);
+				return false;
 			}
-			carl::Relation r = _subformula->formula().constraint().relation();
-			if ((r == carl::Relation::LESS) || (r == carl::Relation::GREATER)) {
-				m_strict_origins.insert(m_constraints.size()-1);
-			} else if (r == carl::Relation::NEQ) m_neqs.push_back(_subformula->formula());
-			return true;
-		}
-		default:
-			assert(false); // unsupported
-			return true;
+			case carl::FormulaType::CONSTRAINT: {
+				if (_subformula->formula().constraint().lhs().is_linear()) {
+					// todo: other eq/neq handling NOTE: this works only for GAUSSIAN_TABLEAU and SPLITTING_LEMMAS
+					m_constraints.push_back(_subformula->formula());
+					if constexpr (Settings::incremental) {
+						m_added_constraints.push_back(_subformula->formula());
+						// todo: not yet implemented
+					}
+					carl::Relation r = _subformula->formula().constraint().relation();
+					if ((r == carl::Relation::LESS) || (r == carl::Relation::GREATER)) {
+						m_strict_origins.insert(m_constraints.size()-1);
+					} else if (r == carl::Relation::NEQ) m_neqs.push_back(_subformula->formula());
+				} else { // constraint is non-linear
+					addSubformulaToPassedFormula(_subformula->formula(), _subformula->formula());
+					m_non_linear_constraints.insert(_subformula->formula());
+				}
+				return true;	
+			}
+			default:
+				assert(false); // unsupported
+				return true;
 		}
 	}
 	
@@ -145,12 +144,73 @@ namespace smtrat {
 			// NOTE: already constructed by try_construct_model which should have been called whenever SAT is returned
 		}
 	}
+
+	template<class Settings>
+	void NewFMPlexModule<Settings>::build_unsat_core(const std::set<std::size_t>& reason) {
+		FormulaSetT inf_subset;
+		for (const std::size_t i : reason) {
+			inf_subset.insert(m_constraints[i]);
+		}
+		mInfeasibleSubsets.push_back(inf_subset);
+	}
+
+	template<class Settings>
+	std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level() {
+		if constexpr (Settings::eq_handling == EQHandling::GAUSSIAN_TABLEAU) {
+			m_initial_tableau = fmplex::FMPlexTableau(m_constraints, m_variable_index);
+			if (m_equalities.size() > 0) {
+				m_initial_tableau.apply_gaussian_elimination();
+				for (std::size_t i = 0; i < m_initial_tableau.nr_of_rows(); i++) {
+					auto [conflicting, _strict] = m_initial_tableau.is_row_conflict(i);
+					if (conflicting) {
+						return fmplex::Conflict{0, m_initial_tableau.origins(i).first};
+					}
+				}
+			}
+			fmplex::FMPlexTableau root_tableau = m_initial_tableau.restrict_to_inequalities(); // TODO: only do this if there are EQS/neqs
+			std::vector<std::size_t> eliminatable_columns = root_tableau.non_zero_variable_columns();
+			m_history.reserve(eliminatable_columns.size() + 1);
+			if (m_history.empty()) m_history.emplace_back(root_tableau);
+			else m_history[0] = fmplex::Level(root_tableau);
+
+			m_current_level = 0;
+			for (const auto c : eliminatable_columns) {
+				m_elimination_variables.emplace_hint(m_elimination_variables.end(), m_variable_order[c]);
+			}
+		} else {
+			// todo: other eq-handling
+		}
+		return std::nullopt;
+	}
+
+	template<class Settings>
+	void NewFMPlexModule<Settings>::backtrack(const fmplex::Conflict& conflict) {
+		assert(conflict.level > 0);
+		m_history[conflict.level-1].add_to_unsat_core(conflict.involved_rows);
+		m_current_level = conflict.level-1;
+	}
+
+	template<class Settings>
+	bool NewFMPlexModule<Settings>::handle_neqs() {
+		std::size_t nr_splits = 0;
+		for (const auto& n : m_neqs) {
+			unsigned consistency = carl::satisfied_by(n, mModel);
+			if (consistency == 0) {
+				splitUnequalConstraint(n);
+				nr_splits++;
+				if (nr_splits >= Settings::nr_neq_splits_at_once) break;
+			} else if (consistency == 2) {
+				// TODO: handle what happens if n contains variables not present in mModel
+			}
+		}
+		return nr_splits == 0;
+	}
 	
 	template<class Settings>
 	Answer NewFMPlexModule<Settings>::checkCore() {
 		// Incrementality
 		if constexpr (Settings::incremental) {
-			// todo: (low priority)
+			// todo: not yet implemented
 		} else {
 			auto conflict = construct_root_level();
 			if (conflict) {
@@ -201,46 +261,10 @@ namespace smtrat {
 		return Answer::UNKNOWN;
 	}
 
-	template<class Settings>
-	void NewFMPlexModule<Settings>::build_unsat_core(const std::set<std::size_t>& reason) {
-		FormulaSetT inf_subset;
-		for (const std::size_t i : reason) {
-			inf_subset.insert(m_constraints[i]);
-		}
-		mInfeasibleSubsets.push_back(inf_subset);
-	}
-
-	template<class Settings>
-	std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level() {
-		if constexpr (Settings::eq_handling == EQHandling::GAUSSIAN_TABLEAU) {
-			m_initial_tableau = fmplex::FMPlexTableau(m_constraints, m_variable_index);
-			m_initial_tableau.apply_gaussian_elimination();
-			for (std::size_t i = 0; i < m_initial_tableau.nr_of_rows(); i++) {
-				auto [conflicting, _strict] = m_initial_tableau.is_row_conflict(i);
-				if (conflicting) {
-					return fmplex::Conflict{0, m_initial_tableau.origins(i).first};
-				}
-			}
-			fmplex::FMPlexTableau root_tableau = m_initial_tableau.restrict_to_inequalities(); // TODO: only do this if there are eqs/neqs
-			std::vector<std::size_t> eliminatable_columns = root_tableau.non_zero_variable_columns();
-			m_history.reserve(eliminatable_columns.size() + 1);
-			if (m_history.empty()) m_history.emplace_back(root_tableau);
-			else m_history[0] = fmplex::Level(root_tableau);
-
-			m_current_level = 0;
-			for (const auto c : eliminatable_columns) {
-				m_elimination_variables.emplace_hint(m_elimination_variables.end(), m_variable_order[c]);
-			}
-		} else {
-			// todo: other eq-handling
-		}
-		return std::nullopt;
-	}
-
-	using SparseMatrix = Eigen::SparseMatrix<Rational, Eigen::ColMajor>;
+	/*using SparseMatrix = Eigen::SparseMatrix<Rational, Eigen::ColMajor>;
 	using Vector = Eigen::SparseVector<Rational>;
 
-	/*template<class Settings>
+	template<class Settings>
 	void NewFMPlexModule<Settings>::gaussian_elimination() { // REVIEW: make non-member?
 		std::vector<Eigen::Triplet<Rational>> matrix_entries;
 		std::vector<Eigen::Triplet<Rational>> vector_entries;
@@ -264,27 +288,4 @@ namespace smtrat {
 		// how can we read off the origins?
 		// somewhere else: use the result to transform neqs and ineqs
 	}*/
-
-	template<class Settings>
-	void NewFMPlexModule<Settings>::backtrack(const fmplex::Conflict& conflict) {
-		assert(conflict.level > 0);
-		m_history[conflict.level-1].add_to_unsat_core(conflict.involved_rows);
-		m_current_level = conflict.level-1;
-	}
-
-	template<class Settings>
-	bool NewFMPlexModule<Settings>::handle_neqs() {
-		std::size_t nr_splits = 0;
-		for (const auto& n : m_neqs) {
-			unsigned consistency = carl::satisfied_by(n, mModel);
-			if (consistency == 0) {
-				splitUnequalConstraint(n);
-				nr_splits++;
-				if (nr_splits >= Settings::nr_neq_splits_at_once) break;
-			} else if (consistency == 2) {
-				// TODO: handle what happens if n contains variables not present in mModel
-			}
-		}
-		return nr_splits == 0;
-	}
 } // namespace smtrat

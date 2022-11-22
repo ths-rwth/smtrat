@@ -43,6 +43,7 @@ namespace smtrat {
 			FormulasT m_added_constraints; // REVIEW: is this necessary?
 			FormulasT m_neqs;
 			FormulasT m_equalities;
+			std::set<FormulaT> m_non_linear_constraints;
 
 			/// initial tableau for Gauss elimination
 			fmplex::FMPlexTableau m_initial_tableau;
