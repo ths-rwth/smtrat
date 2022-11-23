@@ -215,6 +215,14 @@ public:
 			}
 		}
 
+		// get assignment for (Boolean) variables from original formula
+		Model lra_model_nonenc;
+		for (const auto& v : used_vars) {
+			if (lra_model.find(v) != lra_model.end()) {
+				lra_model_nonenc.emplace(v, lra_model.at(v));
+			}
+		}
+
 		// Calculate smallest possible integer valued exponents
 		if (!carl::is_zero(gcd) && !carl::is_one(gcd))
 			for (Weight& weight : weights)
@@ -224,15 +232,17 @@ public:
 		Model result;
 		Rational base = 0;
 		do {
-			result.clear();
-			++base;
+			result = lra_model_nonenc;
 			for (const Weight& weight : weights) {
 				Rational value{carl::is_negative(weight.exponent) ? carl::reciprocal(base) : base};
-				carl::pow_assign(value, carl::to_int<carl::uint>(carl::abs(weight.exponent)));
-				if (weight.sign)
-					value *= -1;
+				if (value > 0) {
+					carl::pow_assign(value, carl::to_int<carl::uint>(carl::abs(weight.exponent)));
+					if (weight.sign)
+						value *= -1;
+				}
 				result.emplace(weight.variable, value);
 			}
+			++base;
 		} while (!satisfied_by(f, result));
 		return result;
 	}
@@ -354,30 +364,28 @@ inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encodin
 	auto res_boolean = formula;
 	std::map<Poly, std::map<carl::Relation, std::pair<FormulaT, FormulaT>>> encodings;
 	for (const auto& c : constraint_set) {
-		if (res_boolean.contains(c)) {
-			if (c.constraint().relation() == carl::Relation::EQ) {
-				res_boolean = carl::substitute(res_boolean, c, FormulaT(carl::FormulaType::FALSE));
-			} else {
-				auto constr = normalize(c.constraint().constr());
-				Separator separator(constr.lhs());
-				Direction dir = *direction(constr.relation());
-				auto& map = encodings.try_emplace(constr.lhs()).first->second;
-				assert(map.find(constr.relation()) == map.end());
-				FormulaT var = map.find(carl::inverse(constr.relation())) == map.end() ? FormulaT(carl::fresh_boolean_variable()) : map.at(carl::inverse(constr.relation())).first.negated();
-				map.emplace(constr.relation(), std::make_pair(var, encoding.encode_separator(separator, dir, separator_type)));
-				res_boolean = carl::substitute(res_boolean, c, var);
-			}
+		if (c.constraint().relation() == carl::Relation::EQ) {
+			res_boolean = carl::substitute(res_boolean, c, FormulaT(carl::FormulaType::FALSE));
+		} else {
+			auto constr = normalize(c.constraint().constr());
+			Separator separator(constr.lhs());
+			Direction dir = *direction(constr.relation());
+			auto& map = encodings.try_emplace(constr.lhs()).first->second;
+			assert(map.find(constr.relation()) == map.end());
+			FormulaT var = map.find(carl::inverse(constr.relation())) == map.end() ? FormulaT(carl::fresh_boolean_variable()) : map.at(carl::inverse(constr.relation())).first.negated();
+			map.emplace(constr.relation(), std::make_pair(var, encoding.encode_separator(separator, dir, separator_type)));
+			res_boolean = carl::substitute(res_boolean, c, var);
 		}
 	}
 	std::vector<FormulaT> res({res_boolean});
 	for (auto& poly : encodings) {
 		for (auto rel = poly.second.begin(); rel != poly.second.end(); rel++) {
 			auto& enc = rel->second;
-			if (res_boolean.contains(FormulaT(enc.first))) {
-				res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
-			} else {
-				rel = poly.second.erase(rel);
-			}
+			//if (res_boolean.contains_recursive(FormulaT(enc.first))) {
+			res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
+			//} else {
+			//	rel = poly.second.erase(rel);
+			//}
 		}
 		if (poly.second.find(carl::Relation::LESS) != poly.second.end() && poly.second.find(carl::Relation::GREATER) != poly.second.end()) {
 			res.emplace_back(carl::FormulaType::AND, poly.second.at(carl::Relation::LESS).first.negated(), poly.second.at(carl::Relation::GREATER).first.negated());
