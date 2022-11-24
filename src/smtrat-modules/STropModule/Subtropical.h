@@ -233,16 +233,14 @@ public:
 		Rational base = 0;
 		do {
 			result = lra_model_nonenc;
+			++base;
 			for (const Weight& weight : weights) {
 				Rational value{carl::is_negative(weight.exponent) ? carl::reciprocal(base) : base};
-				if (value > 0) {
-					carl::pow_assign(value, carl::to_int<carl::uint>(carl::abs(weight.exponent)));
-					if (weight.sign)
-						value *= -1;
-				}
+				carl::pow_assign(value, carl::to_int<carl::uint>(carl::abs(weight.exponent)));
+				if (weight.sign)
+					value *= -1;
 				result.emplace(weight.variable, value);
 			}
-			++base;
 		} while (!satisfied_by(f, result));
 		return result;
 	}
