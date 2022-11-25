@@ -383,8 +383,8 @@ inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encodin
 			bool relevant = false;
 			carl::visit(res_boolean, [&enc, &relevant](const FormulaT& f) { if (f==enc.first) relevant = true; } );
 			if (relevant) {
-				// res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
-				res.emplace_back(carl::FormulaType::IFF, enc.first, enc.second);
+				res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
+				//res.emplace_back(carl::FormulaType::IFF, enc.first, enc.second);
 				rel++;
 			} else {
 				rel = poly.second.erase(rel);
