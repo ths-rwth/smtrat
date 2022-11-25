@@ -29,7 +29,7 @@ class MaxSMTBackend<Solver, MaxSMTStrategy::FU_MALIK_INCREMENTAL> {
     }
 
 public:
-    MaxSMTBackend<Solver, MaxSMTStrategy::FU_MALIK_INCREMENTAL>(Solver& solver, const std::vector<FormulaT>& softClauses) : mSolver(solver), softClauses(softClauses) {}
+    MaxSMTBackend(Solver& solver, const std::vector<FormulaT>& softClauses) : mSolver(solver), softClauses(softClauses) {}
 
     Answer run() {
         std::map<FormulaT, carl::Variable> blockingVars;

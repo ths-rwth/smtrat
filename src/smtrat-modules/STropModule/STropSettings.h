@@ -58,7 +58,7 @@ struct STropSettings3 {
 /// Transform to NNF then replace each constraint with its linear formula (equations become FALSE). Then let LRA solver solve.
 struct STropSettings3b {
 	/// Name of the Module
-	static constexpr auto moduleName = "STropModule<STropSettings4>";
+	static constexpr auto moduleName = "STropModule<STropSettings3b>";
 	/// Type of linear separating hyperplane to search for
 	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure

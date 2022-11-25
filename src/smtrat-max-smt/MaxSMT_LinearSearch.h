@@ -20,7 +20,7 @@ class MaxSMTBackend<Solver, MaxSMTStrategy::LINEAR_SEARCH> {
     }
 
 public:
-    MaxSMTBackend<Solver, MaxSMTStrategy::LINEAR_SEARCH>(Solver& solver, const std::vector<FormulaT>& softClauses) : mSolver(solver), softClauses(softClauses) {}
+    MaxSMTBackend(Solver& solver, const std::vector<FormulaT>& softClauses) : mSolver(solver), softClauses(softClauses) {}
 
     Answer run() {
         // add all soft clauses with relaxation var

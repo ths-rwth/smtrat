@@ -31,7 +31,7 @@ class MaxSMTBackend<Solver, MaxSMTStrategy::MSU3> {
     }
 
 public:
-    MaxSMTBackend<Solver, MaxSMTStrategy::MSU3>(Solver& solver, const std::vector<FormulaT>& softClauses) : mSolver(solver), softClauses(softClauses) {}
+    MaxSMTBackend(Solver& solver, const std::vector<FormulaT>& softClauses) : mSolver(solver), softClauses(softClauses) {}
 
     Answer run() {
         std::map<FormulaT, ModuleInput::iterator> formulaPositionMap;
