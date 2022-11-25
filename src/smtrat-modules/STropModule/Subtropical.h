@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl-arith/constraint/BasicConstraint.h>
+#include <boost/container/flat_map.hpp>
 
 /**
  * Implements data structures and encodings for the subtropical method.
@@ -360,7 +361,7 @@ inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encodin
 	carl::arithmetic_constraints(formula, constraints);
 	std::set<FormulaT> constraint_set(constraints.begin(), constraints.end());
 	auto res_boolean = formula;
-	std::map<Poly, std::map<carl::Relation, std::pair<FormulaT, FormulaT>>> encodings;
+	std::map<Poly, boost::container::flat_map<carl::Relation, std::pair<FormulaT, FormulaT>>> encodings;
 	for (const auto& c : constraint_set) {
 		if (c.constraint().relation() == carl::Relation::EQ) {
 			res_boolean = carl::substitute(res_boolean, c, FormulaT(carl::FormulaType::FALSE));
@@ -377,13 +378,17 @@ inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encodin
 	}
 	std::vector<FormulaT> res({res_boolean});
 	for (auto& poly : encodings) {
-		for (auto rel = poly.second.begin(); rel != poly.second.end(); rel++) {
+		for (auto rel = poly.second.begin(); rel != poly.second.end(); ) {
 			auto& enc = rel->second;
-			//if (res_boolean.contains_recursive(FormulaT(enc.first))) {
-			res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
-			//} else {
-			//	rel = poly.second.erase(rel);
-			//}
+			bool relevant = false;
+			carl::visit(res_boolean, [&enc, &relevant](const FormulaT& f) { if (f==enc.first) relevant = true; } );
+			if (relevant) {
+				// res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
+				res.emplace_back(carl::FormulaType::IFF, enc.first, enc.second);
+				rel++;
+			} else {
+				rel = poly.second.erase(rel);
+			}
 		}
 		if (poly.second.find(carl::Relation::LESS) != poly.second.end() && poly.second.find(carl::Relation::GREATER) != poly.second.end()) {
 			res.emplace_back(carl::FormulaType::AND, poly.second.at(carl::Relation::LESS).first.negated(), poly.second.at(carl::Relation::GREATER).first.negated());
