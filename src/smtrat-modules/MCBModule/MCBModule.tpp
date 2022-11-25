@@ -41,6 +41,7 @@ namespace smtrat
 		virtual ModelValue evaluateSubstitution(const Model& model) const {
 			auto selection = mAssignments.end();
 			for (auto it = mAssignments.begin(); it != mAssignments.end(); it++) {
+				if (model.find(ModelVariable(it->first)) == model.end()) return *this;
 				const ModelValue& mv = model.evaluated(ModelVariable(it->first));
 				assert(mv.isBool());
 				if (mv.asBool()) {
