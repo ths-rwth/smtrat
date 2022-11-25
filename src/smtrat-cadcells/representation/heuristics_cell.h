@@ -116,6 +116,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
     // TODO refactor
     datastructures::Delineation reduced_delineation;
     util::PolyDelineations poly_delins;
+    assert(section == der->cell().is_section());
     util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
     assert(!section || reduced_cell.is_section());
