@@ -118,6 +118,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
     util::PolyDelineations poly_delins;
     util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+    assert(!section || reduced_cell.is_section());
     
     while(section) {
         auto old_size = response.equational.size();
