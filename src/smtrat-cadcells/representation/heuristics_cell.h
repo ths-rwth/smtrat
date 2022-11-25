@@ -241,7 +241,6 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
                 reached.push_back(barrier);
             }
             for (const auto& ir : it->second) {
-                std::cout << ir << std::endl;
                 if (section && response.equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
                     bool rchd = false;
