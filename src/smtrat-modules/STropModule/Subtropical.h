@@ -393,9 +393,9 @@ inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encodin
 		if (poly.second.find(carl::Relation::LESS) != poly.second.end() && poly.second.find(carl::Relation::GREATER) != poly.second.end()) {
 			res.emplace_back(carl::FormulaType::OR, poly.second.at(carl::Relation::LESS).first.negated(), poly.second.at(carl::Relation::GREATER).first.negated());
 		}
-		// if (poly.second.find(carl::Relation::LEQ) != poly.second.end() && poly.second.find(carl::Relation::GEQ) != poly.second.end()) {
-		// 	res.emplace_back(carl::FormulaType::OR, poly.second.at(carl::Relation::LEQ).first.negated(), poly.second.at(carl::Relation::GEQ).first.negated());
-		// }
+		if (poly.second.find(carl::Relation::LEQ) != poly.second.end() && poly.second.find(carl::Relation::GEQ) != poly.second.end()) {
+		 	res.emplace_back(carl::FormulaType::OR, poly.second.at(carl::Relation::LEQ).first.negated(), poly.second.at(carl::Relation::GEQ).first.negated());
+		}
 	}
 	return FormulaT(carl::FormulaType::AND, std::move(res));
 }
