@@ -383,7 +383,7 @@ public:
             if (!m_leq.contains(first)) m_leq.emplace(first, boost::container::flat_set<RootFunction>());
             m_leq[first].insert(second);
             if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<RootFunction>());
-            m_geq[first].insert(first);
+            m_geq[second].insert(first);
         }
     }
 
@@ -394,7 +394,7 @@ public:
         if (!m_less.contains(first)) m_less.emplace(first, boost::container::flat_set<RootFunction>());
         m_less[first].insert(second);
         if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<RootFunction>());
-        m_greater[first].insert(first);
+        m_greater[second].insert(first);
     }
 
     void add_eq(RootFunction first, RootFunction second) {
