@@ -10,6 +10,7 @@
 
 #include <smtrat-solver/Module.h>
 #include "NewFMPlexSettings.h"
+#include "../LRAModule/tableau/Value.h"
 //#include "Tableau.h"
 #include "Level.h"
 
