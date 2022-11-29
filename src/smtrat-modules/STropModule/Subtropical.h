@@ -37,14 +37,14 @@ struct Vertex {
 	/// Monomial of the assigned term
 	const carl::Monomial::Arg monomial;
 	/// Rating variable of the term for a weak separator
-	mutable std::optional<carl::Variable> m_rating;
+	mutable carl::Variable m_rating;
 
 	Vertex(const TermT& term)
 		: coefficient(term.coeff()), monomial(term.monomial()), m_rating(carl::Variable::NO_VARIABLE) {}
 
 	carl::Variable rating() const {
-		if (!m_rating) m_rating = carl::fresh_real_variable();
-		return *m_rating;
+		if (m_rating == carl::Variable::NO_VARIABLE) m_rating = carl::fresh_real_variable();
+		return m_rating;
 	}
 };
 
