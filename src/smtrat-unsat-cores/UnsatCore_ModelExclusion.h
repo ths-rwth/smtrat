@@ -23,7 +23,7 @@ private:
 	std::map<carl::Variable, FormulaT> mFormulas;
 	std::size_t mAssignments = 0;
 public:
-	UnsatCoreBackend<Solver, UnsatCoreStrategy::ModelExclusion>(Solver& s, const FormulasT& fs) : mSolver(s) {
+	UnsatCoreBackend(Solver& s, const FormulasT& fs) : mSolver(s) {
 		FormulasT phis;
 		std::size_t id = 0;
 		for (const auto& f : fs) {

@@ -122,7 +122,7 @@ void remove_log_files(const std::vector<fs::path>& files, bool remove);
  * Clear log files from directory
  * @param basedir Base directory to search in.
  */
-void clear_log_files(const fs::path& basedir);
+void clear_directory(const fs::path& basedir);
 
 /**
  * Checks if the given job is finished.

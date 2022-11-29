@@ -10,12 +10,18 @@
 
 namespace smtrat
 {
-    struct ESSettings1
+    struct ESSettingsDefault
     {
-		static constexpr auto moduleName = "ESModule<ESSettings1>";
-        /**
-         * Example for a setting.
-         */
-        static const bool example_setting = true;
+		static constexpr auto moduleName = "ESModule<ESSettingsDefault>";
+        
+        static const std::size_t substitution_bitsize_limit = 0; // no limit
+    };
+
+    struct ESSettingsLimitSubstitution
+    {
+		static constexpr auto moduleName = "ESModule<ESSettingsLimitSubstitution>";
+        
+        // limit the bitsize of substitution to avoid explosion of coefficients
+        static const std::size_t substitution_bitsize_limit = 500;
     };
 }

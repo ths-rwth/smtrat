@@ -383,14 +383,20 @@ namespace arithmetic {
 		if (boost::get<Poly::ConstructorOperation>(&op) != nullptr) {
 			auto o = boost::get<Poly::ConstructorOperation>(op);
 			if (o == Poly::ConstructorOperation::DIV) {
-				if (args.size() > 1 && carl::is_zero(args[1])) {
-					errors.next() << "division by zero is not supported, although allowed by SMT-LIB.";
+				if (args.size() < 2) {
+					errors.next() << "Division needs to have at least two operands.";
 					return false;
-					// SMTRAT_LOG_WARN("smtrat.smtlib", "Though SMTLIB allows for the second operator of \"" << o << "\" to be zero, we strongly discourage doing this.");
-					// result = Poly();
-				} else {
-					result = Poly(o, args);
+				} 
+				for (std::size_t i = 1; i < args.size(); i++) {
+					if (!args[i].is_number()) {
+						errors.next() << "Division by non-constant is not supported, although allowed by SMT-LIB.";
+						return false;
+					} else if (carl::is_zero(args[i])) {
+						errors.next() << "Division by zero is not supported, although allowed by SMT-LIB.";
+						return false;
+					}
 				}
+				result = Poly(o, args);
 			} else {
 				result = Poly(o, args);
 			}

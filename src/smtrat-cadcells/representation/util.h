@@ -174,30 +174,31 @@ struct PolyDelineations {
 
 inline void decompose(const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, datastructures::Delineation& delin_out, PolyDelineations& poly_delin_out) {
     if (!delin_interval.lower_unbounded()) {
-        boost::container::flat_set<datastructures::PolyRef> seen;
+        // TODO can we leave out even more?
+        boost::container::flat_set<std::pair<datastructures::PolyRef,std::optional<datastructures::PolyRef>>> seen;
         auto it = delin_interval.lower();
         while(true) {
             for (const auto& ir : it->second) {
                 poly_delin_out.get(ir.root.poly).delineated_roots.insert(ir.root.index);
-                if (seen.contains(ir.root.poly)) continue;
+                if (seen.contains(std::make_pair(ir.root.poly,ir.origin))) continue;
                 delin_out.add_root(it->first,ir);
                 poly_delin_out.get(ir.root.poly).critical_lower_root = ir.root.index;
-                seen.insert(ir.root.poly);
+                seen.insert(std::make_pair(ir.root.poly,ir.origin));
             }
             if (it != delin.roots().begin()) it--;
             else break;
         }
     }
     if (!delin_interval.upper_unbounded()) {
-        boost::container::flat_set<datastructures::PolyRef> seen;
+        boost::container::flat_set<std::pair<datastructures::PolyRef,std::optional<datastructures::PolyRef>>> seen;
         auto it = delin_interval.upper();
         while(it != delin.roots().end()) {
             for (const auto& ir : it->second) {
                 poly_delin_out.get(ir.root.poly).delineated_roots.insert(ir.root.index);
-                if (seen.contains(ir.root.poly)) continue;
+                if (seen.contains(std::make_pair(ir.root.poly,ir.origin))) continue;
                 delin_out.add_root(it->first,ir);
                 poly_delin_out.get(ir.root.poly).critical_upper_root = ir.root.index;
-                seen.insert(ir.root.poly);
+                seen.insert(std::make_pair(ir.root.poly,ir.origin));
             }
             it++;
         }

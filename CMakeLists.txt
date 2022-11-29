@@ -15,7 +15,7 @@ set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 # Include own macros.
 include(macros)
 
-set_version(22 09)
+set_version(22 11)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
@@ -42,7 +42,7 @@ option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are i
 option( USE_MIMALLOC "Build mimalloc" OFF )
 
 # Strategy
-set(SMTRAT_Strategy "SMTCOMP" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Strategy "Default" CACHE STRING "Used strategy in the solver")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options

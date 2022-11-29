@@ -1,0 +1,24 @@
+name: Build
+description: Build smtrat
+inputs:
+  build-env: 
+    description: "Environment variables for the build"
+    required: true
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure CMake
+      shell: bash
+      run: |
+        echo "::group::Configure CMake"
+        export ${{inputs.build-env}}
+        cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} 
+        echo "::group::Configure CMake done"
+    - name: Build smtrat
+      shell: bash 
+      run: |
+        echo "::group::Build smtrat"
+        cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}} --target all -j$(nproc)
+        echo "::group::Build smtrat done"

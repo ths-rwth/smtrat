@@ -3,6 +3,7 @@
 #include "../common.h"
 #include <smtrat-common/smtrat-common.h>
 #include <boost/intrusive/set.hpp>
+#include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -78,7 +79,7 @@ public:
         for (size_t i = 0; i < m_var_order.size(); i++) {
             m_polys.emplace_back();
             m_poly_ids.emplace_back();
-        }
+        } // why not use resize?
     }
 
     const VariableOrdering& var_order() const { return m_var_order; }
@@ -101,7 +102,10 @@ public:
         } else {
             ref.id = m_polys[ref.level-1].size();
             m_polys[ref.level-1].push_back(std::make_unique<Element>(std::move(npoly), ref.id));
-            m_poly_ids[ref.level-1].insert_commit(*m_polys[ref.level-1].back(), insert_data);            
+            m_poly_ids[ref.level-1].insert_commit(*m_polys[ref.level-1].back(), insert_data);
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().degree(poly.degree(m_var_order[ref.level-1]));
+            #endif         
         }
         return ref;
     }
@@ -138,6 +142,10 @@ public:
         if (level > m_polys.size()) return;
         m_poly_ids.erase(m_poly_ids.begin() + (level - 1), m_poly_ids.end());
         m_polys.erase(m_polys.begin() + (level - 1), m_polys.end());
+    }
+
+    const Polynomial::ContextType& get_context() const {
+        return m_context;
     }
 
     inline friend std::ostream& operator<<(std::ostream& os, const PolyPool& data) {

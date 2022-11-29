@@ -10,8 +10,11 @@ namespace smtrat::cadcells {
 
 using VariableOrdering = std::vector<carl::Variable>;
 
-// using Polynomial = carl::ContextPolynomial<Rational>;
+#ifdef USE_LIBPOLY
 using Polynomial = carl::LPPolynomial;
+#else 
+using Polynomial = carl::ContextPolynomial<Rational>;
+#endif
 using Constraint = carl::BasicConstraint<Polynomial>;
 using MultivariateRoot = carl::MultivariateRoot<Polynomial>;
 using VariableComparison = carl::VariableComparison<Polynomial>;

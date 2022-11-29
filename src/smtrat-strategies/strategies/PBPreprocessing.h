@@ -26,7 +26,7 @@ namespace smtrat
 				setStrategy({
 						//addBackend<GBPPModule<GBPPSettings1>>(
 							//addBackend<PBPPModule<PBPPSettings1>>(
-								addBackend<ESModule<ESSettings1>>()
+								addBackend<ESModule<ESSettingsDefault>>()
 							//)
 						//)
 				});
@@ -42,7 +42,7 @@ namespace smtrat
 				setStrategy({
 						addBackend<GBPPModule<GBPPSettings1>>(
 							//addBackend<PBPPModule<PBPPSettings1>>(
-								addBackend<ESModule<ESSettings1>>()
+								addBackend<ESModule<ESSettingsDefault>>()
 							//)
 						)
 				});

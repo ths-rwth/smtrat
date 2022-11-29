@@ -659,7 +659,7 @@ namespace smtrat
                 //@todo models should be disjoint, but this breaks CAD on certain inputs.
                 //assert( modelsDisjoint( mModel, (*module)->model() ) );
                 (*module)->updateModel();
-                mModel.update((*module)->model());
+                mModel.update((*module)->model(), false);
                 break;
             }
             ++module;
@@ -882,6 +882,7 @@ namespace smtrat
     void Module::excludeNotReceivedVariablesFromModel() const
     {
         if (mModel.empty()) return;
+        mModel.clean();
 		// Collect all variables
 		carl::carlVariables variables;
 		std::set<carl::UninterpretedFunction> functions;

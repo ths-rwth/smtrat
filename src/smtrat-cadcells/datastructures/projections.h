@@ -5,9 +5,12 @@
 #include "../common.h"
 
 #include "polynomials.h"
+#include "roots.h"
 
 #include <carl-arith/poly/ctxpoly/Functions.h>
 #include <carl-arith/poly/libpoly/Functions.h>
+
+#include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -125,6 +128,9 @@ public:
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().resultant();
+            #endif
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
@@ -144,6 +150,9 @@ public:
         if (cache(p).disc) {
             return *cache(p).disc;
         } else {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().discriminant();
+            #endif
             auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
             cache(p).disc = result;
@@ -155,6 +164,9 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
+            #ifdef SMTRAT_DEVOPTION_Statistics
+                OCApproximationStatistics::get_instance().coefficient();
+            #endif
             auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
             cache(p).ldcf = result;

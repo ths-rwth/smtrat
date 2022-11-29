@@ -20,10 +20,10 @@ inline std::ostream& operator<<(std::ostream& os, const TaggedIndexedRoot& data)
     if (data.is_optional) os << "_opt";
     return os;
 }
-bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
+inline bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
     return lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional == rhs.is_optional;
 }
-bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
+inline bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
     return lhs.root < rhs.root || (lhs.root == rhs.root && lhs.is_inclusive < rhs.is_inclusive) || (lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional < rhs.is_optional);
 }
 
@@ -209,9 +209,13 @@ public:
         if (irs == m_roots.end()) {
             irs = m_roots.emplace(std::move(root), std::vector<TaggedIndexedRoot>()).first;
         }
-        auto loc = std::find(irs->second.begin(), irs->second.end(), tagged_root);
+        auto loc = std::find_if(irs->second.begin(), irs->second.end(), [&tagged_root](const auto& current) { return current.root == tagged_root.root && current.origin == tagged_root.origin; });
         if (loc == irs->second.end()) {
             irs->second.push_back(std::move(tagged_root));
+        } else {
+            // TODO is this the right place for deduplication?
+            if (!tagged_root.is_inclusive) loc->is_inclusive = false;
+            if (!tagged_root.is_optional) loc->is_optional = false;
         }
     }
 

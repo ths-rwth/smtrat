@@ -11,6 +11,7 @@
 
 #include <carl-arith/constraint/Substitution.h>
 #include <carl-formula/formula/functions/Substitution.h>
+#include <carl-arith/poly/umvpoly/functions/Bitsize.h>
 
 
 namespace smtrat
@@ -142,7 +143,7 @@ namespace smtrat
                             else if( tmp.type() != carl::FormulaType::TRUE )
                             {
                                 auto subs = carl::get_substitution(tmp.constraint(), false, objective());
-                                if( subs )
+                                if( subs && (Settings::substitution_bitsize_limit == 0 || carl::bitsize(subs->second) <= Settings::substitution_bitsize_limit))
                                 {
 									if (subs->first != objective()) {
 										SMTRAT_LOG_INFO("smtrat.es", "found substitution [" << subs->first << " -> " << subs->second << "]");
@@ -212,10 +213,11 @@ namespace smtrat
                 }
                 if( currentSubformulas.empty() )
                 {
-                    if( foundSubstitutions.empty() )
-                        result = FormulaT( carl::FormulaType::TRUE );
-                    else if( !_elimSubstitutions )
+                    if( !_elimSubstitutions && !foundSubstitutions.empty() )
                         result = FormulaT( carl::FormulaType::AND, std::move(foundSubstitutions) );
+                    else
+                        result = FormulaT( carl::FormulaType::TRUE );
+                    assert(!_elimSubstitutions || result == FormulaT( carl::FormulaType::TRUE ));
                 }
                 else
                 {
@@ -246,7 +248,7 @@ namespace smtrat
                 if( cond.type() == carl::FormulaType::CONSTRAINT )
                 {
                     auto subs = carl::get_substitution(cond.constraint(), false);
-                    if( subs )
+                    if( subs  && (Settings::substitution_bitsize_limit == 0 || carl::bitsize(subs->second) <= Settings::substitution_bitsize_limit))
                     {
                         SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subs->first << " -> " << subs->second << "]" );
                         auto addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );
@@ -267,7 +269,7 @@ namespace smtrat
                     else
                     {
                         subs = carl::get_substitution(cond.constraint(), true);
-                        if( subs )
+                        if( subs  && (Settings::substitution_bitsize_limit == 0 || carl::bitsize(subs->second) <= Settings::substitution_bitsize_limit))
                         {
                             SMTRAT_LOG_DEBUG("smtrat.es", __LINE__ << "   found substitution [" << subs->first << " -> " << subs->second << "]" );
                             auto addedBoolSub = cond.type() == carl::FormulaType::NOT ? mBoolSubs.emplace( cond.subformula(), false ) : mBoolSubs.emplace( cond, true );

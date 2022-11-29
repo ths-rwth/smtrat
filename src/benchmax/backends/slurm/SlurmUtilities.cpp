@@ -190,22 +190,24 @@ void remove_log_files(const std::vector<fs::path>& files, bool remove) {
 	}
 }
 
-void clear_log_files(const fs::path& basedir) {
-
-	BENCHMAX_LOG_INFO("benchmax.slurm", "Remove old logs in " << basedir);
-	std::vector<fs::path> files;
-
-	std::regex filenamere("JOB.[0-9]+_[0-9]+.(out|err)");
-	for (const auto& f: fs::directory_iterator(basedir)) {
-		if (!std::regex_match(f.path().filename().string(), filenamere)) {
-			continue;
-		}
-		files.emplace_back(f.path());
+void clear_directory(const fs::path& basedir) {
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Clear directory " << basedir);
+	for (const auto& entry : std::filesystem::directory_iterator(basedir)) {
+		std::filesystem::remove_all(entry.path());
 	}
-	for (const auto& f: files) {
-		std::filesystem::remove(f);
-	}
-	BENCHMAX_LOG_INFO("benchmax.slurm", "Cleared " << files.size() << " log files.");
+	BENCHMAX_LOG_INFO("benchmax.slurm", "Cleared");
+	// std::vector<fs::path> files;
+	// std::regex filenamere("JOB.[0-9]+_[0-9]+.(out|err)");
+	// for (const auto& f: fs::directory_iterator(basedir)) {
+	// 	if (!std::regex_match(f.path().filename().string(), filenamere)) {
+	// 		continue;
+	// 	}
+	// 	files.emplace_back(f.path());
+	// }
+	// for (const auto& f: files) {
+	// 	std::filesystem::remove(f);
+	// }
+	// BENCHMAX_LOG_INFO("benchmax.slurm", "Cleared " << files.size() << " log files.");
 }
 
 bool is_job_finished(int jobid) {

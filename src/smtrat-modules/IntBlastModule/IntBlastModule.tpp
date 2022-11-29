@@ -872,7 +872,7 @@ namespace smtrat
     template<class Settings>
     void IntBlastModule<Settings>::updateBoundsFromICP()
     {
-        for(const FormulaT formula : mProcessedFormulasFromICP) {
+        for(const FormulaT& formula : mProcessedFormulasFromICP) {
             mBoundsInRestriction.removeBound(formula.constraint(), formula);
         }
         mProcessedFormulasFromICP.clear();

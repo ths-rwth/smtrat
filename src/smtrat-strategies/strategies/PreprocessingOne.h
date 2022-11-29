@@ -6,7 +6,7 @@
 #include <smtrat-solver/Manager.h>
 #include <smtrat-modules/EMModule/EMModule.h>
 #include <smtrat-modules/PFEModule/PFEModule.h>
-#include <smtrat-modules/SplitSOSModule/SplitSOSModule.h>
+// #include <smtrat-modules/SplitSOSModule/SplitSOSModule.h>
 #include <smtrat-modules/ESModule/ESModule.h>
 #include <smtrat-modules/ICEModule/ICEModule.h>
 #include <smtrat-modules/MCBModule/MCBModule.h>
@@ -36,7 +36,7 @@ namespace smtrat
 									addBackend<EMModule<EMSettings1>>(
 										addBackend<PFEModule<PFESettings1>>(
 									//		addBackend<SplitSOSModule<SplitSOSSettings1>>({
-												addBackend<ESModule<ESSettings1>>()
+												addBackend<ESModule<ESSettingsDefault>>()
 									//		})
 										)
 									)

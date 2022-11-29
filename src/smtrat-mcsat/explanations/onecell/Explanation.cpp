@@ -10,13 +10,15 @@
 
 namespace smtrat::mcsat::onecell {
 
-using Settings = LDBSettings; // current default
+// using Settings = LDBSettings; // current default
 // using Settings = BCSettings;
 // using Settings = BCFilteredSettings;
 // using Settings = BCFilteredAllSettings;
 // using Settings = BCFilteredBoundsSettings;
 // using Settings = BCFilteredSamplesSettings;
 // using Settings = BCFilteredAllSelectiveSettings;
+using Settings = LDBFilteredAllSelectiveSettings;
+// using Settings = BCApproximationSettings;
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
@@ -59,7 +61,13 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         }
     }
     SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << constr << " with " << vars << " and " << ass);
-    auto result = onecell<Settings>(constr, context, ass); 
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        SMTRAT_TIME_START(start);
+    #endif
+    auto result = onecell<Settings>(constr, context, ass);
+    #ifdef SMTRAT_DEVOPTION_Statistics
+        SMTRAT_TIME_FINISH(mStatistics.timer(), start);
+    #endif
 
     if (!result) {
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");

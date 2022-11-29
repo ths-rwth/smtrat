@@ -8,9 +8,9 @@
  */
 namespace smtrat::cadcells::representation {
     enum CellHeuristic {
-        BIGGEST_CELL, CHAIN_EQ, LOWEST_DEGREE_BARRIERS, LOWEST_DEGREE_BARRIERS_EQ, BIGGEST_CELL_EW
+        BIGGEST_CELL, CHAIN_EQ, LOWEST_DEGREE_BARRIERS, LOWEST_DEGREE_BARRIERS_EQ, BIGGEST_CELL_EW, LOWEST_DEGREE_BARRIERS_EW, BIGGEST_CELL_APPROXIMATION
     };
-    static const char * CellHeuristicStrings[] = { "BIGGEST_CELL", "CHAIN_EQ", "LOWEST_DEGREE_BARRIERS", "LOWEST_DEGREE_BARRIERS_EQ", "BIGGEST_CELL_EW" };
+    static const char * CellHeuristicStrings[] = { "BIGGEST_CELL", "CHAIN_EQ", "LOWEST_DEGREE_BARRIERS", "LOWEST_DEGREE_BARRIERS_EQ", "BIGGEST_CELL_EW", "LOWEST_DEGREE_BARRIERS_EW" };
 
     enum CoveringHeuristic {
         BIGGEST_CELL_COVERING, CHAIN_COVERING, BIGGEST_CELL_COVERING_EW
@@ -43,3 +43,4 @@ namespace smtrat::cadcells::representation {
 #include "util.h"
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
+#include "heuristics_approximation.h"

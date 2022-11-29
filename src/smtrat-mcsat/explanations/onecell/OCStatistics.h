@@ -12,6 +12,7 @@ class OCStatistics : public Statistics {
 private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
+	carl::statistics::timer mOneCellTimer;
 
 public:
 	bool enabled() const {
@@ -21,7 +22,12 @@ public:
 	void collect() {
 		Statistics::addKeyValuePair("explanation_called", mExplanationCalled);
 		Statistics::addKeyValuePair("explanation_success", mExplanationSuccess);
+		Statistics::addKeyValuePair("onecell_called", mOneCellTimer);
 	}
+
+	auto& timer() {
+        return mOneCellTimer;
+    }
 
 	void explanationCalled() {
 		++mExplanationCalled;

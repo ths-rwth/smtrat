@@ -5,11 +5,11 @@
  */
 #pragma once
 
-#include "Helper.h"
-#include "NewCoveringStatistics.h"
 #include <smtrat-cadcells/common.h>
 #include <smtrat-cadcells/datastructures/delineation.h>
 #include <smtrat-cadcells/datastructures/derivation.h>
+#include "Helper.h"
+#include "NewCoveringStatistics.h"
 #include <smtrat-common/smtrat-common.h>
 
 namespace smtrat {

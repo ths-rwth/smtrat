@@ -2,6 +2,7 @@ include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
 add_definitions(-fPIC)
 
+string(REPLACE "/" "_" strategy ${SMTRAT_Strategy})
 configure_everything()
 
 file(GLOB_RECURSE smtrat-strategies_sources "*.cpp")
@@ -13,9 +14,11 @@ target_link_libraries(smtrat-strategies-static smtrat-solver-static)
 
 install_libraries(smtrat smtrat-strategies-shared smtrat-strategies-static)
 
-file(GLOB strategies LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/strategies/ strategies/*.h)
+file(GLOB_RECURSE strategies LIST_DIRECTORIES false RELATIVE ${CMAKE_CURRENT_SOURCE_DIR}/strategies/ strategies/**.h)
 foreach(strategyfile ${strategies})
-	get_filename_component(strategy ${strategyfile} NAME_WE)
+	get_filename_component(strategy_dir ${strategyfile} DIRECTORY)
+	get_filename_component(strategy_name ${strategyfile} NAME_WE)
+	string(JOIN "_" strategy ${strategy_dir} ${strategy_name})
 
 	add_library(smtrat-strategy-${strategy}-shared INTERFACE)
 	add_library(smtrat-strategy-${strategy}-static INTERFACE)
