@@ -130,7 +130,7 @@ private:
 	}
 
 	void run_job_async(std::size_t n, const std::vector<JobData>& results, bool wait_for_termination) {
-		slurm::clear_log_files(settings_slurm().tmp_dir);
+		slurm::clear_directory(settings_slurm().tmp_dir);
 
 		std::string jobsfilename = settings_slurm().tmp_dir + "/jobs-" + std::to_string(settings_core().start_time) + "-" + std::to_string(n+1) + ".jobs";
 		auto job_range = get_job_range(n, results.size());

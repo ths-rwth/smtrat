@@ -6,7 +6,7 @@ option(BENCHMAX_SSH "Enable SSH backend." ON)
 include_directories(${CMAKE_SOURCE_DIR}/src)
 file(GLOB_RECURSE benchmax_sources "*.cpp")
 add_executable( benchmax ${benchmax_sources})
-target_link_libraries(benchmax stdc++fs pthread carl-arith-shared carl-settings-shared ${Boost_SHARED} Boost_serialization_SHARED)
+target_link_libraries(benchmax stdc++fs pthread carl-settings-shared ${Boost_SHARED} Boost_serialization_SHARED)
 
 # Database
 if(BENCHMAX_DATABASE)

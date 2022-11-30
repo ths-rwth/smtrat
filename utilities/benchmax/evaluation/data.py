@@ -6,8 +6,11 @@ def get_solvers(df):
 def compare_results(answer1,time1,answer2,time2):
     if answer1 in ['sat','unsat'] and not answer2 in ['sat','unsat']:
         return True
+    elif not answer1 in ['sat','unsat'] and answer2 in ['sat','unsat']:
+        return False
     else:
-        return time1<time2
+        assert (answer1 in ['sat','unsat']) == (answer2 in ['sat','unsat'])
+        return int(time1)<int(time2)
     
 
 def virtual_best(df, solvers, name, statistics=[]):
@@ -17,6 +20,7 @@ def virtual_best(df, solvers, name, statistics=[]):
         for solver in solvers:
             if compare_results(row[(solver,'answer')],row[(solver,'runtime')],row[(s,'answer')],row[(s,'runtime')]):
                 s = solver
+        assert row[(s,'answer')] in ['sat','unsat'] or not True in [row[(solver,'answer')] in ['sat','unsat'] for solver in solvers] 
         new_row = []
         new_row.append(row[(s,'answer')])
         new_row.append(row[(s,'runtime')])

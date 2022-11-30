@@ -16,9 +16,9 @@
 
 namespace smtrat
 {
-    struct FPPSettings1
+    struct FPPSettings1Old
     {
-		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
+		static constexpr auto moduleName = "FPPModule<FPPSettings1Old>";
         /**
          * The maximum number of iterations in order to reach a fix point during the repeated application of preprocessing.
          * If this number is negative, this procedure stops only if it indeed reached a fix point.
@@ -28,9 +28,9 @@ namespace smtrat
         typedef PreprocessingOne Preprocessor;
     };
 
-    struct FPPSettingsTwo
+    struct FPPSettings1
     {
-		static constexpr auto moduleName = "FPPModule<FPPSettingsTwo>";
+		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
         static const int max_iterations = 5;
         typedef PreprocessingTwo Preprocessor;
     };

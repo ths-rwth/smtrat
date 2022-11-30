@@ -55,7 +55,7 @@ class DefaultTwo: public Manager {
     DefaultTwo(): Manager() {
         setStrategy(
         {
-            addBackend<FPPModule<FPPSettingsTwo>>(
+            addBackend<FPPModule<FPPSettings1Old>>(
             {
                 addBackend<IncWidthModule<IncWidthSettings1>>(
                 {
@@ -76,11 +76,11 @@ class DefaultTwo: public Manager {
                     })
                 })
             }).condition( &condition_nira ),
-            addBackend<FPPModule<FPPSettingsTwo>>(
+            addBackend<FPPModule<FPPSettings1Old>>(
             {
                 addBackend<SATModule<SATSettingsMCSATFMICPVSOCNewOC>>()
             }).condition( &condition_nra ),
-            addBackend<FPPModule<FPPSettingsTwo>>(
+            addBackend<FPPModule<FPPSettings1Old>>(
             {
                 addBackend<SATModule<SATSettings1>>(
                 {
@@ -94,7 +94,7 @@ class DefaultTwo: public Manager {
                     addBackend<LRAModule<LRASettings1>>()
                 }).condition( &condition_noconjunction )
             }).condition( &condition_lira ),
-            addBackend<FPPModule<FPPSettingsTwo>>(
+            addBackend<FPPModule<FPPSettings1Old>>(
             {
                 addBackend<SATModule<SATSettings1>>(
                 {

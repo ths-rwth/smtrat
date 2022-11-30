@@ -882,6 +882,7 @@ namespace smtrat
     void Module::excludeNotReceivedVariablesFromModel() const
     {
         if (mModel.empty()) return;
+        mModel.clean();
 		// Collect all variables
 		carl::carlVariables variables;
 		std::set<carl::UninterpretedFunction> functions;

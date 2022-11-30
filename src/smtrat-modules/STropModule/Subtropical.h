@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl-arith/constraint/BasicConstraint.h>
+#include <boost/container/flat_map.hpp>
 
 /**
  * Implements data structures and encodings for the subtropical method.
@@ -10,7 +11,8 @@
 namespace smtrat::subtropical {
 
 enum class SeparatorType { STRICT = 0,
-						   WEAK = 1 };
+						   WEAK = 1,
+						   SEMIWEAK = 2 };
 
 /**
  * Represents the normal vector component and the sign variable
@@ -36,14 +38,14 @@ struct Vertex {
 	/// Monomial of the assigned term
 	const carl::Monomial::Arg monomial;
 	/// Rating variable of the term for a weak separator
-	mutable std::optional<carl::Variable> m_rating;
+	mutable carl::Variable m_rating;
 
 	Vertex(const TermT& term)
 		: coefficient(term.coeff()), monomial(term.monomial()), m_rating(carl::Variable::NO_VARIABLE) {}
 
 	carl::Variable rating() const {
-		if (!m_rating) m_rating = carl::fresh_real_variable();
-		return *m_rating;
+		if (m_rating == carl::Variable::NO_VARIABLE) m_rating = carl::fresh_real_variable();
+		return m_rating;
 	}
 };
 
@@ -169,7 +171,7 @@ public:
 					FormulaT(
 						carl::FormulaType::IMPLIES,
 						positive ? signChangeFormula.negated() : signChangeFormula,
-						FormulaT(hyperplane, separator_type == SeparatorType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS))
+						FormulaT(hyperplane, separator_type == SeparatorType::STRICT || separator_type == SeparatorType::SEMIWEAK ? carl::Relation::LEQ : carl::Relation::LESS))
 						.negated());
 				conjunctions.emplace_back(
 					carl::FormulaType::IMPLIES,
@@ -215,6 +217,14 @@ public:
 			}
 		}
 
+		// get assignment for (Boolean) variables from original formula
+		Model lra_model_nonenc;
+		for (const auto& v : used_vars) {
+			if (lra_model.find(v) != lra_model.end()) {
+				lra_model_nonenc.emplace(v, lra_model.at(v));
+			}
+		}
+
 		// Calculate smallest possible integer valued exponents
 		if (!carl::is_zero(gcd) && !carl::is_one(gcd))
 			for (Weight& weight : weights)
@@ -224,7 +234,7 @@ public:
 		Model result;
 		Rational base = 0;
 		do {
-			result.clear();
+			result = lra_model_nonenc;
 			++base;
 			for (const Weight& weight : weights) {
 				Rational value{carl::is_negative(weight.exponent) ? carl::reciprocal(base) : base};
@@ -338,6 +348,57 @@ inline FormulaT encode_as_formula(const FormulaT& formula, Encoding& encoding, S
 		assert(false);
 		return FormulaT(carl::FormulaType::FALSE);
 	}
+}
+
+/**
+ * Requires a quantifier-free real arithmetic formula with no negations
+ *
+ * @param formula The formula to translate
+ *
+ * @return linear formula
+ */
+inline FormulaT encode_as_formula_alt(const FormulaT& formula, Encoding& encoding, SeparatorType separator_type) {
+	std::vector<FormulaT> constraints;
+	carl::arithmetic_constraints(formula, constraints);
+	std::set<FormulaT> constraint_set(constraints.begin(), constraints.end());
+	auto res_boolean = formula;
+	std::map<Poly, boost::container::flat_map<carl::Relation, std::pair<FormulaT, FormulaT>>> encodings;
+	for (const auto& c : constraint_set) {
+		if (c.constraint().relation() == carl::Relation::EQ) {
+			res_boolean = carl::substitute(res_boolean, c, FormulaT(carl::FormulaType::FALSE));
+		} else {
+			auto constr = normalize(c.constraint().constr());
+			Separator separator(constr.lhs());
+			Direction dir = *direction(constr.relation());
+			auto& map = encodings.try_emplace(constr.lhs()).first->second;
+			assert(map.find(constr.relation()) == map.end());
+			FormulaT var = map.find(carl::inverse(constr.relation())) == map.end() ? FormulaT(carl::fresh_boolean_variable()) : map.at(carl::inverse(constr.relation())).first.negated();
+			map.emplace(constr.relation(), std::make_pair(var, encoding.encode_separator(separator, dir, separator_type)));
+			res_boolean = carl::substitute(res_boolean, c, var);
+		}
+	}
+	std::vector<FormulaT> res({res_boolean});
+	for (auto& poly : encodings) {
+		for (auto rel = poly.second.begin(); rel != poly.second.end(); ) {
+			auto& enc = rel->second;
+			bool relevant = false;
+			carl::visit(res_boolean, [&enc, &relevant](const FormulaT& f) { if (f==enc.first) relevant = true; } );
+			if (relevant) {
+				res.emplace_back(carl::FormulaType::IMPLIES, enc.first, enc.second);
+				//res.emplace_back(carl::FormulaType::IFF, enc.first, enc.second);
+				rel++;
+			} else {
+				rel = poly.second.erase(rel);
+			}
+		}
+		if (poly.second.find(carl::Relation::LESS) != poly.second.end() && poly.second.find(carl::Relation::GREATER) != poly.second.end()) {
+			res.emplace_back(carl::FormulaType::OR, poly.second.at(carl::Relation::LESS).first.negated(), poly.second.at(carl::Relation::GREATER).first.negated());
+		}
+		if (poly.second.find(carl::Relation::LEQ) != poly.second.end() && poly.second.find(carl::Relation::GEQ) != poly.second.end()) {
+		 	res.emplace_back(carl::FormulaType::OR, poly.second.at(carl::Relation::LEQ).first.negated(), poly.second.at(carl::Relation::GEQ).first.negated());
+		}
+	}
+	return FormulaT(carl::FormulaType::AND, std::move(res));
 }
 
 } // namespace smtrat::subtropical

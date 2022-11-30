@@ -336,7 +336,7 @@ Answer STropModule<Settings>::checkCore() {
 			}
 		}
 	} else {
-		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
+		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA || Settings::mode == Mode::TRANSFORM_FORMULA_ALT);
 		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
 		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
@@ -357,7 +357,7 @@ Answer STropModule<Settings>::checkCore() {
 			}
 			return Answer::SAT;
 		}
-		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
+		FormulaT translatedFormula = (Settings::mode == Mode::TRANSFORM_FORMULA) ? subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType) : subtropical::encode_as_formula_alt(negationFreeFormula, mEncoding, Settings::separatorType);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
 			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
