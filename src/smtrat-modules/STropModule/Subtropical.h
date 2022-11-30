@@ -11,7 +11,8 @@
 namespace smtrat::subtropical {
 
 enum class SeparatorType { STRICT = 0,
-						   WEAK = 1 };
+						   WEAK = 1,
+						   SEMIWEAK = 2 };
 
 /**
  * Represents the normal vector component and the sign variable
@@ -170,7 +171,7 @@ public:
 					FormulaT(
 						carl::FormulaType::IMPLIES,
 						positive ? signChangeFormula.negated() : signChangeFormula,
-						FormulaT(hyperplane, separator_type == SeparatorType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS))
+						FormulaT(hyperplane, separator_type == SeparatorType::STRICT || separator_type == SeparatorType::SEMIWEAK ? carl::Relation::LEQ : carl::Relation::LESS))
 						.negated());
 				conjunctions.emplace_back(
 					carl::FormulaType::IMPLIES,
