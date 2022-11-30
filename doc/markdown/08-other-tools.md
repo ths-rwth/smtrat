@@ -10,9 +10,7 @@ See @subpage benchmax for more information.
 **Delta debugging** describes a generic debugging approach based on automated testing.
 Given a program and an input that provokes a certain behavior (for example an error) delta debugging is the process of iteratively changing the input, retaining the specific behavior. Usually, as the ultimate goal is a minimal example that triggers some bug by the application of a set of transformation rules.
 
-### SMT-RAT's own delta tool
-
-SMT-RAT has its own tool for delta debugging, see @subpage delta for more information.
+*Note: Our legacy delta tool has been moved to [its own repository](https://github.com/ths-rwth/delta)*.
 
 ### Using ddSMT
 
