@@ -1,6 +1,7 @@
 #include "CoveringNGModule.h"
 
 #include <carl-arith/ran/Conversion.h>
+#include <carl-formula/formula/functions/Substitution.h>
 
 namespace smtrat {
 
@@ -30,6 +31,20 @@ void CoveringNGModule<Settings>::updateModel() const {}
 template<typename Settings>
 Answer CoveringNGModule<Settings>::checkCore() {
     FormulaT input(rReceivedFormula());
+
+    std::map<carl::Variable, carl::Variable> var_mapping;
+    if constexpr (Settings::transform_boolean_variables_to_reals) {
+        // this is a hack until we have proper Boolean reasoning
+        std::map<FormulaT,FormulaT> substitutions;
+        for (const auto b_var : carl::boolean_variables(input)) {
+            auto r_var = carl::fresh_real_variable("r_"+b_var.name());
+            var_mapping.emplace(r_var, b_var);
+            auto constraint = FormulaT(ConstraintT(r_var, carl::Relation::GREATER));
+            substitutions.emplace(FormulaT(b_var), constraint);
+            substitutions.emplace(FormulaT(b_var).negated(), constraint.negated());
+        }
+        input = carl::substitute(input, substitutions);
+    }
 
     //auto var_order = carl::variables(input).to_vector();
     std::vector<ConstraintT> constraints;
@@ -65,7 +80,16 @@ Answer CoveringNGModule<Settings>::checkCore() {
     } else if (res.is_sat()) {
         mModel.clear();
         for (const auto& a : res.sample()) {
-            mModel.emplace(a.first, carl::convert<smtrat::RAN>(a.second));
+            if constexpr (Settings::transform_boolean_variables_to_reals) {
+                auto var_mapping_it = var_mapping.find(a.first);
+                if (var_mapping_it != var_mapping.end()) {
+                    mModel.emplace(var_mapping_it->second, a.second > 0);
+                } else {
+                    mModel.emplace(a.first, carl::convert<smtrat::RAN>(a.second));
+                }
+            } else {
+                mModel.emplace(a.first, carl::convert<smtrat::RAN>(a.second));
+            }
         }
         return Answer::SAT;
     } else {

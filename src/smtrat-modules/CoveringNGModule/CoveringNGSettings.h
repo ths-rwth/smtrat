@@ -8,6 +8,7 @@ struct CoveringNGSettingsDefault {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
     static constexpr auto formula_complexity_ordering = smtrat::covering_ng::formula::complexity::min_tdeg_ordering;
+    static constexpr bool transform_boolean_variables_to_reals = true;
 };
 
 struct CoveringNGSettingsMinLvlMinTdeg : CoveringNGSettingsDefault  {
