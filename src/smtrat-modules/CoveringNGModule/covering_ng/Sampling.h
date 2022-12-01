@@ -50,7 +50,11 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
             for (size_t i = 0; i + 1 < derivs.size(); i++) {
                 // We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
                 if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())) {
-                    return carl::sample_between(derivs[i]->cell().upper()->first, derivs[i + 1]->cell().lower()->first);
+                    if (derivs[i]->cell().upper()->first == derivs[i + 1]->cell().lower()->first) {
+                        return derivs[i]->cell().upper()->first;
+                    } else {
+                        return carl::sample_between(derivs[i]->cell().upper()->first, derivs[i + 1]->cell().lower()->first);
+                    }
                 }
             }
             // The cells cover the number line -> There is no sample to be found
