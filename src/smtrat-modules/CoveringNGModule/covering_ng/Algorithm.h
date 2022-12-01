@@ -24,7 +24,7 @@ inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::Vari
 template<cadcells::operators::op op>
 inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const formula::FormulaEvaluation& f, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
-    std::vector<cadcells::Constraint> implicant;
+    boost::container::flat_set<cadcells::Constraint> implicant;
     formula::compute_implicant(f, implicant);
     SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got implicant " << implicant);
 
@@ -125,7 +125,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
         if (new_interval) return CoveringResult<op>(*new_interval);
         else {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed");
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incompleteness");
             return CoveringResult<op>();
         }
     }

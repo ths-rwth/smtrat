@@ -3,6 +3,7 @@
 #include "types.h"
 #include <memory>
 #include <variant>
+#include <concepts>
 
 namespace smtrat::covering_ng::formula {
 
@@ -20,11 +21,13 @@ inline std::ostream& operator<<(std::ostream& o, Valuation v) {
 }
 
 class FormulaEvaluation {
-	std::unique_ptr<Content> m_content;
+	std::shared_ptr<Content> m_content;
     
 public:
+    FormulaEvaluation(const FormulaEvaluation& c) : m_content(c.m_content) {};
     template<typename C>
-    FormulaEvaluation(C&& c) : m_content(std::make_unique<Content>(std::move(c))) {};
+    requires (!std::same_as<C,FormulaEvaluation> && !std::same_as<C,FormulaEvaluation&>)
+    FormulaEvaluation(C&& c) : m_content(std::make_shared<Content>(std::move(c))) {};
     inline const Content& c() const { return *m_content; }
     inline Content& c() { return *m_content; }
 };
@@ -39,7 +42,6 @@ struct XOR { std::vector<FormulaEvaluation> subformulas; };
 struct BOOL { carl::Variable variable; };
 struct CONSTRAINT { carl::BasicConstraint<cadcells::Polynomial> constraint; };
 
-// TODO later: introduce pool for formulas  (then in extend_valuation, we need to check if formula is already satisfied)
 struct Content {
 	std::variant<TRUE,FALSE,NOT,AND,OR,IFF,XOR,BOOL,CONSTRAINT> content;
     Valuation valuation;
@@ -67,7 +69,7 @@ void extend_valuation(FormulaEvaluation& f, const cadcells::Assignment& ass);
 
 void revert_valuation(FormulaEvaluation& f, std::size_t level);
 
-void compute_implicant(const FormulaEvaluation& f, std::vector<cadcells::Constraint>& implicant);
+void compute_implicant(const FormulaEvaluation& f, boost::container::flat_set<cadcells::Constraint>& implicant);
 
 FormulaEvaluation to_evaluation(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
 

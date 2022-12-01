@@ -274,7 +274,7 @@ void revert_valuation(FormulaEvaluation& f, std::size_t level) {
     }, f.c().content);
 }
 
-void compute_implicant(const FormulaEvaluation& f, std::vector<cadcells::Constraint>& implicant) {
+void compute_implicant(const FormulaEvaluation& f, boost::container::flat_set<cadcells::Constraint>& implicant) {
     assert (f.c().valuation == Valuation::TRUE || f.c().valuation == Valuation::FALSE);
     return std::visit(overloaded{
         [&](const TRUE&) {
@@ -284,29 +284,49 @@ void compute_implicant(const FormulaEvaluation& f, std::vector<cadcells::Constra
             // do nothing
         },
         [&](const NOT& c) {
-            std::vector<cadcells::Constraint> subimplicant;
-            compute_implicant(c.subformula, subimplicant);
-            for (const auto& si : subimplicant) {
-                implicant.push_back(si.negation());
+            boost::container::flat_set<cadcells::Constraint> sub_implicant;
+            compute_implicant(c.subformula, sub_implicant);
+            for (const auto& si : sub_implicant) {
+                implicant.insert(si.negation());
             }
         },
         [&](const AND& c) {
-            for (const auto& sf : c.subformulas) {
-                if (f.c().valuation == Valuation::FALSE && sf.c().valuation == Valuation::FALSE) {
-                    compute_implicant(sf, implicant);
-                    break;
-                } else if (f.c().valuation == Valuation::TRUE) {
+            if (f.c().valuation == Valuation::FALSE) {
+                boost::container::flat_set<cadcells::Constraint> sub_implicant;
+                for (auto sf = c.subformulas.rbegin(); sf != c.subformulas.rend(); sf++) {
+                    if (sf->c().valuation == Valuation::FALSE) {
+                        sub_implicant.clear();
+                        compute_implicant(*sf, sub_implicant);
+                        if (std::includes(implicant.begin(), implicant.end(), sub_implicant.begin(), sub_implicant.end())) {
+                            sub_implicant.clear();
+                            break;
+                        }
+                    }
+                }
+                implicant.insert(sub_implicant.begin(), sub_implicant.end());
+            } else if (f.c().valuation == Valuation::TRUE) {
+                for (const auto& sf : c.subformulas) {
                     assert(sf.c().valuation == Valuation::TRUE);
                     compute_implicant(sf, implicant);
                 }
             }
         },
         [&](const OR& c) {
-            for (const auto& sf : c.subformulas) {
-                if (f.c().valuation == Valuation::TRUE && sf.c().valuation == Valuation::TRUE) {
-                    compute_implicant(sf, implicant);
-                    break;
-                } else if (f.c().valuation == Valuation::FALSE) {
+            if (f.c().valuation == Valuation::TRUE) {
+                boost::container::flat_set<cadcells::Constraint> sub_implicant;
+                for (auto sf = c.subformulas.rbegin(); sf != c.subformulas.rend(); sf++) {
+                    if (sf->c().valuation == Valuation::TRUE) {
+                        sub_implicant.clear();
+                        compute_implicant(*sf, sub_implicant);
+                        if (std::includes(implicant.begin(), implicant.end(), sub_implicant.begin(), sub_implicant.end())) {
+                            sub_implicant.clear();
+                            break;
+                        }
+                    }
+                }
+                implicant.insert(sub_implicant.begin(), sub_implicant.end());
+            } else if (f.c().valuation == Valuation::FALSE) {
+                for (const auto& sf : c.subformulas) {
                     assert(sf.c().valuation == Valuation::FALSE);
                     compute_implicant(sf, implicant);
                 }
@@ -318,17 +338,29 @@ void compute_implicant(const FormulaEvaluation& f, std::vector<cadcells::Constra
                     compute_implicant(sf, implicant);
                 }
             } else {
+                boost::container::flat_set<cadcells::Constraint> sub_implicant_true;
+                boost::container::flat_set<cadcells::Constraint> sub_implicant_false;
                 bool found_true = false;
                 bool found_false = false;
                 for (const auto& sf : c.subformulas) {
                     if (sf.c().valuation == Valuation::TRUE && !found_true) {
-                        compute_implicant(sf, implicant);
-                        found_true = true;
-                    } else if (sf.c().valuation == Valuation::TRUE && !found_false) {
-                        compute_implicant(sf, implicant);
-                        found_false = true;
+                        sub_implicant_true.clear();
+                        compute_implicant(sf, sub_implicant_true);
+                        if (std::includes(implicant.begin(), implicant.end(), sub_implicant_true.begin(), sub_implicant_true.end())) {
+                            found_true = true;
+                            sub_implicant_true.clear();
+                        }
+                    } else if (sf.c().valuation == Valuation::FALSE && !found_false) {
+                        sub_implicant_false.clear();
+                        compute_implicant(sf, sub_implicant_false);
+                        if (std::includes(implicant.begin(), implicant.end(), sub_implicant_false.begin(), sub_implicant_false.end())) {
+                            found_false = true;
+                            sub_implicant_false.clear();
+                        }
                     }
                 }
+                implicant.insert(sub_implicant_true.begin(), sub_implicant_true.end());
+                implicant.insert(sub_implicant_false.begin(), sub_implicant_false.end());
             }
         },
         [&](const XOR& c) {
@@ -342,9 +374,9 @@ void compute_implicant(const FormulaEvaluation& f, std::vector<cadcells::Constra
         },
         [&](const CONSTRAINT& c) {
             if (f.c().valuation == Valuation::TRUE) {
-                implicant.push_back(c.constraint);
+                implicant.insert(c.constraint);
             } else if (f.c().valuation == Valuation::FALSE) {
-                implicant.push_back(c.constraint.negation());
+                implicant.insert(c.constraint.negation());
             } else {
                 assert(false);
             }
@@ -352,7 +384,11 @@ void compute_implicant(const FormulaEvaluation& f, std::vector<cadcells::Constra
     }, f.c().content);
 }
 
-FormulaEvaluation to_evaluation(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
+FormulaEvaluation to_evaluation(typename cadcells::Polynomial::ContextType c, const FormulaT& f, std::map<std::size_t,FormulaEvaluation>& cache) {
+    {
+        auto cache_it = cache.find(f.id());
+        if (cache_it != cache.end()) return cache_it->second;
+    }
     switch(f.type()) {
         case carl::FormulaType::ITE: {
             return to_evaluation(c, FormulaT(carl::FormulaType::OR, FormulaT(carl::FormulaType::AND, f.condition(), f.first_case()), FormulaT(carl::FormulaType::AND, f.condition().negated(), f.second_case())));
@@ -409,6 +445,11 @@ FormulaEvaluation to_evaluation(typename cadcells::Polynomial::ContextType c, co
             return FormulaEvaluation(FALSE{});
         }
     }
+}
+
+FormulaEvaluation to_evaluation(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
+    std::map<std::size_t,FormulaEvaluation> cache;
+    return to_evaluation(c, f, cache);
 }
 
 } // namespace smtrat::coveringng::formula
