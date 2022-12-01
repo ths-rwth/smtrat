@@ -91,7 +91,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         ass.emplace(variable, *sample);
         formula::extend_valuation(f, ass);
         if (is_full_sample(ass, proj.polys().var_order()) && f.c().valuation == formula::Valuation::MULTIVARIATE) {
-            // TODO later: call a SAT solver on the remaining Boolean parts
+            assert(!Settings::transform_boolean_variables_to_reals);
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
             return CoveringResult<op>();
         }
