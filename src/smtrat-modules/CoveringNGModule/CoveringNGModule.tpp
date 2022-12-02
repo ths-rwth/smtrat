@@ -58,11 +58,10 @@ Answer CoveringNGModule<Settings>::checkCore() {
     cadcells::datastructures::Projections proj(pool);
 
     cadcells::Assignment ass;
-    auto fe = covering_ng::formula::to_evaluation(context, input);
-    auto f = covering_ng::formula::FormulaEvaluationWrapper{fe, Settings::exhaustive_implicant_computation, Settings::formula_complexity_ordering, Settings::implicant_complexity_ordering};
-    f.init();
-    covering_ng::formula::extend_valuation(f, ass);
-    if (f.c().valuation == covering_ng::formula::Valuation::FALSE) {
+    auto f = Settings::formula_evaluation::create();
+    f.set_formula(context, input);
+    f.extend_valuation(ass);
+    if (f.root_valuation() == covering_ng::formula::Valuation::FALSE) {
         mModel.clear();
         FormulaSetT fs;
         for (const auto& i : rReceivedFormula()) {
@@ -70,12 +69,12 @@ Answer CoveringNGModule<Settings>::checkCore() {
         }
         mInfeasibleSubsets.emplace_back(fs);
         return Answer::UNSAT;
-    } else if (f.c().valuation == covering_ng::formula::Valuation::TRUE) {
+    } else if (f.root_valuation() == covering_ng::formula::Valuation::TRUE) {
         mModel.clear();
         return Answer::SAT;
     }
 
-    auto res = covering_ng::exists<covering_ng::formula::FormulaEvaluationWrapper,Settings::op, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
+    auto res = covering_ng::exists<typename Settings::formula_evaluation::Type,Settings::op, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
 
     if (res.is_failed()) {
         assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());

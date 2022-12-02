@@ -1,12 +1,12 @@
 #pragma once
 
-namespace smtrat::covering_ng::formula::complexity {
+namespace smtrat::covering_ng::formula::node_ds::complexity {
     
-inline bool min_tdeg_ordering(const FormulaEvaluation& a, const FormulaEvaluation& b) {
+inline bool min_tdeg_ordering(const Node& a, const Node& b) {
     return a.c().max_total_degree < b.c().max_total_degree;
 }
 
-inline bool min_lvl_min_tdeg_ordering(const FormulaEvaluation& a, const FormulaEvaluation& b) {
+inline bool min_lvl_min_tdeg_ordering(const Node& a, const Node& b) {
     return a.c().max_level < b.c().max_level || (a.c().max_level == b.c().max_level && a.c().max_total_degree < b.c().max_total_degree);
 }
 

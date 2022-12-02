@@ -1,4 +1,7 @@
 #pragma once
+
+#include "covering_ng/FormulaEvaluationComplexity.h"
+
 namespace smtrat {
 
 struct CoveringNGSettingsDefault {
@@ -16,22 +19,33 @@ struct CoveringNGSettingsDefault {
     static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
 
     // Implicant computation
-    static constexpr auto formula_complexity_ordering = smtrat::covering_ng::formula::complexity::min_tdeg_ordering;
-    static constexpr bool exhaustive_implicant_computation = false;
-    static constexpr auto implicant_complexity_ordering = smtrat::covering_ng::formula::complexity::min_tdeg_min_size_implicant;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::Minimal;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_ordering);
+        }
+    };
 };
 
 struct CoveringNGSettingsMinLvlMinTdeg : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsMinLvlMinTdeg>";
 
-    static constexpr auto formula_complexity_ordering = smtrat::covering_ng::formula::complexity::min_lvl_min_tdeg_ordering;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::Minimal;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_lvl_min_tdeg_ordering);
+        }
+    };
 };
 
 struct CoveringNGSettingsExImplicants : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicants>";
-
-    static constexpr bool exhaustive_implicant_computation = true;
-    static constexpr auto implicant_complexity_ordering = smtrat::covering_ng::formula::complexity::min_tdeg_min_size_implicant;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::ExhaustiveImplicants;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant);
+        }
+    };
 };
 
 
