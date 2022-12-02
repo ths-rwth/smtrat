@@ -58,8 +58,9 @@ Answer CoveringNGModule<Settings>::checkCore() {
     cadcells::datastructures::Projections proj(pool);
 
     cadcells::Assignment ass;
-    auto f = covering_ng::formula::to_evaluation(context, input);
-    covering_ng::formula::sort_by_complexity(f, Settings::formula_complexity_ordering);
+    auto fe = covering_ng::formula::to_evaluation(context, input);
+    auto f = covering_ng::formula::FormulaEvaluationWrapper{fe, Settings::exhaustive_implicant_computation, Settings::formula_complexity_ordering, Settings::implicant_complexity_ordering};
+    f.init();
     covering_ng::formula::extend_valuation(f, ass);
     if (f.c().valuation == covering_ng::formula::Valuation::FALSE) {
         mModel.clear();
@@ -74,7 +75,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
         return Answer::SAT;
     }
 
-    auto res = covering_ng::exists<Settings::op, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
+    auto res = covering_ng::exists<covering_ng::formula::FormulaEvaluationWrapper,Settings::op, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
 
     if (res.is_failed()) {
         assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());

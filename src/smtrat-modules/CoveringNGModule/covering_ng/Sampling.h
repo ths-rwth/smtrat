@@ -16,14 +16,14 @@ enum class SamplingAlgorithm {
  */
 template<SamplingAlgorithm S>
 struct sampling {
-    template<cadcells::operators::op op>
-    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& derivations, const formula::FormulaEvaluation& f);
+    template<typename FE, cadcells::operators::op op>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& derivations, const FE& f);
 };
 
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
-    template<cadcells::operators::op op>
-    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& intervals, const formula::FormulaEvaluation&) {
+    template<typename FE, cadcells::operators::op op>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& intervals, const FE&) {
         // remove redundancies of the first kind
         // the derivations are already sorted by lower bound
         std::vector<Interval<op>> derivs;

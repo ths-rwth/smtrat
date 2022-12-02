@@ -21,8 +21,8 @@ inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::Vari
     return true;
 }
 
-template<cadcells::operators::op op>
-inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const formula::FormulaEvaluation& f, const cadcells::Assignment& ass) {
+template<typename FE, cadcells::operators::op op>
+inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const FE& f, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
     boost::container::flat_set<cadcells::Constraint> implicant;
     formula::compute_implicant(f, implicant);
@@ -79,14 +79,14 @@ inline std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& 
 // TODO later: do Boolean propagation while solving
 // TODO later: optionally clear caches
 
-template<cadcells::operators::op op, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm>
-inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, formula::FormulaEvaluation& f, cadcells::Assignment ass) {
+template<typename FE, cadcells::operators::op op, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm>
+inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
     assert(f.c().valuation != formula::Valuation::FALSE);
     IntervalSet<op> unsat_intervals;
     carl::Variable variable = first_unassigned_var(ass, proj.polys().var_order());
     std::optional<cadcells::RAN> sample;
-    while(sample = sampling<sampling_algorithm>::template sample_outside<op>(unsat_intervals, f), sample != std::nullopt) {
+    while(sample = sampling<sampling_algorithm>::template sample_outside<FE, op>(unsat_intervals, f), sample != std::nullopt) {
         SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
         ass.emplace(variable, *sample);
         formula::extend_valuation(f, ass);
@@ -97,7 +97,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         CoveringResult<op> res;
         if (f.c().valuation == formula::Valuation::FALSE) {
             SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to false");
-            auto new_interval = get_enclosing_interval<op>(proj, f, ass);
+            auto new_interval = get_enclosing_interval<FE, op>(proj, f, ass);
             if (new_interval) res = CoveringResult<op>(*new_interval);
             else res = CoveringResult<op>(CoveringResult<op>::FAILED_PROJECTION);
         } else if (f.c().valuation == formula::Valuation::TRUE) {
@@ -106,7 +106,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         } else {
             SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula is multivariate");
             assert(!is_full_sample(ass, proj.polys().var_order()));
-            res = exists<op, covering_heuristic, sampling_algorithm>(proj, f, ass);
+            res = exists<FE, op, covering_heuristic, sampling_algorithm>(proj, f, ass);
         }
         ass.erase(variable);
         formula::revert_valuation(f, ass.size());

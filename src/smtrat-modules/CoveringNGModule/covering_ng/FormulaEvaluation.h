@@ -65,13 +65,42 @@ void sort_by_complexity(FormulaEvaluation& f, const std::function<bool(const For
  * @param f 
  * @param ass 
  */
-void extend_valuation(FormulaEvaluation& f, const cadcells::Assignment& ass);
+void extend_valuation(FormulaEvaluation& f, const cadcells::Assignment& ass, bool evaluate_all = false);
 
 void revert_valuation(FormulaEvaluation& f, std::size_t level);
 
 void compute_implicant(const FormulaEvaluation& f, boost::container::flat_set<cadcells::Constraint>& implicant);
 
+void compute_implicant(const FormulaEvaluation& f, boost::container::flat_set<cadcells::Constraint>& implicant, const std::function<bool(const boost::container::flat_set<cadcells::Constraint>&, const boost::container::flat_set<cadcells::Constraint>&)>& compare);
+
 FormulaEvaluation to_evaluation(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
+
+// TODO this is a hack
+struct FormulaEvaluationWrapper {
+    FormulaEvaluation m_eval;
+    bool m_exhaustive_implicant_computation;
+    std::function<bool(const FormulaEvaluation&, const FormulaEvaluation&)> m_formula_complexity_ordering;
+    std::function<bool(const boost::container::flat_set<cadcells::Constraint>&, const boost::container::flat_set<cadcells::Constraint>&)> m_implicant_complexity_ordering;
+
+    inline void init() {
+        if (m_exhaustive_implicant_computation)
+            sort_by_complexity(m_eval, m_formula_complexity_ordering);
+    }
+    inline const Content& c() const { return m_eval.c(); }
+    inline Content& c() { return m_eval.c(); }
+};
+inline void extend_valuation(FormulaEvaluationWrapper& f, const cadcells::Assignment& ass) {
+    return extend_valuation(f.m_eval, ass, f.m_exhaustive_implicant_computation);
+}
+inline void revert_valuation(FormulaEvaluationWrapper& f, std::size_t level) {
+    return revert_valuation(f.m_eval, level);
+}
+inline void compute_implicant(const FormulaEvaluationWrapper& f, boost::container::flat_set<cadcells::Constraint>& implicant) {
+    if (!f.m_exhaustive_implicant_computation) return compute_implicant(f.m_eval, implicant);
+    else return compute_implicant(f.m_eval, implicant, f.m_implicant_complexity_ordering);
+}
+
+
 
 } // namespace smtrat::coveringng::formula
 
