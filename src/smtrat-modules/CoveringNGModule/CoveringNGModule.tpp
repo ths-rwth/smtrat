@@ -41,9 +41,11 @@ Answer CoveringNGModule<Settings>::checkCore() {
             var_mapping.emplace(r_var, b_var);
             auto constraint = FormulaT(ConstraintT(r_var, carl::Relation::GREATER));
             substitutions.emplace(FormulaT(b_var), constraint);
-            substitutions.emplace(FormulaT(b_var).negated(), constraint.negated());
+            //substitutions.emplace(FormulaT(b_var).negated(), constraint.negated());
         }
         input = carl::substitute(input, substitutions);
+        assert(carl::boolean_variables(input).empty());
+        SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Formula after replacing Boolean variables: " << input);
     }
 
     //auto var_order = carl::variables(input).to_vector();
@@ -75,6 +77,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
     auto res = covering_ng::exists<Settings::op, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
 
     if (res.is_failed()) {
+        assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());
         mModel.clear();
         return Answer::UNKNOWN;
     } else if (res.is_sat()) {

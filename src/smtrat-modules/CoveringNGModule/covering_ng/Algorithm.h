@@ -91,7 +91,6 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         ass.emplace(variable, *sample);
         formula::extend_valuation(f, ass);
         if (is_full_sample(ass, proj.polys().var_order()) && f.c().valuation == formula::Valuation::MULTIVARIATE) {
-            assert(!Settings::transform_boolean_variables_to_reals);
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
             return CoveringResult<op>();
         }
@@ -100,7 +99,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
             SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to false");
             auto new_interval = get_enclosing_interval<op>(proj, f, ass);
             if (new_interval) res = CoveringResult<op>(*new_interval);
-            else res = CoveringResult<op>();
+            else res = CoveringResult<op>(CoveringResult<op>::FAILED_PROJECTION);
         } else if (f.c().valuation == formula::Valuation::TRUE) {
             SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to true");
             res = CoveringResult<op>(ass);
@@ -112,7 +111,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         ass.erase(variable);
         formula::revert_valuation(f, ass.size());
         if (res.is_failed()) {
-            return CoveringResult<op>();
+            return CoveringResult<op>(res.status);
         } if (res.is_sat()) {
             return res.sample();
         } else {
@@ -126,7 +125,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, fo
         if (new_interval) return CoveringResult<op>(*new_interval);
         else {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incompleteness");
-            return CoveringResult<op>();
+            return CoveringResult<op>(CoveringResult<op>::FAILED_PROJECTION);
         }
     }
 }

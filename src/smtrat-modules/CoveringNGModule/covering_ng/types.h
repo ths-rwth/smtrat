@@ -29,7 +29,7 @@ using IntervalSet = std::set<Interval<op>, IntervalCompare<op>>;
 
 template<cadcells::operators::op op>
 struct CoveringResult {
-    enum Status { SAT, UNSAT, FAILED };
+    enum Status { SAT, UNSAT, FAILED_PROJECTION, FAILED };
     struct NONE{};
 
     Status status;
@@ -41,7 +41,10 @@ struct CoveringResult {
     CoveringResult(const cadcells::Assignment& c) : status(SAT), content(c) {}
 
     bool is_failed() {
-        return status == FAILED;
+        return status == FAILED_PROJECTION || status == FAILED;
+    }
+    bool is_failed_projection() {
+        return status == FAILED_PROJECTION;
     }
     bool is_sat() const {
         return status == SAT;

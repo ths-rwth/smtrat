@@ -251,7 +251,7 @@ void revert_valuation(FormulaEvaluation& f, std::size_t level) {
                     exists_multivariate = true;
                 }
             }
-            if (exists_true == exists_false && exists_multivariate) {
+            if (!(exists_true && exists_false) && exists_multivariate) {
                 f.c().valuation = Valuation::MULTIVARIATE;
             }
         },
@@ -297,6 +297,7 @@ void compute_implicant(const FormulaEvaluation& f, boost::container::flat_set<ca
                     if (sf->c().valuation == Valuation::FALSE) {
                         sub_implicant.clear();
                         compute_implicant(*sf, sub_implicant);
+                        // TODO hier kann man mehr rausholen. wir müssten vergleichen, welche zusätzlichen constraints wir hinzufügen müssen
                         if (std::includes(implicant.begin(), implicant.end(), sub_implicant.begin(), sub_implicant.end())) {
                             sub_implicant.clear();
                             break;
