@@ -553,8 +553,10 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                         }
                         std::size_t i = 0;
                         for (const auto& sub_implicant : sub_implicants) {
-                            new_implicants[i].insert(sub_implicant.begin(), sub_implicant.end());
-                            i++;
+                            for (std::size_t j = 0; j < size; j++) {
+                                new_implicants[i].insert(sub_implicant.begin(), sub_implicant.end());
+                                i++;
+                            }
                         }
                     }
                 }
@@ -586,8 +588,10 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                         }
                         std::size_t i = 0;
                         for (const auto& sub_implicant : sub_implicants) {
-                            new_implicants[i].insert(sub_implicant.begin(), sub_implicant.end());
-                            i++;
+                            for (std::size_t j = 0; j < size; j++) {
+                                new_implicants[i].insert(sub_implicant.begin(), sub_implicant.end());
+                                i++;
+                            }
                         }
                     }
                 }

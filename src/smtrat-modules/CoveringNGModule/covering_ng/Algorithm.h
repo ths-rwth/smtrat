@@ -29,7 +29,7 @@ inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructur
 
     std::size_t level = 0;
     for (const auto& c : implicant) {
-        level = carl::level_of(c.lhs()) > level ? carl::level_of(c.lhs()) : level;
+        level = std::max(carl::level_of(c.lhs()), level);
     }
     assert(level > 0 && level == ass.size());
 
