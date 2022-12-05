@@ -92,10 +92,12 @@ public:
 
 private:
     ImplicantComplexityOrdering m_implicant_complexity_ordering;
+    std::size_t m_pruning;
     std::optional<node_ds::Node> m_root;
 
 public:
-    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering) : m_implicant_complexity_ordering(implicant_complexity_ordering) {}
+    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_pruning(0) {}
+    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t pruning) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_pruning(pruning) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);

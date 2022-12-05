@@ -508,8 +508,7 @@ void ExhaustiveImplicants::revert_valuation(std::size_t level) {
 namespace exhaustive_implicants_helper {
 
 // TODO store only ids of constraints / change data structure
-void compute_implicants(const node_ds::Node& f, std::vector<boost::container::flat_set<cadcells::Constraint>>& implicants) {
-    // TODO pruning?
+void compute_implicants(const node_ds::Node& f, std::vector<boost::container::flat_set<cadcells::Constraint>>& implicants, std::size_t pruning, ExhaustiveImplicants::ImplicantComplexityOrdering implicant_complexity_ordering) {
     assert (f.c().valuation == Valuation::TRUE || f.c().valuation == Valuation::FALSE);
     std::visit(overloaded{
         [&](const node_ds::TRUE&) {
@@ -520,7 +519,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
         },
         [&](const node_ds::NOT& c) {
             std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants;
-            compute_implicants(c.subformula, sub_implicants);
+            compute_implicants(c.subformula, sub_implicants, pruning, implicant_complexity_ordering);
             for (const auto& sub_implicant : sub_implicants) {
                 boost::container::flat_set<cadcells::Constraint> implicant;
                 for (const auto& si : sub_implicant) {
@@ -533,7 +532,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
             if (f.c().valuation == Valuation::FALSE) {
                 for (const auto& sf : c.subformulas) {
                     if (sf.c().valuation == Valuation::FALSE) {
-                        compute_implicants(sf, implicants);
+                        compute_implicants(sf, implicants, pruning, implicant_complexity_ordering);
                     }
                 }
             } else if (f.c().valuation == Valuation::TRUE) {
@@ -541,7 +540,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                 for (const auto& sf : c.subformulas) {
                     assert(sf.c().valuation == Valuation::TRUE);
                     std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants;
-                    compute_implicants(sf, sub_implicants);
+                    compute_implicants(sf, sub_implicants, pruning, implicant_complexity_ordering);
                     auto size = new_implicants.size();
                     if (size == 0) {
                         new_implicants.insert(new_implicants.end(), sub_implicants.begin(), sub_implicants.end());
@@ -570,7 +569,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
             if (f.c().valuation == Valuation::TRUE) {
                 for (const auto& sf : c.subformulas) {
                     if (sf.c().valuation == Valuation::TRUE) {
-                        compute_implicants(sf, implicants);
+                        compute_implicants(sf, implicants, pruning, implicant_complexity_ordering);
                     }
                 }
             } else if (f.c().valuation == Valuation::FALSE) {
@@ -578,7 +577,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                 for (const auto& sf : c.subformulas) {
                     assert(sf.c().valuation == Valuation::FALSE);
                     std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants;
-                    compute_implicants(sf, sub_implicants);
+                    compute_implicants(sf, sub_implicants, pruning, implicant_complexity_ordering);
                     auto size = new_implicants.size();
                     if (size == 0) {
                         new_implicants.insert(new_implicants.end(), sub_implicants.begin(), sub_implicants.end());
@@ -608,7 +607,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                 std::vector<boost::container::flat_set<cadcells::Constraint>> new_implicants;
                 for (const auto& sf : c.subformulas) {
                     std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants;
-                    compute_implicants(sf, sub_implicants);
+                    compute_implicants(sf, sub_implicants, pruning, implicant_complexity_ordering);
                     auto size = new_implicants.size();
                     for (std::size_t i = 0; i < size; i++) {
                         for (const auto& sub_implicant : sub_implicants) {
@@ -625,9 +624,9 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                 std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants_false;
                 for (const auto& sf : c.subformulas) {
                     if (sf.c().valuation == Valuation::TRUE) {
-                        compute_implicants(sf, sub_implicants_true);
+                        compute_implicants(sf, sub_implicants_true, pruning, implicant_complexity_ordering);
                     } else if (sf.c().valuation == Valuation::FALSE) {
-                        compute_implicants(sf, sub_implicants_false);
+                        compute_implicants(sf, sub_implicants_false, pruning, implicant_complexity_ordering);
                     }
                 }
                 for (const auto& sub_implicant_true : sub_implicants_true) {
@@ -645,7 +644,7 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
             for (const auto& sf : c.subformulas) {
                 assert(sf.c().valuation == Valuation::TRUE || sf.c().valuation == Valuation::FALSE);
                 std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants;
-                compute_implicants(sf, sub_implicants);
+                compute_implicants(sf, sub_implicants, pruning, implicant_complexity_ordering);
                 auto size = new_implicants.size();
                 for (std::size_t i = 0; i < size; i++) {
                     for (const auto& sub_implicant : sub_implicants) {
@@ -670,12 +669,18 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
             }
         },
     }, f.c().content);
+
+    if (pruning > 0) {
+        std::sort(implicants.begin(), implicants.end(), implicant_complexity_ordering);
+        if (pruning < implicants.size())
+            implicants.erase(implicants.begin() + pruning, implicants.end());
+    }
 }
 }
 
 boost::container::flat_set<cadcells::Constraint> ExhaustiveImplicants::compute_implicant() const {
     std::vector<boost::container::flat_set<cadcells::Constraint>> implicants;
-    exhaustive_implicants_helper::compute_implicants(*m_root, implicants);
+    exhaustive_implicants_helper::compute_implicants(*m_root, implicants, m_pruning, m_implicant_complexity_ordering);
     assert(implicants.size()>0);
     return *std::min_element(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
 }
