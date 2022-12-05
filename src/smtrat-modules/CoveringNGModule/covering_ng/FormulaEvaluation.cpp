@@ -511,7 +511,7 @@ namespace exhaustive_implicants_helper {
 void compute_implicants(const node_ds::Node& f, std::vector<boost::container::flat_set<cadcells::Constraint>>& implicants) {
     // TODO pruning?
     assert (f.c().valuation == Valuation::TRUE || f.c().valuation == Valuation::FALSE);
-    return std::visit(overloaded{
+    std::visit(overloaded{
         [&](const node_ds::TRUE&) {
             // do nothing
         },
@@ -548,16 +548,18 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                     } else {
                         for (std::size_t j = 1; j < sub_implicants.size(); j++) {
                             for (std::size_t i = 0; i < size; i++) {
-                                new_implicants.back().insert(new_implicants[i].begin(), new_implicants[i].end());
+                                new_implicants.emplace_back(new_implicants[i]);
                             }
                         }
                         std::size_t i = 0;
                         for (const auto& sub_implicant : sub_implicants) {
                             for (std::size_t j = 0; j < size; j++) {
+                                assert(i < new_implicants.size());
                                 new_implicants[i].insert(sub_implicant.begin(), sub_implicant.end());
                                 i++;
                             }
                         }
+                        assert(i == new_implicants.size());
                     }
                 }
                 // TODO remove duplicates
@@ -583,16 +585,18 @@ void compute_implicants(const node_ds::Node& f, std::vector<boost::container::fl
                     } else {
                         for (std::size_t j = 1; j < sub_implicants.size(); j++) {
                             for (std::size_t i = 0; i < size; i++) {
-                                new_implicants.back().insert(new_implicants[i].begin(), new_implicants[i].end());
+                                new_implicants.emplace_back(new_implicants[i]);
                             }
                         }
                         std::size_t i = 0;
                         for (const auto& sub_implicant : sub_implicants) {
                             for (std::size_t j = 0; j < size; j++) {
+                                assert(i < new_implicants.size());
                                 new_implicants[i].insert(sub_implicant.begin(), sub_implicant.end());
                                 i++;
                             }
                         }
+                        assert(i == new_implicants.size());
                     }
                 }
                 // TODO remove duplicates
