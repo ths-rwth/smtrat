@@ -81,7 +81,7 @@ public:
      * @param ass 
      */
     void extend_valuation(const cadcells::Assignment& ass);
-    void revert_valuation(std::size_t level);
+    void revert_valuation(const cadcells::Assignment& ass);
     boost::container::flat_set<cadcells::Constraint> compute_implicant() const;
     Valuation root_valuation() const;
 };
@@ -101,7 +101,7 @@ public:
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);
-    void revert_valuation(std::size_t level);
+    void revert_valuation(const cadcells::Assignment& ass);
     boost::container::flat_set<cadcells::Constraint> compute_implicant() const;
     Valuation root_valuation() const;
 };

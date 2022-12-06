@@ -108,7 +108,7 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, FE
             res = exists<FE, op, covering_heuristic, sampling_algorithm>(proj, f, ass);
         }
         ass.erase(variable);
-        f.revert_valuation(ass.size());
+        f.revert_valuation(ass);
         if (res.is_failed()) {
             return CoveringResult<op>(res.status);
         } if (res.is_sat()) {
