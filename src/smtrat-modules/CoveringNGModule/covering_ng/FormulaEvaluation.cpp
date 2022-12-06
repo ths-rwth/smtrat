@@ -552,14 +552,6 @@ void ExhaustiveImplicants::set_formula(typename cadcells::Polynomial::ContextTyp
 }
 void ExhaustiveImplicants::extend_valuation(const cadcells::Assignment& ass) {
     node_ds::extend_valuation(*m_root, ass, true);
-
-    std::cout << node_ds::debug_valuation(*m_root, ass) << " == " << m_root->c().valuation << std::endl;
-    for (const auto& sf : std::get<node_ds::AND>(m_root->c().content).subformulas) {
-        if (node_ds::debug_valuation(sf, ass) == Valuation::FALSE) std::cout << "!";
-        std::cout << "    " <<  node_ds::to_formula(sf)  << " " << node_ds::debug_valuation(sf, ass)<< " " << sf.c().valuation << std::endl;
-    }
-    std::cout << ass << std::endl;
-
     //assert(node_ds::debug_valuation(*m_root, ass) == m_root->c().valuation);
 }
 void ExhaustiveImplicants::revert_valuation(const cadcells::Assignment& ass) {
@@ -576,11 +568,9 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
     std::visit(overloaded{
         [&](const node_ds::TRUE&) {
             assert(false);
-            std::cout << "TRUE" << std::endl;
         },
         [&](const node_ds::FALSE&) {
             assert(false);
-            std::cout << "FALSE" << std::endl;
         },
         [&](const node_ds::NOT& c) {
             auto sub_implicants = compute_implicants(c.subformula, pruning, implicant_complexity_ordering);
@@ -590,7 +580,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                     implicants.back().insert(si.negation());
                 }
             }
-            std::cout << "NOT" << std::endl;
         },
         [&](const node_ds::AND& c) {
             if (f.c().valuation == Valuation::FALSE) {
@@ -626,7 +615,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                 }
                 // TODO remove duplicates
             }
-            std::cout << "AND" << std::endl;
         },
         [&](const node_ds::OR& c) {
             if (f.c().valuation == Valuation::TRUE) {
@@ -662,7 +650,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                 }
                 // TODO remove duplicates
             }
-            std::cout << "OR" << std::endl;
         },
         [&](const node_ds::IFF& c) {
             if (f.c().valuation == Valuation::TRUE) {
@@ -709,7 +696,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                 }
                 // TODO remove duplicates
             }
-            std::cout << "IFF" << std::endl;
         },
         [&](const node_ds::XOR& c) {
             for (const auto& sf : c.subformulas) {
@@ -735,7 +721,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                     assert(i == implicants.size());
                 }
             }
-            std::cout << "XOR" << std::endl;
         },
         [&](const node_ds::BOOL&) {
             assert(false);
@@ -748,7 +733,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
             } else {
                 assert(false);
             }
-            std::cout << "CONSTR" << std::endl;
         },
     }, f.c().content);
 
@@ -757,8 +741,6 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
         if (pruning < implicants.size())
             implicants.erase(implicants.begin() + pruning, implicants.end());
     }
-
-    std::cout << implicants << " " << f.c().valuation << std::endl;
 
     assert(!implicants.empty());
     return implicants;
