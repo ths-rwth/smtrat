@@ -48,12 +48,22 @@ struct CoveringNGSettingsExImplicants : CoveringNGSettingsDefault  {
     };
 };
 
+struct CoveringNGSettingsExImplicantsMinSize : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicants>";
+    struct formula_evaluation {
+        using Type = covering_ng::formula::ExhaustiveImplicants;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_size_min_tdeg_implicant);
+        }
+    };
+};
+
 struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicantsPruning>";
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 3);
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 2);
         }
     };
 };

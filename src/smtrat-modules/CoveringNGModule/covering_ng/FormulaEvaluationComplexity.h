@@ -23,6 +23,23 @@ inline bool min_tdeg_min_size_implicant(const boost::container::flat_set<cadcell
     return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a.size() < b.size());
 }
 
+inline bool min_size_min_tdeg_implicant(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    if (a.size() < b.size()) return true;
+    else if (a.size() > b.size()) return false;
+    else {
+        // TODO this is rather inefficient
+        std::size_t a_max_total_degree = 0;
+        for (const auto& el : a) {
+            a_max_total_degree = std::max(a_max_total_degree, el.lhs().total_degree());
+        }
+        std::size_t b_max_total_degree = 0;
+        for (const auto& el : b) {
+            b_max_total_degree = std::max(b_max_total_degree, el.lhs().total_degree());
+        }
+        return a_max_total_degree < b_max_total_degree ;
+    }
+}
+
 
 // TODO orderings
 
