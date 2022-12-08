@@ -1,7 +1,7 @@
 #include <eigen3/Eigen/Sparse>
 #include <eigen3/Eigen/SparseQR>
 
-namespace smtrat::fmplex::gauss {
+namespace smtrat::fmplex{
 
 class EigenGauss : Gauss {
     private:
@@ -57,4 +57,4 @@ class EigenGauss : Gauss {
     }
 };
 
-} // namespace smtrat::fmplex::gauss
+} // namespace smtrat::fmplex

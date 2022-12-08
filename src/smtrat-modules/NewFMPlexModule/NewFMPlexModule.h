@@ -9,10 +9,15 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "NewFMPlexSettings.h"
+#include "heuristics.h"
 #include "../LRAModule/tableau/Value.h"
-//#include "Tableau.h"
 #include "Level.h"
+#include "gauss/Gauss.h"
+#include "NewFMPlexSettings.h"
+
+#ifdef SMTRAT_DEVOPTION_Statistics
+#include "NewFMPlexStatistics.h"
+#endif
 
 namespace smtrat {
 	template<typename Settings>
@@ -20,12 +25,9 @@ namespace smtrat {
 	{
 		private:
 			// Members.
-			/// stack representing the path to the current node
-			std::vector<fmplex::Level> m_history;
-			/// index of current level in history
-			std::size_t m_current_level;
-			/// the maximum possible level (= number of eliminable variables)
-			std::size_t m_max_level;
+			std::vector<fmplex::Level> m_history; 	/// stack representing the path to the current node
+			std::size_t m_current_level; 			/// index of current level in history
+			std::size_t m_max_level;				/// the maximum possible level (= number of eliminable variables)
 
 			/// maps for converting tableau columns into variables and vice versa
 			std::map<fmplex::ColumnIndex, carl::Variable> m_variable_order;
@@ -42,14 +44,15 @@ namespace smtrat {
 			/// sets of received formulas
 			FormulasT m_constraints;
 			FormulasT m_added_constraints; // REVIEW: is this necessary?
-			FormulasT m_neqs;
-			FormulasT m_equalities;
+			std::set<std::size_t> m_disequalities; // TODO: indexing this way does not work when removing constraints incrementally
+			std::set<std::size_t> m_equalities;
 			std::set<FormulaT> m_non_linear_constraints;
 
-			/// initial tableau for Gauss elimination
-			fmplex::FMPlexTableau m_initial_tableau;
-			/// ordering indicating which column has been eliminated using which row
-			std::vector<std::pair<fmplex::RowIndex, fmplex::ColumnIndex>> m_gauss_order;
+			Settings::gauss_type m_gauss;
+
+			#ifdef SMTRAT_DEVOPTION_Statistics
+			NewFMPlexStatistics& m_statistics = NewFMPlexStatistics::get_instance();
+			#endif
 
 			// REVIEW: datastructure to keep track, which eliminated variable corresponds to which constraint
 
@@ -66,8 +69,10 @@ namespace smtrat {
 			 * and adds the conflict's origins to that level's unsat core.
 			 * 
 			 * @param conflict The conflict causing the backtracking
+			 * 
+			 * @return false if backtracking derives the inconsistency of the original problem and false otherwise.
 			 */
-			void backtrack(const fmplex::Conflict& conflict);
+			bool backtrack(const fmplex::Conflict& conflict);
 
 			/**
 			 * @brief Constructs the root level of the FMPlex search tree.
@@ -86,6 +91,11 @@ namespace smtrat {
 			 * @return false if not
 			 */
 			bool handle_neqs();
+
+			/**
+			 * 
+			*/
+			Rational find_suitable_delta(std::map<std::size_t, fmplex::DeltaRational> working_model) const;
 
 			/**
 			 * @brief Tries to construct a model from m_history if it contains a trivially satisfiable Level.
