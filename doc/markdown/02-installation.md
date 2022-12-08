@@ -20,8 +20,8 @@ Additionally, SMT-RAT requires a few external libraries, which are installed aut
 - `boost` (the boost version from CArL is used).
 
 When installing the dependencies, make sure that you meet the following version requirements:
-- `g++` \f$>=\f$ 9
-- `clang` \f$>=\f$ 11
+- `g++` \f$>=\f$ 11
+- `clang` \f$>=\f$ 13
 
 ## Download
 
@@ -53,7 +53,6 @@ Relevant targets you may want to build individually include:
 - `doc-pdf`: Builds the doxygen documentation as PDF.
 - `doc`: Builds both `doc-html` and `doc-pdf`.
 - `benchmax`: Builds the benchmarking tool.
-- `delta`: Builds the delta debugger.
 
 ## Check build
 

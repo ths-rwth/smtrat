@@ -36,8 +36,6 @@ add_subdirectory(benchmax EXCLUDE_FROM_ALL)
 
 add_subdirectory(tests)
 
-add_subdirectory(delta)
-
 if (CLANG_TIDY)
 	file(GLOB dirs LIST_DIRECTORIES true RELATIVE "${CMAKE_SOURCE_DIR}/src/" "*")
 	foreach(dir ${dirs})

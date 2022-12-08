@@ -30,7 +30,7 @@ private:
 	Solver& mSolver;
 
 public:
-	UnsatCore<Solver, Strategy>(Solver& s) : mSolver(s) {}
+	UnsatCore(Solver& s) : mSolver(s) {}
 
 	void add_annotated_name(const FormulaT& formula, const std::string& name) {
 		mAnnotatedNames.emplace(formula, name);

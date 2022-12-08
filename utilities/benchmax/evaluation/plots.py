@@ -32,6 +32,13 @@ def scatter_equal_line(ax):
     upper = min(ax.get_xlim()[1],ax.get_ylim()[1])
     ax.plot([lower, upper], [lower, upper], ls="--", c=".3")
 
+def scatter_axis_equal(ax):
+    ax.axis('equal')
+    lower = max(ax.get_xlim()[0],ax.get_ylim()[0])
+    upper = min(ax.get_xlim()[1],ax.get_ylim()[1])
+    ax.plot(lower, lower, 'o',c='white',ms=1)
+    ax.plot(upper, upper, 'o',c='white',ms=1)
+
 def save_scatter(ax, file, size):
     low_x = ax.get_xlim()[0]
     up_x = ax.get_xlim()[1]
@@ -39,8 +46,8 @@ def save_scatter(ax, file, size):
     up_y = ax.get_ylim()[1]
     lower = max(ax.get_xlim()[0],ax.get_ylim()[0])
     upper = min(ax.get_xlim()[1],ax.get_ylim()[1])
-    ax.plot(lower, lower, 'o',c='black',ms=1)
-    ax.plot(upper, upper, 'o',c='black',ms=1)
+    ax.plot(lower, lower, 'o',c='white',ms=1)
+    ax.plot(upper, upper, 'o',c='white',ms=1)
     ax.set_axis_off()
     plt.savefig(file+".png")
 

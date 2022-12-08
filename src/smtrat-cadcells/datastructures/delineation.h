@@ -209,9 +209,13 @@ public:
         if (irs == m_roots.end()) {
             irs = m_roots.emplace(std::move(root), std::vector<TaggedIndexedRoot>()).first;
         }
-        auto loc = std::find(irs->second.begin(), irs->second.end(), tagged_root);
+        auto loc = std::find_if(irs->second.begin(), irs->second.end(), [&tagged_root](const auto& current) { return current.root == tagged_root.root && current.origin == tagged_root.origin; });
         if (loc == irs->second.end()) {
             irs->second.push_back(std::move(tagged_root));
+        } else {
+            // TODO is this the right place for deduplication?
+            if (!tagged_root.is_inclusive) loc->is_inclusive = false;
+            if (!tagged_root.is_optional) loc->is_optional = false;
         }
     }
 

@@ -1,10 +1,15 @@
 #!/usr/bin/env bash
 
 # This script can be called on smt2-files on which an assertion fails. 
-# TODO untested!
 
 # Usage ddsmt-assertion <in.smt2> <out.smt2> <solver>
 
 ERROR=$($3 $1 2>&1 >/dev/null)
-echo $ERROR
-ddsmt -j8 -v --match-err "$ERROR" $1 $2 $3
+
+if [[ $ERROR =~ ^[^\0/]+:\ [^\0]+:[0-9]+:\  ]]; then
+    echo "found match: \"${BASH_REMATCH[0]}\" in $ERROR"
+else
+    echo "$ERROR does not contain an error"
+fi
+
+ddsmt -j8 -v --match-err "${BASH_REMATCH[1]}" $1 $2 $3

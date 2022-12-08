@@ -9,15 +9,16 @@
 #pragma once
 
 #include <smtrat-strategies/strategies/PreprocessingOne.h>
+#include <smtrat-strategies/strategies/PreprocessingTwo.h>
 #include <smtrat-strategies/strategies/BVPreprocessing.h>
 #include <smtrat-strategies/strategies/PBPreprocessing.h>
 #include <smtrat-strategies/strategies/OptimizationPreprocessing.h>
 
 namespace smtrat
 {
-    struct FPPSettings1
+    struct FPPSettings1Old
     {
-		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
+		static constexpr auto moduleName = "FPPModule<FPPSettings1Old>";
         /**
          * The maximum number of iterations in order to reach a fix point during the repeated application of preprocessing.
          * If this number is negative, this procedure stops only if it indeed reached a fix point.
@@ -25,6 +26,13 @@ namespace smtrat
         static const int max_iterations = 5;
         
         typedef PreprocessingOne Preprocessor;
+    };
+
+    struct FPPSettings1
+    {
+		static constexpr auto moduleName = "FPPModule<FPPSettings1>";
+        static const int max_iterations = 5;
+        typedef PreprocessingTwo Preprocessor;
     };
     
     struct FPPSettings2 : FPPSettings1

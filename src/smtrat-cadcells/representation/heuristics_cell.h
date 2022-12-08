@@ -116,8 +116,10 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
     // TODO refactor
     datastructures::Delineation reduced_delineation;
     util::PolyDelineations poly_delins;
+    assert(section == der->cell().is_section());
     util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+    assert(!section || reduced_cell.is_section());
     
     while(section) {
         auto old_size = response.equational.size();
@@ -241,7 +243,6 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
                 reached.push_back(barrier);
             }
             for (const auto& ir : it->second) {
-                std::cout << ir << std::endl;
                 if (section && response.equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
                     bool rchd = false;

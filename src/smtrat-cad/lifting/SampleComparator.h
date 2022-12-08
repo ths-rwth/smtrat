@@ -25,7 +25,7 @@ namespace sample_compare {
 	}
 	template<typename It>
 	auto get(const It& it, size) {
-		return carl::size(it->value());
+		return carl::bitsize(it->value());
 	}
 	template<typename It>
 	auto get(const It& it, absvalue) {
@@ -117,8 +117,8 @@ namespace sample_compare {
 			if (l2 != r2) {
 				return r2;
 			}
-			std::size_t l3 = carl::size(lhs->value());
-			std::size_t r3 = carl::size(rhs->value());
+			std::size_t l3 = carl::bitsize(lhs->value());
+			std::size_t r3 = carl::bitsize(rhs->value());
 			SMTRAT_LOG_TRACE("smtrat.cad.samplecompare", lhs->value() << " < " << rhs->value() << ": Size (" << l3 << " / " << r3 << ") " << (l3 > r3));
 			if (l3 != r3) {
 				return l3 > r3;

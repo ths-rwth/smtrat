@@ -3,17 +3,24 @@ import pandas as pd
 def get_solvers(df):
     return df.columns.get_level_values(0).unique()
 
-def virtual_best(df, solvers, name, statistics=[], ignore_unknowns = True):
+def compare_results(answer1,time1,answer2,time2):
+    if answer1 in ['sat','unsat'] and not answer2 in ['sat','unsat']:
+        return True
+    elif not answer1 in ['sat','unsat'] and answer2 in ['sat','unsat']:
+        return False
+    else:
+        assert (answer1 in ['sat','unsat']) == (answer2 in ['sat','unsat'])
+        return int(time1)<int(time2)
+    
+
+def virtual_best(df, solvers, name, statistics=[]):
     data = []
     for _, row in df.iterrows():
         s = solvers[0]
         for solver in solvers:
-            if ignore_unknowns:
-                if row[(solver,'runtime')] < row[(s,'runtime')]:
-                    s = solver
-            else:
-                if (row[(solver,'answer')] != 'unknown' and row[(s,'answer')]=='unknown') or (row[(solver,'answer')] == row[(s,'answer')] and row[(solver,'runtime')] < row[(s,'runtime')]):
-                    s = solver
+            if compare_results(row[(solver,'answer')],row[(solver,'runtime')],row[(s,'answer')],row[(s,'runtime')]):
+                s = solver
+        assert row[(s,'answer')] in ['sat','unsat'] or not True in [row[(solver,'answer')] in ['sat','unsat'] for solver in solvers] 
         new_row = []
         new_row.append(row[(s,'answer')])
         new_row.append(row[(s,'runtime')])

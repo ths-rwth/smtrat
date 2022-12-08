@@ -260,6 +260,7 @@ Answer STropModule<Settings>::checkCore() {
 			}
 			
 			// Check the constructed linearization with the LRA solver
+			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 			if (mLRAModule.check(true) == Answer::SAT) {
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
@@ -311,12 +312,14 @@ Answer STropModule<Settings>::checkCore() {
 			if(!direction) {
 				SMTRAT_TIME_FINISH(mStatistics.theory_timer(), theoryStart);
 				SMTRAT_STATISTICS_CALL(mStatistics.answer_by(STropModuleStatistics::AnswerBy::METHOD));
+				SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 				mCheckedWithBackends = false;
 				if (Settings::output_only) {
 					SMTRAT_VALIDATION_ADD("smtrat.subtropical", "transformation", FormulaT(carl::FormulaType::TRUE), true);
 				}
 				return Answer::SAT;
 			} else {
+				SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 				if (!Settings::output_only) {
 					mLRAModule.reset();
 					mLRAModule.add(mEncoding.encode_separator(separator, *direction, Settings::separatorType));
@@ -333,7 +336,7 @@ Answer STropModule<Settings>::checkCore() {
 			}
 		}
 	} else {
-		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA);
+		static_assert(Settings::mode == Mode::TRANSFORM_FORMULA || Settings::mode == Mode::TRANSFORM_FORMULA_ALT);
 		SMTRAT_TIME_START(transformationStart);
 		FormulaT negationFreeFormula = carl::to_nnf(FormulaT(rReceivedFormula()));
 		if (negationFreeFormula.type() == carl::FormulaType::FALSE) {
@@ -354,9 +357,10 @@ Answer STropModule<Settings>::checkCore() {
 			}
 			return Answer::SAT;
 		}
-		FormulaT translatedFormula = subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType);
+		FormulaT translatedFormula = (Settings::mode == Mode::TRANSFORM_FORMULA) ? subtropical::encode_as_formula(negationFreeFormula, mEncoding, Settings::separatorType) : subtropical::encode_as_formula_alt(negationFreeFormula, mEncoding, Settings::separatorType);
 		SMTRAT_TIME_FINISH(mStatistics.transformation_timer(), transformationStart);
 		if(translatedFormula.type() != carl::FormulaType::FALSE){
+			SMTRAT_STATISTICS_CALL(mStatistics.transformation_applicable());
 			if (!Settings::output_only) {
 				mLRAModule.reset();
 				mLRAModule.add(translatedFormula);
