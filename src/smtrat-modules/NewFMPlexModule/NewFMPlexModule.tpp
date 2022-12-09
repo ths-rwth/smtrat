@@ -43,18 +43,18 @@ void NewFMPlexModule<Settings>::init() {}
 template<class Settings>
 void NewFMPlexModule<Settings>::add_relation(carl::Relation r) {
 	switch (r) {
-		case carl::Relation::LESS:
-		case carl::Relation::GREATER:
-			m_strict_origins.insert(m_constraints.size()-1);
-			break;
-		case carl::Relation::NEQ:
-			m_disequalities.emplace_hint(m_disequalities.end(), m_constraints.size()-1);
-			break;
-		case carl::Relation::EQ:
-			m_equalities.emplace_hint(m_equalities.end(), m_constraints.size()-1);
-			break;
-		default:
-			break;
+	case carl::Relation::LESS:
+	case carl::Relation::GREATER:
+		m_strict_origins.insert(m_constraints.size()-1);
+		break;
+	case carl::Relation::NEQ:
+		m_disequalities.emplace_hint(m_disequalities.end(), m_constraints.size()-1);
+		break;
+	case carl::Relation::EQ:
+		m_equalities.emplace_hint(m_equalities.end(), m_constraints.size()-1);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -72,7 +72,8 @@ bool NewFMPlexModule<Settings>::addCore( ModuleInput::const_iterator _subformula
 		return false;
 	}
 	if (type != carl::FormulaType::CONSTRAINT) {
-		assert(false); // unsupported
+		SMTRAT_LOG_DEBUG("smtrat.fmplex", "trying to add unsupported formula type " << type);
+		assert(false);
 		return true;
 	}
 	if (!(_subformula->formula().constraint().lhs().is_linear())) {
@@ -94,16 +95,13 @@ bool NewFMPlexModule<Settings>::addCore( ModuleInput::const_iterator _subformula
 
 template<class Settings>
 void NewFMPlexModule<Settings>::removeCore( ModuleInput::const_iterator _subformula ) {
-	SMTRAT_LOG_DEBUG("smtrat.fmplex", "removing " << _subformula->formula());
-
 	if (_subformula->formula().type() != carl::FormulaType::CONSTRAINT) {
-		assert(false); // unreachable?
+		assert(/* unreachable*/false);
 	}
 
 	auto it = std::find(m_constraints.begin(), m_constraints.end(), _subformula->formula());
 	if (it == m_constraints.end()) return;
 	m_constraints.erase(it);
-	SMTRAT_LOG_DEBUG("smtrat.fmplex", "found it in m_constraints");
 
 	// TODO: this seems inefficient
 	std::size_t index = std::distance(m_constraints.begin(),it);
@@ -134,27 +132,29 @@ Rational NewFMPlexModule<Settings>::find_suitable_delta(std::map<std::size_t, fm
 	}
 
 	Rational evaluated_poly_main, evaluated_poly_delta;
-	Rational bound;
-	Rational ub(1);
+	Rational current_bound, strictest_bound(1);
 
 	for (const auto& c : m_constraints) {
 		carl::Relation r = c.constraint().relation();
-		// REVIEW: is ignoring here correct?
-		if ((r == carl::Relation::EQ) || (r == carl::Relation::NEQ)) continue;
+		if (r == carl::Relation::EQ) continue;
 		bool leq_or_less = (r == carl::Relation::LEQ) || (r == carl::Relation::LESS);
 
 		evaluated_poly_main = carl::evaluate(c.constraint().lhs(), rational_substitutions);
 		evaluated_poly_delta = carl::evaluate(c.constraint().lhs(), delta_substitutions);
 		evaluated_poly_delta -= c.constraint().lhs().constant_part();
-		if (carl::is_zero(evaluated_poly_delta)) continue;
-		bound = (-evaluated_poly_main)/evaluated_poly_delta;
 
-		// REVIEW: is ignoring lower bounds correct?
-		if (leq_or_less != (evaluated_poly_delta > 0)) continue; // would give lower bound
-		if (bound < ub) ub = bound;
+		if (carl::is_zero(evaluated_poly_delta)) continue;
+		current_bound = (-evaluated_poly_main)/evaluated_poly_delta;
+
+		if (r == carl::Relation::NEQ) {
+			if (current_bound < 0) continue;
+		} else if (leq_or_less != (evaluated_poly_delta > 0)) {
+			continue; // would give lower bound
+		}
+		if (current_bound < strictest_bound) strictest_bound = current_bound;
 	}
 
-	return carl::sample(RationalInterval(0, ub), false);
+	return carl::sample(RationalInterval(0, strictest_bound), false);
 }
 
 
@@ -178,7 +178,6 @@ bool NewFMPlexModule<Settings>::try_construct_model() {
 		m_gauss.assign_variables(working_model);
 	} // else: EQHandling & assignment are already done in the Levels
 
-	SMTRAT_LOG_DEBUG("smtrat.fmplex", "finding value for delta");
 	Rational delta_value = find_suitable_delta(working_model);
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "value for delta: " << delta_value);
 
@@ -207,7 +206,6 @@ void NewFMPlexModule<Settings>::updateModel() const {
 template<class Settings>
 void NewFMPlexModule<Settings>::build_unsat_core(const std::set<std::size_t>& reason) {
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "building unsat core from " << reason);
-	SMTRAT_LOG_DEBUG("smtrat.fmplex", "size of constraints: " << m_constraints.size());
 	FormulaSetT inf_subset;
 	for (const std::size_t i : reason) {
 		inf_subset.insert(m_constraints[i]);
@@ -229,17 +227,14 @@ std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level(
 	// todo: Other NEQHandling might require more case distinctions
 	fmplex::FMPlexTableau root_tableau;
 	if constexpr (Settings::eq_handling == fmplex::EQHandling::GAUSSIAN_TABLEAU) {
-		SMTRAT_LOG_DEBUG("smtrat.fmplex", "using Gaussian EQHandling");
-
 		m_gauss.init(m_constraints, m_variable_index);
-		SMTRAT_LOG_DEBUG("smtrat.fmplex", "testing whether gauss is needed...");
 		if (m_equalities.size() > 0) {
+			SMTRAT_LOG_DEBUG("smtrat.fmplex", "Applying Gaussian elimination");
 			m_gauss.apply_gaussian_elimination();
 			auto conflict = m_gauss.find_conflict();
 			if (conflict) return conflict;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.fmplex", "get transformed ineqs...");
-		root_tableau = m_gauss.get_transformed_inequalities(); // REVIEW: only do this if there are EQS/neqs?
+		root_tableau = m_gauss.get_transformed_inequalities();
 	} else { // EQHandling is done in Level, along with inequalities
 		root_tableau = fmplex::FMPlexTableau(m_constraints, m_variable_index);
 	}
@@ -262,9 +257,8 @@ bool NewFMPlexModule<Settings>::backtrack(const fmplex::Conflict& conflict) {
 	}
 	m_current_level = conflict.level-1;
 	while(m_history[m_current_level].finished()) {
-		SMTRAT_LOG_DEBUG("smtrat.fmplex", "level is finished, move up one more step");
+		SMTRAT_LOG_DEBUG("smtrat.fmplex", "level " << m_current_level << " is finished, move up one more step");
 		if constexpr (Settings::use_backtracking || Settings::ignore_pivots) {
-			// If all eliminators of the root level are checked, return UNSAT
 			if (m_current_level == 0) {
 				build_unsat_core(m_history[m_current_level].unsat_core());
 				return false;
@@ -320,8 +314,6 @@ bool NewFMPlexModule<Settings>::process_conflict(fmplex::Conflict conflict) {
 
 template<class Settings>
 Answer NewFMPlexModule<Settings>::checkCore() {
-	SMTRAT_LOG_DEBUG("smtrat.fmplex", "starting...");
-
 	if constexpr (Settings::incremental) {
 		// todo: not yet implemented
 	} else {
@@ -365,7 +357,8 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 		m_current_level++;
 		SMTRAT_STATISTICS_CALL(m_statistics.new_system());
 	}
-	assert(false); // unreachable
+
+	assert(/* unreachable*/ false);
 	return Answer::UNKNOWN;
 }
 

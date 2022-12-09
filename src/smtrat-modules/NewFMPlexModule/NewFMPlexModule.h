@@ -42,7 +42,7 @@ namespace smtrat {
 			/// sets of received formulas
 			FormulasT m_constraints;
 			FormulasT m_added_constraints; // REVIEW: is this necessary?
-			std::set<std::size_t> m_disequalities; // TODO: indexing this way does not work when removing constraints incrementally
+			std::set<std::size_t> m_disequalities; // TODO: indexing this way is inconvenient when removing constraints incrementally
 			std::set<std::size_t> m_equalities;
 			std::set<FormulaT> m_non_linear_constraints;
 
@@ -52,12 +52,11 @@ namespace smtrat {
 			NewFMPlexStatistics& m_statistics = NewFMPlexStatistics::get_instance();
 			#endif
 
-			// REVIEW: datastructure to keep track, which eliminated variable corresponds to which constraint
-
 			/**
-			 * @brief TODO
+			 * @brief stores the index of the most recently added constraint in m_disequalities or m_equalities,
+			 * 			depending on the relation of that constraint.
 			 * 
-			 * @param r todo
+			 * @param r the relation of the most recently added constraint.
 			 */
 			void add_relation(carl::Relation r);
 
@@ -80,7 +79,7 @@ namespace smtrat {
 			bool backtrack(const fmplex::Conflict& conflict);
 
 			/**
-			 * @brief TODO
+			 * @brief applies backtracking depending on the type of conflict and backtracking mode
 			 * 
 			 * @param conflict The conflict to be processed
 			 * 
@@ -90,10 +89,7 @@ namespace smtrat {
 
 
 			/**
-			 * @brief TODO
-			 * 
-			 * @param index todo
-			 * @param level todo
+			 * @brief stores the given level at the index of m_history
 			 */
 			void set_level(std::size_t index, const fmplex::Level& level);
 

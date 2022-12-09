@@ -9,11 +9,6 @@ struct Eliminator {
     Eliminator(const RowIndex r, const Rational& c) : row(r), coeff(c) {}
 };
 
-inline std::ostream& operator<<(std::ostream& os, const Eliminator& e) {
-    os << e.row;
-    return os;
-}
-
 enum class EliminationType {
     LBS, UBS, NONE
 };

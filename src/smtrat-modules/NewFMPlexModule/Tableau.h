@@ -61,7 +61,6 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
 
         FMPlexTableau(const FormulasT& constraints, const std::map<carl::Variable, std::size_t>& variable_index) {
             m_rows.reserve(constraints.size());
-            //m_nr_rows = constraints.size();
             m_rhs_index = variable_index.size();
             m_delta_index = m_rhs_index + 1;
             m_first_origin_index = m_delta_index + 1;
@@ -131,8 +130,17 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
         }
 
     private:
+        inline bool is_origin_column(const ColumnIndex ci) const {
+            return ci >= m_first_origin_index;
+        }
+
+        inline bool is_lhs_column(const ColumnIndex ci) const {
+            return ci < m_rhs_index;
+        }
+
+
         inline std::size_t origin(const ColumnIndex ci) const {
-            assert(ci >= m_first_origin_index);
+            assert(is_origin_column(ci));
             return ci - m_first_origin_index;
         }
 
@@ -143,7 +151,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             std::vector<RowElement>::const_iterator row_it = m_rows[ri].elements.end();
             while (row_it != m_rows[ri].elements.begin()) {
                 row_it--;
-                if (row_it->column < m_first_origin_index) break;
+                if (!is_origin_column(row_it->column)) break;
                 all_ogs.emplace_hint(all_ogs.begin(), origin(row_it->column));
                 if (row_it->value < 0) neg.emplace_hint(neg.begin(), origin(row_it->column));
             }
@@ -153,7 +161,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
         std::vector<ColumnIndex> non_zero_variable_columns() const {
             std::vector<ColumnIndex> result;
             for (std::map<ColumnIndex, Column>::const_iterator it = m_columns.begin(); it != m_columns.end(); it++) {
-                if (it->first >= m_rhs_index) break;
+                if (!is_lhs_column(it->first)) break;
                 result.push_back(it->first);
             }
             return result;
@@ -161,22 +169,22 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
 
         std::vector<ColumnIndex> non_zero_variable_columns(const RowIndex ri) const {
             std::vector<ColumnIndex> result;
-            for (const RowElement& e : m_rows[ri].elements) {
+            for (const RowElement& e : m_rows[ri]) {
                 result.push_back(e.column);
             }
             return result;
         }
 
         ColumnIndex first_non_zero_column(const RowIndex ri) const {
-            return m_rows[ri].elements[0].column;
+            return m_rows[ri][0].column;
         }
 
         bool is_row_conflict(const RowIndex ri) const {
-            std::vector<RowElement>::const_iterator row_it = m_rows[ri].elements.begin();
-            if (row_it->column < m_rhs_index) {
+            Row::ConstIterator row_it = m_rows[ri].begin();
+            if (is_lhs_column(row_it->column)) {
                 // lhs is non-zero (there is a variable left)
                 return false;
-            } else if (row_it->column <= m_delta_index) {
+            } else if (!is_origin_column(row_it->column)) {
                 // constraint is (0 ~ b) with b != 0 or (0 ~ c*delta)
                 // => conflict only if ~ is = or if ~ is not neq and b < 0 respectively c < 0
                 if (m_rows[ri].relation == carl::Relation::NEQ) return false;
