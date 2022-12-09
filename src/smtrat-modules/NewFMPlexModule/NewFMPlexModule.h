@@ -35,8 +35,6 @@ namespace smtrat {
 
 			/// set of all variables ocurring in any of the received constraints
 			carl::Variables m_variables;
-			/// set of remaining variables to eliminate
-			carl::Variables m_elimination_variables; // TODO: not really used
 			
 			/// set of indices corresponding to strict inequalities in m_constraints
 			std::unordered_set<std::size_t> m_strict_origins;
@@ -57,6 +55,13 @@ namespace smtrat {
 			// REVIEW: datastructure to keep track, which eliminated variable corresponds to which constraint
 
 			/**
+			 * @brief TODO
+			 * 
+			 * @param r todo
+			 */
+			void add_relation(carl::Relation r);
+
+			/**
 			 * @brief Constructs an unsatisfiable core (a.k.a. infeasible subset) from the given set of indices
 			 * 
 			 * @param reason A set of indices corresponding to an infeasible subset of m_constraints
@@ -70,9 +75,27 @@ namespace smtrat {
 			 * 
 			 * @param conflict The conflict causing the backtracking
 			 * 
-			 * @return false if backtracking derives the inconsistency of the original problem and false otherwise.
+			 * @return false if backtracking derives the inconsistency of the original problem and true otherwise.
 			 */
 			bool backtrack(const fmplex::Conflict& conflict);
+
+			/**
+			 * @brief TODO
+			 * 
+			 * @param conflict The conflict to be processed
+			 * 
+			 * @return false if backtracking derives the inconsistency of the original problem and true otherwise.
+			 */
+			bool process_conflict(fmplex::Conflict conflict);
+
+
+			/**
+			 * @brief TODO
+			 * 
+			 * @param index todo
+			 * @param level todo
+			 */
+			void set_level(std::size_t index, const fmplex::Level& level);
 
 			/**
 			 * @brief Constructs the root level of the FMPlex search tree.

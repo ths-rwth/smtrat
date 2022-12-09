@@ -207,15 +207,15 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             m_rows.push_back(row);
         }
 
+        // REVIEW: shared pointer so that if tableaus share the same constraint, it is only stored once?
         void copy_row_from(const RowIndex row, const FMPlexTableau& other) {
             append_row(other.m_rows[row]);
         }
 
-        std::pair<Row, bool> combine(const RowIndex pivot_row, const RowIndex other_row,
+        Row combine(const RowIndex pivot_row, const RowIndex other_row,
             const ColumnIndex eliminated_col, const Rational& pivot_coeff, const Rational& other_coeff) const {
             SMTRAT_LOG_DEBUG("smtrat.fmplex", "combining row " << pivot_row << " with row " << other_row);
             Row result;
-            bool same_bound_type = false;
             result.elements.reserve(m_columns.size()-1); // REVIEW: or minimum with pivot.size+other.size?
             Rational pivot_scale;
             Rational other_scale;
@@ -231,21 +231,15 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             if (pivot_coeff > 0) {
                 pivot_scale = -other_coeff;
                 other_scale = pivot_coeff;
-                if (other_coeff > 0) {
-                    same_bound_type = true;
-                }
             } else { // pivot_coeff < 0
                 pivot_scale = other_coeff;
                 other_scale = -pivot_coeff;
-                if (other_coeff < 0) {
-                    same_bound_type = true;
-                }
             }
 
-            std::vector<RowElement>::const_iterator pivot_iter = m_rows[pivot_row].elements.begin();
-            std::vector<RowElement>::const_iterator other_iter = m_rows[other_row].elements.begin();
-            std::vector<RowElement>::const_iterator pivot_end = m_rows[pivot_row].elements.end();
-            std::vector<RowElement>::const_iterator other_end = m_rows[other_row].elements.end();
+            Row::ConstIterator pivot_iter = m_rows[pivot_row].begin();
+            Row::ConstIterator other_iter = m_rows[other_row].begin();
+            Row::ConstIterator pivot_end = m_rows[pivot_row].end();
+            Row::ConstIterator other_end = m_rows[other_row].end();
             while((pivot_iter != pivot_end) && (other_iter != other_end)) {
                 if ((pivot_iter->column) < (other_iter->column)) {
                     result.elements.emplace_back(pivot_iter->column, pivot_scale*(pivot_iter->value));
@@ -268,21 +262,21 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             for( ; other_iter != other_end; other_iter++) {
                 result.elements.emplace_back(other_iter->column, other_scale*(other_iter->value));
             }
-            return std::make_pair(result, same_bound_type);
+            return result;
         }
 
         DeltaRational bound_value(const RowIndex ri, const ColumnIndex ci_eliminated, const std::map<ColumnIndex, DeltaRational>& model) const {
             DeltaRational bound(0);
             Rational coeff;
-            for (const auto& row_elem : m_rows[ri].elements) {
+            for (const auto& e : m_rows[ri]) {
                 // we are only interested in the lhs and rhs, not the origins
-                if (row_elem.column > m_delta_index) break;
-                else if (row_elem.column == m_rhs_index) bound += row_elem.value;
-                else if (row_elem.column == m_delta_index) bound += DeltaRational(0,row_elem.value);
-                else if (row_elem.column == ci_eliminated) coeff = row_elem.value;
+                if (e.column > m_delta_index) break;
+                else if (e.column == m_rhs_index) bound += e.value;
+                else if (e.column == m_delta_index) bound += DeltaRational(0, e.value);
+                else if (e.column == ci_eliminated) coeff = e.value;
                 else {
-                    auto it = model.find(row_elem.column);
-                    if (it != model.end()) bound -= ((it->second) * row_elem.value);
+                    auto it = model.find(e.column);
+                    if (it != model.end()) bound -= ((it->second) * e.value);
                 }
             }
             bound = bound / coeff;
@@ -297,9 +291,10 @@ inline std::ostream& operator<<(std::ostream& os, const FMPlexTableau& tableau) 
     os << "Tableau: rhs -> " << tableau.m_rhs_index;
     os << ", delta -> " << tableau.m_delta_index;
     os << ", first origin -> " << tableau.m_first_origin_index << "\n";
-    for (const auto& row : tableau.m_rows) {
-        for (const auto& e : row) {
-            os << "| col " << e.column << ":" << e.value;
+    for (std::size_t i = 0; i < tableau.m_rows.size(); i++) {
+        os << "Row " << i << ": ";
+        for (const auto& e : tableau.m_rows[i]) {
+            os << "(col " << e.column << " : val " << e.value << ")";
         }
         os << "\n";
     }

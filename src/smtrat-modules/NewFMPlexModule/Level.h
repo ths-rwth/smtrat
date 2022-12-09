@@ -9,6 +9,11 @@ struct Eliminator {
     Eliminator(const RowIndex r, const Rational& c) : row(r), coeff(c) {}
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Eliminator& e) {
+    os << e.row;
+    return os;
+}
+
 enum class EliminationType {
     LBS, UBS, NONE
 };
@@ -99,28 +104,84 @@ class Level {
             if (m_elimination_type == EliminationType::NONE) {
                 m_finished = true;
                 Level child = eliminate_without_bounds<USE_BT,IGNORE_USED>();
-                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "->\n" << child.m_tableau);
+                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "->\n" << child);
                 return child;
             } else { // todo: eliminator choice heuristic
                 SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "number of eliminators left: " << m_open_eliminators.size());
+
                 Eliminator e = m_open_eliminators.back();
                 m_open_eliminators.pop_back();
                 if (m_open_eliminators.empty()) m_finished = true;
-                Level child = eliminate<USE_BT,IGNORE_USED>(e);
+
                 m_tried_rows.push_back(e.row);
                 if constexpr (IGNORE_USED) {
                     m_ignore_for_eliminators.emplace(e.row);
                 }
                 
-                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "->\n" << child.m_tableau);
-                std::cout << "BT-levels: ";
-                for (std::size_t i = 0; i < child.m_backtrack_levels.size(); i++)
-                    std::cout << i << ": " << child.m_backtrack_levels[i] << ", ";
-                std::cout << "\nIgnored: ";
-                for (const auto i : child.m_ignore_for_eliminators) std::cout << i << ", ";
-                std::cout << "\n";
+                Level child = eliminate<USE_BT,IGNORE_USED>(e);
+                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "->" << child);
                 return child;
             }
+        }
+
+        void assign_implicitly_eliminated_variables(std::map<std::size_t, DeltaRational>& m) const {
+            // set implicitly eliminated variables to zero
+            std::vector<ColumnIndex> non_zero_variable_columns = m_tableau.non_zero_variable_columns();
+            for (const auto col : non_zero_variable_columns) {
+                if (col == m_eliminated_column->first) continue;
+                if (m.count(col) == 0) m.emplace(col, DeltaRational(0)); // REVIEW: better with lower_bound?
+            }
+        }
+
+        void assign_single_bounded(std::map<std::size_t, DeltaRational>& m) const {
+            auto col_it = m_eliminated_column->second.begin();
+            std::optional<DeltaRational> strictest_bound;
+            if (m_tableau.value_at(*col_it) > 0) {
+                for (; col_it != m_eliminated_column->second.end(); col_it++) {
+                    DeltaRational current_bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
+                    if (!strictest_bound || (current_bound < (*strictest_bound))) {
+                        strictest_bound = current_bound;
+                    }
+                }
+                m.emplace(m_eliminated_column->first, choose_value_below(*strictest_bound));
+            } else {
+                for (; col_it != m_eliminated_column->second.end(); col_it++) {
+                    DeltaRational current_bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
+                    if (!strictest_bound || (current_bound > (*strictest_bound))) {
+                        strictest_bound = current_bound;
+                    }
+                }
+                m.emplace(m_eliminated_column->first, choose_value_above(*strictest_bound));
+            }
+        }
+
+        void assign_double_bounded(std::map<std::size_t, DeltaRational>& m) const {
+            auto col_it = m_eliminated_column->second.begin();
+            std::optional<DeltaRational> lower_bound, upper_bound;
+            if (m_elimination_type == EliminationType::LBS) {
+                lower_bound = m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m);
+                for (; col_it != m_eliminated_column->second.end(); col_it++) {
+                    if (m_tableau.value_at(*col_it) < 0) continue;
+
+                    DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
+                    if (!upper_bound || (bound < (*upper_bound))) {
+                        upper_bound = bound;
+                    }
+                }
+            } else {
+                upper_bound = m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m);
+                for (; col_it != m_eliminated_column->second.end(); col_it++) {
+                    if (m_tableau.value_at(*col_it) > 0) continue;
+
+                    DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
+                    if (!lower_bound || (bound > (*lower_bound))) {
+                        lower_bound = bound;
+                    }
+                }
+            }
+
+            assert(lower_bound.has_value() && upper_bound.has_value());
+            m.emplace(m_eliminated_column->first, choose_value_between(*lower_bound, *upper_bound));
         }
 
         void assign_eliminated_variables(std::map<std::size_t, DeltaRational>& m) const {
@@ -128,86 +189,40 @@ class Level {
 
             // todo: can use heuristics and optimize if only weak bounds are present
 
-            // set implicitly eliminated variables to zero
-            std::vector<ColumnIndex> non_zero_variable_columns = m_tableau.non_zero_variable_columns();
-            for (const auto col : non_zero_variable_columns) {
-                if (col == m_eliminated_column->first) continue;
-                if (m.count(col) == 0) m.emplace(col, DeltaRational(0)); // REVIEW: better with lower_bound?
-            }
-
-            auto col_it = m_eliminated_column->second.begin();
-            std::optional<DeltaRational> lower_bound, upper_bound;
+            assign_implicitly_eliminated_variables(m);
 
             switch (m_elimination_type) {
                 case EliminationType::NONE:
-                    if (m_tableau.value_at(*col_it) > 0) {
-                        for (; col_it != m_eliminated_column->second.end(); col_it++) {
-                            DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                            if (!upper_bound || (bound < (*upper_bound))) {
-                                upper_bound = bound;
-                            }
-                        }
-                        m.emplace(m_eliminated_column->first, choose_value_below(*upper_bound));
-                    } else {
-                        for (; col_it != m_eliminated_column->second.end(); col_it++) {
-                            DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                            if (!lower_bound || (bound > (*lower_bound))) {
-                                lower_bound = bound;
-                            }
-                        }
-                        m.emplace(m_eliminated_column->first, choose_value_above(*lower_bound));
-                    }
-                    return;
-                case EliminationType::LBS:
-                    for (; col_it != m_eliminated_column->second.end(); col_it++) {
-                        if (col_it->row == m_tried_rows.back()) {
-                            lower_bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                        } else if (m_tableau.value_at(*col_it) > 0){
-                            DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                            if (!upper_bound || (bound < (*upper_bound))) {
-                                upper_bound = bound;
-                            }
-                        }
-                    }
+                    assign_single_bounded(m);
                     break;
+                case EliminationType::LBS:
                 case EliminationType::UBS:
-                    for (; col_it != m_eliminated_column->second.end(); col_it++) {
-                        if (col_it->row == m_tried_rows.back()) {
-                            upper_bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                        } else if (m_tableau.value_at(*col_it) < 0){
-                            DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                            if (!lower_bound || (bound > (*lower_bound))) {
-                                lower_bound = bound;
-                            }
-                        }
-                    }
+                    assign_double_bounded(m);
                     break;
                 default: // unreachable
                     assert(false);
             }
-            assert(lower_bound.has_value() && upper_bound.has_value());
-            m.emplace(m_eliminated_column->first, choose_value_between(*lower_bound, *upper_bound));
-            SMTRAT_LOG_DEBUG("smtrat.fmplex", "-> " << m.at(m_eliminated_column->first));
+            SMTRAT_LOG_DEBUG("smtrat.fmplex", "-> value for " << m_eliminated_column->first << ": " << m.at(m_eliminated_column->first));
         }
 
         std::optional<Conflict> earliest_conflict(const std::set<std::size_t>& equality_origins) const {
             std::optional<Conflict> result;
             for (RowIndex i = 0; i < m_tableau.nr_of_rows(); i++) {
-                if (m_tableau.is_row_conflict(i)) {
-                    Origins ogs = m_tableau.origins(i);
-                    bool non_neg = true;
-                    for (const auto o : ogs.with_negative_coeff) {
-                        if (equality_origins.count(o) == 0) {
-                            non_neg = false;
-                            break;
-                        }
+                if (!m_tableau.is_row_conflict(i)) continue;
+                
+                Origins ogs = m_tableau.origins(i);
+                bool non_neg = true;
+                for (const auto o : ogs.with_negative_coeff) {
+                    if (equality_origins.count(o) == 0) {
+                        non_neg = false;
+                        break;
                     }
-                    if (non_neg) {
-                        return Conflict{true, 0, ogs.all_indices};
-                    }
-                    if (!result || (m_backtrack_levels[i] < result->level)) {
-                        result = Conflict{false, m_backtrack_levels[i], ogs.all_indices};
-                    }
+                }
+                if (non_neg) {
+                    return Conflict{true, 0, ogs.all_indices};
+                }
+                if (!result || (m_backtrack_levels[i] < result->level)) {
+                    result = Conflict{false, m_backtrack_levels[i], ogs.all_indices};
                 }
             }
             return result;
@@ -234,54 +249,74 @@ class Level {
             bool collect_lbs = (m_elimination_type == EliminationType::LBS);
             for (const auto& col_elem : m_eliminated_column->second) {
                 if constexpr (IgnoreUsed) {
-                    if (m_ignore_for_eliminators.count(col_elem.row) == 1) continue;
-                    SMTRAT_STATISTICS_CALL(if ((val < 0) == collect_lbs) NewFMPlexStatistics::get_instance().ignored_branches(1));
+                    if (m_ignore_for_eliminators.count(col_elem.row) == 1) {
+                        SMTRAT_STATISTICS_CALL(if ((val < 0) == collect_lbs) NewFMPlexStatistics::get_instance().ignored_branches(1));
+                        continue;
+                    }
                 }
                 Rational val = m_tableau.value_at(col_elem);
                 if ((val < 0) == collect_lbs) {
                     m_open_eliminators.emplace_back(col_elem.row, val);
                 }
             }
-            SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "collected eliminators: ");
-            std::cout << "["; // TODO: make usable in LOG
-            for (const auto& e : m_open_eliminators) std::cout << e.row << ", ";
-            std::cout << "]\n";
+            SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "collected eliminators: " << [](auto es){
+                std::string res = "";
+                for (const auto& e : es) res += std::to_string(e.row) + ", ";
+                return res;
+            }(m_open_eliminators));
             SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().branches(m_open_eliminators.size()));
+        }
+
+        struct Bounds {
+            std::size_t lbs;
+            std::size_t ignored_lbs;
+            std::size_t ubs;
+            std::size_t ignored_ubs;
+        };
+
+        template<bool IgnoreUsed>
+        Bounds count_bounds(const Column& column) {
+            Bounds result = {0, 0, 0, 0};
+            for (const auto& e : column) {
+                if (m_tableau.value_at(e) > 0) {
+                    result.ubs++;
+                    if constexpr (IgnoreUsed) {
+                        if (m_ignore_for_eliminators.count(e.row) == 1) result.ignored_ubs++;
+                    }
+                } else {
+                    result.lbs++;
+                    if constexpr (IgnoreUsed) {
+                        if (m_ignore_for_eliminators.count(e.row) == 1) result.ignored_lbs++;
+                    }
+                }
+            }
+            return result;
         }
 
         template<bool IgnoreUsed>
         bool choose_elimination_column_column_order() {
             auto col_it = m_tableau.columns_begin();
             if (col_it->first >= m_tableau.rhs_index()) return false;
-            std::size_t n_lbs = 0, n_ubs = 0;
-            std::size_t n_ignored_lbs = 0, n_ignored_ubs = 0;
-            for (const auto& col_elem : col_it->second) {
-                if (m_tableau.value_at(col_elem) > 0) {
-                    n_ubs++;
-                    if constexpr (IgnoreUsed) {
-                        if (m_ignore_for_eliminators.count(col_elem.row) == 1) n_ignored_ubs++;
-                    }
-                } else {
-                    n_lbs++;
-                    if constexpr (IgnoreUsed) {
-                        if (m_ignore_for_eliminators.count(col_elem.row) == 1) n_ignored_lbs++;
-                    }
-                }
-            }
-            if constexpr (IgnoreUsed) {
-                if ((n_ignored_lbs == n_lbs) || (n_ignored_ubs == n_ubs)) return false; // UNSAT
-                n_lbs -= n_ignored_lbs;
-                n_ubs -= n_ignored_ubs;
-            }
+
             m_eliminated_column = col_it;
             SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "chose column" << m_eliminated_column->first);
-            if ((n_lbs == 0) || (n_ubs == 0)) {
+
+            Bounds bounds = count_bounds<IgnoreUsed>(col_it->second());
+
+            if ((bounds.lbs == 0) || (bounds.ubs == 0)) {
                 m_elimination_type = EliminationType::NONE;
                 return true;
             }
+
+            if constexpr (IgnoreUsed) {
+                if ((bounds.ignored_lbs == bounds.lbs) || (bounds.ignored_ubs == bounds.ubs)) {
+                    return false;
+                }
+                bounds.lbs -= bounds.ignored_lbs;
+                bounds.ubs -= bounds.ignored_ubs;
+            }
             
-            if (n_lbs <= n_ubs) m_elimination_type = EliminationType::LBS;
-            else m_elimination_type = EliminationType::UBS;
+            m_elimination_type = (bounds.lbs < bounds.ubs) ? EliminationType::LBS : EliminationType::UBS;
 
             collect_eliminators<IgnoreUsed>();
             return true;
@@ -296,45 +331,27 @@ class Level {
                 // We only consider the columns corresponding to the original variables
                 if (col_it->first >= m_tableau.rhs_index()) break;
 
-                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "looking at column " << col_it->first);
+                Bounds bounds = count_bounds<IgnoreUsed>(col_it->second);
 
-                std::size_t n_lbs = 0, n_ubs = 0;
-                std::size_t n_ignored_lbs = 0, n_ignored_ubs = 0;
-                for (const auto& col_elem : col_it->second) {
-                    if (m_tableau.value_at(col_elem) > 0) {
-                        n_ubs++;
-                        if constexpr (IgnoreUsed) {
-                            if (m_ignore_for_eliminators.count(col_elem.row) == 1) n_ignored_ubs++;
-                        }
-                    } else {
-                        n_lbs++;
-                        if constexpr (IgnoreUsed) {
-                            if (m_ignore_for_eliminators.count(col_elem.row) == 1) n_ignored_lbs++;
-                        }
-                    }
-                }
-                if constexpr (IgnoreUsed) {
-                    if ((n_ignored_lbs > 0) && (n_ignored_lbs == n_lbs)) return false; // Partial UNSAT
-                    if ((n_ignored_ubs > 0) && (n_ignored_ubs == n_ubs)) return false; // Partial UNSAT
-                    n_lbs -= n_ignored_lbs;
-                    n_ubs -= n_ignored_ubs;
-                }
-                if (n_lbs == 0 || n_ubs == 0) {
-                    SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "column has at most one bound type");
+                if (bounds.lbs == 0 || bounds.ubs == 0) {
                     m_eliminated_column = col_it;
                     m_elimination_type = EliminationType::NONE;
                     return true;
                 }
-                if (n_lbs <= n_ubs) {
-                    if (!fewest_branches || (n_lbs < (*fewest_branches))) {
-                        fewest_branches = n_lbs;
-                        m_eliminated_column = col_it;
-                        m_elimination_type = EliminationType::LBS;
-                    } 
-                } else if (!fewest_branches || (n_ubs < (*fewest_branches))) {
-                    fewest_branches = n_ubs;
+
+                if constexpr (IgnoreUsed) {
+                    if ((bounds.ignored_lbs == bounds.lbs) || (bounds.ignored_ubs == bounds.ubs)) {
+                        return false;
+                    }
+                    bounds.lbs -= bounds.ignored_lbs;
+                    bounds.ubs -= bounds.ignored_ubs;
+                }
+
+                std::size_t min = std::min(bounds.lbs, bounds.ubs);
+                if (!fewest_branches || (min < (*fewest_branches))) {
+                    fewest_branches = min;
                     m_eliminated_column = col_it;
-                    m_elimination_type = EliminationType::UBS;
+                    m_elimination_type = (bounds.lbs < bounds.ubs) ? EliminationType::LBS : EliminationType::UBS;
                 }
             }
             assert(fewest_branches.has_value());
@@ -344,31 +361,30 @@ class Level {
         }
 
         template<bool USE_BT, bool IGNORE_USED> 
-        Level eliminate(const Eliminator& e) const {// REVIEW: watch out for map access, dont use it if possible
+        Level eliminate(const Eliminator& e) const {
             SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "eliminating column " << m_eliminated_column->first << " with row " << e.row);
+
             Level result(m_tableau.nr_of_rows() - 1, m_level + 1, m_tableau.rhs_index());
+
             Column::const_iterator col_it = m_eliminated_column->second.begin();
-            std::vector<std::size_t> new_backtrack_levels;
-            new_backtrack_levels.reserve(m_tableau.nr_of_rows() - 1); // TODO: remove at compile time if possible
-            std::set<RowIndex> new_ignored; // TODO: remove at compile time if possible
 
             auto process_row = [&](const RowIndex i, const RowIndex output_row) {
                 if ((col_it != m_eliminated_column->second.end()) && (i == col_it->row)) {
                     SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().generated_constraints(1));
-                    auto [row, same_bound]= m_tableau.combine(e.row, i, m_eliminated_column->first, e.coeff, m_tableau.value_at(*col_it));
+                    Row row = m_tableau.combine(e.row, i, m_eliminated_column->first, e.coeff, m_tableau.value_at(*col_it));
                     result.m_tableau.append_row(row);
                     if constexpr (USE_BT) {
-                        if ((e.coeff > 0) == (m_tableau.value_at(*col_it) > 0)) new_backtrack_levels.push_back(m_level + 1);
-                        else new_backtrack_levels.push_back(std::max(m_backtrack_levels[e.row], m_backtrack_levels[i]));
+                        if ((e.coeff > 0) == (m_tableau.value_at(*col_it) > 0)) result.m_backtrack_levels[output_row] = m_level + 1;
+                        else result.m_backtrack_levels[output_row] = std::max(m_backtrack_levels[e.row], m_backtrack_levels[i]);
                     }
                     col_it++;
                 } else {
-                    result.m_tableau.copy_row_from(i, m_tableau); // REVIEW: shared pointer so that if tableaus share the same constraint, it is only stored once?
-                    if constexpr (USE_BT) new_backtrack_levels.push_back(m_backtrack_levels[i]);
+                    result.m_tableau.copy_row_from(i, m_tableau);
+                    if constexpr (USE_BT) result.m_backtrack_levels[output_row] = m_backtrack_levels[i];
                 }
                 if constexpr (IGNORE_USED) {
                     if (m_ignore_for_eliminators.count(i) == 1) {
-                        new_ignored.emplace_hint(new_ignored.end(), output_row);
+                        result.m_ignore_for_eliminators.emplace_hint(result.m_ignore_for_eliminators.end(), output_row);
                     }
                 }
             };
@@ -380,36 +396,56 @@ class Level {
             for (RowIndex i = e.row + 1; i < m_tableau.nr_of_rows(); i++) {
                 process_row(i,i-1);
             }
-            result.m_backtrack_levels = new_backtrack_levels;
-            result.m_ignore_for_eliminators = new_ignored;
+
             return result;
         }
 
         template<bool UseBT, bool IgnoreUsed> 
         Level eliminate_without_bounds() const {
             SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "eliminating column " << m_eliminated_column->first << " without row");
+
             Level result(m_tableau.nr_of_rows() - m_eliminated_column->second.size(), m_level + 1, m_tableau.rhs_index());
-            std::vector<std::size_t> new_backtrack_levels;
-            new_backtrack_levels.reserve(m_tableau.nr_of_rows() - 1);
-            std::set<RowIndex> new_ignored;
             RowIndex added_row = 0;
             Column::const_iterator col_it = m_eliminated_column->second.begin();
+
             for (RowIndex i = 0; i < m_tableau.nr_of_rows(); i++) {
                 if ((col_it != m_eliminated_column->second.end()) && (i == col_it->row)) { // Requires the column elements to be in ascending order!!
                     col_it++;
-                } else {
-                    result.m_tableau.copy_row_from(i, m_tableau);
-                    if constexpr (UseBT) new_backtrack_levels.push_back(m_backtrack_levels[i]);
-                    if constexpr (IgnoreUsed) {
-                        if (m_ignore_for_eliminators.count(i) == 1) new_ignored.emplace_hint(new_ignored.end(), added_row);
-                        added_row++;
+                    continue;
+                } 
+
+                result.m_tableau.copy_row_from(i, m_tableau);
+                if constexpr (UseBT) {
+                    result.m_backtrack_levels[added_row] = m_backtrack_levels[i];
+                }
+                if constexpr (IgnoreUsed) {
+                    if (m_ignore_for_eliminators.count(i) == 1) {
+                        result.m_ignore_for_eliminators.emplace_hint(result.m_ignore_for_eliminators.end(), added_row);
                     }
                 }
+                added_row++;
             }
-            result.m_backtrack_levels = new_backtrack_levels; // REVIEW: avoid this copy, and: encapsulation
-            result.m_ignore_for_eliminators = new_ignored;
+
             return result;
         }
+
+        friend std::ostream& operator<<(std::ostream& os, const Level& level);
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Level& level) {
+    os << "Level " << level.m_level << ":\n";
+    os << "BT info (row : BT-level) : [";
+    for (std::size_t i = 0; i < level.m_backtrack_levels.size(); i++) {
+        os << "(" << i << " : " << level.m_backtrack_levels[i] << ")";
+    }
+    os << "]\n";
+    os << "ignored rows: {";
+    for (auto i : level.m_ignore_for_eliminators) {
+        os << i << ", ";
+    }
+    os << "}\n";
+    os << level.m_tableau;
+    return os;
+}
 
 } // namespace smtrat::fmplex

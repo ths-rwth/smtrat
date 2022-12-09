@@ -25,6 +25,15 @@ class FMPlexGauss : Gauss {
         return m_rows[ce.row][ce.position_in_row].value;
     }
 
+    void recompute_columns() {
+        for (auto& [index, column] : m_columns) column.clear();
+        for (std::size_t r = 0; r < m_rows.size(); r++) {
+            for (std::size_t i = 0; i < m_rows[r].elements.size(); i++) {
+                m_columns[m_rows[r][i].column].emplace_back(r,i);
+            }
+        }
+    }
+
     void apply_gauss_step(Pivot pivot, const std::set<RowIndex>& inactive_equalities) { // TODO: columns are incorrect after this
         Column col = m_columns.at(pivot.col);
         for (const ColumnElement& ce : col) {
@@ -42,11 +51,11 @@ class FMPlexGauss : Gauss {
                 pivot_scale = value_at(ce);
                 other_scale = -pivot.coeff;
             }
-            // REVIEW: this is also in combine -> refactor?
-            std::vector<RowElement>::const_iterator pivot_iter = m_rows[pivot.row].elements.begin();
-            std::vector<RowElement>::const_iterator other_iter = m_rows[ce.row].elements.begin();
-            std::vector<RowElement>::const_iterator pivot_end = m_rows[pivot.row].elements.end();
-            std::vector<RowElement>::const_iterator other_end = m_rows[ce.row].elements.end();
+
+            Row::ConstIterator pivot_iter = m_rows[pivot.row].begin();
+            Row::ConstIterator other_iter = m_rows[ce.row].begin();
+            Row::ConstIterator pivot_end = m_rows[pivot.row].end();
+            Row::ConstIterator other_end = m_rows[ce.row].end();
             while((pivot_iter != pivot_end) && (other_iter != other_end)) {
                 if (pivot_iter->column < other_iter->column) {
                     result.elements.emplace_back(pivot_iter->column, pivot_scale*(pivot_iter->value));
@@ -63,8 +72,15 @@ class FMPlexGauss : Gauss {
                     other_iter++;
                 }
             }
+            for( ; pivot_iter != pivot_end; pivot_iter++) {
+                result.elements.emplace_back(pivot_iter->column, pivot_scale*(pivot_iter->value));
+            }
+            for( ; other_iter != other_end; other_iter++) {
+                result.elements.emplace_back(other_iter->column, other_scale*(other_iter->value));
+            }
             m_rows[ce.row] = result; // REVIEW: is there a better in-place assignment?
         }
+        recompute_columns();
     }
 
     std::optional<Pivot> choose_gaussian_pivot(const std::set<RowIndex>& inactive_rows) {
@@ -86,7 +102,6 @@ class FMPlexGauss : Gauss {
             }
             it->second.emplace_back(m_rows.size(), i);
         }
-        SMTRAT_LOG_DEBUG("smtrat.gauss", "pushing row into gauss tableau with size " << m_rows.size());
         m_rows.push_back(row);
     }
 
@@ -94,8 +109,8 @@ class FMPlexGauss : Gauss {
         std::set<std::size_t> result;
         for (auto it = m_rows[i].elements.end(); it != m_rows[i].elements.begin();) {
             it--;
-            if (it->column <= m_rhs_index) break;
-            result.emplace_hint(result.begin(), it->column - m_rhs_index - 1);
+            if (it->column < m_first_origin_index) break;
+            result.emplace_hint(result.begin(), it->column - m_first_origin_index);
         }
         return result;
     }
@@ -103,17 +118,18 @@ class FMPlexGauss : Gauss {
     DeltaRational bound_value(const RowIndex ri, const ColumnIndex ci_eliminated, const std::map<ColumnIndex, DeltaRational>& model) const {
         DeltaRational bound(0);
         Rational coeff;
-        for (const auto& row_elem : m_rows[ri].elements) {
+        for (const auto& row_elem : m_rows[ri]) {
             // we are only interested in the lhs and rhs, not the origins
             if (row_elem.column > m_delta_index) break;
             else if (row_elem.column == m_rhs_index) bound += row_elem.value;
-            else if (row_elem.column == m_delta_index) bound += DeltaRational(0,row_elem.value);
+            else if (row_elem.column == m_delta_index) bound += DeltaRational(0, row_elem.value);
             else if (row_elem.column == ci_eliminated) coeff = row_elem.value;
             else {
                 auto it = model.find(row_elem.column);
                 if (it != model.end()) bound -= ((it->second) * row_elem.value);
             }
         }
+        SMTRAT_LOG_DEBUG("smtrat.gauss", "bound value of " << ci_eliminated << " from row " << ri << " is " << bound << " div " << coeff);
         return bound / coeff;
     }
 
@@ -125,6 +141,7 @@ class FMPlexGauss : Gauss {
         m_disequalities.clear();
         m_equalities.clear();
         m_inequalities.clear();
+        m_pivot_order.clear();
         SMTRAT_LOG_DEBUG("smtrat.gauss", "initializing gauss with constraints " << constraints << " and variable index " << variable_index);
         m_rows.reserve(constraints.size());
         m_rhs_index = variable_index.size();
@@ -161,14 +178,14 @@ class FMPlexGauss : Gauss {
             current_row.elements.emplace_back(m_first_origin_index + row, Rational(1));
             append_row(current_row);
         }
-        SMTRAT_LOG_DEBUG("smtrat.gauss", "result: " << m_rows.size() << " rows and... ");
-        SMTRAT_LOG_DEBUG("smtrat.gauss", "... " << m_columns.size() << " columns");
+        SMTRAT_LOG_DEBUG("smtrat.gauss", "result: " << m_rows.size() << " rows and " << m_columns.size() << " columns");
     }
 
     void apply_gaussian_elimination() override {
         std::set<RowIndex> used_equalities;
         std::optional<Pivot> pivot = choose_gaussian_pivot(used_equalities);
         while (pivot) {
+            SMTRAT_LOG_DEBUG("smtrat.gauss", "chosen pivot: row " << pivot->row << ", col " << pivot->col);
             used_equalities.emplace(pivot->row);
             m_pivot_order.push_back(*pivot);
             apply_gauss_step(*pivot, used_equalities);
@@ -197,10 +214,11 @@ class FMPlexGauss : Gauss {
         return std::nullopt;
     }
 
-    void assign_variables(std::map<std::size_t, DeltaRational> working_model) override {
+    void assign_variables(std::map<std::size_t, DeltaRational>& working_model) override {
         for (std::size_t i = m_pivot_order.size(); i > 0; i--) {
             fmplex::DeltaRational v = bound_value(m_pivot_order[i-1].row, m_pivot_order[i-1].col, working_model);
             working_model.emplace(m_pivot_order[i-1].col, v);
+            SMTRAT_LOG_DEBUG("smtrat.gauss", "assigning " << v << " to " << m_pivot_order[i-1].col);
         }
         for (const auto& [idx, _col] : m_columns) {
             if (idx >= m_rhs_index) break;

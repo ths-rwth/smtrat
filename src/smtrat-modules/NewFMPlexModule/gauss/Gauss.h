@@ -9,7 +9,7 @@ class Gauss {
     virtual void apply_gaussian_elimination() = 0;
     virtual FMPlexTableau get_transformed_inequalities() = 0;
     virtual std::optional<Conflict> find_conflict() = 0;
-    virtual void assign_variables(std::map<std::size_t, DeltaRational>) = 0;
+    virtual void assign_variables(std::map<std::size_t, DeltaRational>&) = 0;
 };
 
 } // namespace smtrat::fmplex
