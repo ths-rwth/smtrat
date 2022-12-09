@@ -27,7 +27,7 @@ namespace smtrat
 	{}
 	
 	template<class Settings>
-	bool CoCoAGBModule<Settings>::informCore( const FormulaT& _constraint )
+	bool CoCoAGBModule<Settings>::informCore( const FormulaT& )
 	{
 		// Your code.
 		return true; // This should be adapted according to your implementation.
