@@ -77,7 +77,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                 current_row.relation = is_inequality ? carl::Relation::LEQ : r;
 
                 Poly p = c.constraint().lhs();
-                current_row.elements.reserve(p.nr_terms() + 1);
+                current_row.elements.reserve(p.nr_terms() + 2);
                 Rational turning_factor(1);
                 if ((r == carl::Relation::GEQ) || (r == carl::Relation::GREATER)) turning_factor = -1;
                 for (const auto& term : p) {
@@ -186,7 +186,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                 // lhs is non-zero (there is a variable left)
                 return false;
             } else if (!is_origin_column(row_it->column)) {
-                // constraint is (0 ~ b) with b != 0 or (0 ~ c*delta)
+                // constraint is (0 ~ b + c*delta) with b != 0 or c != 0
                 // => conflict only if ~ is = or if ~ is not neq and b < 0 respectively c < 0
                 if (m_rows[ri].relation == carl::Relation::NEQ) return false;
                 if ((m_rows[ri].relation != carl::Relation::EQ) && (row_it->value > 0)) return false;
@@ -288,7 +288,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                     if (it != model.end()) bound -= ((it->second) * e.value);
                 }
             }
-            bound = bound / coeff;
+            bound /= coeff;
             SMTRAT_LOG_DEBUG("smtrat.fmplex", "Bound for var " << ci_eliminated << " from row " << ri << ": " << m_rows[ri] << " is " << bound);
             return bound;
         }
