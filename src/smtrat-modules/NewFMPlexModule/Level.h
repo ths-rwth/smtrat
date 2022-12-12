@@ -28,9 +28,18 @@ inline DeltaRational choose_value_below(const DeltaRational& bound) {
 }
 
 inline DeltaRational choose_value_between(const DeltaRational& lower_bound, const DeltaRational& upper_bound) {
+    assert(lower_bound <= upper_bound);
     if (lower_bound == upper_bound) return lower_bound;
-    RationalInterval range(lower_bound.mainPart(), upper_bound.mainPart()); // REVIEW: is this correct?
-    return DeltaRational(carl::sample(range, false), Rational(0));
+    if (lower_bound.mainPart() != upper_bound.mainPart()) {
+        RationalInterval real_range(lower_bound.mainPart(), upper_bound.mainPart());
+        return DeltaRational(carl::sample(real_range, false), Rational(0));
+    } // else : same real part
+    if ((lower_bound.deltaPart() > 0) == (upper_bound > 0)) {
+        RationalInterval delta_range(lower_bound.deltaPart(), upper_bound.deltaPart());
+        return DeltaRational(lower_bound.mainPart(), carl::sample(delta_range, true));
+    } // else : r - a*delta <= x <= r + b*delta (a,b > 0) => can use r
+    return DeltaRational(lower_bound.mainPart(), Rational(0));
+    
 }
 
 class Level {
