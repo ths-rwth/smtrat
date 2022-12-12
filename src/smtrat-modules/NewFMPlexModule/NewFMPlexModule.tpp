@@ -139,6 +139,7 @@ Rational NewFMPlexModule<Settings>::find_suitable_delta(std::map<std::size_t, fm
 		if (r == carl::Relation::EQ) continue;
 		bool leq_or_less = (r == carl::Relation::LEQ) || (r == carl::Relation::LESS);
 
+		// we can evaluate separately because the constraints are >>linear<<
 		evaluated_poly_main = carl::evaluate(c.constraint().lhs(), rational_substitutions);
 		evaluated_poly_delta = carl::evaluate(c.constraint().lhs(), delta_substitutions);
 		evaluated_poly_delta -= c.constraint().lhs().constant_part();
@@ -147,10 +148,11 @@ Rational NewFMPlexModule<Settings>::find_suitable_delta(std::map<std::size_t, fm
 		current_bound = (-evaluated_poly_main)/evaluated_poly_delta;
 
 		if (r == carl::Relation::NEQ) {
-			if (current_bound < 0) continue;
+			if (current_bound <= 0) continue;
 		} else if (leq_or_less != (evaluated_poly_delta > 0)) {
 			continue; // would give lower bound
 		}
+		SMTRAT_LOG_DEBUG("smtrat.fmplex", "constraint " << c << " gives bound " << current_bound << " on delta");
 		if (current_bound < strictest_bound) strictest_bound = current_bound;
 	}
 
