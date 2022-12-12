@@ -44,12 +44,12 @@ class FMPlexGauss : Gauss {
             Rational other_scale;
             result.relation = m_rows[ce.row].relation;
             // REVIEW: skalierung anpassen? Nur mit Integers arbeiten?
-            if (pivot.coeff > 0) {
-                pivot_scale = -value_at(ce);
-                other_scale = pivot.coeff;
+            if (value_at(ce) > 0/*pivot_coeff > 0*/) {
+                pivot_scale = -1/pivot.coeff; //-other_coeff;
+                other_scale = 1/value_at(ce); //pivot_coeff;
             } else { // pivot_coeff < 0
-                pivot_scale = value_at(ce);
-                other_scale = -pivot.coeff;
+                pivot_scale = 1/pivot.coeff;//other_coeff;
+                other_scale = -1/value_at(ce);//-pivot_coeff;
             }
 
             Row::ConstIterator pivot_iter = m_rows[pivot.row].begin();
@@ -129,7 +129,7 @@ class FMPlexGauss : Gauss {
                 if (it != model.end()) bound -= ((it->second) * row_elem.value);
             }
         }
-        SMTRAT_LOG_DEBUG("smtrat.gauss", "bound value of " << ci_eliminated << " from row " << ri << " is " << bound << " div " << coeff);
+        SMTRAT_LOG_DEBUG("smtrat.fmplex", "Bound for var " << ci_eliminated << " from row " << ri << ": " << m_rows[ri] << " is " << bound << "/" << coeff);
         return bound / coeff;
     }
 
@@ -204,7 +204,7 @@ class FMPlexGauss : Gauss {
     std::optional<Conflict> find_conflict() override {
         for (RowIndex i = 0; i < m_rows.size(); i++) {
             if (m_rows[i][0].column < m_rhs_index) continue;
-            if (m_rows[i][0].column == m_rhs_index) {
+            if (m_rows[i][0].column <= m_delta_index) {
                 if (m_rows[i].relation == carl::Relation::EQ) return Conflict {true, 0, origins(i)};
                 if (m_rows[i].relation == carl::Relation::NEQ) continue;
                 if (m_rows[i][0].value < 0) return Conflict {true, 0, origins(i)};

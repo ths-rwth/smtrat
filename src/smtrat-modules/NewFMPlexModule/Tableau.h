@@ -24,6 +24,7 @@ struct Row {
     Iterator end() { return elements.end(); }
     ConstIterator begin() const { return elements.begin(); }
     ConstIterator end() const { return elements.end(); }
+    friend std::ostream& operator<<(std::ostream& os, const Row& row);
 };
 
 struct ColumnElement {
@@ -236,12 +237,12 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                 result.relation = carl::Relation::LESS;
             }
             // REVIEW: skalierung anpassen? Nur mit Integers arbeiten?
-            if (pivot_coeff > 0) {
-                pivot_scale = -other_coeff;
-                other_scale = pivot_coeff;
+            if (other_coeff > 0/*pivot_coeff > 0*/) {
+                pivot_scale = -1/pivot_coeff; //-other_coeff;
+                other_scale = 1/other_coeff; //pivot_coeff;
             } else { // pivot_coeff < 0
-                pivot_scale = other_coeff;
-                other_scale = -pivot_coeff;
+                pivot_scale = 1/pivot_coeff;//other_coeff;
+                other_scale = -1/other_coeff;//-pivot_coeff;
             }
 
             Row::ConstIterator pivot_iter = m_rows[pivot_row].begin();
@@ -288,23 +289,28 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                 }
             }
             bound = bound / coeff;
-            SMTRAT_LOG_DEBUG("smtrat.fmplex", "Bound for var " << ci_eliminated << " from row " << ri << " is " << bound);
+            SMTRAT_LOG_DEBUG("smtrat.fmplex", "Bound for var " << ci_eliminated << " from row " << ri << ": " << m_rows[ri] << " is " << bound);
             return bound;
         }
 
         friend std::ostream& operator<<(std::ostream& os, const FMPlexTableau& tableau);
 };
 
+inline std::ostream& operator<<(std::ostream& os, const Row& row) {
+    os << "[";
+    for (const auto& e : row) {
+        os << "(col " << e.column << " : val " << e.value << ")";
+    }
+    os << "]";
+    return os;
+}
+
 inline std::ostream& operator<<(std::ostream& os, const FMPlexTableau& tableau) {
     os << "Tableau: rhs -> " << tableau.m_rhs_index;
     os << ", delta -> " << tableau.m_delta_index;
     os << ", first origin -> " << tableau.m_first_origin_index << "\n";
     for (std::size_t i = 0; i < tableau.m_rows.size(); i++) {
-        os << "Row " << i << ": ";
-        for (const auto& e : tableau.m_rows[i]) {
-            os << "(col " << e.column << " : val " << e.value << ")";
-        }
-        os << "\n";
+        os << "Row " << i << ": " << tableau.m_rows[i] << "\n";
     }
     return os;
 }
