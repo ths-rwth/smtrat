@@ -232,6 +232,7 @@ std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level(
 		m_gauss.init(m_constraints, m_variable_index);
 		if (m_equalities.size() > 0) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "Applying Gaussian elimination");
+			SMTRAT_STATISTICS_CALL(m_statistics.gauss_needed());
 			m_gauss.apply_gaussian_elimination();
 			auto conflict = m_gauss.find_conflict();
 			if (conflict) return conflict;
@@ -322,6 +323,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 		auto conflict = construct_root_level();
 		if (conflict) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "root level is conflicting");
+			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
 			build_unsat_core(conflict->involved_rows);
 			return Answer::UNSAT;
 		}

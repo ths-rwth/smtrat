@@ -11,6 +11,8 @@ namespace smtrat {
 			private:
 				std::size_t m_global_conflicts = 0;
 				std::size_t m_local_conflicts = 0;
+				std::size_t m_gauss_conflicts = 0;
+				std::size_t m_gauss_needed = false;
 				std::size_t m_generated_constraints = 0;
 				std::size_t m_systems = 0;
 				std::size_t m_ignored_branches = 0;
@@ -19,7 +21,9 @@ namespace smtrat {
 
 			public:
 				void global_conflict() { m_global_conflicts++; }
-				void local_conflict() { m_local_conflicts++; }
+				void local_conflict () { m_local_conflicts++;  }
+				void gauss_conflict () { m_gauss_conflicts++;  }
+				void gauss_needed() { m_gauss_needed = true; }
 				void generated_constraints(std::size_t n) { m_generated_constraints += n; }
 				void new_system() { m_systems++; }
 				void branches(std::size_t n) {
