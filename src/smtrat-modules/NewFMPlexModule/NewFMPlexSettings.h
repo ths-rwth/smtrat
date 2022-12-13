@@ -28,17 +28,33 @@ namespace smtrat {
 		static constexpr fmplex::VariableHeuristic variable_heuristic = fmplex::VariableHeuristic::COLUMN_ORDER;
 	};
 
-	struct NewFMPlexSettingsBT : NewFMPlexBaseSettings
+	struct NewFMPlexSettingsOnlyBt : NewFMPlexBaseSettings
 	{
-		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettingsBT>";
+		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettingsOnlyBt>";
 		static constexpr bool use_backtracking = true;
+		static constexpr bool ignore_pivots = false;
+		static constexpr fmplex::VariableHeuristic variable_heuristic = fmplex::VariableHeuristic::COLUMN_ORDER;
+	};
+
+	struct NewFMPlexSettingsOnlyPrune : NewFMPlexBaseSettings
+	{
+		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettingsOnlyPrune>";
+		static constexpr bool use_backtracking = false;
+		static constexpr bool ignore_pivots = true;
+		static constexpr fmplex::VariableHeuristic variable_heuristic = fmplex::VariableHeuristic::COLUMN_ORDER;
+	};
+
+	struct NewFMPlexSettingsOnlyHeur : NewFMPlexBaseSettings
+	{
+		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettingsOnlyHeur>";
+		static constexpr bool use_backtracking = false;
 		static constexpr bool ignore_pivots = false;
 		static constexpr fmplex::VariableHeuristic variable_heuristic = fmplex::VariableHeuristic::LEAST_BRANCHES;
 	};
 
-	struct NewFMPlexSettingsPrune : NewFMPlexBaseSettings
+	struct NewFMPlexSettingsBtPruneHeur : NewFMPlexBaseSettings
 	{
-		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettingsPrune>";
+		static constexpr auto moduleName = "NewFMPlexModule<NewFMPlexSettingsBtPruneHeur>";
 		static constexpr bool use_backtracking = true;
 		static constexpr bool ignore_pivots = true;
 		static constexpr fmplex::VariableHeuristic variable_heuristic = fmplex::VariableHeuristic::LEAST_BRANCHES;

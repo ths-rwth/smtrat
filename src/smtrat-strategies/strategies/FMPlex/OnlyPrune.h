@@ -1,6 +1,3 @@
-/**
-* @file FMPlexSolver.h
-*/
 #pragma once
 
 #include <smtrat-solver/Manager.h>
@@ -18,15 +15,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlexNew: public Manager {
+class FMPlex_OnlyPrune: public Manager {
 public:
-   FMPlexNew(): Manager()
+   FMPlex_OnlyPrune(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsPrune>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettingsOnlyPrune>>()
 				   })
 
 		   });
