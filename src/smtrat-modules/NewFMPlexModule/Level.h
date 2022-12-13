@@ -305,7 +305,7 @@ class Level {
             m_eliminated_column = col_it;
             SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "chose column" << m_eliminated_column->first);
 
-            Bounds bounds = count_bounds<IgnoreUsed>(col_it->second());
+            Bounds bounds = count_bounds<IgnoreUsed>(col_it->second);
 
             if ((bounds.lbs == 0) || (bounds.ubs == 0)) {
                 m_elimination_type = EliminationType::NONE;
