@@ -15,15 +15,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_OnlyHeur: public Manager {
+class FMPlex_MinColMinRow: public Manager {
 public:
-   FMPlex_OnlyHeur(): Manager()
+   FMPlex_MinColMinRow(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsOnlyHeur>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettingsMinColMinRow>>()
 				   })
 
 		   });

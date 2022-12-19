@@ -15,15 +15,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_OnlyPrune: public Manager {
+class FMPlex_PruneRandRand: public Manager {
 public:
-   FMPlex_OnlyPrune(): Manager()
+   FMPlex_PruneRandRand(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsOnlyPrune>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettingsPruneRandRand>>()
 				   })
 
 		   });

@@ -15,15 +15,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_BtPruneHeur: public Manager {
+class FMPlex_RandRand: public Manager {
 public:
-   FMPlex_BtPruneHeur(): Manager()
+   FMPlex_RandRand(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsBtPruneHeur>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettingsRandRand>>()
 				   })
 
 		   });

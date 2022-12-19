@@ -15,15 +15,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_Simple: public Manager {
+class FMPlex_BTPruneMinColMinRow: public Manager {
 public:
-   FMPlex_Simple(): Manager()
+   FMPlex_BTPruneMinColMinRow(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsSimple>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettingsBTPruneMinColMinRow>>()
 				   })
 
 		   });

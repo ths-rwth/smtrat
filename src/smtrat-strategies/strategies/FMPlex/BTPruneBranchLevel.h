@@ -15,15 +15,15 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_OnlyBt: public Manager {
+class FMPlex_BTPruneBranchLevel: public Manager {
 public:
-   FMPlex_OnlyBt(): Manager()
+   FMPlex_BTPruneBranchLevel(): Manager()
    {
 	   setStrategy(
 		   {
 			   addBackend<SATModule<SATSettings1>>(
 				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsOnlyBt>>()
+					   addBackend<NewFMPlexModule<NewFMPlexSettingsBTPruneBranchLevel>>()
 				   })
 
 		   });

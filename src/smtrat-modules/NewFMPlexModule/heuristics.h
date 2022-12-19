@@ -19,11 +19,15 @@ namespace smtrat::fmplex {
 
 	enum class VariableHeuristic {
 		COLUMN_ORDER,
-		LEAST_BRANCHES
+		LEAST_BRANCHES,
+		RANDOM,
+		MIN_COL_LEN
 	};
 
 	enum class EliminatorHeuristic {
 		ROW_ORDER,
-		LOWEST_LEVEL
+		LOWEST_LEVEL,
+		RANDOM,
+		MIN_ROW_LEN
 	};
 } // namespace smtrat::fmplex

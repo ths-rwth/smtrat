@@ -301,13 +301,14 @@ bool NewFMPlexModule<Settings>::process_conflict(fmplex::Conflict conflict) {
 		return false;
 	}
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "local conflict!");
-	SMTRAT_STATISTICS_CALL(m_statistics.local_conflict());
-	if constexpr (Settings::use_backtracking) { 	// local conflict => maybe backtrack
+	if constexpr (Settings::use_backtracking) { 	// local conflict => backtrack
+		SMTRAT_STATISTICS_CALL(m_statistics.local_conflict(m_current_level - conflict.level + 1));
 		SMTRAT_LOG_DEBUG("smtrat.fmplex", "Backtracking...");
 		return backtrack(conflict);
 	}
 	if (m_history[m_current_level].is_lhs_zero()) {
 		SMTRAT_LOG_DEBUG("smtrat.fmplex", "in leaf, backtracking one step");
+		SMTRAT_STATISTICS_CALL(m_statistics.local_conflict(1));
 		conflict.level = m_current_level;
 		return backtrack(conflict);
 	}
@@ -344,7 +345,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 
 		if (!m_history[m_current_level].has_elimination_column()) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "choosing elimination column...");
-			bool column_found = m_history[m_current_level].choose_elimination_column<Settings::ignore_pivots, Settings::variable_heuristic>();
+			bool column_found = m_history[m_current_level].choose_elimination_column<Settings::ignore_pivots, Settings::variable_heuristic, Settings::eliminator_heuristic>();
 			if constexpr (Settings::ignore_pivots) {
 				if (!column_found) { // only happens when all bounds of one type in a column are ignored => partial UNSAT
 					SMTRAT_LOG_DEBUG("smtrat.fmplex", "ignored column found -> partial UNSAT");

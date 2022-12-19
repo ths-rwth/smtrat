@@ -1,5 +1,6 @@
 #pragma once
 #include "Tableau.h"
+#include "random_generator.h"
 
 namespace smtrat::fmplex {
 
@@ -86,19 +87,30 @@ class Level {
 
         // todo: destructor?
 
-        template<bool IgnoreUsed, VariableHeuristic VH>
+        template<bool IgnoreUsed, VariableHeuristic VH, EliminatorHeuristic EH>
         bool choose_elimination_column() {
             m_elimination_chosen = true;
+            bool result;
             if constexpr (VH == VariableHeuristic::COLUMN_ORDER) {
                 SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "using column order");
-                return choose_elimination_column_column_order<IgnoreUsed>();
+                result = choose_elimination_column_column_order<IgnoreUsed>();
             }   
             if constexpr (VH == VariableHeuristic::LEAST_BRANCHES) {
                 SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "using least branches");
-                return choose_elimination_column_least_branches<IgnoreUsed>();
+                result = choose_elimination_column_least_branches<IgnoreUsed>();
             }
-            assert(false); // unreachable
-            return false;
+            if constexpr (VH == VariableHeuristic::RANDOM) {
+                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "using random order");
+                result = choose_elimination_column_random<IgnoreUsed>();
+            }
+            if constexpr (VH == VariableHeuristic::MIN_COL_LEN) {
+                SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "using minimum column length");
+                result = choose_elimination_min_col_len<IgnoreUsed>();
+            }
+            if (result && (m_elimination_type != EliminationType::NONE)) {
+                collect_eliminators<IgnoreUsed, EH>();
+            }
+            return result;
         }
 
         template<bool USE_BT, bool IGNORE_USED>
@@ -248,7 +260,7 @@ class Level {
 
     private:
 
-        template<bool IgnoreUsed>
+        template<bool IgnoreUsed, EliminatorHeuristic EH>
         void collect_eliminators() {
             bool collect_lbs = (m_elimination_type == EliminationType::LBS);
             for (const auto& col_elem : m_eliminated_column->second) {
@@ -262,6 +274,21 @@ class Level {
                 if ((val < 0) == collect_lbs) {
                     m_open_eliminators.emplace_back(col_elem.row, val);
                 }
+            }
+            if constexpr (EH == EliminatorHeuristic::LOWEST_LEVEL) {
+                std::sort(m_open_eliminators.begin(), m_open_eliminators.end(), 
+                            [&m_backtrack_levels](const Eliminator& lhs, const Eliminator& rhs){
+                                return m_backtrack_levels[lhs.row] < m_backtrack_levels[rhs.row];
+                            })
+            }
+            if constexpr (EH == EliminatorHeuristic::RANDOM) {
+                Random::shuffle(m_open_eliminators);
+            }
+            if constexpr (EH == EliminatorHeuristic::MIN_ROW_LEN) {
+                std::sort(m_open_eliminators.begin(), m_open_eliminators.end(), 
+                            [&m_tableau](const Eliminator& lhs, const Eliminator& rhs){
+                                return m_tableau.non_zero_variable_columns(lhs.row).size() < m_tableau.non_zero_variable_columns(rhs.row).size();
+                            })
             }
             SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "collected eliminators: " << [](auto es){
                 std::string res = "";
@@ -298,6 +325,33 @@ class Level {
         }
 
         template<bool IgnoreUsed>
+        bool choose_elimination_column_random() {
+            std::vector<ColumnIndex> possible_columns = m_tableau.non_zero_variable_columns();
+            if (possible_columns.empty()) return false;
+
+            std::size_t max_index = possible_columns.size() - 1;
+            std::size_t i = static_cast<std::size_t>(Random::from_range(0, max_index));
+            m_eliminated_column = m_tableau.columns_begin() + i;
+            Bounds bounds = count_bounds<IgnoreUsed>(m_eliminated_column->second);
+
+            if ((bounds.lbs == 0) || (bounds.ubs == 0)) {
+                m_elimination_type = EliminationType::NONE;
+                return true;
+            }
+
+            if constexpr (IgnoreUsed) {
+                if ((bounds.ignored_lbs == bounds.lbs) || (bounds.ignored_ubs == bounds.ubs)) {
+                    return false;
+                }
+                bounds.lbs -= bounds.ignored_lbs;
+                bounds.ubs -= bounds.ignored_ubs;
+            }
+            
+            m_elimination_type = (bounds.lbs < bounds.ubs) ? EliminationType::LBS : EliminationType::UBS;
+            return true;
+        }
+
+        template<bool IgnoreUsed>
         bool choose_elimination_column_column_order() {
             auto col_it = m_tableau.columns_begin();
             if (col_it->first >= m_tableau.rhs_index()) return false;
@@ -321,8 +375,6 @@ class Level {
             }
             
             m_elimination_type = (bounds.lbs < bounds.ubs) ? EliminationType::LBS : EliminationType::UBS;
-
-            collect_eliminators<IgnoreUsed>();
             return true;
         }
 
@@ -360,7 +412,40 @@ class Level {
             }
             assert(fewest_branches.has_value());
             SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "collecting eliminators");
-            collect_eliminators<IgnoreUsed>();
+            return true;
+        }
+
+        template<bool IgnoreUsed>
+        bool choose_elimination_column_min_col_len() {
+            std::optional<size_t> min_col_len;
+
+            for (auto col_it = m_tableau.columns_begin(); col_it != m_tableau.columns_end(); col_it++) {
+                // We only consider the columns corresponding to the original variables
+                if (col_it->first >= m_tableau.rhs_index()) break;
+
+                Bounds bounds = count_bounds<IgnoreUsed>(col_it->second);
+
+                if (bounds.lbs == 0 || bounds.ubs == 0) {
+                    m_eliminated_column = col_it;
+                    m_elimination_type = EliminationType::NONE;
+                    return true;
+                }
+
+                if constexpr (IgnoreUsed) {
+                    if ((bounds.ignored_lbs == bounds.lbs) || (bounds.ignored_ubs == bounds.ubs)) {
+                        return false;
+                    }
+                }
+
+                std::size_t col_len = bounds.lbs + bounds.ubs;
+                if (!min_col_len || (col_len < (*min_col_len))) {
+                    min_col_len = col_len;
+                    m_eliminated_column = col_it;
+                    m_elimination_type = (bounds.lbs < bounds.ubs) ? EliminationType::LBS : EliminationType::UBS;
+                }
+            }
+            assert(fewest_branches.has_value());
+            SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "collecting eliminators");
             return true;
         }
 
