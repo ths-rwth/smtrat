@@ -318,6 +318,7 @@ bool NewFMPlexModule<Settings>::process_conflict(fmplex::Conflict conflict) {
 
 template<class Settings>
 Answer NewFMPlexModule<Settings>::checkCore() {
+	SMTRAT_TIME_START(start);
 	if constexpr (Settings::incremental) {
 		// todo: not yet implemented
 	} else {
@@ -326,6 +327,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "root level is conflicting");
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
 			build_unsat_core(conflict->involved_rows);
+			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 			return Answer::UNSAT;
 		}
 	}
@@ -338,8 +340,12 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 		} else if (m_history[m_current_level].is_lhs_zero()) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "current level is trivial SAT (apart from NEQs)");
 			if constexpr (Settings::neq_handling == fmplex::NEQHandling::SPLITTING_LEMMAS) {
-				if (!try_construct_model()) return Answer::UNKNOWN;
+				if (!try_construct_model()) {
+					SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+					return Answer::UNKNOWN;
+				}
 			} // todo: else
+			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 			return Answer::SAT;
 		}
 
@@ -352,6 +358,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 					SMTRAT_STATISTICS_CALL(m_statistics.local_conflict_from_prune());
 					// we don't need to transfer unsat cores, as the reason for partial unsat are already visited sibling or uncle systems
 					if (!backtrack(fmplex::Conflict{false, m_current_level, std::set<std::size_t>()})) {
+						SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 						return Answer::UNSAT;
 					}
 				}

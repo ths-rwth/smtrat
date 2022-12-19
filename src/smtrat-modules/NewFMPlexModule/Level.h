@@ -112,7 +112,7 @@ class Level {
             if (m_elimination_type != EliminationType::NONE) {
                 collect_eliminators<IgnoreUsed, EH>();
             } else {
-                SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().eliminated_without_bounds());
+                SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().eliminated_without_bounds());
             }
             return result;
         }
@@ -269,13 +269,13 @@ class Level {
             bool collect_lbs = (m_elimination_type == EliminationType::LBS);
             SMTRAT_STATISTICS_CALL(std::size_t n_ignored = 0;)
             for (const auto& col_elem : m_eliminated_column->second) {
+                Rational val = m_tableau.value_at(col_elem);
                 if constexpr (IgnoreUsed) {
                     if (m_ignore_for_eliminators.count(col_elem.row) == 1) {
                         SMTRAT_STATISTICS_CALL(if ((val < 0) == collect_lbs) n_ignored++);
                         continue;
                     }
                 }
-                Rational val = m_tableau.value_at(col_elem);
                 if ((val < 0) == collect_lbs) {
                     m_open_eliminators.emplace_back(col_elem.row, val);
                 }
@@ -300,9 +300,9 @@ class Level {
                 for (const auto& e : es) res += std::to_string(e.row) + ", ";
                 return res;
             }(m_open_eliminators));
-            SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().branches(m_open_eliminators.size()));
-            SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().ignored_branches(n_ignored));
-            SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().eliminated_with_bounds(m_open_eliminators.size(), m_eliminated_column->second.size() - n_ignored));
+            SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().branches(m_open_eliminators.size()));
+            SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().ignored_branches(n_ignored));
+            SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().eliminated_with_bounds(m_open_eliminators.size(), m_eliminated_column->second.size() - n_ignored));
         }
 
         struct Bounds {
@@ -467,7 +467,7 @@ class Level {
 
             auto process_row = [&](const RowIndex i, const RowIndex output_row) {
                 if ((col_it != m_eliminated_column->second.end()) && (i == col_it->row)) {
-                    SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().generated_constraints(1));
+                    SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().generated_constraints(1));
                     Row row = m_tableau.combine(e.row, i, m_eliminated_column->first, e.coeff, m_tableau.value_at(*col_it));
                     result.m_tableau.append_row(row);
                     if constexpr (USE_BT) {

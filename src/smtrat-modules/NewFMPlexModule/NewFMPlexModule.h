@@ -11,13 +11,16 @@
 #include <smtrat-solver/Module.h>
 #include "heuristics.h"
 #include "../LRAModule/tableau/Value.h"
-#include "Level.h"
-#include "gauss/Gauss.h"
-#include "NewFMPlexSettings.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 #include "NewFMPlexStatistics.h"
 #endif
+
+#include "Level.h"
+#include "gauss/Gauss.h"
+#include "NewFMPlexSettings.h"
+
+
 
 namespace smtrat {
 	template<typename Settings>
@@ -49,7 +52,7 @@ namespace smtrat {
 			Settings::gauss_type m_gauss;
 
 			#ifdef SMTRAT_DEVOPTION_Statistics
-			NewFMPlexStatistics& m_statistics = NewFMPlexStatistics::get_instance();
+			fmplex::FMPlexStatistics& m_statistics = fmplex::FMPlexStatistics::get_instance();
 			#endif
 
 			/**

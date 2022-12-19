@@ -23,6 +23,7 @@ namespace smtrat {
 				std::size_t m_total_backtrack_distance = 0;
 				std::size_t m_local_conflicts_from_prune = 0;
 				double m_avg_bound_ratio = 0;
+				carl::statistics::timer m_timer;
 
 			public:
 				void global_conflict() { m_global_conflicts++; }
@@ -46,8 +47,10 @@ namespace smtrat {
 				}
 				void eliminated_with_bounds(std::size_t eliminators, std::size_t others) { 
 					m_eliminated_with_bounds++;
-					m_avg_bound_ratio = ((eliminators/static_cast<double>(others) + (m_eliminated_with_bounds - 1) * m_avg_bound_ratio)/m_eliminated_with_bounds)
+					m_avg_bound_ratio = ((eliminators/static_cast<double>(others) + (m_eliminated_with_bounds - 1) * m_avg_bound_ratio)/m_eliminated_with_bounds);
 				}
+
+				auto& timer() { return m_timer; }
 
 				void collect() { // called after the solving process to collect statistics
 					Statistics::addKeyValuePair("global_conflicts", m_global_conflicts);
@@ -65,10 +68,11 @@ namespace smtrat {
 					Statistics::addKeyValuePair("ignored_branches", m_ignored_branches);
 					Statistics::addKeyValuePair("max_branches", m_max_branches);
 					Statistics::addKeyValuePair("avg_branches", ((double) m_total_branches) / ((double) m_systems));
+					Statistics::addKeyValuePair("timer", m_timer);
 				}
 
 				static FMPlexStatistics& get_instance() {
-					static FMPlexStatistics& instance = statistics_get<NewFMPlexStatistics>("fmplex");
+					static FMPlexStatistics& instance = statistics_get<FMPlexStatistics>("fmplex");
 					return instance;
 				}
 		};
