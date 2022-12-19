@@ -349,6 +349,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			if constexpr (Settings::ignore_pivots) {
 				if (!column_found) { // only happens when all bounds of one type in a column are ignored => partial UNSAT
 					SMTRAT_LOG_DEBUG("smtrat.fmplex", "ignored column found -> partial UNSAT");
+					SMTRAT_STATISTICS_CALL(m_statistics.local_conflict_from_prune());
 					// we don't need to transfer unsat cores, as the reason for partial unsat are already visited sibling or uncle systems
 					if (!backtrack(fmplex::Conflict{false, m_current_level, std::set<std::size_t>()})) {
 						return Answer::UNSAT;

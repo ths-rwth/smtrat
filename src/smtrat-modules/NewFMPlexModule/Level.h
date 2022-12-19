@@ -107,8 +107,12 @@ class Level {
                 SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "using minimum column length");
                 result = choose_elimination_min_col_len<IgnoreUsed>();
             }
-            if (result && (m_elimination_type != EliminationType::NONE)) {
+            if (!result) return false;
+
+            if (m_elimination_type != EliminationType::NONE) {
                 collect_eliminators<IgnoreUsed, EH>();
+            } else {
+                SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().eliminated_without_bounds());
             }
             return result;
         }
@@ -263,10 +267,11 @@ class Level {
         template<bool IgnoreUsed, EliminatorHeuristic EH>
         void collect_eliminators() {
             bool collect_lbs = (m_elimination_type == EliminationType::LBS);
+            SMTRAT_STATISTICS_CALL(std::size_t n_ignored = 0;)
             for (const auto& col_elem : m_eliminated_column->second) {
                 if constexpr (IgnoreUsed) {
                     if (m_ignore_for_eliminators.count(col_elem.row) == 1) {
-                        SMTRAT_STATISTICS_CALL(if ((val < 0) == collect_lbs) NewFMPlexStatistics::get_instance().ignored_branches(1));
+                        SMTRAT_STATISTICS_CALL(if ((val < 0) == collect_lbs) n_ignored++);
                         continue;
                     }
                 }
@@ -296,6 +301,8 @@ class Level {
                 return res;
             }(m_open_eliminators));
             SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().branches(m_open_eliminators.size()));
+            SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().ignored_branches(n_ignored));
+            SMTRAT_STATISTICS_CALL(NewFMPlexStatistics::get_instance().eliminated_with_bounds(m_open_eliminators.size(), m_eliminated_column->second.size() - n_ignored));
         }
 
         struct Bounds {
