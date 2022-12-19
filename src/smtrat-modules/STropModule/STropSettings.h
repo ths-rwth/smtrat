@@ -20,7 +20,7 @@ struct STropSettings1 {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings1>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// incremental mode for SMT solving
 	static constexpr Mode mode = Mode::INCREMENTAL_CONSTRAINTS;
 
@@ -36,7 +36,7 @@ struct STropSettings2 {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings2>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// transformation of the formula to an equation
 	static constexpr Mode mode = Mode::TRANSFORM_EQUATION;
 
@@ -48,7 +48,7 @@ struct STropSettings3 {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings3>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
 	static constexpr Mode mode = Mode::TRANSFORM_FORMULA;
 
@@ -60,7 +60,7 @@ struct STropSettings3b {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings3b>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
 	static constexpr Mode mode = Mode::TRANSFORM_FORMULA_ALT;
 
@@ -71,7 +71,7 @@ struct STropSettings2OutputOnly {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings2OutputOnly>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// transformation of the formula to an equation
 	static constexpr Mode mode = Mode::TRANSFORM_EQUATION;
 
@@ -82,7 +82,7 @@ struct STropSettings3OutputOnly {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings3OutputOnly>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
 	static constexpr Mode mode = Mode::TRANSFORM_FORMULA;
 
@@ -93,7 +93,7 @@ struct STropSettings3bOutputOnly {
 	/// Name of the Module
 	static constexpr auto moduleName = "STropModule<STropSettings3bOutputOnly>";
 	/// Type of linear separating hyperplane to search for
-	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::STRICT;
+	static constexpr subtropical::SeparatorType separatorType = subtropical::SeparatorType::SEMIWEAK;
 	/// transformation of the formula to a linear formula, preserving the Boolean structure
 	static constexpr Mode mode = Mode::TRANSFORM_FORMULA_ALT;
 

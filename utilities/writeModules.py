@@ -225,7 +225,7 @@ def printUsage():
 # Parse input.
 #
 moduleName = None
-modulesPath = 'src/smtrat-modules/'
+modulesPath = '../src/smtrat-modules/'
 for entry in sys.argv[1:]:
 	if entry in ["-h", "--help"]:
 		printUsage()

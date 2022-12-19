@@ -11,7 +11,8 @@
 namespace smtrat::subtropical {
 
 enum class SeparatorType { STRICT = 0,
-						   WEAK = 1 };
+						   WEAK = 1,
+						   SEMIWEAK = 2 };
 
 /**
  * Represents the normal vector component and the sign variable
@@ -37,14 +38,14 @@ struct Vertex {
 	/// Monomial of the assigned term
 	const carl::Monomial::Arg monomial;
 	/// Rating variable of the term for a weak separator
-	mutable std::optional<carl::Variable> m_rating;
+	mutable carl::Variable m_rating;
 
 	Vertex(const TermT& term)
 		: coefficient(term.coeff()), monomial(term.monomial()), m_rating(carl::Variable::NO_VARIABLE) {}
 
 	carl::Variable rating() const {
-		if (!m_rating) m_rating = carl::fresh_real_variable();
-		return *m_rating;
+		if (m_rating == carl::Variable::NO_VARIABLE) m_rating = carl::fresh_real_variable();
+		return m_rating;
 	}
 };
 
@@ -170,7 +171,7 @@ public:
 					FormulaT(
 						carl::FormulaType::IMPLIES,
 						positive ? signChangeFormula.negated() : signChangeFormula,
-						FormulaT(hyperplane, separator_type == SeparatorType::STRICT ? carl::Relation::LEQ : carl::Relation::LESS))
+						FormulaT(hyperplane, separator_type == SeparatorType::STRICT || separator_type == SeparatorType::SEMIWEAK ? carl::Relation::LEQ : carl::Relation::LESS))
 						.negated());
 				conjunctions.emplace_back(
 					carl::FormulaType::IMPLIES,
