@@ -2,6 +2,7 @@
 
 #include <smtrat-solver/Manager.h>
 
+#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/NewFMPlexModule/NewFMPlexModule.h>
 
@@ -17,16 +18,18 @@ namespace smtrat
 */
 class FMPlex_PruneBranchLevel: public Manager {
 public:
-   FMPlex_PruneBranchLevel(): Manager()
-   {
-	   setStrategy(
-		   {
-			   addBackend<SATModule<SATSettings1>>(
-				   {
-					   addBackend<NewFMPlexModule<NewFMPlexSettingsPruneBranchLevel>>()
-				   })
-
-		   });
-   }
+   	FMPlex_PruneBranchLevel(): Manager()
+    {
+	   	setStrategy(
+		{
+			addBackend<FPPModule<FPPSettings1>>(
+            {
+				addBackend<SATModule<SATSettings1>>(
+				{
+					addBackend<NewFMPlexModule<NewFMPlexSettingsPruneBranchLevel>>()
+				})
+			})
+		});
+    }
 };
 } // namespace smtrat
