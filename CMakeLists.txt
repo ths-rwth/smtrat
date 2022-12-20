@@ -224,7 +224,6 @@ set( CPACK_SOURCE_IGNORE_FILES ${CPACK_SOURCE_IGNORE_FILES};opensmt-1\\\\.0.1_sm
 #message("CPACK_SOURCE_IGNORE_FILES = ${CPACK_SOURCE_IGNORE_FILES}")
 include(CPack)
 
-include(prepare-ci)
 include(dependency-graph)
 
 add_custom_target(profiling-data)
