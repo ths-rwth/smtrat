@@ -289,6 +289,7 @@ bool NewFMPlexModule<Settings>::handle_neqs() {
 			// TODO: handle what happens if n contains variables not present in mModel
 		}
 	}
+	SMTRAT_STATISTICS_CALL(m_statistics.neq_splits(nr_splits));
 	return (nr_splits == 0);
 }
 

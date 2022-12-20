@@ -22,6 +22,7 @@ namespace smtrat {
 				std::size_t m_eliminated_with_bounds = 0;
 				std::size_t m_total_backtrack_distance = 0;
 				std::size_t m_local_conflicts_from_prune = 0;
+				std::size_t m_neq_splits = 0;
 				double m_avg_bound_ratio = 0;
 				carl::statistics::timer m_timer;
 
@@ -49,6 +50,7 @@ namespace smtrat {
 					m_eliminated_with_bounds++;
 					m_avg_bound_ratio = ((eliminators/static_cast<double>(others) + (m_eliminated_with_bounds - 1) * m_avg_bound_ratio)/m_eliminated_with_bounds);
 				}
+				void neq_splits(std::size_t n) { m_neq_splits += n; }
 
 				auto& timer() { return m_timer; }
 
@@ -67,6 +69,7 @@ namespace smtrat {
 					Statistics::addKeyValuePair("total_branches", m_total_branches);
 					Statistics::addKeyValuePair("ignored_branches", m_ignored_branches);
 					Statistics::addKeyValuePair("max_branches", m_max_branches);
+					Statistics::addKeyValuePair("neq_splits", m_neq_splits);
 					Statistics::addKeyValuePair("avg_branches", ((double) m_total_branches) / ((double) m_systems));
 					Statistics::addKeyValuePair("timer", m_timer);
 				}
