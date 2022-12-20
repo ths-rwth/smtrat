@@ -36,7 +36,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 option( DEVELOPER "Compile with extra warnings" OFF )
 option( LOGGING "Enable logging within the carl library" OFF )
 option( ENABLE_UNSUPPORTED "Enable unsupported features (e.g. features that are not actively maintained anymore)" OFF)
-option( USE_COTIRE "Use cotire to generate and use precompiled headers" OFF )
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_MIMALLOC "Build mimalloc" OFF )
@@ -66,17 +65,6 @@ include( smtratmacros )
 
 include( clang-tidy )
 include( clang-time-trace )
-
-if(USE_COTIRE)
-	# We use cotire, simply include it
-	message("-- using cotire")
-	include(cotire)
-else()
-	# We do not use cotire, create dummy function.
-	message("-- not using cotire")
-	function(cotire)
-	endfunction(cotire)
-endif()
 
 enable_testing()
 
