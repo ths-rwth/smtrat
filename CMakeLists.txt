@@ -19,10 +19,6 @@ set_version(22 12)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
-set(smtrat_NAME "SMT-RAT" )
-set(smtrat_DESCRIPTION ${PROJECT_DESCRIPTION} )
-set(ADDITIONAL_INCLUDE_DIRS "" CACHE STRING "Additional directories added to the include directories.")
-set(ADDITIONAL_LINK_DIRS "" CACHE STRING "Additional directories added to the link directories.")
 
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR} CACHE PATH "Directory for built executables")
@@ -50,7 +46,6 @@ option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 option(SMTRAT_DEVOPTION_Checkpoints "Enable checkpoints" OFF)
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE" "RELWITHDEBINFO")
-set(CLANG_SANITIZER "none" CACHE STRING "Compile with the respective sanitizer")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if (NOT CMAKE_BUILD_TYPE)
@@ -115,18 +110,6 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR})
 include(resources/resources.cmake)
 
 # # # # # # # # # # # # # # # # # # # # # #
-# C.2. required libraries
-# # # # # # # # # # # # # # # # # # # # # #
-
-# # # # # # # # # # # # # # # # # # # # # #
-# C.5. Development and debug libraries.
-# # # # # # # # # # # # # # # # # # # # # #
-
-# if (TARGET Doxygen::doxygen)
- 	add_subdirectory(doc EXCLUDE_FROM_ALL)
-# endif()
-
-# # # # # # # # # # # # # # # # # # # # # #
 # D. Writen information files
 # # # # # # # # # # # # # # # # # # # # # #
 
@@ -141,21 +124,13 @@ configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
 # specify pkg-config file to be installed
 install( FILES ${CMAKE_BINARY_DIR}/smtrat.pc DESTINATION lib/pkgconfig )
 
-# Add custom additional include or link directories
-if (ADDITIONAL_INCLUDE_DIRS)
-	message(STATUS "SMT-RAT - Using additional include directories ${ADDITIONAL_INCLUDE_DIRS}")
-	include_directories(${ADDITIONAL_INCLUDE_DIRS})
-endif(ADDITIONAL_INCLUDE_DIRS)
-if (ADDITIONAL_LINK_DIRS)
-	message(STATUS "SMT-RAT - Using additional link directories ${ADDITIONAL_LINK_DIRS}")
-	link_directories(${ADDITIONAL_LINK_DIRS})
-endif(ADDITIONAL_LINK_DIRS)
 
 # # # # # # # # # # # # # # # # # # # # # #
 # F. Invoke subdirectories.
 # # # # # # # # # # # # # # # # # # # # # #
-
+add_subdirectory(doc EXCLUDE_FROM_ALL)
 add_subdirectory(src)
+
 # # # # # # # # # # # # # # # # # # # # # #
 # G. Export Compile Information
 # # # # # # # # # # # # # # # # # # # # # #
