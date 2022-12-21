@@ -1,6 +1,6 @@
 include(apple-llvm-toolchain)
 
-set(CLANG_SANITIZER "none" CACHE STRING "Compile with the respective sanitizer")
+set(CLANG_SANITIZER "none" CACHE STRING "Compile with the respective sanitizer (address, memory, undefined)")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED 20)
