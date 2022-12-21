@@ -113,10 +113,6 @@ include(resources/resources.cmake)
 # D. Writen information files
 # # # # # # # # # # # # # # # # # # # # # #
 
-# Getting git info.
-include(GetGitRevisionDescription)
-get_git_head_revision(GIT_REFSPEC GIT_SHA1)
-
 configure_file( ${CMAKE_SOURCE_DIR}/smtrat.pc.in ${CMAKE_BINARY_DIR}/smtrat.pc )
 # [un]install targets
 

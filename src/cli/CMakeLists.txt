@@ -3,19 +3,12 @@ option(CLI_ENABLE_CNF_CONVERSION "Enable stand-alone CNF conversion" OFF)
 option(CLI_ENABLE_DIMACS_PARSER "Enable parser for DIMACS files" OFF)
 option(CLI_ENABLE_FORMULAPARSER "Enable stand-alone formula parser" OFF)
 option(CLI_ENABLE_OPB_PARSER "Enable parser for OPB files" OFF)
-option(CLI_ENABLE_PREPROCESSOR "Enable stand-alone preprocessor" ON)
+option(CLI_ENABLE_PREPROCESSOR "Enable stand-alone preprocessor" OFF)
 
 include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 
-#TODO: are all these directories really necessary?
-include_directories(${CMAKE_SOURCE_DIR}/src
-                    ${CMAKE_SOURCE_DIR}/src/cli
-                    ${CMAKE_BINARY_DIR}/src/cli
- )
-
-#TODO: we only link against the library, which is copied to the binary root dir. We should somehow save that in a variable.
-link_directories( ${PROJECT_BINARY_DIR}/src/lib
-                  ${PROJECT_BINARY_DIR} )
+include_directories(${CMAKE_SOURCE_DIR}/src)
+link_directories(${PROJECT_BINARY_DIR})
 
 file(STRINGS ${CMAKE_SOURCE_DIR}/LICENSE LICENSE_CONTENT_IN)
 
@@ -26,6 +19,10 @@ foreach (variableName ${variableNames})
 	get_property(TYPE CACHE ${variableName} PROPERTY TYPE)
 	set(VARLIST "${VARLIST}\n\tprint(${ISADV}, \"${TYPE}\", \"${variableName}\", R\"VAR(${${variableName}})VAR\");")
 endforeach()
+
+# Getting git info, needed to configure compile_information
+include(GetGitRevisionDescription)
+get_git_head_revision(GIT_REFSPEC GIT_SHA1)
 
 configure_everything()
 
@@ -90,5 +87,3 @@ set_target_properties(smtrat-shared PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_
 set_target_properties(smtrat-static PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 add_custom_target(smtrat DEPENDS smtrat-shared)
-# add_dependencies(smtrat smtrat-static)
-
