@@ -1,16 +1,3 @@
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-#                                                             #
-# File: src/cli/CMakeLists.txt                                #
-#                                                             #
-# Project name: SMT-RAT                                       #
-# Contact: Florian Corzilius <corzilius@cs.rwth-aachen.de>,   #
-#          Ulrich Loup <loup@cs.rwth-aachen.de>               #
-# Project page: https://github.com/ths-rwth/smtrat/wiki         #
-# Development status: beta                                    #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-# Version: 2012-10-10                                         #
-# # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
 option(CLI_ENABLE_ANALYZER "Enable stand-alone formula analyzer" OFF)
 option(CLI_ENABLE_CNF_CONVERSION "Enable stand-alone CNF conversion" OFF)
 option(CLI_ENABLE_DIMACS_PARSER "Enable parser for DIMACS files" OFF)
