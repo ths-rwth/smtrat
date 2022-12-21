@@ -3,7 +3,6 @@
 #include <smtrat-common/smtrat-common.h>
 
 #include <optional>
-#include <boost/optional/optional_io.hpp>
 
 namespace smtrat {
 namespace cad {
