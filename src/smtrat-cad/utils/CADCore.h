@@ -16,7 +16,7 @@ struct CADCore {};
 template<>
 struct CADCore<CoreHeuristic::BySample> {
 	template<typename CAD>
-	Answer operator()(Assignment& assignment, CAD& cad) {
+	Answer operator()(Assignment& assignment, CAD& cad, bool ignore_nullifications) {
 		cad.mLifting.resetFullSamples();
 		cad.mLifting.restoreRemovedSamples();
 		while (true) {
@@ -43,7 +43,7 @@ struct CADCore<CoreHeuristic::BySample> {
 			if (polyID) {
 				const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
-				cad.mLifting.liftSample(it, poly, *polyID);
+				if (!cad.mLifting.liftSample(it, poly, *polyID, ignore_nullifications)) return Answer::UNKNOWN;
 			} else {
 				cad.mLifting.removeNextSample();
 				if (!cad.mLifting.hasNextSample()) {
@@ -63,7 +63,7 @@ struct CADCore<CoreHeuristic::BySample> {
 template<>
 struct CADCore<CoreHeuristic::PreferProjection> {
 	template<typename CAD>
-	Answer operator()(Assignment& assignment, CAD& cad) {
+	Answer operator()(Assignment& assignment, CAD& cad, bool ignore_nullifications) {
 		cad.mLifting.resetFullSamples();
 		cad.mLifting.restoreRemovedSamples();
 		while (true) {
@@ -87,7 +87,7 @@ struct CADCore<CoreHeuristic::PreferProjection> {
 			if (polyID) {
 				const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
-				cad.mLifting.liftSample(it, poly, *polyID);
+				if (!cad.mLifting.liftSample(it, poly, *polyID, ignore_nullifications)) return Answer::UNKNOWN;
 			} else {
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Got no polynomial for " << s << ", projecting into level " << cad.idLP(it.depth() + 1) << " ...");
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << cad.mProjection);
@@ -110,7 +110,7 @@ struct CADCore<CoreHeuristic::PreferProjection> {
 template<>
 struct CADCore<CoreHeuristic::PreferSampling> {
 	template<typename CAD>
-	Answer operator()(Assignment& assignment, CAD& cad) {
+	Answer operator()(Assignment& assignment, CAD& cad, bool ignore_nullifications) {
 		cad.mLifting.resetFullSamples();
 		while (true) {
 			cad.mLifting.restoreRemovedSamples();
@@ -134,7 +134,7 @@ struct CADCore<CoreHeuristic::PreferSampling> {
 				if (polyID) {
 					const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << cad.mLifting.extractSampleMap(it) << " with " << poly);
-					cad.mLifting.liftSample(it, poly, *polyID);
+					if (!cad.mLifting.liftSample(it, poly, *polyID, ignore_nullifications)) return Answer::UNKNOWN;
 				} else {
 					SMTRAT_LOG_DEBUG("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());
 					SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
@@ -183,7 +183,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 		return true;
 	}
 	template<typename CAD>
-	bool doLifting(CAD& cad) {
+	bool doLifting(CAD& cad, bool ignore_nullifications) {
 		if (!cad.mLifting.hasNextSample()) return false;
 		auto it = cad.mLifting.getNextSample();
 		SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
@@ -198,7 +198,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 		if (polyID) {
 			const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << cad.mLifting.extractSampleMap(it) << " with " << poly);
-			cad.mLifting.liftSample(it, poly, *polyID);
+			if (!cad.mLifting.liftSample(it, poly, *polyID, ignore_nullifications)) return Answer::UNKNOWN;
 		} else {
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current lifting" << std::endl << cad.mLifting.getTree());
 			SMTRAT_LOG_TRACE("smtrat.cad", "Queue" << std::endl << cad.mLifting.getLiftingQueue());
@@ -208,7 +208,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 		return true;
 	}
 	template<typename CAD>
-	Answer operator()(Assignment& assignment, CAD& cad) {
+	Answer operator()(Assignment& assignment, CAD& cad, bool ignore_nullifications) {
 		cad.mLifting.restoreRemovedSamples();
 		cad.mLifting.resetFullSamples();
 		while (true) {
@@ -219,7 +219,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 				cad.mLifting.restoreRemovedSamples();
 			}
 			if (preferLifting(cad.mLifting.getNextSample())) {
-				doLifting(cad);
+				doLifting(cad, ignore_nullifications);
 			} else {
 				doProjection(cad);
 				cad.mLifting.restoreRemovedSamples();
@@ -231,7 +231,7 @@ struct CADCore<CoreHeuristic::Interleave> {
 template<>
 struct CADCore<CoreHeuristic::EnumerateAll> {
 	template<typename CAD>
-	Answer operator()(Assignment& assignment, CAD& cad) {
+	Answer operator()(Assignment& assignment, CAD& cad, bool ignore_nullifications) {
 		cad.mLifting.resetFullSamples();
 		cad.mLifting.restoreRemovedSamples();
 		while (true) {
@@ -253,7 +253,7 @@ struct CADCore<CoreHeuristic::EnumerateAll> {
 			if (polyID) {
 				const auto& poly = cad.mProjection.getPolynomialById(cad.idLP(it.depth() + 1), *polyID);
 				SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
-				cad.mLifting.liftSample(it, poly, *polyID);
+				if (!cad.mLifting.liftSample(it, poly, *polyID, ignore_nullifications)) return Answer::UNKNOWN;
 			} else {
 				cad.mLifting.removeNextSample();
 				cad.mLifting.addTrivialSample(it);
