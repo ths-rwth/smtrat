@@ -26,7 +26,7 @@ public:
             {
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsPruneBranchLevel>>()
+					addBackend<NewFMPlexModule<NewFMPlexSettingsBTPruneBranchLevel>>()
 				})
 			})
 		});
