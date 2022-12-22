@@ -118,7 +118,7 @@ private:
 
 		for (std::size_t pid = 0; pid < mProjection.size(level); pid++) {
 			const auto& poly = mProjection.getPolynomialById(level, pid);
-			if (carl::is_zero(carl::substitute(Poly(poly), model))) continue;
+			if (carl::is_zero(carl::substitute(poly, model))) continue;
 			auto polyvars = carl::variables(poly);
 			polyvars.erase(poly.main_var());
 			auto list = carl::real_roots(poly, *carl::get_ran_assignment(polyvars, mModel));
