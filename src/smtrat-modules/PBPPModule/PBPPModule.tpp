@@ -10,8 +10,6 @@
 
 #include "Encoders/RNSEncoder.h"
 
-#include <boost/optional/optional_io.hpp>
-
 // #define DEBUG_PBPP
 // #define PRINT_STATS
 

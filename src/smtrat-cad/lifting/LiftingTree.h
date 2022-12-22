@@ -174,13 +174,13 @@ namespace cad {
 			mRemovedFromLiftingQueue.clear();
 		}
 		
-		bool liftSample(Iterator sample, const UPoly& p, std::size_t pid) {
+		bool liftSample(Iterator sample, const UPoly& p, std::size_t pid, bool ignore_nullifications) {
 			assert(is_consistent());
 			auto m = extractSampleMap(sample);
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "Lifting " << m << " on " << p);
 			std::vector<Sample> newSamples;
-			// TODO: Check whether the polynomials becomes zero (check if McCallum is safe)
 			auto result = carl::real_roots(p, m, RationalInterval::unbounded_interval());
+			if (!ignore_nullifications && result.is_nullified()) return false; // McCallum is not safe!
 			if (!result.is_univariate() || result.roots().empty()) {
 				SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tnew root sample: " << RAN(0));
 				newSamples.emplace_back(RAN(0), pid);
@@ -198,7 +198,8 @@ namespace cad {
 				newSamples.emplace_back(RAN(bounds.upper()), true);
 			}
 			SMTRAT_LOG_DEBUG("smtrat.cad.lifting", "\tmerging " << newSamples);
-			return mergeRootSamples(sample, newSamples);
+			mergeRootSamples(sample, newSamples);
+			return true;
 		}
 		bool addTrivialSample(Iterator sample) {
 			if (!mTree.is_leaf(sample)) return false;

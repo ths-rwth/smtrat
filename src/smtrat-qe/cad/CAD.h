@@ -101,7 +101,7 @@ namespace smtrat::qe::cad {
 					if(mProjection.hasPolynomialById(idLP(it.depth() + 1), *polyID)) {
 						const auto& poly = mProjection.getPolynomialById(idLP(it.depth() + 1), *polyID);
 						SMTRAT_LOG_DEBUG("smtrat.cad", "Lifting " << s << " with " << poly);
-	          mLifting.liftSample(it, poly, *polyID);
+	          mLifting.liftSample(it, poly, *polyID, true); // ignores nullifications (which is incorrect!)
 					}
         }else {
           mLifting.removeNextSample();

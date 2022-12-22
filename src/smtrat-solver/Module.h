@@ -681,9 +681,8 @@ namespace smtrat
              * @return false, if it can be easily decided whether the given constraint is inconsistent;
              *          true, otherwise.
              */
-            virtual bool informCore( const FormulaT& _constraint )
+            virtual bool informCore( [[maybe_unused]] const FormulaT& _constraint )
             {
-                UNUSED(_constraint);
                 return true;
             }
             
@@ -693,8 +692,7 @@ namespace smtrat
              * that a formula with this constraint must be solved again.
              * @param _constraint The constraint to remove from internal data structures.
              */
-            virtual void deinformCore( const FormulaT& _constraint ) {
-                UNUSED(_constraint);
+            virtual void deinformCore( [[maybe_unused]] const FormulaT& _constraint ) {
             }
             
             /**
@@ -705,9 +703,8 @@ namespace smtrat
              *          the already considered sub-formulas;
              *          true, otherwise.
              */
-            virtual bool addCore( ModuleInput::const_iterator formula)
+            virtual bool addCore( [[maybe_unused]] ModuleInput::const_iterator formula)
             {
-                UNUSED(formula);
                 return true;
             }
             
@@ -729,8 +726,7 @@ namespace smtrat
              *
              * @param formula The sub formula of the received formula to remove.
              */
-            virtual void removeCore( ModuleInput::const_iterator formula) {
-                UNUSED(formula);
+            virtual void removeCore( [[maybe_unused]] ModuleInput::const_iterator formula) {
             }
             
             /**

@@ -831,7 +831,7 @@ namespace smtrat
                     Poly rhs = monom - Poly(newVar);
                     if( mContractors.find(rhs) == mContractors.end() )
                     {
-                        mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs)) );
+                        mContractors.emplace( rhs, Contractor<carl::SimpleNewton>(rhs) );
                     }
 
                     ConstraintT tmp = ConstraintT( rhs, carl::Relation::EQ );
@@ -927,7 +927,7 @@ namespace smtrat
             auto iter = mContractors.find( rhs );
             if( iter == mContractors.end() )
             {
-                iter = mContractors.emplace( std::move(Poly(rhs)), std::move(Contractor<carl::SimpleNewton>(rhs, carl::substitute(rhs, mSubstitutions ))) ).first;
+                iter = mContractors.emplace( rhs, Contractor<carl::SimpleNewton>(rhs, carl::substitute(rhs, mSubstitutions )) ).first;
             }
             ContractionCandidates ccs;
             // Create candidates for every possible variable:

@@ -13,7 +13,7 @@ const std::string GitRevisionSHA1 = "@GIT_SHA1@";
 const std::string PackageName = "@PROJECT_NAME@";
 const std::string ProjectName = "@PROJECT_FULLNAME@";
 const std::string Version = "@PROJECT_VERSION@";
-const std::string Website = "https://github.com/ths-rwth/smtrat/wiki";
+const std::string Website = "https://ths-rwth.github.io/smtrat/";
 const std::string GitVersion = "@PROJECT_VERSION_FULL@";
 
 }
