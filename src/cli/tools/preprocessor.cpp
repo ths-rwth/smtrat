@@ -119,7 +119,7 @@ int preprocess_file(const std::string& filename, const std::string& outfile) {
 namespace smtrat {
 
 int preprocess_file(const std::string&, const std::string&) {
-	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone preprocessing.");
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone preprocessing. Please enable it by setting the corresponding CMake option.");
 	return 0;
 }
 
