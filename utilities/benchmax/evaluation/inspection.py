@@ -3,7 +3,7 @@ from .data import *
 
 def inspect_answer(df):
     solvers = get_solvers(df)
-    answers = ['sat','unsat','unknown','wrong','error','timeout','memout','no answer','segmentation fault','segfault','abort']
+    answers = ['sat','unsat','unknown','wrong','error','timeout','memout','no answer','segmentation fault','segfault','abort','invalid']
     
     data = []
     data.append(tuple([len(df[~df[(solver,'answer')].isnull()]) for solver in solvers]))
