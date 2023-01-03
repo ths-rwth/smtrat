@@ -70,7 +70,7 @@ namespace smtrat {
 
 template<typename Strategy>
 int run_opb_file(Strategy&, const std::string&) {
-	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for OPB parsing.");
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for OPB parsing. Please enable it by setting the corresponding CMake option.");
 	return 0;
 }
 

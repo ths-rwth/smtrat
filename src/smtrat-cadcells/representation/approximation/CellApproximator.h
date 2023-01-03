@@ -197,7 +197,7 @@ inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RA
     Poly result;
     // first order taylor approximation
     int jacobian_sign = one_step_differentiate(carl_poly, result, jacobian, dim);
-    if ((jacobian_sign == 0)) {
+    if (jacobian_sign == 0) {
         #ifdef SMTRAT_DEVOPTION_Statistics
             OCApproximationStatistics::get_instance().taylorFailure();
         #endif

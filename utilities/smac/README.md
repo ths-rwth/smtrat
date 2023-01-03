@@ -1,1 +1,0 @@
-SMAC can optimize parameters (i.e. settings for a SMT module).

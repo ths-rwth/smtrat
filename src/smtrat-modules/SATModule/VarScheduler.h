@@ -216,11 +216,11 @@ namespace smtrat
             auto iter = std::find(ordering.begin(), ordering.end(), var);
             if (iter == ordering.end()) {
                 auto it = ordering.begin();
-                long unsigned int idx = 0;
+                std::size_t idx = 0;
                 if (ordering.size() > 0) {
                     std::random_device rd;
                     std::mt19937 gen(rd());
-                    std::uniform_int_distribution<long unsigned int> dis(0, ordering.size()-1);
+                    std::uniform_int_distribution<std::size_t> dis(0, ordering.size()-1);
                     idx = dis(gen);
                 }
                 it += idx;
@@ -261,7 +261,7 @@ namespace smtrat
                 auto it = vars.begin();
                 std::random_device rd;
                 std::mt19937 gen(rd());
-                std::uniform_int_distribution<long unsigned int> dis(0, vars.size()-1);
+                std::uniform_int_distribution<std::size_t> dis(0, vars.size()-1);
                 it += dis(gen);
                 vars.insert(it, var);
             }

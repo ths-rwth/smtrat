@@ -198,7 +198,7 @@ namespace cad {
 			}
 			SMTRAT_LOG_INFO("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			CADCore<Settings::coreHeuristic> cad;
-			auto res = cad(assignment, *this);
+			auto res = cad(assignment, *this, Settings::projectionOperator == ProjectionType::Collins);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Result: " << res);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current projection:" << std::endl << mProjection);
 			SMTRAT_LOG_DEBUG("smtrat.cad", "Current sampletree:" << std::endl << mLifting.getTree());

@@ -28,10 +28,10 @@ SettingsParser::SettingsParser() {
 	{
 		auto& s = settings.get<settings::SolverSettings>("solver");
 		add("Solver settings").add_options()
-			("preprocess", po::bool_switch(&s.preprocess), "only preprocess the input")
+			("preprocess", po::bool_switch(&s.preprocess), "only preprocess the input (only available if compiled with corresponding CMake option)")
 			("pp-output-file", po::value<std::string>(&s.preprocess_output_file), "store the preprocessed input to this file")
-			("to-cnf-dimacs", po::bool_switch(&s.convert_to_cnf_dimacs), "transform formula to cnf as dimacs")
-			("to-cnf-smtlib", po::bool_switch(&s.convert_to_cnf_smtlib), "transform formula to cnf as smtlib")
+			("to-cnf-dimacs", po::bool_switch(&s.convert_to_cnf_dimacs), "transform formula to cnf as dimacs (only available if compiled with corresponding CMake option)")
+			("to-cnf-smtlib", po::bool_switch(&s.convert_to_cnf_smtlib), "transform formula to cnf as smtlib (only available if compiled with corresponding CMake option)")
 			("print-model", po::bool_switch(&s.print_model), "print a model if the input is satisfiable")
 			("print-all-models", po::bool_switch(&s.print_all_models), "print all models of the input")
 		;

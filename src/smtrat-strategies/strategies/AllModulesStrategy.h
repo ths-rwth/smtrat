@@ -7,8 +7,6 @@
 #include <smtrat-modules/NewCADModule/NewCADModule.h>
 #include <smtrat-modules/CNFerModule/CNFerModule.h>
 #include <smtrat-modules/EMModule/EMModule.h>
-#include <smtrat-modules/EQModule/EQModule.h>
-#include <smtrat-modules/EQPreprocessingModule/EQPreprocessingModule.h>
 #include <smtrat-modules/ESModule/ESModule.h>
 #include <smtrat-modules/FouMoModule/FouMoModule.h>
 #include <smtrat-modules/FPPModule/FPPModule.h>
@@ -36,8 +34,6 @@ namespace smtrat
 					addBackend<NewCADModule<NewCADSettingsNaive>>(),
 					addBackend<CNFerModule>(),
 					addBackend<EMModule<EMSettings1>>(),
-					addBackend<EQModule<EQSettings1>>(),
-					addBackend<EQPreprocessingModule<EQPreprocessingSettings1>>(),
 					addBackend<ESModule<ESSettingsDefault>>(),
 					addBackend<FouMoModule<FouMoSettings1>>(),
 					addBackend<FPPModule<FPPSettings1>>(),
