@@ -153,6 +153,7 @@ class Level {
             }
         }
 
+        template<ModelHeuristic MH>
         void assign_single_bounded(std::map<std::size_t, DeltaRational>& m) const {
             auto col_it = m_eliminated_column->second.begin();
             std::optional<DeltaRational> strictest_bound;
@@ -163,7 +164,12 @@ class Level {
                         strictest_bound = current_bound;
                     }
                 }
-                m.emplace(m_eliminated_column->first, choose_value_below(*strictest_bound));
+                if constexpr (MH == ModelHeuristic::ON_BOUND) {
+                    m.emplace(m_eliminated_column->first, *strictest_bound);
+                }
+                if constexpr (MH == ModelHeuristic::SAMPLE_MID) {
+                    m.emplace(m_eliminated_column->first, choose_value_below(*strictest_bound));
+                }
             } else {
                 for (; col_it != m_eliminated_column->second.end(); col_it++) {
                     DeltaRational current_bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
@@ -171,39 +177,51 @@ class Level {
                         strictest_bound = current_bound;
                     }
                 }
-                m.emplace(m_eliminated_column->first, choose_value_above(*strictest_bound));
+                if constexpr (MH == ModelHeuristic::ON_BOUND) {
+                    m.emplace(m_eliminated_column->first, *strictest_bound);
+                }
+                if constexpr (MH == ModelHeuristic::SAMPLE_MID) {
+                    m.emplace(m_eliminated_column->first, choose_value_above(*strictest_bound));
+                }
             }
         }
 
+        template<ModelHeuristic MH>
         void assign_double_bounded(std::map<std::size_t, DeltaRational>& m) const {
-            auto col_it = m_eliminated_column->second.begin();
-            std::optional<DeltaRational> lower_bound, upper_bound;
-            if (m_elimination_type == EliminationType::LBS) {
-                lower_bound = m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m);
-                for (; col_it != m_eliminated_column->second.end(); col_it++) {
-                    if (m_tableau.value_at(*col_it) < 0) continue;
-
-                    DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                    if (!upper_bound || (bound < (*upper_bound))) {
-                        upper_bound = bound;
-                    }
-                }
-            } else {
-                upper_bound = m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m);
-                for (; col_it != m_eliminated_column->second.end(); col_it++) {
-                    if (m_tableau.value_at(*col_it) > 0) continue;
-
-                    DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
-                    if (!lower_bound || (bound > (*lower_bound))) {
-                        lower_bound = bound;
-                    }
-                }
+            if constexpr (MH == ModelHeuristic::ON_BOUND) {
+                m.emplace(m_eliminated_column->first, m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m));
             }
+            if constexpr (MH == ModelHeuristic::SAMPLE_MID) {
+                auto col_it = m_eliminated_column->second.begin();
+                std::optional<DeltaRational> lower_bound, upper_bound;
+                if (m_elimination_type == EliminationType::LBS) {
+                    lower_bound = m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m);
+                    for (; col_it != m_eliminated_column->second.end(); col_it++) {
+                        if (m_tableau.value_at(*col_it) < 0) continue;
 
-            assert(lower_bound.has_value() && upper_bound.has_value());
-            m.emplace(m_eliminated_column->first, choose_value_between(*lower_bound, *upper_bound));
+                        DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
+                        if (!upper_bound || (bound < (*upper_bound))) {
+                            upper_bound = bound;
+                        }
+                    }
+                } else {
+                    upper_bound = m_tableau.bound_value(m_tried_rows.back(), m_eliminated_column->first, m);
+                    for (; col_it != m_eliminated_column->second.end(); col_it++) {
+                        if (m_tableau.value_at(*col_it) > 0) continue;
+
+                        DeltaRational bound = m_tableau.bound_value(col_it->row, m_eliminated_column->first, m);
+                        if (!lower_bound || (bound > (*lower_bound))) {
+                            lower_bound = bound;
+                        }
+                    }
+                }
+
+                assert(lower_bound.has_value() && upper_bound.has_value());
+                m.emplace(m_eliminated_column->first, choose_value_between(*lower_bound, *upper_bound));
+            }
         }
 
+        template<ModelHeuristic MH>
         void assign_eliminated_variables(std::map<std::size_t, DeltaRational>& m) const {
             SMTRAT_LOG_DEBUG("smtrat.fmplex", "Assigning " << m_eliminated_column->first);
 
@@ -213,11 +231,11 @@ class Level {
 
             switch (m_elimination_type) {
                 case EliminationType::NONE:
-                    assign_single_bounded(m);
+                    assign_single_bounded<MH>(m);
                     break;
                 case EliminationType::LBS:
                 case EliminationType::UBS:
-                    assign_double_bounded(m);
+                    assign_double_bounded<MH>(m);
                     break;
                 default: // unreachable
                     assert(false);

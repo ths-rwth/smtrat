@@ -18,6 +18,7 @@ namespace smtrat {
 			static constexpr NEQHandling neq_handling = NEQHandling::SPLITTING_LEMMAS;
 			static constexpr std::size_t nr_neq_splits_at_once = 1;
 			static constexpr StrictHandling strict_handling = StrictHandling::DELTA_WEAKEN;
+			static constexpr ModelHeuristic model_heuristic = ModelHeuristic::ON_BOUND;
 		};
 
 		struct BT { static constexpr bool use_backtracking = true; };

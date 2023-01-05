@@ -30,4 +30,9 @@ namespace smtrat::fmplex {
 		RANDOM,
 		MIN_ROW_LEN
 	};
+
+	enum class ModelHeuristic {
+		ON_BOUND,
+		SAMPLE_MID
+	};
 } // namespace smtrat::fmplex

@@ -170,7 +170,7 @@ bool NewFMPlexModule<Settings>::try_construct_model() {
 	std::map<std::size_t, fmplex::DeltaRational> working_model;
 	// use i-1, beginning with current_level - 1 as the current (SAT) level should not contain any variables
 	for (std::size_t i = m_current_level; i > 0; i--) {
-		m_history[i-1].assign_eliminated_variables(working_model);
+		m_history[i-1].assign_eliminated_variables<Settings::model_heuristic>(working_model);
 	}
 
 	// TODO: NEQ handling here
