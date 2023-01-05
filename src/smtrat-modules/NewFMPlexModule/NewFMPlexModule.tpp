@@ -83,9 +83,10 @@ bool NewFMPlexModule<Settings>::addCore( ModuleInput::const_iterator _subformula
 	}
 
 	m_constraints.push_back(_subformula->formula());
+	m_added_constraints.push_back(_subformula->formula());
 
-	if constexpr (Settings::incremental) { // todo: not yet implemented
-		m_added_constraints.push_back(_subformula->formula());
+	if constexpr (Settings::incremental) {
+		// todo: not yet implemented
 	}
 
 	add_relation(_subformula->formula().constraint().relation());
@@ -320,9 +321,26 @@ bool NewFMPlexModule<Settings>::process_conflict(fmplex::Conflict conflict) {
 template<class Settings>
 Answer NewFMPlexModule<Settings>::checkCore() {
 	SMTRAT_TIME_START(start);
+
+	if (solverState() == Answer::SAT) { // check whether found model still works by chance
+		bool all_sat = true;
+		for (const auto& c : m_added_constraints) {
+			if (carl::satisfied_by(c, mModel) != 1) {
+				all_sat = false;
+				break;
+			}
+		}
+		if (all_sat) {
+			m_added_constraints.clear();
+			SMTRAT_LOG_DEBUG("smtrat.fmplex", "last model still satisfies all given constraints");
+			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+			return Answer::SAT;
+		}
+	}
 	if constexpr (Settings::incremental) {
 		// todo: not yet implemented
 	} else {
+		m_added_constraints.clear();
 		auto conflict = construct_root_level();
 		if (conflict) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "root level is conflicting");
