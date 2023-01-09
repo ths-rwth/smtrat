@@ -132,8 +132,10 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, FE
         return CoveringResult<op>(CoveringResult<op>::UNSAT);
     } else {
         auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
-        std::vector<Interval<op>> new_intervals({*new_interval});
-        if (new_interval) return CoveringResult<op>(new_intervals);
+        if (new_interval) {
+            std::vector<Interval<op>> new_intervals({*new_interval});
+            return CoveringResult<op>(new_intervals);
+        }
         else {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incompleteness");
             return CoveringResult<op>(CoveringResult<op>::FAILED_PROJECTION);
