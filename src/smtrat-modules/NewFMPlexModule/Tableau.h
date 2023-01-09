@@ -180,24 +180,34 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             return m_rows[ri][0].column;
         }
 
-        bool is_row_conflict(const RowIndex ri) const {
-            Row::ConstIterator row_it = m_rows[ri].begin();
-            if (is_lhs_column(row_it->column)) {
-                // lhs is non-zero (there is a variable left)
-                return false;
-            } else if (!is_origin_column(row_it->column)) {
-                // constraint is (0 ~ b + c*delta) with b != 0 or c != 0
-                // => conflict only if ~ is = or if ~ is not neq and b < 0 respectively c < 0
-                if (m_rows[ri].relation == carl::Relation::NEQ) return false;
-                if ((m_rows[ri].relation != carl::Relation::EQ) && (row_it->value > 0)) return false;
-            } else if ((m_rows[ri].relation == carl::Relation::LEQ) || (m_rows[ri].relation == carl::Relation::EQ)) {
-                // constraint is (0 <= 0) or (0 == 0)
-                return false;
+        private:
+            bool is_row_conflict(const Row& row) const {
+                Row::ConstIterator row_it = row.begin();
+                if (is_lhs_column(row_it->column)) {
+                    // lhs is non-zero (there is a variable left)
+                    return false;
+                } else if (!is_origin_column(row_it->column)) {
+                    // constraint is (0 ~ b + c*delta) with b != 0 or c != 0
+                    // => conflict only if ~ is = or if ~ is not neq and b < 0 respectively c < 0
+                    if (row.relation == carl::Relation::NEQ) return false;
+                    if ((row.relation != carl::Relation::EQ) && (row_it->value > 0)) return false;
+                } else if ((row.relation == carl::Relation::LEQ) || (row.relation == carl::Relation::EQ)) {
+                    // constraint is (0 <= 0) or (0 == 0)
+                    return false;
+                }
+                return true;
             }
-            return true;
+
+        public:
+        bool is_row_conflict(const RowIndex ri) const {
+            return is_row_conflict(m_rows[ri]);
         }
 
         void append_row(const Row& row) {
+            if (row.elements.empty()) return;
+            if ((row[0].column >= m_rhs_index) && (row[0].column <= m_delta_index)) {
+                if (!is_row_conflict(row)) return;
+            } 
             for (ColumnPosition i = 0; i < row.elements.size(); i++) {
                 RowElement r = row.elements[i];
                 auto it = m_columns.lower_bound(r.column);
