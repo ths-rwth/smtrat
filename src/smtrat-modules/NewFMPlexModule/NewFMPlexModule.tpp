@@ -215,6 +215,7 @@ void NewFMPlexModule<Settings>::build_unsat_core(const std::set<std::size_t>& re
 		SMTRAT_LOG_DEBUG("smtrat.fmplex", i << " -> " << m_constraints[i]);
 	}
 	mInfeasibleSubsets.push_back(inf_subset);
+	SMTRAT_STATISTICS_CALL(m_statistics.conflict_size(inf_subset.size()));
 }
 
 template<class Settings>

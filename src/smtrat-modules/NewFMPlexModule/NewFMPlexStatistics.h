@@ -12,6 +12,7 @@ namespace smtrat {
 				std::size_t m_global_conflicts = 0;
 				std::size_t m_local_conflicts = 0;
 				std::size_t m_gauss_conflicts = 0;
+				std::size_t m_accumulated_conflict_sizes = 0;
 				std::size_t m_gauss_needed = false;
 				std::size_t m_generated_constraints = 0;
 				std::size_t m_systems = 0;
@@ -34,6 +35,7 @@ namespace smtrat {
 				}
 				void local_conflict_from_prune() { m_local_conflicts_from_prune++; }
 				void gauss_conflict () { m_gauss_conflicts++;  }
+				void conflict_size(std::size_t n) { m_accumulated_conflict_sizes += n; }
 				void gauss_needed() { m_gauss_needed = true; }
 				void generated_constraints(std::size_t n) { m_generated_constraints += n; }
 				void new_system() { m_systems++; }
@@ -59,6 +61,7 @@ namespace smtrat {
 					Statistics::addKeyValuePair("local_conflicts", m_local_conflicts);
 					Statistics::addKeyValuePair("avg_bt_distance", ((double) m_total_backtrack_distance) / ((double) m_local_conflicts));
 					Statistics::addKeyValuePair("local_conflicts_from_prune", m_local_conflicts_from_prune);
+					Statistics::addKeyValuePair("avg_conflict_size", ((double) m_accumulated_conflict_sizes)/((double) m_timer.count()));
 					Statistics::addKeyValuePair("gauss_conflicts", m_gauss_conflicts);
 					Statistics::addKeyValuePair("gauss_needed", m_gauss_needed);
 					Statistics::addKeyValuePair("generated_constraints", m_generated_constraints);
