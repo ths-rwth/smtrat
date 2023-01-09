@@ -43,17 +43,27 @@ struct CoveringNGSettingsExImplicants : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant);
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 1);
+        }
+    };
+};
+
+struct CoveringNGSettingsExImplicantsMulti : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicantsMulti>";
+    struct formula_evaluation {
+        using Type = covering_ng::formula::ExhaustiveImplicants;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 0);
         }
     };
 };
 
 struct CoveringNGSettingsExImplicantsMinSize : CoveringNGSettingsDefault  {
-    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicants>";
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicantsMinSize>";
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_size_min_tdeg_implicant);
+            return Type(covering_ng::formula::node_ds::complexity::min_size_min_tdeg_implicant, 1);
         }
     };
 };
@@ -63,7 +73,7 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 2);
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 1, 2);
         }
     };
 };

@@ -535,10 +535,10 @@ void compute_implicant(const node_ds::Node& f, boost::container::flat_set<cadcel
 }
 
 }
-boost::container::flat_set<cadcells::Constraint> Minimal::compute_implicant() const {
+std::vector<boost::container::flat_set<cadcells::Constraint>> Minimal::compute_implicants() const {
     boost::container::flat_set<cadcells::Constraint> implicant;
     minimal_helper::compute_implicant(*m_root, implicant);
-    return implicant;
+    return std::vector<boost::container::flat_set<cadcells::Constraint>>({implicant});
 }
 Valuation Minimal::root_valuation() const {
     return m_root->c().valuation;
@@ -747,10 +747,16 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
 }
 }
 
-boost::container::flat_set<cadcells::Constraint> ExhaustiveImplicants::compute_implicant() const {
+std::vector<boost::container::flat_set<cadcells::Constraint>> ExhaustiveImplicants::compute_implicants() const {
     auto implicants = exhaustive_implicants_helper::compute_implicants(*m_root, m_pruning, m_implicant_complexity_ordering);
     assert(implicants.size()>0);
-    return *std::min_element(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
+    
+    if (m_results != 0) {
+        std::sort(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
+        if (m_results < implicants.size())
+            implicants.erase(implicants.begin() + m_results, implicants.end());
+    }
+    return implicants;
 }
 Valuation ExhaustiveImplicants::root_valuation() const {
     return m_root->c().valuation;

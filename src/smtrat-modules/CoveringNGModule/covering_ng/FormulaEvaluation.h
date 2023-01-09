@@ -82,7 +82,7 @@ public:
      */
     void extend_valuation(const cadcells::Assignment& ass);
     void revert_valuation(const cadcells::Assignment& ass);
-    boost::container::flat_set<cadcells::Constraint> compute_implicant() const;
+    std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants() const;
     Valuation root_valuation() const;
 };
 
@@ -92,17 +92,19 @@ public:
 
 private:
     ImplicantComplexityOrdering m_implicant_complexity_ordering;
+    std::size_t m_results;
     std::size_t m_pruning;
     std::optional<node_ds::Node> m_root;
 
 public:
-    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_pruning(0) {}
-    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t pruning) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_pruning(pruning) {}
+    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(0), m_pruning(0) {}
+    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t results) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_pruning(0) {}
+    ExhaustiveImplicants(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t results, std::size_t pruning) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_pruning(pruning) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);
     void revert_valuation(const cadcells::Assignment& ass);
-    boost::container::flat_set<cadcells::Constraint> compute_implicant() const;
+    std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants() const;
     Valuation root_valuation() const;
 };
 

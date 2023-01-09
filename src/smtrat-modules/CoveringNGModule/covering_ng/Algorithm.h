@@ -21,11 +21,9 @@ inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::Vari
     return true;
 }
 
-template<typename FE, cadcells::operators::op op>
-inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const FE& f, const cadcells::Assignment& ass) {
-    SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
-    auto implicant = f.compute_implicant();
-    SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got implicant " << implicant);
+template<cadcells::operators::op op>
+inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& implicant, formula::Valuation root_valuation, const cadcells::Assignment& ass) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng", implicant << ", " << root_valuation << ", " << ass);
 
     std::size_t level = 0;
     for (const auto& c : implicant) {
@@ -36,13 +34,13 @@ inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructur
     auto deriv = cadcells::datastructures::make_derivation<typename cadcells::operators::PropertiesSet<op>::type>(proj, ass, ass.size()).sampled_ref();
     for (const auto& c : implicant) {
         if (carl::is_strict(c.relation())) {
-            if (f.root_valuation() == formula::Valuation::FALSE) {
+            if (root_valuation == formula::Valuation::FALSE) {
                 deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ proj.polys()(c.lhs()) });
             } else {
                 deriv->insert(cadcells::operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
             }
         } else {
-            if (f.root_valuation() == formula::Valuation::FALSE) {
+            if (root_valuation == formula::Valuation::FALSE) {
                 deriv->insert(cadcells::operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
             } else {
                 deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ proj.polys()(c.lhs()) });
@@ -54,6 +52,19 @@ inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructur
     deriv->delineate_cell();
     SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cell " << deriv->cell() << " w.r.t. delineation " << deriv->delin());
     return deriv;
+}
+
+template<typename FE, cadcells::operators::op op>
+inline std::vector<Interval<op>> get_enclosing_intervals(cadcells::datastructures::Projections& proj, const FE& f, const cadcells::Assignment& ass) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
+    auto implicants = f.compute_implicants();
+    SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got implicants " << implicants);
+    std::vector<Interval<op>> results;
+    for (const auto& implicant : implicants) {
+        auto interval = get_enclosing_interval<op>(proj, implicant, f.root_valuation(), ass);
+        if (interval) results.emplace_back(*interval);
+    }
+    return results;
 }
 
 template<cadcells::operators::op op, cadcells::representation::CoveringHeuristic covering_heuristic>
@@ -96,8 +107,8 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, FE
         CoveringResult<op> res;
         if (f.root_valuation() == formula::Valuation::FALSE) {
             SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to false");
-            auto new_interval = get_enclosing_interval<FE, op>(proj, f, ass);
-            if (new_interval) res = CoveringResult<op>(*new_interval);
+            auto new_intervals = get_enclosing_intervals<FE, op>(proj, f, ass);
+            if (new_intervals.size() > 0) res = CoveringResult<op>(new_intervals);
             else res = CoveringResult<op>(CoveringResult<op>::FAILED_PROJECTION);
         } else if (f.root_valuation() == formula::Valuation::TRUE) {
             SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to true");
@@ -114,14 +125,15 @@ inline CoveringResult<op> exists(cadcells::datastructures::Projections& proj, FE
         } if (res.is_sat()) {
             return res.sample();
         } else {
-            unsat_intervals.insert(res.interval());
+            unsat_intervals.insert(res.intervals().begin(), res.intervals().end());
         }
     }
     if (ass.empty()) {
         return CoveringResult<op>(CoveringResult<op>::UNSAT);
     } else {
         auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
-        if (new_interval) return CoveringResult<op>(*new_interval);
+        std::vector<Interval<op>> new_intervals({*new_interval});
+        if (new_interval) return CoveringResult<op>(new_intervals);
         else {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incompleteness");
             return CoveringResult<op>(CoveringResult<op>::FAILED_PROJECTION);

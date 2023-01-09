@@ -33,11 +33,11 @@ struct CoveringResult {
     struct NONE{};
 
     Status status;
-    std::variant<Interval<op>, cadcells::Assignment, NONE> content;
+    std::variant<std::vector<Interval<op>>, cadcells::Assignment, NONE> content;
     
     CoveringResult() : status(FAILED), content(NONE {}) {}
     CoveringResult(Status s) : status(s), content(NONE {}) {}
-    CoveringResult(Interval<op>& c) : status(UNSAT), content(c) {}
+    CoveringResult(std::vector<Interval<op>>& c) : status(UNSAT), content(c) {}
     CoveringResult(const cadcells::Assignment& c) : status(SAT), content(c) {}
 
     bool is_failed() {
@@ -55,8 +55,8 @@ struct CoveringResult {
     const auto& sample() const {
         return std::get<cadcells::Assignment>(content);
     }
-    const auto& interval() const {
-        return std::get<Interval<op>>(content);
+    const auto& intervals() const {
+        return std::get<std::vector<Interval<op>>>(content);
     }
 };
 
