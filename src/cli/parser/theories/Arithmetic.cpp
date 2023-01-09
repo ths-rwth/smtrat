@@ -249,7 +249,7 @@ namespace arithmetic {
                         }
                     }   
                 }
-		carl::Variable auxVar = thenpoly.integer_valued() && elsepoly.integer_valued() ? carl::fresh_integer_variable() : carl::fresh_real_variable();
+		carl::Variable auxVar = carl::fresh_real_variable();//thenpoly.integer_valued() && elsepoly.integer_valued() ? carl::fresh_integer_variable() : carl::fresh_real_variable();
 		state->artificialVariables.emplace_back(auxVar);
 		mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 		result = Poly(auxVar);

@@ -979,10 +979,19 @@ namespace smtrat
             auto iter = var.lowerbounds().find( pinf );
             while( (**iter).isActive() && (**iter) > bound.limit() )
             {
-                FormulaSetT infsubset;
-                collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
-                mInfeasibleSubsets.push_back( std::move(infsubset) );
+                //FormulaSetT infsubset;
+                //collectOrigins( *bound.origins().begin(), infsubset );
+                //collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
+                for (const auto& o1 : bound.origins()) {
+                    FormulaSetT infsubset;
+                    collectOrigins( o1, infsubset );
+                    FormulaSetT infsubsetForO1(infsubset);
+                    for (const auto& o2: (*iter)->origins()) {
+                        collectOrigins( o2, infsubsetForO1 );
+                        mInfeasibleSubsets.push_back( std::move(infsubsetForO1) );
+                    }
+                }
+                //mInfeasibleSubsets.push_back( std::move(infsubset) );
                 assert( iter != var.lowerbounds().begin() );
                 --iter;
             }
@@ -998,10 +1007,19 @@ namespace smtrat
             auto iter = var.upperbounds().find( psup );
             while( (**iter).isActive() && (**iter) < bound.limit() )
             {
-                FormulaSetT infsubset;
-                collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
-                mInfeasibleSubsets.push_back( std::move(infsubset) );
+                //FormulaSetT infsubset;
+                //collectOrigins( *bound.origins().begin(), infsubset );
+                //collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
+                for (const auto& o1 : bound.origins()) {
+                    FormulaSetT infsubset;
+                    collectOrigins( o1, infsubset );
+                    FormulaSetT infsubsetForO1(infsubset);
+                    for (const auto& o2: (*iter)->origins()) {
+                        collectOrigins( o2, infsubsetForO1 );
+                        mInfeasibleSubsets.push_back( std::move(infsubsetForO1) );
+                    }
+                }
+                //mInfeasibleSubsets.push_back( std::move(infsubset) );
                 ++iter;
                 assert( iter != var.upperbounds().end() );
             }
