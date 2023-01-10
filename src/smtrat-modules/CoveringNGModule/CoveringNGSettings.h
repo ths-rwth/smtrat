@@ -50,6 +50,7 @@ struct CoveringNGSettingsExImplicants : CoveringNGSettingsDefault  {
 
 struct CoveringNGSettingsExImplicantsMulti : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicantsMulti>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
