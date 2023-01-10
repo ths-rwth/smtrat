@@ -985,8 +985,8 @@ namespace smtrat
                 for (const auto& o1 : bound.origins()) {
                     FormulaSetT infsubset;
                     collectOrigins( o1, infsubset );
-                    FormulaSetT infsubsetForO1(infsubset);
                     for (const auto& o2: (*iter)->origins()) {
+                        FormulaSetT infsubsetForO1(infsubset);
                         collectOrigins( o2, infsubsetForO1 );
                         mInfeasibleSubsets.push_back( std::move(infsubsetForO1) );
                     }
@@ -1013,8 +1013,8 @@ namespace smtrat
                 for (const auto& o1 : bound.origins()) {
                     FormulaSetT infsubset;
                     collectOrigins( o1, infsubset );
-                    FormulaSetT infsubsetForO1(infsubset);
                     for (const auto& o2: (*iter)->origins()) {
+                        FormulaSetT infsubsetForO1(infsubset);
                         collectOrigins( o2, infsubsetForO1 );
                         mInfeasibleSubsets.push_back( std::move(infsubsetForO1) );
                     }
