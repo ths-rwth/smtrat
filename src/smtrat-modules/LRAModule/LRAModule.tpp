@@ -977,8 +977,12 @@ namespace smtrat
         if( bound.isUpperBound() )
         {
             auto iter = var.lowerbounds().find( pinf );
-            while( (**iter).isActive() && (**iter) > bound.limit() )
+            while( /*(**iter).isActive() &&*/ (**iter) > bound.limit() )
             {
+                if (! (*iter)->isActive()) {
+                    --iter;
+                    continue;
+                }
                 //FormulaSetT infsubset;
                 //collectOrigins( *bound.origins().begin(), infsubset );
                 //collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
@@ -1005,8 +1009,12 @@ namespace smtrat
         if( bound.isLowerBound() )
         {
             auto iter = var.upperbounds().find( psup );
-            while( (**iter).isActive() && (**iter) < bound.limit() )
+            while( /*(**iter).isActive() &&*/ (**iter) < bound.limit() )
             {
+                if (! (*iter)->isActive()) {
+                    ++iter;
+                    continue;
+                }
                 //FormulaSetT infsubset;
                 //collectOrigins( *bound.origins().begin(), infsubset );
                 //collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
