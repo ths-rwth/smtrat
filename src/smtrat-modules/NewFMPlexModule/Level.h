@@ -484,10 +484,11 @@ class Level {
             Column::const_iterator col_it = m_eliminated_column->second.begin();
 
             auto process_row = [&](const RowIndex i, const RowIndex output_row) {
+                bool appended = true;
                 if ((col_it != m_eliminated_column->second.end()) && (i == col_it->row)) {
                     SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().generated_constraints(1));
                     Row row = m_tableau.combine(e.row, i, m_eliminated_column->first, e.coeff, m_tableau.value_at(*col_it));
-                    result.m_tableau.append_row(row);
+                    bool appended = result.m_tableau.append_row(row);
                     if constexpr (USE_BT) {
                         if ((e.coeff > 0) == (m_tableau.value_at(*col_it) > 0)) result.m_backtrack_levels[output_row] = m_level + 1;
                         else result.m_backtrack_levels[output_row] = std::max(m_backtrack_levels[e.row], m_backtrack_levels[i]);
@@ -502,14 +503,18 @@ class Level {
                         result.m_ignore_for_eliminators.emplace_hint(result.m_ignore_for_eliminators.end(), output_row);
                     }
                 }
+                return appended;
             };
 
+            std::size_t trivial_rows = 0;
+
             for (RowIndex i = 0; i < e.row; i++) {// Requires the column index elements to be in ascending order!!
-                process_row(i,i);
+                if (!process_row(i,i-trivial_rows)) trivial_rows++;
             }
             col_it++; // should point to pivot_row before this increment
+            trivial_rows++;
             for (RowIndex i = e.row + 1; i < m_tableau.nr_of_rows(); i++) {
-                process_row(i,i-1);
+                if (!process_row(i,i-trivial_rows)) trivial_rows++;
             }
 
             return result;

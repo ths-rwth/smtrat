@@ -203,10 +203,10 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             return is_row_conflict(m_rows[ri]);
         }
 
-        void append_row(const Row& row) {
+        bool append_row(const Row& row) {
             if (row.elements.empty()) return;
             if ((row[0].column >= m_rhs_index) && (row[0].column <= m_delta_index)) {
-                if (!is_row_conflict(row)) return;
+                if (!is_row_conflict(row)) return false;
             } 
             for (ColumnPosition i = 0; i < row.elements.size(); i++) {
                 RowElement r = row.elements[i];
@@ -224,6 +224,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                 m_inequalities.push_back(m_rows.size());
             }
             m_rows.push_back(row);
+            return true;
         }
 
         // REVIEW: shared pointer so that if tableaus share the same constraint, it is only stored once?
