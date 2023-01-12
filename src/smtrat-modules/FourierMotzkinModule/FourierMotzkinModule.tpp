@@ -248,7 +248,9 @@ std::optional<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_le
 	m_history.reserve(eliminable_columns.size() + 1);
 
 	set_level(0, foumo::Level(root_tableau));
-
+	if constexpr (Settings::use_imbert) {
+		m_history[0].init_imbert();
+	}
 	m_current_level = 0;
 	return std::nullopt;
 }
@@ -329,7 +331,7 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 		m_history[m_current_level].choose_elimination_column();
 
 		// REVIEW: let next_child construct inplace with reference parameters?
-		set_level(m_current_level + 1, m_history[m_current_level].eliminate());
+		set_level(m_current_level + 1, m_history[m_current_level].eliminate<Settings::use_imbert>(m_equalities));
 		m_current_level++;
 		SMTRAT_STATISTICS_CALL(m_statistics.new_system());
 	}

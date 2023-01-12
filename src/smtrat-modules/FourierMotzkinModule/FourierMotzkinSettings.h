@@ -15,6 +15,7 @@ namespace smtrat
 		/// Name of the Module
 		static constexpr auto moduleName = "FourierMotzkinModule<FourierMotzkinSettings1>";
 		static constexpr bool incremental = false;
+		static constexpr bool use_imbert = true;
 		static constexpr fmplex::EQHandling eq_handling = fmplex::EQHandling::GAUSSIAN_TABLEAU;
 		using gauss_type = fmplex::FMPlexGauss;
 		static constexpr fmplex::NEQHandling neq_handling = fmplex::NEQHandling::SPLITTING_LEMMAS;

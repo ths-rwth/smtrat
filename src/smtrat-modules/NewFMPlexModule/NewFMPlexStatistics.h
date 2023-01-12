@@ -26,6 +26,7 @@ namespace smtrat {
 				std::size_t m_neq_splits = 0;
 				double m_avg_bound_ratio = 0;
 				carl::statistics::timer m_timer;
+				std::size_t m_imbert_ignored = 0;
 
 			public:
 				void global_conflict() { m_global_conflicts++; }
@@ -38,6 +39,7 @@ namespace smtrat {
 				void conflict_size(std::size_t n) { m_accumulated_conflict_sizes += n; }
 				void gauss_needed() { m_gauss_needed = true; }
 				void generated_constraints(std::size_t n) { m_generated_constraints += n; }
+				void imbert_ignored() { m_imbert_ignored++; }
 				void new_system() { m_systems++; }
 				void branches(std::size_t n) {
 					m_total_branches += n;
@@ -65,6 +67,7 @@ namespace smtrat {
 					Statistics::addKeyValuePair("gauss_conflicts", m_gauss_conflicts);
 					Statistics::addKeyValuePair("gauss_needed", m_gauss_needed);
 					Statistics::addKeyValuePair("generated_constraints", m_generated_constraints);
+					Statistics::addKeyValuePair("imbert_ignored", m_imbert_ignored);
 					Statistics::addKeyValuePair("systems", m_systems);
 					Statistics::addKeyValuePair("unbounded_levels", m_eliminated_without_bounds);
 					Statistics::addKeyValuePair("bounded_levels", m_eliminated_with_bounds);

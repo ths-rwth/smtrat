@@ -159,6 +159,19 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             return Origins{all_ogs, neg};
         }
 
+        Origins origins(const Row& row) const {
+            std::set<std::size_t> all_ogs;
+            std::set<std::size_t> neg;
+            Row::ConstIterator row_it = row.end();
+            while (row_it != row.begin()) {
+                row_it--;
+                if (!is_origin_column(row_it->column)) break;
+                all_ogs.emplace_hint(all_ogs.begin(), origin(row_it->column));
+                if (row_it->value < 0) neg.emplace_hint(neg.begin(), origin(row_it->column));
+            }
+            return Origins{all_ogs, neg};
+        }
+
         std::vector<ColumnIndex> non_zero_variable_columns() const {
             std::vector<ColumnIndex> result;
             for (std::map<ColumnIndex, Column>::const_iterator it = m_columns.begin(); it != m_columns.end(); it++) {
@@ -204,7 +217,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
         }
 
         bool append_row(const Row& row) {
-            if (row.elements.empty()) return;
+            if (row.elements.empty()) return false;
             if ((row[0].column >= m_rhs_index) && (row[0].column <= m_delta_index)) {
                 if (!is_row_conflict(row)) return false;
             } 
