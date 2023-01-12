@@ -1,0 +1,13 @@
+/**
+ * @file FourierMotzkinInstantiation.cpp.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2023-01-10
+ * Created on 2023-01-10.
+ */
+
+#include "${Prefix}Module.tpp"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
