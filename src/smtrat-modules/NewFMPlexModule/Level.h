@@ -484,11 +484,13 @@ class Level {
             Column::const_iterator col_it = m_eliminated_column->second.begin();
 
             auto process_row = [&](const RowIndex i, const RowIndex output_row) {
-                bool appended = true;
                 if ((col_it != m_eliminated_column->second.end()) && (i == col_it->row)) {
                     SMTRAT_STATISTICS_CALL(FMPlexStatistics::get_instance().generated_constraints(1));
                     Row row = m_tableau.combine(e.row, i, m_eliminated_column->first, e.coeff, m_tableau.value_at(*col_it));
-                    bool appended = result.m_tableau.append_row(row);
+                    if (!result.m_tableau.append_row(row)) {
+                        col_it++;
+                        return false;
+                    }
                     if constexpr (USE_BT) {
                         if ((e.coeff > 0) == (m_tableau.value_at(*col_it) > 0)) result.m_backtrack_levels[output_row] = m_level + 1;
                         else result.m_backtrack_levels[output_row] = std::max(m_backtrack_levels[e.row], m_backtrack_levels[i]);
@@ -496,14 +498,14 @@ class Level {
                     col_it++;
                 } else {
                     result.m_tableau.copy_row_from(i, m_tableau);
-                    if constexpr (USE_BT) result.m_backtrack_levels[output_row] = m_backtrack_levels[i];
+                    if constexpr (USE_BT) result.m_backtrack_levels[output_row] = m_backtrack_levels[i]; // TODO: incorrect because of removing trivial
                 }
                 if constexpr (IGNORE_USED) {
                     if (m_ignore_for_eliminators.count(i) == 1) {
                         result.m_ignore_for_eliminators.emplace_hint(result.m_ignore_for_eliminators.end(), output_row);
                     }
                 }
-                return appended;
+                return true;
             };
 
             std::size_t trivial_rows = 0;
@@ -515,6 +517,9 @@ class Level {
             trivial_rows++;
             for (RowIndex i = e.row + 1; i < m_tableau.nr_of_rows(); i++) {
                 if (!process_row(i,i-trivial_rows)) trivial_rows++;
+            }
+            if constexpr (USE_BT) {
+                result.m_backtrack_levels.resize(m_tableau.nr_of_rows() - trivial_rows);
             }
 
             return result;
