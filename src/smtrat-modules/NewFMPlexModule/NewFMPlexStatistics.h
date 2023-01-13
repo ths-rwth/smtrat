@@ -24,6 +24,7 @@ namespace smtrat {
 				std::size_t m_total_backtrack_distance = 0;
 				std::size_t m_local_conflicts_from_prune = 0;
 				std::size_t m_neq_splits = 0;
+				std::size_t m_unsat = 0;
 				double m_avg_bound_ratio = 0;
 				carl::statistics::timer m_timer;
 				std::size_t m_imbert_ignored = 0;
@@ -34,6 +35,7 @@ namespace smtrat {
 					m_local_conflicts++;
 					m_total_backtrack_distance += distance;
 				}
+				void unsat() { m_unsat++; }
 				void local_conflict_from_prune() { m_local_conflicts_from_prune++; }
 				void gauss_conflict () { m_gauss_conflicts++;  }
 				void conflict_size(std::size_t n) { m_accumulated_conflict_sizes += n; }
@@ -61,7 +63,7 @@ namespace smtrat {
 				void collect() { // called after the solving process to collect statistics
 					Statistics::addKeyValuePair("global_conflicts", m_global_conflicts);
 					Statistics::addKeyValuePair("local_conflicts", m_local_conflicts);
-					Statistics::addKeyValuePair("avg_bt_distance", ((double) m_total_backtrack_distance) / ((double) m_local_conflicts));
+					Statistics::addKeyValuePair("avg_bt_distance", ((double) m_total_backtrack_distance) / ((double) m_unsat));
 					Statistics::addKeyValuePair("local_conflicts_from_prune", m_local_conflicts_from_prune);
 					Statistics::addKeyValuePair("avg_conflict_size", ((double) m_accumulated_conflict_sizes)/((double) m_timer.count()));
 					Statistics::addKeyValuePair("gauss_conflicts", m_gauss_conflicts);

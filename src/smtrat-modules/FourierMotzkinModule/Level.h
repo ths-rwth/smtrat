@@ -67,6 +67,7 @@ class Level {
                     m_eliminated_column = col_it;
                     m_lbs = cur_lbs;
                     m_ubs = cur_ubs;
+                    SMTRAT_STATISTICS_CALL(smtrat::fmplex::FMPlexStatistics::get_instance().eliminated_without_bounds());
                     return;
                 }
 
@@ -78,6 +79,7 @@ class Level {
                 }
             }
             assert(fewest_new_constraints.has_value());
+            SMTRAT_STATISTICS_CALL(smtrat::fmplex::FMPlexStatistics::get_instance().eliminated_with_bounds(m_lbs.size(), m_ubs.size()));
         }
 
         void init_imbert() {

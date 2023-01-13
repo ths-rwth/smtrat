@@ -216,6 +216,7 @@ void FourierMotzkinModule<Settings>::build_unsat_core(const std::set<std::size_t
 	}
 	mInfeasibleSubsets.push_back(inf_subset);
 	SMTRAT_STATISTICS_CALL(m_statistics.conflict_size(inf_subset.size()));
+	SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 }
 
 template<class Settings>
