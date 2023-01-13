@@ -219,7 +219,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
 
         bool append_row(const Row& row) {
             if (row.elements.empty()) return false;
-            if ((row[0].column >= m_rhs_index) && (row[0].column <= m_delta_index)) {
+            if (row[0].column >= m_rhs_index) {
                 if (!is_row_conflict(row)) return false;
             } 
             for (ColumnPosition i = 0; i < row.elements.size(); i++) {

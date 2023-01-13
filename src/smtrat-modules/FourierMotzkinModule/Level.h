@@ -132,10 +132,11 @@ class Level {
                             SMTRAT_STATISTICS_CALL(smtrat::fmplex::FMPlexStatistics::get_instance().imbert_ignored());
                         } else {
                             SMTRAT_STATISTICS_CALL(smtrat::fmplex::FMPlexStatistics::get_instance().generated_constraints(1));
-                            result.m_explicitly_eliminated.push_back(new_expl_elim);
-                            result.m_implicitly_eliminated.push_back(new_impl_elim);
-                            result.m_involved_variables.push_back(new_involved_vars);
-                            result.m_tableau.append_row(row);
+                            if (result.m_tableau.append_row(row)) {
+                                result.m_explicitly_eliminated.push_back(new_expl_elim);
+                                result.m_implicitly_eliminated.push_back(new_impl_elim);
+                                result.m_involved_variables.push_back(new_involved_vars);
+                            }
                         }
                     } else {
                         result.m_tableau.append_row(row);
