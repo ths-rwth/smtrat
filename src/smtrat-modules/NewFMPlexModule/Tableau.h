@@ -184,6 +184,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
         std::vector<ColumnIndex> non_zero_variable_columns(const RowIndex ri) const {
             std::vector<ColumnIndex> result;
             for (const RowElement& e : m_rows[ri]) {
+                if (!is_lhs_column(e.column)) break;
                 result.push_back(e.column);
             }
             return result;

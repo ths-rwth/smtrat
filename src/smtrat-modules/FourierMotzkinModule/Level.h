@@ -107,7 +107,7 @@ class Level {
                         new_expl_elim.insert(m_eliminated_column->first);
 
                         std::set<ColumnIndex> new_involved_vars = m_involved_variables[lb.row];
-                        new_involved_vars.insert(m_involved_variables[lb.row].begin(), m_involved_variables[lb.row].end());
+                        new_involved_vars.insert(m_involved_variables[ub.row].begin(), m_involved_variables[ub.row].end());
 
                         std::set<ColumnIndex> new_impl_elim;
                         for (const ColumnIndex v : new_involved_vars) {
