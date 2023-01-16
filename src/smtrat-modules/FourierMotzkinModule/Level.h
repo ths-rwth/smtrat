@@ -141,6 +141,7 @@ class Level {
                             }
                         }
                     } else {
+                        SMTRAT_STATISTICS_CALL(smtrat::fmplex::FMPlexStatistics::get_instance().generated_constraints(1));
                         result.m_tableau.append_row(row);
                     }
                 }

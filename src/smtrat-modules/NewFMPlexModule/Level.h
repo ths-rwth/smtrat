@@ -498,7 +498,7 @@ class Level {
                     col_it++;
                 } else {
                     result.m_tableau.copy_row_from(i, m_tableau);
-                    if constexpr (USE_BT) result.m_backtrack_levels[output_row] = m_backtrack_levels[i]; // TODO: incorrect because of removing trivial
+                    if constexpr (USE_BT) result.m_backtrack_levels[output_row] = m_backtrack_levels[i];
                 }
                 if constexpr (IGNORE_USED) {
                     if (m_ignore_for_eliminators.count(i) == 1) {
