@@ -63,12 +63,13 @@ namespace smtrat {
 				void collect() { // called after the solving process to collect statistics
 					Statistics::addKeyValuePair("global_conflicts", m_global_conflicts);
 					Statistics::addKeyValuePair("local_conflicts", m_local_conflicts);
+					Statistics::addKeyValuePair("unsat_calls", m_unsat);
 					Statistics::addKeyValuePair("avg_bt_distance", ((double) m_total_backtrack_distance) / ((double) m_unsat));
 					Statistics::addKeyValuePair("local_conflicts_from_prune", m_local_conflicts_from_prune);
 					Statistics::addKeyValuePair("avg_conflict_size", ((double) m_accumulated_conflict_sizes)/((double) m_timer.count()));
 					Statistics::addKeyValuePair("gauss_conflicts", m_gauss_conflicts);
 					Statistics::addKeyValuePair("gauss_needed", m_gauss_needed);
-					Statistics::addKeyValuePair("generated_constraints", m_generated_constraints);
+					Statistics::addKeyValuePair("generated_constraints", m_generated_constraints + m_imbert_ignored);
 					Statistics::addKeyValuePair("imbert_ignored", m_imbert_ignored);
 					Statistics::addKeyValuePair("systems", m_systems);
 					Statistics::addKeyValuePair("unbounded_levels", m_eliminated_without_bounds);
