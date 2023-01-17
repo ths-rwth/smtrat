@@ -323,6 +323,13 @@ bool NewFMPlexModule<Settings>::process_conflict(fmplex::Conflict conflict) {
 template<class Settings>
 Answer NewFMPlexModule<Settings>::checkCore() {
 	SMTRAT_TIME_START(start);
+	#ifdef SMTRAT_DEVOPTION_Validation
+	auto old_constraints = m_constraints;
+	for (const auto c : m_added_constraints) {
+		auto it = std::find(old_constraints.begin(), old_constraints.end(), c);
+		old_constraints.erase(it);
+	}
+	#endif
 
 	if (solverState() == Answer::SAT) { // check whether found model still works by chance
 		bool all_sat = true;
@@ -349,6 +356,12 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
 			build_unsat_core(conflict->involved_rows);
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+			#ifdef SMTRAT_DEVOPTION_Validation
+			if (solverState() == Answer::SAT && !old_constraints.empty()) {
+                SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","sat_input",FormulaT( carl::FormulaType::AND, old_constraints ), true);
+			}
+			SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+			#endif
 			return Answer::UNSAT;
 		}
 	}
@@ -380,6 +393,12 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 					// we don't need to transfer unsat cores, as the reason for partial unsat are already visited sibling or uncle systems
 					if (!backtrack(fmplex::Conflict{false, m_current_level, std::set<std::size_t>()})) {
 						SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+						#ifdef SMTRAT_DEVOPTION_Validation
+						if (solverState() == Answer::SAT) {
+							SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","sat_input",FormulaT( carl::FormulaType::AND, old_constraints ), true);
+						}
+						SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+						#endif
 						return Answer::UNSAT;
 					}
 				}
