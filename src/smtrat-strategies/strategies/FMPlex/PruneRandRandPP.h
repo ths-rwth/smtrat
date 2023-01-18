@@ -16,9 +16,9 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_BTRandRand: public Manager {
+class FMPlex_PruneRandRandPP: public Manager {
 public:
-   	FMPlex_BTRandRand(): Manager()
+   	FMPlex_PruneRandRandPP(): Manager()
     {
 	   	setStrategy(
 		{
@@ -26,7 +26,7 @@ public:
             {
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsBTRandRand>>()
+					addBackend<NewFMPlexModule<NewFMPlexSettingsPruneRandRand>>()
 				})
 			})
 		});

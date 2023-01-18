@@ -16,9 +16,9 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_BTBranchLevel: public Manager {
+class FMPlex_BTPruneBranchLevelPP: public Manager {
 public:
-   	FMPlex_BTBranchLevel(): Manager()
+   	FMPlex_BTPruneBranchLevelPP(): Manager()
     {
 	   	setStrategy(
 		{
@@ -26,7 +26,7 @@ public:
             {
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsBTBranchLevel>>()
+					addBackend<NewFMPlexModule<NewFMPlexSettingsBTPruneBranchLevel>>()
 				})
 			})
 		});

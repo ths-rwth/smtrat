@@ -16,9 +16,9 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_PruneMinColMinRow: public Manager {
+class FMPlex_MinColMinRowPP: public Manager {
 public:
-   	FMPlex_PruneMinColMinRow(): Manager()
+   	FMPlex_MinColMinRowPP(): Manager()
     {
 	   	setStrategy(
 		{
@@ -26,7 +26,7 @@ public:
             {
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsPruneMinColMinRow>>()
+					addBackend<NewFMPlexModule<NewFMPlexSettingsMinColMinRow>>()
 				})
 			})
 		});

@@ -16,17 +16,17 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_MinColMinRow: public Manager {
+class FMPlex_RandRandPP: public Manager {
 public:
-   	FMPlex_MinColMinRow(): Manager()
-    {
+	FMPlex_RandRandPP(): Manager()
+   	{
 	   	setStrategy(
 		{
 			addBackend<FPPModule<FPPSettings1>>(
             {
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsMinColMinRow>>()
+					addBackend<NewFMPlexModule<NewFMPlexSettingsRandRand>>()
 				})
 			})
 		});

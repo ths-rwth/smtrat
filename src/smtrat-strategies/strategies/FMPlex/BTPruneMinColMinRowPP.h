@@ -16,17 +16,17 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_PruneBranchLevel: public Manager {
+class FMPlex_BTPruneMinColMinRowPP: public Manager {
 public:
-   	FMPlex_PruneBranchLevel(): Manager()
-    {
+   	FMPlex_BTPruneMinColMinRowPP(): Manager()
+   	{
 	   	setStrategy(
 		{
 			addBackend<FPPModule<FPPSettings1>>(
             {
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsPruneBranchLevel>>()
+					addBackend<NewFMPlexModule<NewFMPlexSettingsBTPruneMinColMinRow>>()
 				})
 			})
 		});

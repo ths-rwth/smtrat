@@ -16,9 +16,9 @@ namespace smtrat
 	* @version
 	*
 */
-class FMPlex_BTMinColMinRow: public Manager {
+class FMPlex_BTMinColMinRowPP: public Manager {
 public:
-   	FMPlex_BTMinColMinRow(): Manager()
+   	FMPlex_BTMinColMinRowPP(): Manager()
     {
 	   	setStrategy(
 		{
