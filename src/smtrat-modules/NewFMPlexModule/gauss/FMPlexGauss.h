@@ -214,6 +214,26 @@ class FMPlexGauss : Gauss {
         return std::nullopt;
     }
 
+    std::vector<Conflict> find_all_conflicts() {
+        std::vector<Conflict> result;
+        for (RowIndex i = 0; i < m_rows.size(); i++) {
+            if (m_rows[i][0].column < m_rhs_index) continue;
+            if (m_rows[i][0].column <= m_delta_index) {
+                if (m_rows[i].relation == carl::Relation::EQ) {
+                    result.push_back(Conflict {true, 0, origins(i)});
+                    continue;
+                }
+                if (m_rows[i].relation == carl::Relation::NEQ) continue;
+                if (m_rows[i][0].value < 0) {
+                    result.push_back(Conflict {true, 0, origins(i)});
+                    continue;
+                }
+            }
+            if (carl::is_strict(m_rows[i].relation)) result.push_back(Conflict {true, 0, origins(i)});
+        }
+        return result;
+    }
+
     void assign_variables(std::map<std::size_t, DeltaRational>& working_model) override {
         for (std::size_t i = m_pivot_order.size(); i > 0; i--) {
             fmplex::DeltaRational v = bound_value(m_pivot_order[i-1].row, m_pivot_order[i-1].col, working_model);

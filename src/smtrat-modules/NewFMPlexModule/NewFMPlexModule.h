@@ -103,7 +103,7 @@ namespace smtrat {
 			 * 
 			 * @return a Conflict, if inconsistency can be easily determined after Gauss elimination, and nullopt otherwise.
 			 */
-			std::optional<fmplex::Conflict> construct_root_level();
+			std::vector<fmplex::Conflict> construct_root_level();
 
 			/**
 			 * @brief Checks whether the current model is consistent with the received not-equal constraints.

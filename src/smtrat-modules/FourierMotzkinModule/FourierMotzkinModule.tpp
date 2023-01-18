@@ -216,7 +216,6 @@ void FourierMotzkinModule<Settings>::build_unsat_core(const std::set<std::size_t
 	}
 	mInfeasibleSubsets.push_back(inf_subset);
 	SMTRAT_STATISTICS_CALL(m_statistics.conflict_size(inf_subset.size()));
-	SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 }
 
 template<class Settings>
@@ -226,7 +225,7 @@ void FourierMotzkinModule<Settings>::set_level(std::size_t index, const foumo::L
 }
 
 template<class Settings>
-std::optional<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_level() {
+std::vector<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_level() {
 	SMTRAT_LOG_DEBUG("smtrat.foumo", "starting root level construction...");
 
 	// todo: Other NEQHandling might require more case distinctions
@@ -237,8 +236,12 @@ std::optional<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_le
 			SMTRAT_LOG_DEBUG("smtrat.foumo", "Applying Gaussian elimination");
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_needed());
 			m_gauss.apply_gaussian_elimination();
-			auto conflict = m_gauss.find_conflict();
-			if (conflict) return conflict->involved_rows;
+			auto conflicts = m_gauss.find_all_conflicts();
+			if (!conflicts.empty()) {
+				std::vector<foumo::Confilct> result;
+				for (const auto& conflict : conflicts) result.push_back(conflict->involved_rows)
+				return result;
+			}
 		}
 		root_tableau = m_gauss.get_transformed_inequalities();
 	} else { // EQHandling is done in Level, along with inequalities
@@ -253,7 +256,7 @@ std::optional<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_le
 		m_history[0].init_imbert();
 	}
 	m_current_level = 0;
-	return std::nullopt;
+	return {};
 }
 
 
@@ -300,12 +303,13 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 		// todo: not yet implemented
 	} else {
 		m_added_constraints.clear();
-		auto conflict = construct_root_level();
-		if (conflict) {
+		auto conflicts = construct_root_level();
+		if (!conflicts.empty()) {
 			SMTRAT_LOG_DEBUG("smtrat.foumo", "root level is conflicting");
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
-			build_unsat_core(*conflict);
+			for (const auto& conflict : conflicts) build_unsat_core(*conflict);
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+			SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 			return Answer::UNSAT;
 		}
 	}
@@ -315,6 +319,7 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 		if (conflict) {
 			SMTRAT_LOG_DEBUG("smtrat.foumo", "current level is conflicting");
 			build_unsat_core(*conflict);
+			SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 			return Answer::UNSAT;
 		} else if (m_history[m_current_level].is_lhs_zero()) {
 			SMTRAT_LOG_DEBUG("smtrat.foumo", "current level is trivial SAT (apart from NEQs)");

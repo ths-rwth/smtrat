@@ -216,7 +216,6 @@ void NewFMPlexModule<Settings>::build_unsat_core(const std::set<std::size_t>& re
 	}
 	mInfeasibleSubsets.push_back(inf_subset);
 	SMTRAT_STATISTICS_CALL(m_statistics.conflict_size(inf_subset.size()));
-	SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 }
 
 template<class Settings>
@@ -226,7 +225,7 @@ void NewFMPlexModule<Settings>::set_level(std::size_t index, const fmplex::Level
 }
 
 template<class Settings>
-std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level() {
+std::vector<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level() {
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "starting root level construction...");
 
 	// todo: Other NEQHandling might require more case distinctions
@@ -237,8 +236,8 @@ std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level(
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "Applying Gaussian elimination");
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_needed());
 			m_gauss.apply_gaussian_elimination();
-			auto conflict = m_gauss.find_conflict();
-			if (conflict) return conflict;
+			std::vector<fmplex::Conflict> conflicts = m_gauss.find_all_conflicts();
+			if (!conflicts.empty()) return conflicts;
 		}
 		root_tableau = m_gauss.get_transformed_inequalities();
 	} else { // EQHandling is done in Level, along with inequalities
@@ -251,7 +250,7 @@ std::optional<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level(
 	set_level(0, fmplex::Level(root_tableau));
 
 	m_current_level = 0;
-	return std::nullopt;
+	return {};
 }
 
 template<class Settings>
@@ -344,13 +343,16 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 		// todo: not yet implemented
 	} else {
 		m_added_constraints.clear();
-		auto conflict = construct_root_level();
-		if (conflict) {
+		auto conflicts = construct_root_level();
+		if (!conflicts.empty()) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "root level is conflicting");
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
-			build_unsat_core(conflict->involved_rows);
+			for (const auto& conflict : conflicts) {
+				build_unsat_core(conflict.involved_rows);
+			}
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 			SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+			SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 			return Answer::UNSAT;
 		}
 	}
@@ -361,6 +363,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "current level is conflicting");
 			if (!process_conflict(*conflict)) {
 				SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+				SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 				return Answer::UNSAT;
 			}
 		} else if (m_history[m_current_level].is_lhs_zero()) {
@@ -387,6 +390,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 					if (!backtrack(fmplex::Conflict{false, m_current_level, std::set<std::size_t>()})) {
 						SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 						SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+						SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 						return Answer::UNSAT;
 					}
 				}
