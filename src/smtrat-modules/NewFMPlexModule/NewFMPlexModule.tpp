@@ -323,13 +323,6 @@ bool NewFMPlexModule<Settings>::process_conflict(fmplex::Conflict conflict) {
 template<class Settings>
 Answer NewFMPlexModule<Settings>::checkCore() {
 	SMTRAT_TIME_START(start);
-	#ifdef SMTRAT_DEVOPTION_Validation
-	auto old_constraints = m_constraints;
-	for (const auto c : m_added_constraints) {
-		auto it = std::find(old_constraints.begin(), old_constraints.end(), c);
-		old_constraints.erase(it);
-	}
-	#endif
 
 	if (solverState() == Answer::SAT) { // check whether found model still works by chance
 		bool all_sat = true;
@@ -343,6 +336,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			m_added_constraints.clear();
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "last model still satisfies all given constraints");
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+			SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","sat_input",FormulaT( carl::FormulaType::AND, m_constraints ), true);
 			return Answer::SAT;
 		}
 	}
@@ -356,12 +350,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
 			build_unsat_core(conflict->involved_rows);
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
-			#ifdef SMTRAT_DEVOPTION_Validation
-			if (solverState() == Answer::SAT && !old_constraints.empty()) {
-                SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","sat_input",FormulaT( carl::FormulaType::AND, old_constraints ), true);
-			}
 			SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
-			#endif
 			return Answer::UNSAT;
 		}
 	}
@@ -370,7 +359,10 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 		std::optional<fmplex::Conflict> conflict = m_history[m_current_level].earliest_conflict(m_equalities);
 		if (conflict) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "current level is conflicting");
-			if (!process_conflict(*conflict)) return Answer::UNSAT;
+			if (!process_conflict(*conflict)) {
+				SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+				return Answer::UNSAT;
+			}
 		} else if (m_history[m_current_level].is_lhs_zero()) {
 			SMTRAT_LOG_DEBUG("smtrat.fmplex", "current level is trivial SAT (apart from NEQs)");
 			if constexpr (Settings::neq_handling == fmplex::NEQHandling::SPLITTING_LEMMAS) {
@@ -380,6 +372,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 				}
 			} // todo: else
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+			SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","sat_input",FormulaT( carl::FormulaType::AND, m_constraints ), true);
 			return Answer::SAT;
 		}
 
@@ -393,12 +386,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 					// we don't need to transfer unsat cores, as the reason for partial unsat are already visited sibling or uncle systems
 					if (!backtrack(fmplex::Conflict{false, m_current_level, std::set<std::size_t>()})) {
 						SMTRAT_TIME_FINISH(m_statistics.timer(), start);
-						#ifdef SMTRAT_DEVOPTION_Validation
-						if (solverState() == Answer::SAT) {
-							SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","sat_input",FormulaT( carl::FormulaType::AND, old_constraints ), true);
-						}
 						SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
-						#endif
 						return Answer::UNSAT;
 					}
 				}
