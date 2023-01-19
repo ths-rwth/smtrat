@@ -238,8 +238,8 @@ std::vector<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_leve
 			m_gauss.apply_gaussian_elimination();
 			auto conflicts = m_gauss.find_all_conflicts();
 			if (!conflicts.empty()) {
-				std::vector<foumo::Confilct> result;
-				for (const auto& conflict : conflicts) result.push_back(conflict->involved_rows)
+				std::vector<foumo::Conflict> result;
+				for (const auto& conflict : conflicts) result.push_back(conflict.involved_rows);
 				return result;
 			}
 		}
@@ -307,7 +307,7 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 		if (!conflicts.empty()) {
 			SMTRAT_LOG_DEBUG("smtrat.foumo", "root level is conflicting");
 			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
-			for (const auto& conflict : conflicts) build_unsat_core(*conflict);
+			for (const auto& conflict : conflicts) build_unsat_core(conflict);
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 			SMTRAT_STATISTICS_CALL(m_statistics.unsat());
 			return Answer::UNSAT;
