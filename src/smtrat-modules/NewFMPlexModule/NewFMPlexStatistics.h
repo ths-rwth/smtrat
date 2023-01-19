@@ -25,6 +25,7 @@ namespace smtrat {
 				std::size_t m_local_conflicts_from_prune = 0;
 				std::size_t m_neq_splits = 0;
 				std::size_t m_unsat = 0;
+				std::size_t m_max_level = 0;
 				double m_avg_bound_ratio = 0;
 				carl::statistics::timer m_timer;
 				std::size_t m_imbert_ignored = 0;
@@ -42,7 +43,7 @@ namespace smtrat {
 				void gauss_needed() { m_gauss_needed = true; }
 				void generated_constraints(std::size_t n) { m_generated_constraints += n; }
 				void imbert_ignored() { m_imbert_ignored++; }
-				void new_system() { m_systems++; }
+				void new_system(std::size_t level) { m_systems++; if( level > m_max_level) m_max_level = level;}
 				void branches(std::size_t n) {
 					m_total_branches += n;
 					m_max_branches = std::max(m_max_branches, n);
@@ -74,6 +75,7 @@ namespace smtrat {
 					Statistics::addKeyValuePair("systems", m_systems);
 					Statistics::addKeyValuePair("unbounded_levels", m_eliminated_without_bounds);
 					Statistics::addKeyValuePair("bounded_levels", m_eliminated_with_bounds);
+					Statistics::addKeyValuePair("max_levels", m_max_level);
 					Statistics::addKeyValuePair("avg_bound_ratio", m_avg_bound_ratio);
 					Statistics::addKeyValuePair("total_branches", m_total_branches);
 					Statistics::addKeyValuePair("ignored_branches", m_ignored_branches);

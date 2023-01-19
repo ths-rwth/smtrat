@@ -400,7 +400,7 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 		// REVIEW: let next_child construct inplace with reference parameters?
 		set_level(m_current_level + 1, m_history[m_current_level].next_child<Settings::use_backtracking, Settings::ignore_pivots>());
 		m_current_level++;
-		SMTRAT_STATISTICS_CALL(m_statistics.new_system());
+		SMTRAT_STATISTICS_CALL(m_statistics.new_system(m_current_level));
 	}
 
 	assert(/* unreachable*/ false);

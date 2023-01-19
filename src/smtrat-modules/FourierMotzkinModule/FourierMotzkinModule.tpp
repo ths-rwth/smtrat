@@ -339,7 +339,7 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 		// REVIEW: let next_child construct inplace with reference parameters?
 		set_level(m_current_level + 1, m_history[m_current_level].eliminate<Settings::use_imbert>(m_equalities));
 		m_current_level++;
-		SMTRAT_STATISTICS_CALL(m_statistics.new_system());
+		SMTRAT_STATISTICS_CALL(m_statistics.new_system(m_current_level));
 	}
 
 	assert(/* unreachable*/ false);
