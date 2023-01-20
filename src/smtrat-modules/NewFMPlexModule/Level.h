@@ -491,14 +491,15 @@ class Level {
                         col_it++;
                         return false;
                     }
-                    if constexpr (USE_BT) {
-                        if ((e.coeff > 0) == (m_tableau.value_at(*col_it) > 0)) result.m_backtrack_levels[output_row] = m_level + 1;
-                        else result.m_backtrack_levels[output_row] = std::max(m_backtrack_levels[e.row], m_backtrack_levels[i]);
-                    }
+                    //if constexpr (USE_BT) {
+                    if ((e.coeff > 0) == (m_tableau.value_at(*col_it) > 0)) result.m_backtrack_levels[output_row] = m_level + 1;
+                    else result.m_backtrack_levels[output_row] = std::max(m_backtrack_levels[e.row], m_backtrack_levels[i]);
+                    //}
                     col_it++;
                 } else {
                     result.m_tableau.copy_row_from(i, m_tableau);
-                    if constexpr (USE_BT) result.m_backtrack_levels[output_row] = m_backtrack_levels[i];
+                    //if constexpr (USE_BT) 
+                    result.m_backtrack_levels[output_row] = m_backtrack_levels[i];
                 }
                 if constexpr (IGNORE_USED) {
                     if (m_ignore_for_eliminators.count(i) == 1) {
@@ -518,9 +519,9 @@ class Level {
             for (RowIndex i = e.row + 1; i < m_tableau.nr_of_rows(); i++) {
                 if (!process_row(i,i-trivial_rows)) trivial_rows++;
             }
-            if constexpr (USE_BT) {
-                result.m_backtrack_levels.resize(m_tableau.nr_of_rows() - trivial_rows);
-            }
+            //if constexpr (USE_BT) {
+            result.m_backtrack_levels.resize(m_tableau.nr_of_rows() - trivial_rows);
+            //}
 
             return result;
         }
@@ -540,9 +541,9 @@ class Level {
                 } 
 
                 result.m_tableau.copy_row_from(i, m_tableau);
-                if constexpr (UseBT) {
-                    result.m_backtrack_levels[added_row] = m_backtrack_levels[i];
-                }
+                //if constexpr (UseBT) {
+                result.m_backtrack_levels[added_row] = m_backtrack_levels[i];
+                //}
                 if constexpr (IgnoreUsed) {
                     if (m_ignore_for_eliminators.count(i) == 1) {
                         result.m_ignore_for_eliminators.emplace_hint(result.m_ignore_for_eliminators.end(), added_row);
