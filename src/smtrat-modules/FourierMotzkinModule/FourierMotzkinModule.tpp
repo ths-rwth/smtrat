@@ -227,6 +227,7 @@ void FourierMotzkinModule<Settings>::set_level(std::size_t index, const foumo::L
 template<class Settings>
 std::vector<foumo::Conflict> FourierMotzkinModule<Settings>::construct_root_level() {
 	SMTRAT_LOG_DEBUG("smtrat.foumo", "starting root level construction...");
+	m_history.clear();
 
 	// todo: Other NEQHandling might require more case distinctions
 	fmplex::FMPlexTableau root_tableau;

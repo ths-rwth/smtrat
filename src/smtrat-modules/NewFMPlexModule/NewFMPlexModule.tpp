@@ -227,6 +227,7 @@ void NewFMPlexModule<Settings>::set_level(std::size_t index, const fmplex::Level
 template<class Settings>
 std::vector<fmplex::Conflict> NewFMPlexModule<Settings>::construct_root_level() {
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "starting root level construction...");
+	m_history.clear();
 
 	// todo: Other NEQHandling might require more case distinctions
 	fmplex::FMPlexTableau root_tableau;
