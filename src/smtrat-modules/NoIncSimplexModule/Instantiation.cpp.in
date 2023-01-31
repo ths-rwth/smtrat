@@ -1,0 +1,13 @@
+/**
+ * @file NoIncSimplexInstantiation.cpp.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2023-01-30
+ * Created on 2023-01-30.
+ */
+
+#include "${Prefix}Module.tpp"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}
