@@ -48,6 +48,7 @@ namespace smtrat
 	template<class Settings>
 	void NoIncSimplexModule<Settings>::updateModel() const
 	{
+		if (m_last_model_fit) return;
 		mModel.clear();
 		if( solverState() == Answer::SAT )
 		{
@@ -67,7 +68,10 @@ namespace smtrat
 				break;
 			}
 		}
-		if (model_still_fits) return Answer::SAT;
+		if (model_still_fits) {
+			m_last_model_fit = true;
+			return Answer::SAT;
+		}
 
 		// reset simplex
 		delete mp_simplex;
@@ -81,6 +85,7 @@ namespace smtrat
 		for (const auto& c : m_constraints) {
 			if (!mp_simplex->add(pReceivedFormula()->find(c))) {
 				mInfeasibleSubsets.insert(mInfeasibleSubsets.end(), mp_simplex->infeasibleSubsets().begin(), mp_simplex->infeasibleSubsets().end());
+				mModel.clear();
 				return Answer::UNSAT;
 			}
 		}
@@ -91,6 +96,7 @@ namespace smtrat
 		mp_simplex->clearLemmas();
 
 		if (ans == Answer::UNSAT){
+			mModel.clear();
 			mInfeasibleSubsets.insert(mInfeasibleSubsets.end(), mp_simplex->infeasibleSubsets().begin(), mp_simplex->infeasibleSubsets().end());
 		}
 

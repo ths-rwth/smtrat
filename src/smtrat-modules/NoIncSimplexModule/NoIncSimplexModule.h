@@ -22,6 +22,7 @@ namespace smtrat
 			FormulaSetT m_constraints;
 			Conditionals m_dummy_conditionals = Conditionals(std::vector< std::atomic_bool* >( /*1, new std::atomic_bool( true )*/));
 			LRAModule<LRASettings1>* mp_simplex;
+			bool m_last_model_fit = false;
 			
 		public:
 			using SettingsType = Settings;
