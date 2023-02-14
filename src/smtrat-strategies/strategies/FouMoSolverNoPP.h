@@ -19,11 +19,11 @@ namespace smtrat
      * @version
      *
      */
-    class FouMoSolver:
+    class FouMoSolverNoPP:
         public Manager
     {
         public:
-            FouMoSolver(): Manager()
+            FouMoSolverNoPP(): Manager()
             {
                 setStrategy(
                 {

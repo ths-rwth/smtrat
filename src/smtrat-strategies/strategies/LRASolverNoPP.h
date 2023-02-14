@@ -19,11 +19,11 @@ namespace smtrat
      * @version
      *
      */
-    class LRASolver:
+    class LRASolverNoPP:
         public Manager
     {
         public:
-            LRASolver(): Manager()
+            LRASolverNoPP(): Manager()
             {
                 setStrategy(
                 {

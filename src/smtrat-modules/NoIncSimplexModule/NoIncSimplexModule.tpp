@@ -72,6 +72,7 @@ namespace smtrat
 			m_last_model_fit = true;
 			return Answer::SAT;
 		}
+		m_last_model_fit = false;
 
 		// reset simplex
 		delete mp_simplex;
