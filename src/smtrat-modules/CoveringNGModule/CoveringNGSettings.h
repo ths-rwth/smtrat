@@ -1,6 +1,6 @@
 #pragma once
 
-#include "covering_ng/FormulaEvaluationComplexity.h"
+#include <smtrat-coveringng/FormulaEvaluationComplexity.h>
 
 namespace smtrat {
 

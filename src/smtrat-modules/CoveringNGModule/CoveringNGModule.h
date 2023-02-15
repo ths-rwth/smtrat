@@ -2,7 +2,7 @@
 
 #include <smtrat-solver/Module.h>
 
-#include "covering_ng/Algorithm.h"
+#include <smtrat-coveringng/Algorithm.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
 #include "CoveringNGSettings.h"
