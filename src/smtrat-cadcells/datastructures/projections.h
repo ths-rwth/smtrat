@@ -274,6 +274,10 @@ public:
         return m_pool(p).degree();
     }
 
+    std::size_t total_degree(PolyRef p) {
+        return m_pool(p).total_degree();
+    }
+
     // std::size_t max_degree(PolyRef p) {
     //     const auto& poly = m_pool(p);
     //     size_t deg = 0;

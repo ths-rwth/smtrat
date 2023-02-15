@@ -269,7 +269,7 @@ inline bool upper_lt_lower(const DelineationInterval& del1, const DelineationInt
     if (del1.upper_unbounded()) return false;
     if (del2.lower_unbounded()) return false;
     if (del1.upper()->first < del2.lower()->first) return true;
-    if (del1.upper()->first == del2.lower()->first && del1.upper_strict() && del2.upper_strict()) return true;
+    if (del1.upper()->first == del2.lower()->first && del1.upper_strict() && del2.lower_strict()) return true;
     return false;
 }
 
