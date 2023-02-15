@@ -23,25 +23,99 @@ namespace ordering_util {
             if (rel.first.is_root() && rel.second.is_root()) {
                 add_to_decomposition(result, rel.first.root().poly, rel.second.root().poly, rel);
             } else if (rel.first.is_root() && !rel.second.is_root()) {
-                const auto& roots = rel.second.is_cmin() ? rel.second.cmin().roots : rel.second.cmax().roots;
-                for (const auto& root : roots) {
-                    add_to_decomposition(result, rel.first.root().poly, root.poly, rel);
+                const auto& roots = rel.second.is_cminmax() ? rel.second.cminmax().roots : rel.second.cmaxmin().roots;
+                for (const auto& rootsp : roots) {
+                    for (const auto& root : rootsp) {
+                        add_to_decomposition(result, rel.first.root().poly, root.poly, rel);
+                    }
                 }
             } else if (!rel.first.is_root() && rel.second.is_root()) {
-                const auto& roots = rel.first.is_cmin() ? rel.first.cmin().roots : rel.first.cmax().roots;
-                for (const auto& root : roots) {
-                    add_to_decomposition(result, root.poly, rel.second.root().poly, rel);
+                const auto& roots = rel.first.is_cminmax() ? rel.first.cminmax().roots : rel.first.cmaxmin().roots;
+                for (const auto& rootsp : roots) {
+                    for (const auto& root : rootsp) {
+                        add_to_decomposition(result, root.poly, rel.second.root().poly, rel);
+                    }
                 }
             } else {
-                assert(rel.first.is_cmax() && rel.second.is_cmin());
-                for (const auto& root1 : rel.first.cmax().roots) {
-                    for (const auto& root2 : rel.second.cmin().roots) {
-                        add_to_decomposition(result, root1.poly, root2.poly, rel);
+                const auto& roots1 = rel.first.is_cminmax() ? rel.first.cminmax().roots : rel.first.cmaxmin().roots;
+                const auto& roots2 = rel.second.is_cminmax() ? rel.second.cminmax().roots : rel.second.cmaxmin().roots;
+                for (const auto& roots1p : roots1) {
+                    for (const auto& root1 : roots1p) {
+                        for (const auto& roots2p : roots2) {
+                            for (const auto& root2 : roots2p) {
+                                add_to_decomposition(result, root1.poly, root2.poly, rel);
+                            }
+                        }
                     }
                 }
             }
         }
         return result;
+    }
+}
+
+namespace compound_util {
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_min(datastructures::Projections& proj, const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& root : roots) {
+            auto v = proj.evaluate(ass, root);
+            if (irs.empty() || v < value) {
+                irs.clear();
+                irs.push_back(root);
+                value = v;
+            } else if (v == value) {
+                irs.push_back(root);
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_max(datastructures::Projections& proj, const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& root : roots) {
+            auto v = proj.evaluate(ass, root);
+            if (irs.empty() || v > value) {
+                irs.clear();
+                irs.push_back(root);
+                value = v;
+            } else if (v == value) {
+                irs.push_back(root);
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(datastructures::Projections& proj, const Assignment& ass, const datastructures::CompoundMinMax& bound) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& roots : bound.roots) {
+            auto v = evaluate_max(proj, ass, roots);
+            if (irs.empty() || v.first < value) {
+                irs.clear();
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+                value = v.first;
+            } else if (v.first == value) {
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(datastructures::Projections& proj, const Assignment& ass, const datastructures::CompoundMaxMin& bound) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& roots : bound.roots) {
+            auto v = evaluate_min(proj, ass, roots);
+            if (irs.empty() || v.first > value) {
+                irs.clear();
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+                value = v.first;
+            } else if (v.first == value) {
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+            }
+        }
+        return std::make_pair(value, irs);
     }
 }
 
@@ -55,7 +129,8 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
-        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
+        boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
+        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
@@ -91,67 +166,67 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         }
                     } else if (pair.first.is_root()) {
                         const auto& roots_first = pair.first.root().poly == poly1 ? roots1 : roots2;
-                        const auto& roots_second = pair.first.root().poly == poly1 ? roots2 : roots1;
                         auto index_first = pair.first.root().index;
-                        auto index_second = pair.second.poly_root(pair.first.root().poly == poly1 ? poly2 : poly1)->index;
                         assert(index_first <= roots_first.size());
-                        assert(index_second <= roots_second.size());
-                        if (roots_first[index_first-1] == roots_second[index_second-1]) {
-                            bool relevant = true; 
-                            if (pair.second.is_cmin()) {
-                                auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>( pair.second.polys().begin(), pair.second.polys().end() ));
-                                assert(delineable_interval_cb);
-                                if (delineable_interval_cb->contains(ran)) {
-                                    for (const auto& root : pair.second.roots()) {
-                                        if (deriv.proj().evaluate(ass, root) < roots_second[index_second-1]) {
-                                            relevant = false;
-                                            break;
-                                        }
-                                    }
-                                }
+                        auto poly_second = pair.first.root().poly == poly1 ? poly2 : poly1;
+
+                        bool relevant = true; 
+                        assert(pair.second.is_cminmax() || pair.second.is_cmaxmin());
+                        auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), pair.second.polys());
+                        assert(delineable_interval_cb);
+                        if (delineable_interval_cb->contains(ran)) {
+                            auto res = pair.second.is_cminmax() ? compound_util::evaluate(deriv.proj(), ass, pair.second.cminmax()) : compound_util::evaluate(deriv.proj(), ass, pair.second.cmaxmin());
+                            relevant = false;
+                            if (res.first == roots_first[index_first-1]) {
+                                relevant = std::find_if(res.second.begin(), res.second.end(), [&](const auto& ir) { return ir.poly == poly_second; }) != res.second.end();
                             }
-                            if (relevant) {
-                                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                                if (!pair.is_strict) return filter_util::result::INCLUSIVE;
-                                else return filter_util::result::NORMAL;
-                            }
-                        } 
+                        }
+                        if (relevant) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                            if (!pair.is_strict) return filter_util::result::INCLUSIVE;
+                            else return filter_util::result::NORMAL;
+                        }
                     } else if (pair.second.is_root()) {
-                        const auto& roots_first = pair.second.root().poly == poly2 ? roots1 : roots2;
-                        const auto& roots_second = pair.second.root().poly == poly2 ? roots2 : roots1;
-                        auto index_first = pair.first.poly_root(pair.second.root().poly == poly2 ? poly1 : poly2)->index; 
+                        const auto& roots_second = pair.second.root().poly == poly1 ? roots1 : roots2;
                         auto index_second = pair.second.root().index;
-                        assert(index_first <= roots_first.size());
                         assert(index_second <= roots_second.size());
-                        if (roots_first[index_first-1] == roots_second[index_second-1]) {
-                            bool relevant = true; 
-                            if (pair.second.is_cmax()) {
-                                auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>( pair.second.polys().begin(), pair.second.polys().end() ));
-                                assert(delineable_interval_cb);
-                                if (delineable_interval_cb->contains(ran)) {
-                                    for (const auto& root : pair.first.roots()) {
-                                        if (deriv.proj().evaluate(ass, root) > roots_first[index_first-1]) {
-                                            relevant = false;
-                                            break;
-                                        }
-                                    }
-                                }
+                        auto poly_first = pair.second.root().poly == poly1 ? poly2 : poly1;
+
+                        bool relevant = true; 
+                        assert(pair.first.is_cminmax() || pair.first.is_cmaxmin());
+                        auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), pair.first.polys());
+                        assert(delineable_interval_cb);
+                        if (delineable_interval_cb->contains(ran)) {
+                            auto res = pair.first.is_cminmax() ? compound_util::evaluate(deriv.proj(), ass, pair.first.cminmax()) : compound_util::evaluate(deriv.proj(), ass, pair.first.cmaxmin());
+                            relevant = false;
+                            if (res.first == roots_second[index_second-1]) {
+                                relevant = std::find_if(res.second.begin(), res.second.end(), [&](const auto& ir) { return ir.poly == poly_first; }) != res.second.end();
                             }
-                            if (relevant) {
-                                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                                if (!pair.is_strict) return filter_util::result::INCLUSIVE;
-                                else return filter_util::result::NORMAL;
-                            }
-                        } 
+                        }
+                        if (relevant) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                            if (!pair.is_strict) return filter_util::result::INCLUSIVE;
+                            else return filter_util::result::NORMAL;
+                        }
                     } else {
-                        assert(pair.second.is_cmax() && pair.second.is_cmin());
-                        const auto& roots_first = pair.first.has_poly(poly1) ? roots1 : roots2;
-                        const auto& roots_second = pair.first.has_poly(poly1) ? roots2 : roots1;
-                        auto index_first = pair.first.poly_root(pair.first.has_poly(poly1) ? poly1 : poly2)->index; 
-                        auto index_second = pair.second.poly_root(pair.first.has_poly(poly1) ? poly2 : poly1)->index; 
-                        assert(index_first <= roots_first.size());
-                        assert(index_second <= roots_second.size());
-                        if (roots_first[index_first-1] == roots_second[index_second-1]) {
+                        assert(pair.first.is_cmaxmin() && pair.first.is_cminmax());
+                        auto poly_first = pair.first.root().poly == poly1 ? poly1 : poly2;
+                        auto poly_second = pair.first.root().poly == poly1 ? poly2 : poly1;
+
+                        bool relevant = true;
+                        auto cb_polys = pair.first.polys();
+                        cb_polys.merge(pair.second.polys());
+                        auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), cb_polys);
+                        assert(delineable_interval_cb);
+                        if (delineable_interval_cb->contains(ran)) {
+                            auto res1 = compound_util::evaluate(deriv.proj(), ass, pair.first.cmaxmin());
+                            auto res2 = compound_util::evaluate(deriv.proj(), ass, pair.first.cminmax());
+                            relevant = false;
+                            if (res1.first == res2.first) {
+                                relevant = std::find_if(res1.second.begin(), res1.second.end(), [&](const auto& ir) { return ir.poly == poly_first; }) != res1.second.end() && std::find_if(res2.second.begin(), res2.second.end(), [&](const auto& ir) { return ir.poly == poly_second; }) != res2.second.end();
+                            }
+                        }
+                        if (relevant) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                             if (!pair.is_strict) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
@@ -176,7 +251,8 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
-        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
+        boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
+        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
@@ -228,7 +304,8 @@ void delineate_samples(datastructures::SampledDerivation<P>& deriv, const proper
         const auto& poly1 = d.first.first;
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
-        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
+        boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
+        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
@@ -286,7 +363,8 @@ void delineate_all_selective(datastructures::SampledDerivation<P>& deriv, const 
                 else return filter_util::result::NORMAL;
             }
             if (!delineable_interval) {
-                delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), std::vector<datastructures::PolyRef>({ poly1, poly2 }));
+                boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
+                delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
                 assert(delineable_interval);
             }
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);

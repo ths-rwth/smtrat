@@ -67,7 +67,7 @@ FormulaT ClauseChain::to_formula() const {
     return FormulaT(carl::FormulaType::AND, std::move(fs));
 }
 
-FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& model, ClauseChain& chain, bool withEquivalences) {
+FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& model, ClauseChain& chain, bool outermost, bool withEquivalences) {
     switch(formula.type()) {
         case carl::FormulaType::TRUE:
         case carl::FormulaType::FALSE:
@@ -81,19 +81,19 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
 
         case carl::FormulaType::OR:
         {
-            if (!withEquivalences) {
+            if (!withEquivalences || outermost) {
                 FormulasT newFormula;
                 for (const auto& sub : formula.subformulas()) {
-                    FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
-                    newFormula.push_back(std::move(tseitinSub));
+                    FormulaT sub_result = _transformToImplicationChain(sub, model, chain, false, withEquivalences);
+                    newFormula.push_back(std::move(sub_result));
                 }
                 return FormulaT(carl::FormulaType::OR, std::move(newFormula));
             } else {
                 FormulaT tseitinVar = chain.createTseitinVar(formula);
                 FormulasT newFormula;
                 for (const auto& sub : formula.subformulas()) {
-                    FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
-                    newFormula.push_back(std::move(tseitinSub));
+                    FormulaT sub_result = _transformToImplicationChain(sub, model, chain, false, withEquivalences);
+                    newFormula.push_back(std::move(sub_result));
                     const auto& lit = newFormula.back();
                     // newFormula_1 || newFormula_2 || ... -> tseitinVar
                     chain.appendOptional(FormulaT(carl::FormulaType::OR, FormulasT({lit.negated(), tseitinVar})));
@@ -108,31 +108,46 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
 
         case carl::FormulaType::AND:
         {
-            FormulaT tseitinVar = chain.createTseitinVar(formula);
-            FormulasT newFormula;
-            for (const auto& sub : formula.subformulas()) {
-                FormulaT tseitinSub = _transformToImplicationChain(sub, model, chain, withEquivalences);
-                newFormula.push_back(std::move(tseitinSub));
-                const auto& lit = newFormula.back();
-                // tseitinVar -> newFormula_1 && ... && newFormula_n
-                carl::ModelValue<Rational,Poly> eval = carl::evaluate(sub, model);
-                assert(eval.isBool());
-                if (!eval.asBool()) {
-                    chain.appendPropagating(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})), tseitinVar.negated());
-                } else {
-                    chain.appendOptional(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})));
+            if (outermost) {
+                FormulasT newFormula;
+                for (const auto& sub : formula.subformulas()) {
+                    FormulaT sub_result = _transformToImplicationChain(sub, model, chain, false, withEquivalences);
+                    carl::ModelValue<Rational,Poly> eval = carl::evaluate(sub, model);
+                    assert(eval.isBool());
+                    if (!eval.asBool()) {
+                        chain.appendConflicting(std::move(sub_result));
+                    } else {
+                        chain.appendOptional(std::move(sub_result));
+                    }
                 }
-            }
+                return FormulaT(carl::FormulaType::TRUE);
+            } else {
+                FormulaT tseitinVar = chain.createTseitinVar(formula);
+                FormulasT newFormula;
+                for (const auto& sub : formula.subformulas()) {
+                    FormulaT sub_result = _transformToImplicationChain(sub, model, chain, false, withEquivalences);
+                    newFormula.push_back(std::move(sub_result));
+                    const auto& lit = newFormula.back();
+                    // tseitinVar -> newFormula_1 && ... && newFormula_n
+                    carl::ModelValue<Rational,Poly> eval = carl::evaluate(sub, model);
+                    assert(eval.isBool());
+                    if (!eval.asBool()) {
+                        chain.appendPropagating(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})), tseitinVar.negated());
+                    } else {
+                        chain.appendOptional(FormulaT(carl::FormulaType::OR, FormulasT({lit, tseitinVar.negated()})));
+                    }
+                }
 
-            if (withEquivalences) {
-                // newFormula_1 && ... && newFormula_n -> tseitinVar
-                FormulasT tmp;
-                std::transform (newFormula.begin(), newFormula.end(), std::back_inserter(tmp), [](const FormulaT& f) -> FormulaT { return f.negated(); } );
-                tmp.push_back(tseitinVar);
-                chain.appendOptional(FormulaT(carl::FormulaType::OR, tmp));
+                if (withEquivalences) {
+                    // newFormula_1 && ... && newFormula_n -> tseitinVar
+                    FormulasT tmp;
+                    std::transform (newFormula.begin(), newFormula.end(), std::back_inserter(tmp), [](const FormulaT& f) -> FormulaT { return f.negated(); } );
+                    tmp.push_back(tseitinVar);
+                    chain.appendOptional(FormulaT(carl::FormulaType::OR, tmp));
+                }
+                
+                return tseitinVar;
             }
-            
-            return tseitinVar;
         }
 
         default:
@@ -144,8 +159,10 @@ FormulaT _transformToImplicationChain(const FormulaT& formula, const Model& mode
 
 ClauseChain ClauseChain::from_formula(const FormulaT& formula, const Model& model, bool with_equivalence) {
     ClauseChain chain;
-    FormulaT conflictingClause = _transformToImplicationChain(formula, model, chain, with_equivalence);
-    chain.appendConflicting(std::move(conflictingClause));
+    FormulaT conflictingClause = _transformToImplicationChain(formula, model, chain, true, with_equivalence);
+    if (!conflictingClause.is_true()) {
+        chain.appendConflicting(std::move(conflictingClause));
+    }
     return chain;
 }
 

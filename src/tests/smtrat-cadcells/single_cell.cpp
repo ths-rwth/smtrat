@@ -19,7 +19,7 @@
 using namespace smtrat::cadcells;
 
 template<operators::op op, representation::CellHeuristic cell_heuristic>
-std::optional<std::vector<Atom>> single_cell(const std::vector<Polynomial>& polys, Polynomial::ContextType context, const Assignment& sample) {
+std::optional<CNF> single_cell(const std::vector<Polynomial>& polys, Polynomial::ContextType context, const Assignment& sample) {
 	datastructures::PolyPool pool(context);
     datastructures::Projections proj(pool);
 
@@ -28,7 +28,7 @@ std::optional<std::vector<Atom>> single_cell(const std::vector<Polynomial>& poly
 		derivation->insert(operators::properties::poly_sgn_inv{ pool(p) });
 	}
 	
-    std::vector<Atom> description;
+    CNF description;
     while ((derivation)->level() > 0) {
         auto lvl = algorithms::get_interval<op, cell_heuristic>(derivation);
         SMTRAT_LOG_TRACE("smtrat.cadcells", "Polynomials: " << pool);
@@ -44,22 +44,26 @@ std::optional<std::vector<Atom>> single_cell(const std::vector<Polynomial>& poly
     return description;
 }
 
-auto as_carl(const std::vector<Atom>& atoms) {
+auto as_carl(const CNF& cnf) {
 	std::vector<smtrat::FormulaT> result;
-	for (const auto& a : atoms) {
-		if (std::holds_alternative<Constraint>(a)) {
-			result.emplace_back(smtrat::ConstraintT(carl::convert<smtrat::Poly>(std::get<Constraint>(a))));
-		} else {
-			auto vc = carl::convert<smtrat::Poly>(std::get<VariableComparison>(a));
-			auto c = carl::as_constraint(vc);
-			if (c) {
-				result.emplace_back(smtrat::ConstraintT(*c));
+	for (const auto& dis : cnf) {
+		std::vector<smtrat::FormulaT> subresult;
+		for (const auto& a : dis) {
+			if (std::holds_alternative<Constraint>(a)) {
+				subresult.emplace_back(smtrat::ConstraintT(carl::convert<smtrat::Poly>(std::get<Constraint>(a))));
 			} else {
-				result.emplace_back(vc);
+				auto vc = carl::convert<smtrat::Poly>(std::get<VariableComparison>(a));
+				auto c = carl::as_constraint(vc);
+				if (c) {
+					subresult.emplace_back(smtrat::ConstraintT(*c));
+				} else {
+					subresult.emplace_back(vc);
+				}
 			}
 		}
+		result.emplace_back(carl::FormulaType::OR, std::move(subresult));
 	}
-	return result;
+	return smtrat::FormulaT(carl::FormulaType::AND, std::move(result));
 }
 
 TEST(smtrat_cadcells, single_cell) {

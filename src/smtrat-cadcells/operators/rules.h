@@ -277,8 +277,10 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
             if (cell.lower().value().is_root()) {
                 root_represents(deriv, cell.lower().value().root());
             } else {
-                for (const auto& root : cell.lower().value().roots()) {
-                    root_represents(deriv, root);
+                for (const auto& roots : cell.lower().value().roots()) {
+                    for (const auto& root : roots) {
+                        root_represents(deriv, root);
+                    }
                 }
             }
         }
@@ -286,8 +288,10 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
             if (cell.upper().value().is_root()) {
                 root_represents(deriv, cell.upper().value().root());
             } else {
-                for (const auto& root : cell.upper().value().roots()) {
-                    root_represents(deriv, root);
+                for (const auto& roots : cell.upper().value().roots()) {
+                    for (const auto& root : roots) {
+                        root_represents(deriv, root);
+                    }
                 }
             }
         }
@@ -314,6 +318,7 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
 }
 
 namespace additional_root_outside_util {
+    // TODO calculate resultants before the application of the rules, so that the information of calculated resultants is conveniently available here
     inline boost::container::flat_set<datastructures::PolyRef> resultant_polys(const datastructures::PolyRef& poly, const datastructures::IndexedRootOrdering& ordering) {
         boost::container::flat_set<datastructures::PolyRef> result;
         for (const auto& rel : ordering.data()) {
@@ -329,7 +334,7 @@ namespace additional_root_outside_util {
     template<typename P>
     inline std::optional<datastructures::IndexedRoot> protect_lower(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, const datastructures::PolyRef& poly, const boost::container::flat_set<datastructures::PolyRef>& res_polys, bool strict = false) {
         {
-            auto ir = cell.lower().value().poly_root(poly);
+            auto ir = cell.lower().value().poly_root_below(poly);
             if (ir) return *ir;
         }
 
@@ -345,7 +350,7 @@ namespace additional_root_outside_util {
 
         // check if a res_poly has a well defined root below
         for (const auto& res_poly : res_polys) {
-            auto ir = cell.lower().value().poly_root(res_poly);
+            auto ir = cell.lower().value().poly_root_below(res_poly);
             if (ir) return *ir;
             else {
                 auto res_lower_root = ordering.holds_transitive(res_poly, cell.lower().value(), strict);
@@ -367,7 +372,7 @@ namespace additional_root_outside_util {
     template<typename P>
     inline std::optional<datastructures::IndexedRoot> protect_upper(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, const datastructures::PolyRef& poly, const boost::container::flat_set<datastructures::PolyRef>& res_polys, bool strict = false) {
         {
-            auto ir = cell.upper().value().poly_root(poly);
+            auto ir = cell.upper().value().poly_root_above(poly);
             if (ir) return *ir;
         }
 
@@ -383,7 +388,7 @@ namespace additional_root_outside_util {
 
         // check if a res_poly has a well defined root above
         for (const auto& res_poly : res_polys) {
-            auto ir = cell.upper().value().poly_root(res_poly);
+            auto ir = cell.upper().value().poly_root_above(res_poly);
             if (ir) return *ir;
             else {
                 auto res_upper_root = ordering.holds_transitive(cell.upper().value(), res_poly, strict);
