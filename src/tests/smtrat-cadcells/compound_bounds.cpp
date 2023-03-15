@@ -99,7 +99,7 @@ TEST(smtrat_cadcells, compound_bounds) {
 
 	datastructures::PolyPool pool(ctx);
     datastructures::Projections proj(pool);
-	auto deriv = set_up<operators::op::mccallum_filtered>(proj, polys, ass);
+	auto deriv = set_up<operators::op::mccallum_filtered_all_compound>(proj, polys, ass);
 
 	auto upper_1 = P(ctx, 4)*P(ctx, var_y) + P(ctx, 4)*P(ctx, var_z) - P(ctx, 3);
 	auto upper_2 = P(ctx, 4)*P(ctx, var_y) - P(ctx, 4)*P(ctx, var_z) + P(ctx, 3);
@@ -114,13 +114,13 @@ TEST(smtrat_cadcells, compound_bounds) {
 	repr_z.ordering.add_less(datastructures::IndexedRoot(deriv->polys()(poly_p), 1), upper_bound);
 	repr_z.ordering.add_less(upper_bound, datastructures::IndexedRoot(deriv->polys()(poly_p), 2));
 	repr_z.ordering.add_less(upper_bound, datastructures::IndexedRoot(deriv->polys()(poly_q), 1));
-	auto res_z = get_interval_using<operators::op::mccallum_filtered>(deriv, repr_z);
-	deriv = next_level<operators::op::mccallum_filtered>(deriv);
+	auto res_z = get_interval_using<operators::op::mccallum_filtered_all_compound>(deriv, repr_z);
+	deriv = next_level<operators::op::mccallum_filtered_all_compound>(deriv);
 	std::cout << res_z << std::endl;
 	ASSERT_FALSE(res_z.empty());
 
-	auto res_y = algorithms::get_interval<operators::op::mccallum_filtered, representation::BIGGEST_CELL>(deriv);
-	deriv = next_level<operators::op::mccallum_filtered>(deriv);
+	auto res_y = algorithms::get_interval<operators::op::mccallum_filtered_all_compound, representation::BIGGEST_CELL>(deriv);
+	deriv = next_level<operators::op::mccallum_filtered_all_compound>(deriv);
 	std::cout << res_y << std::endl;
 	
 	//ASSERT_EQ(res_default, res_filtered);

@@ -207,4 +207,16 @@ inline void delineate_properties<op::mccallum_filtered_all_selective>(datastruct
     }
 }
 
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_compound)
+template <>
+inline void delineate_properties<op::mccallum_filtered_all_compound>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_compound>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    delineate_properties<op::mccallum_filtered_all_compound>(*deriv.delineated());
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate_all_compound(deriv, prop);
+    }
+}
+
+
+
 }
