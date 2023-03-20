@@ -1,5 +1,5 @@
 #pragma once
-#include "../NewFMPlexModule/Tableau.h"
+#include "../FMPlexModule/Tableau.h"
 
 namespace smtrat::foumo {
 

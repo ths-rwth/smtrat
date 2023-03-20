@@ -9,7 +9,7 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-#include "../NewFMPlexModule/NewFMPlexModule.h"
+#include "../FMPlexModule/FMPlexModule.h"
 #include "Level.h"
 #include "FourierMotzkinSettings.h"
 

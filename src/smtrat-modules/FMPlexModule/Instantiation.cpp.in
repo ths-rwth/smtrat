@@ -1,7 +1,12 @@
+/**
+ * @file FMPlexInstantiation.cpp.in
+ *
+ * @version 2022-10-07
+ * Created on 2022-10-07.
+ */
+
 #include "${Prefix}Module.tpp"
 
 namespace smtrat {
-
 ${INSTANTIATIONS}
-
 }

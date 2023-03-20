@@ -4,7 +4,7 @@
 
 #include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
-#include <smtrat-modules/NewFMPlexModule/NewFMPlexModule.h>
+#include <smtrat-modules/FMPlexModule/FMPlexModule.h>
 
 namespace smtrat
 {
@@ -24,7 +24,7 @@ public:
 		{
 				addBackend<SATModule<SATSettings1>>(
 				{
-					addBackend<NewFMPlexModule<NewFMPlexSettingsPruneRandRand>>()
+					addBackend<FMPlexModule<FMPlexSettingsPruneRandRand>>()
 			})
 		});
     }
