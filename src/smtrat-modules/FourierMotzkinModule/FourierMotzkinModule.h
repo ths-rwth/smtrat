@@ -19,7 +19,7 @@ namespace smtrat {
 	{
 		private:
 			// Members.
-			std::vector<foumo::Level> m_history; 	/// stack representing the path to the current node
+			std::vector<foumo::Level> m_history; 	/// stack representing the levels for each eliminated variable
 			std::size_t m_current_level; 			/// index of current level in history
 			std::size_t m_max_level;				/// the maximum possible level (= number of eliminable variables)
 
@@ -35,11 +35,13 @@ namespace smtrat {
 
 			/// sets of received formulas
 			FormulasT m_constraints;
-			FormulasT m_added_constraints; // REVIEW: is this necessary?
-			std::set<std::size_t> m_disequalities; // TODO: indexing this way is inconvenient when removing constraints incrementally
+			FormulasT m_added_constraints;
+			/// index sets to keep track of =, !=
+			std::set<std::size_t> m_disequalities;
 			std::set<std::size_t> m_equalities;
-			std::set<FormulaT> m_non_linear_constraints;
 
+			std::set<FormulaT> m_non_linear_constraints;
+			/// Object for Gauss elimination
 			Settings::gauss_type m_gauss;
 
 			#ifdef SMTRAT_DEVOPTION_Statistics
@@ -84,13 +86,16 @@ namespace smtrat {
 			 */
 			bool handle_neqs();
 
-			/**
+			/** @brief Given a model in Q extended with infinitesimals (delta), which satisfies the received constraints,
+			 * constructs a rational value for delta so that the resulting assignment is still a model.
 			 * 
+			 * @param working_model the model in Q_delta
+			 * @return a rational value to substitute for delta
 			*/
 			Rational find_suitable_delta(std::map<std::size_t, fmplex::DeltaRational> working_model) const;
 
 			/**
-			 * @brief Tries to construct a model from m_history if it contains a trivially satisfiable Level.
+			 * @brief Tries to construct a model (stored in mModel) from m_history if the current level is trivially satisfiable.
 			 * 
 			 * @return true if the model is consistent with the not-equal constraints
 			 * @return false otherwise.

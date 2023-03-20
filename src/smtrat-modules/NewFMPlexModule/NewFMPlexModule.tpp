@@ -85,10 +85,6 @@ bool NewFMPlexModule<Settings>::addCore( ModuleInput::const_iterator _subformula
 	m_constraints.push_back(_subformula->formula());
 	m_added_constraints.push_back(_subformula->formula());
 
-	if constexpr (Settings::incremental) {
-		// todo: not yet implemented
-	}
-
 	add_relation(_subformula->formula().constraint().relation());
 	
 	return true;
@@ -104,7 +100,6 @@ void NewFMPlexModule<Settings>::removeCore( ModuleInput::const_iterator _subform
 	if (it == m_constraints.end()) return;
 	m_constraints.erase(it);
 
-	// TODO: this seems inefficient
 	std::size_t index = std::distance(m_constraints.begin(),it);
 	std::set<std::size_t> new_diseqs;
 	for (const auto i : m_disequalities) {
@@ -165,8 +160,6 @@ template<class Settings>
 bool NewFMPlexModule<Settings>::try_construct_model() {
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "starting model construction...");
 
-	// todo: incrementality?
-
 	mModel.clear();
 	std::map<std::size_t, fmplex::DeltaRational> working_model;
 	// use i-1, beginning with current_level - 1 as the current (SAT) level should not contain any variables
@@ -174,8 +167,6 @@ bool NewFMPlexModule<Settings>::try_construct_model() {
 		m_history[i-1].assign_eliminated_variables<Settings::model_heuristic>(working_model);
 	}
 
-	// TODO: NEQ handling here
-	
 	SMTRAT_LOG_DEBUG("smtrat.fmplex", "assigning variables with equalities");
 	if constexpr (Settings::eq_handling == fmplex::EQHandling::GAUSSIAN_TABLEAU) {
 		m_gauss.assign_variables(working_model);
@@ -200,10 +191,7 @@ bool NewFMPlexModule<Settings>::try_construct_model() {
 
 template<class Settings>
 void NewFMPlexModule<Settings>::updateModel() const {
-	//mModel.clear();
-	if( solverState() == Answer::SAT ) {
-		// NOTE: already constructed by try_construct_model which should have been called whenever SAT is returned
-	}
+	// NOTE: already constructed by try_construct_model which has been called whenever SAT is returned
 }
 
 template<class Settings>
@@ -288,8 +276,6 @@ bool NewFMPlexModule<Settings>::handle_neqs() {
 			splitUnequalConstraint(m_constraints[n]);
 			nr_splits++;
 			if (nr_splits >= Settings::nr_neq_splits_at_once) break;
-		} else if (consistency == 2) {
-			// TODO: handle what happens if n contains variables not present in mModel
 		}
 	}
 	SMTRAT_STATISTICS_CALL(m_statistics.neq_splits(nr_splits));
@@ -340,22 +326,19 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			return Answer::SAT;
 		}
 	}
-	if constexpr (Settings::incremental) {
-		// todo: not yet implemented
-	} else {
-		m_added_constraints.clear();
-		auto conflicts = construct_root_level();
-		if (!conflicts.empty()) {
-			SMTRAT_LOG_DEBUG("smtrat.fmplex", "root level is conflicting");
-			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
-			for (const auto& conflict : conflicts) {
-				build_unsat_core(conflict.involved_rows);
-			}
-			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
-			SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
-			SMTRAT_STATISTICS_CALL(m_statistics.unsat());
-			return Answer::UNSAT;
+
+	m_added_constraints.clear();
+	auto conflicts = construct_root_level();
+	if (!conflicts.empty()) {
+		SMTRAT_LOG_DEBUG("smtrat.fmplex", "root level is conflicting");
+		SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
+		for (const auto& conflict : conflicts) {
+			build_unsat_core(conflict.involved_rows);
 		}
+		SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+		SMTRAT_VALIDATION_ADD("smtrat.modules.fmplex","unsat_input",FormulaT( carl::FormulaType::AND, m_constraints ), false);
+		SMTRAT_STATISTICS_CALL(m_statistics.unsat());
+		return Answer::UNSAT;
 	}
 
 	while(true) {
@@ -398,7 +381,6 @@ Answer NewFMPlexModule<Settings>::checkCore() {
 			}
 		}
 
-		// REVIEW: let next_child construct inplace with reference parameters?
 		set_level(m_current_level + 1, m_history[m_current_level].next_child<Settings::use_backtracking, Settings::ignore_pivots>());
 		m_current_level++;
 		SMTRAT_STATISTICS_CALL(m_statistics.new_system(m_current_level));

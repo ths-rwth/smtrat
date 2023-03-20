@@ -41,7 +41,7 @@ struct Origins {
 using Column = std::vector<ColumnElement>;
 using ColumnsIterator = std::map<ColumnIndex, Column>::const_iterator;
 
-class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen grossen vector?
+class FMPlexTableau {
 
     private:
         std::vector<Row> m_rows;                /// vector containing the rows
@@ -51,7 +51,6 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
         ColumnIndex m_delta_index;              /// the column index of the constraints' right hand side delta part (rhs_index + 1)
         ColumnIndex m_first_origin_index;       /// the first column index belonging to the lin. comb. (delta_index + 1)
 
-        // REVIEW: is storing this information better than computation on the fly?
         std::vector<RowIndex> m_equalities;     /// vectors of row indices corresponding to the contained equalities
         std::vector<RowIndex> m_disequalities;  /// vectors of row indices corresponding to the contained disequalities
         std::vector<RowIndex> m_inequalities;   /// vectors of row indices corresponding to the contained inequalities
@@ -81,7 +80,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
                 Rational turning_factor(1);
                 if ((r == carl::Relation::GEQ) || (r == carl::Relation::GREATER)) turning_factor = -1;
                 for (const auto& term : p) {
-                    if (term.is_constant()) continue; // REVIEW: remove this line and filter out constant part before
+                    if (term.is_constant()) continue;
                     ColumnIndex column = variable_index.at(term.single_variable());
                     current_row.elements.emplace_back(column, turning_factor * term.coeff());
                 }
@@ -100,12 +99,8 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             m_rhs_index = rhs_index;
             m_delta_index = m_rhs_index + 1;
             m_first_origin_index = m_delta_index + 1;
-            //m_nr_rows = n_rows;
         }
 
-        // TODO: destructor? and other constructors?
-
-        // REVIEW: for which of the getters can i return a reference?
         inline std::size_t nr_of_rows() const { return m_rows.size(); }
         inline std::size_t nr_of_equalities() const { return m_equalities.size(); }
         inline std::size_t nr_of_disequalities() const { return m_disequalities.size(); }
@@ -121,7 +116,6 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
 
         inline carl::Relation relation(const RowIndex ri) const { return m_rows[ri].relation; }
 
-        // REVIEW: encapsulation. Maybe define type for iterator...
         inline ColumnsIterator columns_begin() const { return m_columns.begin(); }
         inline ColumnsIterator columns_end() const { return m_columns.end(); }
 
@@ -241,7 +235,6 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             return true;
         }
 
-        // REVIEW: shared pointer so that if tableaus share the same constraint, it is only stored once?
         void copy_row_from(const RowIndex row, const FMPlexTableau& other) {
             append_row(other.m_rows[row]);
         }
@@ -250,7 +243,7 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             const ColumnIndex eliminated_col, const Rational& pivot_coeff, const Rational& other_coeff) const {
             SMTRAT_LOG_DEBUG("smtrat.fmplex", "combining row " << pivot_row << " with row " << other_row);
             Row result;
-            result.elements.reserve(m_columns.size()-1); // REVIEW: or minimum with pivot.size+other.size?
+            result.elements.reserve(m_columns.size()-1);
             Rational pivot_scale;
             Rational other_scale;
 
@@ -261,13 +254,12 @@ class FMPlexTableau { // REVIEW: memory management : alle RowElements in einen g
             } else { // todo: take EQ into account
                 result.relation = carl::Relation::LESS;
             }
-            // REVIEW: skalierung anpassen? Nur mit Integers arbeiten?
-            if (other_coeff > 0/*pivot_coeff > 0*/) {
-                pivot_scale = -1/pivot_coeff; //-other_coeff;
-                other_scale = 1/other_coeff; //pivot_coeff;
+            if (other_coeff > 0) {
+                pivot_scale = -1/pivot_coeff;
+                other_scale = 1/other_coeff;
             } else { // pivot_coeff < 0
-                pivot_scale = 1/pivot_coeff;//other_coeff;
-                other_scale = -1/other_coeff;//-pivot_coeff;
+                pivot_scale = 1/pivot_coeff;
+                other_scale = -1/other_coeff;
             }
 
             Row::ConstIterator pivot_iter = m_rows[pivot_row].begin();

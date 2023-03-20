@@ -44,8 +44,8 @@ namespace smtrat {
 
 			/// sets of received formulas
 			FormulasT m_constraints;
-			FormulasT m_added_constraints; // REVIEW: is this necessary?
-			std::set<std::size_t> m_disequalities; // TODO: indexing this way is inconvenient when removing constraints incrementally
+			FormulasT m_added_constraints;
+			std::set<std::size_t> m_disequalities;
 			std::set<std::size_t> m_equalities;
 			std::set<FormulaT> m_non_linear_constraints;
 
@@ -114,8 +114,11 @@ namespace smtrat {
 			 */
 			bool handle_neqs();
 
-			/**
+			/** @brief Given a model in Q extended with infinitesimals (delta), which satisfies the received constraints,
+			 * constructs a rational value for delta so that the resulting assignment is still a model.
 			 * 
+			 * @param working_model the model in Q_delta
+			 * @return a rational value to substitute for delta
 			*/
 			Rational find_suitable_delta(std::map<std::size_t, fmplex::DeltaRational> working_model) const;
 

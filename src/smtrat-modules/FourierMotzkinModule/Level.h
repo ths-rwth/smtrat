@@ -16,14 +16,16 @@ using ModelHeuristic = smtrat::fmplex::ModelHeuristic;
 class Level {
 
     private:
-        std::size_t m_level;        /// the actual level
-        smtrat::fmplex::FMPlexTableau m_tableau;    ///
+        std::size_t m_level;                        /// the actual level index
+        smtrat::fmplex::FMPlexTableau m_tableau;    /// the tableau storing the constraints
+        /// the column corresponding to the eliminated variable of this level
+        std::map<ColumnIndex,Column>::const_iterator m_eliminated_column;   
 
-        std::map<ColumnIndex,Column>::const_iterator m_eliminated_column;   ///
-
+        /// the sub-columns of the eliminated column containing the upper and lower bounds
         Column m_ubs;
         Column m_lbs;
 
+        /// bookkeeping for Imbert's acceleration theorems
         std::vector<std::set<ColumnIndex>> m_explicitly_eliminated;
         std::vector<std::set<ColumnIndex>> m_implicitly_eliminated;
         std::vector<std::set<ColumnIndex>> m_involved_variables;
@@ -32,8 +34,7 @@ class Level {
         // Constructors
         Level(const FormulasT& constraints, const std::map<carl::Variable, std::size_t>& variable_index)
         : m_level(0),
-          m_tableau(constraints, variable_index) {
-          } // todo: duplicates/redundancies?
+          m_tableau(constraints, variable_index) {}
 
         Level(std::size_t n_constraints, std::size_t level, ColumnIndex rhs_index)
         : m_level(level),
@@ -41,10 +42,12 @@ class Level {
 
         Level(const FMPlexTableau& tableau)
         : m_level(0),
-          m_tableau(tableau) {} // REVIEW: dont want to copy
+          m_tableau(tableau) {}
 
-        // todo: destructor?
-
+        /**
+         * @brief Chooses the column (variable) to be eliminated.
+         * This is the column which will produce the fewest new constraints.
+        */
         void choose_elimination_column() {
             std::optional<size_t> fewest_new_constraints;
 
@@ -168,15 +171,13 @@ class Level {
             std::vector<ColumnIndex> non_zero_variable_columns = m_tableau.non_zero_variable_columns();
             for (const auto col : non_zero_variable_columns) {
                 if (col == m_eliminated_column->first) continue;
-                if (m.count(col) == 0) m.emplace(col, DeltaRational(0)); // REVIEW: better with lower_bound?
+                if (m.count(col) == 0) m.emplace(col, DeltaRational(0));
             }
         }
 
         template<ModelHeuristic MH>
         void assign_eliminated_variables(std::map<std::size_t, DeltaRational>& m) const {
             SMTRAT_LOG_DEBUG("smtrat.foumo", "Assigning " << m_eliminated_column->first);
-
-            // todo: can use heuristics and optimize if only weak bounds are present
 
             assign_implicitly_eliminated_variables(m);
 

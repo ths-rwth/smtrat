@@ -14,9 +14,5 @@ namespace smtrat
 	{
 		/// Name of the Module
 		static constexpr auto moduleName = "NoIncSimplexModule<NoIncSimplexSettings1>";
-		/**
-		 * Example for a setting.
-		 */
-		static const bool example_setting = true;
 	};
 }

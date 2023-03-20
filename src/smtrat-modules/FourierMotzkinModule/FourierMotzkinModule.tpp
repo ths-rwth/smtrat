@@ -85,10 +85,6 @@ bool FourierMotzkinModule<Settings>::addCore( ModuleInput::const_iterator _subfo
 	m_constraints.push_back(_subformula->formula());
 	m_added_constraints.push_back(_subformula->formula());
 
-	if constexpr (Settings::incremental) {
-		// todo: not yet implemented
-	}
-
 	add_relation(_subformula->formula().constraint().relation());
 	
 	return true;
@@ -97,14 +93,14 @@ bool FourierMotzkinModule<Settings>::addCore( ModuleInput::const_iterator _subfo
 template<class Settings>
 void FourierMotzkinModule<Settings>::removeCore( ModuleInput::const_iterator _subformula ) {
 	if (_subformula->formula().type() != carl::FormulaType::CONSTRAINT) {
-		assert(/* unreachable*/false);
+		assert(false/* unreachable*/);
 	}
 
 	auto it = std::find(m_constraints.begin(), m_constraints.end(), _subformula->formula());
 	if (it == m_constraints.end()) return;
 	m_constraints.erase(it);
 
-	// TODO: this seems inefficient
+	// adjust stored indices of disequalities
 	std::size_t index = std::distance(m_constraints.begin(),it);
 	std::set<std::size_t> new_diseqs;
 	for (const auto i : m_disequalities) {
@@ -113,6 +109,7 @@ void FourierMotzkinModule<Settings>::removeCore( ModuleInput::const_iterator _su
 		else new_diseqs.emplace(i);
 	}
 	m_disequalities = new_diseqs;
+	// adjust stored indices of equalities
 	std::set<std::size_t> new_eqs;
 	for (const auto i : m_equalities) {
 		if (i == index) continue;
@@ -120,11 +117,11 @@ void FourierMotzkinModule<Settings>::removeCore( ModuleInput::const_iterator _su
 		else new_eqs.emplace(i);
 	}
 	m_equalities = new_eqs;
-
 }
 
 template<class Settings>
 Rational FourierMotzkinModule<Settings>::find_suitable_delta(std::map<std::size_t, fmplex::DeltaRational> working_model) const {
+	// split model into rational and delta part
 	std::map<carl::Variable, Rational> rational_substitutions;
 	std::map<carl::Variable, Rational> delta_substitutions;
 	for (const auto& [key, val] : working_model) {
@@ -140,7 +137,7 @@ Rational FourierMotzkinModule<Settings>::find_suitable_delta(std::map<std::size_
 		if (r == carl::Relation::EQ) continue;
 		bool leq_or_less = (r == carl::Relation::LEQ) || (r == carl::Relation::LESS);
 
-		// we can evaluate separately because the constraints are >>linear<<
+		// we can evaluate separately because the constraints are linear
 		evaluated_poly_main = carl::evaluate(c.constraint().lhs(), rational_substitutions);
 		evaluated_poly_delta = carl::evaluate(c.constraint().lhs(), delta_substitutions);
 		evaluated_poly_delta -= c.constraint().lhs().constant_part();
@@ -165,16 +162,12 @@ template<class Settings>
 bool FourierMotzkinModule<Settings>::try_construct_model() {
 	SMTRAT_LOG_DEBUG("smtrat.foumo", "starting model construction...");
 
-	// todo: incrementality?
-
 	mModel.clear();
 	std::map<std::size_t, fmplex::DeltaRational> working_model;
-	// use i-1, beginning with current_level - 1 as the current (SAT) level should not contain any variables
+	// use i-1, beginning with current_level-1 as the current (SAT) level should not contain any variables
 	for (std::size_t i = m_current_level; i > 0; i--) {
 		m_history[i-1].assign_eliminated_variables<Settings::model_heuristic>(working_model);
 	}
-
-	// TODO: NEQ handling here
 	
 	SMTRAT_LOG_DEBUG("smtrat.foumo", "assigning variables with equalities");
 	if constexpr (Settings::eq_handling == fmplex::EQHandling::GAUSSIAN_TABLEAU) {
@@ -184,6 +177,7 @@ bool FourierMotzkinModule<Settings>::try_construct_model() {
 	Rational delta_value = find_suitable_delta(working_model);
 	SMTRAT_LOG_DEBUG("smtrat.foumo", "value for delta: " << delta_value);
 
+	// compute rational model
 	for (const auto& [var, val] : working_model) {
 		mModel.emplace(m_variable_order[var], val.mainPart() + (val.deltaPart() * delta_value));
 	}
@@ -200,10 +194,7 @@ bool FourierMotzkinModule<Settings>::try_construct_model() {
 
 template<class Settings>
 void FourierMotzkinModule<Settings>::updateModel() const {
-	//mModel.clear();
-	if( solverState() == Answer::SAT ) {
-		// NOTE: already constructed by try_construct_model which should have been called whenever SAT is returned
-	}
+	// NOTE: model is already constructed by try_construct_model which has been called whenever SAT is returned
 }
 
 template<class Settings>
@@ -212,7 +203,6 @@ void FourierMotzkinModule<Settings>::build_unsat_core(const std::set<std::size_t
 	FormulaSetT inf_subset;
 	for (const std::size_t i : reason) {
 		inf_subset.insert(m_constraints[i]);
-		SMTRAT_LOG_DEBUG("smtrat.foumo", i << " -> " << m_constraints[i]);
 	}
 	mInfeasibleSubsets.push_back(inf_subset);
 	SMTRAT_STATISTICS_CALL(m_statistics.conflict_size(inf_subset.size()));
@@ -273,8 +263,6 @@ bool FourierMotzkinModule<Settings>::handle_neqs() {
 			splitUnequalConstraint(m_constraints[n]);
 			nr_splits++;
 			if (nr_splits >= Settings::nr_neq_splits_at_once) break;
-		} else if (consistency == 2) {
-			// TODO: handle what happens if n contains variables not present in mModel
 		}
 	}
 	SMTRAT_STATISTICS_CALL(m_statistics.neq_splits(nr_splits));
@@ -285,7 +273,8 @@ template<class Settings>
 Answer FourierMotzkinModule<Settings>::checkCore() {
 	SMTRAT_TIME_START(start);
 
-	if (solverState() == Answer::SAT) { // check whether found model still works by chance
+	// check whether found model still works by chance
+	if (solverState() == Answer::SAT) { 
 		bool all_sat = true;
 		for (const auto& c : m_added_constraints) {
 			if (carl::satisfied_by(c, mModel) != 1) {
@@ -300,19 +289,17 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 			return Answer::SAT;
 		}
 	}
-	if constexpr (Settings::incremental) {
-		// todo: not yet implemented
-	} else {
-		m_added_constraints.clear();
-		auto conflicts = construct_root_level();
-		if (!conflicts.empty()) {
-			SMTRAT_LOG_DEBUG("smtrat.foumo", "root level is conflicting");
-			SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
-			for (const auto& conflict : conflicts) build_unsat_core(conflict);
-			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
-			SMTRAT_STATISTICS_CALL(m_statistics.unsat());
-			return Answer::UNSAT;
-		}
+
+	// construct root level, gauss
+	m_added_constraints.clear();
+	auto conflicts = construct_root_level();
+	if (!conflicts.empty()) {
+		SMTRAT_LOG_DEBUG("smtrat.foumo", "root level is conflicting");
+		SMTRAT_STATISTICS_CALL(m_statistics.gauss_conflict());
+		for (const auto& conflict : conflicts) build_unsat_core(conflict);
+		SMTRAT_TIME_FINISH(m_statistics.timer(), start);
+		SMTRAT_STATISTICS_CALL(m_statistics.unsat());
+		return Answer::UNSAT;
 	}
 
 	while(true) {
@@ -329,7 +316,7 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 					SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 					return Answer::UNKNOWN;
 				}
-			} // todo: else
+			}
 			SMTRAT_TIME_FINISH(m_statistics.timer(), start);
 			return Answer::SAT;
 		}
@@ -337,7 +324,6 @@ Answer FourierMotzkinModule<Settings>::checkCore() {
 		SMTRAT_LOG_DEBUG("smtrat.foumo", "choosing elimination column...");
 		m_history[m_current_level].choose_elimination_column();
 
-		// REVIEW: let next_child construct inplace with reference parameters?
 		set_level(m_current_level + 1, m_history[m_current_level].eliminate<Settings::use_imbert>(m_equalities));
 		m_current_level++;
 		SMTRAT_STATISTICS_CALL(m_statistics.new_system(m_current_level));

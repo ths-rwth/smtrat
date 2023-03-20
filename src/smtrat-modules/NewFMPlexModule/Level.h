@@ -6,7 +6,7 @@ namespace smtrat::fmplex {
 
 struct Eliminator {
     RowIndex row;
-    Rational coeff; // REVIEW: as reference?
+    Rational coeff;
     Eliminator(const RowIndex r, const Rational& c) : row(r), coeff(c) {}
 };
 
@@ -69,7 +69,7 @@ class Level {
           m_tableau(constraints, variable_index),
           m_backtrack_levels(constraints.size(), 0),
           m_ignore_for_eliminators(),
-          m_elimination_chosen(false) {} // todo: duplicates/redundancies?
+          m_elimination_chosen(false) {}
 
         Level(std::size_t n_constraints, std::size_t level, ColumnIndex rhs_index)
         : m_level(level),
@@ -83,9 +83,7 @@ class Level {
           m_tableau(tableau),
           m_backtrack_levels(tableau.nr_of_rows(), 0),
           m_ignore_for_eliminators(),
-          m_elimination_chosen(false) {} // REVIEW: dont want to copy
-
-        // todo: destructor?
+          m_elimination_chosen(false) {}
 
         template<bool IgnoreUsed, VariableHeuristic VH, EliminatorHeuristic EH>
         bool choose_elimination_column() {
@@ -126,7 +124,7 @@ class Level {
                 Level child = eliminate_without_bounds<USE_BT,IGNORE_USED>();
                 SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "->\n" << child);
                 return child;
-            } else { // todo: eliminator choice heuristic
+            } else {
                 SMTRAT_LOG_DEBUG("smtrat.fmplex.level", "number of eliminators left: " << m_open_eliminators.size());
 
                 Eliminator e = m_open_eliminators.back();
@@ -149,7 +147,7 @@ class Level {
             std::vector<ColumnIndex> non_zero_variable_columns = m_tableau.non_zero_variable_columns();
             for (const auto col : non_zero_variable_columns) {
                 if (col == m_eliminated_column->first) continue;
-                if (m.count(col) == 0) m.emplace(col, DeltaRational(0)); // REVIEW: better with lower_bound?
+                if (m.count(col) == 0) m.emplace(col, DeltaRational(0));
             }
         }
 
@@ -224,8 +222,6 @@ class Level {
         template<ModelHeuristic MH>
         void assign_eliminated_variables(std::map<std::size_t, DeltaRational>& m) const {
             SMTRAT_LOG_DEBUG("smtrat.fmplex", "Assigning " << m_eliminated_column->first);
-
-            // todo: can use heuristics and optimize if only weak bounds are present
 
             assign_implicitly_eliminated_variables(m);
 
@@ -404,7 +400,6 @@ class Level {
             return true;
         }
 
-        // REVIEW: fix encapsulation!
         template<bool IgnoreUsed>
         bool choose_elimination_column_least_branches() {
             std::optional<size_t> fewest_branches;
