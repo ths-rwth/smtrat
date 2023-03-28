@@ -45,6 +45,7 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << proj.ldcf(poly) << "])");
         subderiv->insert(properties::poly_pdel{ poly });
         subderiv->insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
+        assert(properties::poly_pdel{ poly }.level() == subderiv->level());
     }
     for(const auto& prop : subderiv->template properties<properties::poly_pdel>()) {
         if (!rules::poly_pdel(*subderiv, prop.poly)) return std::nullopt;
