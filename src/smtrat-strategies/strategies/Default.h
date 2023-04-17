@@ -78,7 +78,9 @@ class Default: public Manager {
             }).condition( &condition_nira ),
             addBackend<FPPModule<FPPSettings1>>(
             {
-                addBackend<SATModule<SATSettingsMCSATFMICPVSOCNewOC>>()
+                addBackend<STropModule<STropSettings3>>({
+                    addBackend<SATModule<SATSettingsMCSATFMICPVSOCNewOC>>()
+                })
             }).condition( &condition_nra ),
             addBackend<FPPModule<FPPSettings1>>(
             {
