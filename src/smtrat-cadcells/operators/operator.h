@@ -25,7 +25,7 @@
  * - delineate_properties (on each cell individually)
  * - project_covering_properties
  * 
- * ### Delineaton
+ * ### Delineation
  * 
  * - project_basic_properties
  * - delineate_properties
