@@ -3,6 +3,7 @@
 #include <map>
 #include <vector>
 #include <boost/container/flat_set.hpp>
+#include "../../smtrat-modules/NewCoveringModule/NewCoveringStatistics.h"
 
 #include "roots.h"
 
@@ -81,6 +82,10 @@ public:
     }
     void set_strictness_of_ancestor_intervals() {
         all_parents_strict = true;
+        // ONLY RESTORE
+        //all_parents_strict = false;
+
+        SMTRAT_STATISTICS_CALL(getStatistics().derivedInterval(!is_section() && (!lower_unbounded() || !upper_unbounded())));
     }
 };    
 inline std::ostream& operator<<(std::ostream& os, const DelineationInterval& data) {
@@ -175,6 +180,8 @@ public:
                 }
             }
         }
+
+        SMTRAT_STATISTICS_CALL(getStatistics().derivedInterval());
         
         return DelineationInterval(std::move(lower),std::move(upper),m_roots.end());
     }

@@ -98,7 +98,7 @@ public:
 	 * Also set the covering flag accordingly and the find a sample point if the covering is not a full covering
 	 * @returns True, iff the result invalidates the covering of all higher levels (i.e. if the variable assignment of the current level changes)
 	 */
-	bool computeCovering() {
+	bool computeCovering(carl::ran_assignment<Rational>& currentAssignment, size_t currentLevel) {
 
 		auto startTime = SMTRAT_TIME_START();
 
@@ -128,7 +128,7 @@ public:
 
 		// Check if the derivations cover the whole numberline
 		//  we can convert the return value of sample_outside to CoveringStatus as 0 == partial covering and 1 == full covering
-		mCoveringStatus = CoveringStatus(sampling<sampling_algorithm>::sample_outside(mSamplePoint, mDerivations));
+		mCoveringStatus = CoveringStatus(sampling<sampling_algorithm>::sample_outside(mSamplePoint, mDerivations, currentAssignment, currentLevel));
 
 		if (isPartialCovering()) {
 			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
@@ -143,6 +143,7 @@ public:
 			SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
 			return true ;
 		}
+		SMTRAT_STATISTICS_CALL(getStatistics().storeHeuristicUsed(currentLevel));
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
 		SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
 		return true ;
@@ -316,6 +317,17 @@ public:
 			new_deriv->setEndpoints(l, u);
 			new_deriv->set_strictness_of_ancestor_intervals();
 		}
+
+		// Get polynomials of constraints
+		size_t max_level = 0;
+		for(const auto& constraint : usedConstraints) {
+			size_t level = helper::level_of(getStatistics().getVariableOrdering(), constraint.lhs()) - 1;
+			if(level > max_level) {
+				max_level = level;
+			}
+		}
+		SMTRAT_STATISTICS_CALL(getStatistics().levelWiseCreatedInterval(fullCovering.is_fully_flagged(), new_deriv->level(), max_level));
+
 
 		// Need to update cell bounds
 		SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());

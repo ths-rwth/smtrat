@@ -154,7 +154,7 @@ bool NewCoveringModule<Settings>::removeConstraintsUNSAT() {
 
 	// Third: If the covering has changed, we need to recompute it
 	if (hasChanged) {
-		backend.getCoveringInformation()[0].computeCovering();
+		backend.getCoveringInformation()[0].computeCovering((backend.getCurrentAssignmentForStats()), 0);
 	}
 
 	SMTRAT_LOG_DEBUG("smtrat.covering", "Covering on level is still full: " << backend.getCoveringInformation()[0].isFullCovering());

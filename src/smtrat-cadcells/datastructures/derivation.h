@@ -202,6 +202,10 @@ public:
             m_underlying.base().merge_with(other.m_underlying.base());
         }
     }
+
+    size_t get_max_level() {
+        return m_level;
+    }
 };
 
 /**
@@ -250,6 +254,9 @@ public:
     };
     Projections& proj() {
         return m_base->proj();
+    };
+    size_t get_max_level() {
+        return m_base->get_max_level();
     };
     carl::Variable main_var() const {
         return m_base->main_var();
@@ -336,6 +343,9 @@ public:
     Projections& proj() { return m_delineated->proj(); };
     carl::Variable main_var() const { return m_delineated->main_var(); };
     size_t level() const { return m_delineated->level(); };
+    size_t get_max_level() {
+        return m_delineated->get_max_level();
+    };
     template<typename P>
     void insert(P property) { m_delineated->insert(property); };
     template<typename P>

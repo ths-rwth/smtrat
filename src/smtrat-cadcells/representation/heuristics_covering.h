@@ -39,11 +39,23 @@ namespace smtrat::cadcells::representation {
             datastructures::CoveringRepresentation<T> result_all_flagged;
             std::vector<datastructures::SampledDerivationRef<T>> ders_all_flagged;
 
-            /*SMTRAT_LOG_DEBUG("smtrat.covering","Extracting pure flagged cells.");
+            // Uncomment the /* ... */ section to activate the modified heuristic.
+            
+
+
+            /*
+
+
+
+
+
+            //SMTRAT_LOG_DEBUG("smtrat.covering","Extracting pure flagged cells.");
+            //for (auto& der : ders) {
+            //    SMTRAT_LOG_DEBUG("smtrat.covering","Checking " << der->cell() << " with flag " << der->cell().get_strictness_of_ancestor_intervals());
+            //}
+            size_t parent_level = 0;
             for (auto& der : ders) {
-                SMTRAT_LOG_DEBUG("smtrat.covering","Checking " << der->cell() << " with flag " << der->cell().get_strictness_of_ancestor_intervals());
-            }*/
-            for (auto& der : ders) {
+                parent_level = der->level();
                 if(der->cell().get_strictness_of_ancestor_intervals()) {
                     SMTRAT_LOG_DEBUG("smtrat.covering"," :: " << der->cell());
                     ders_all_flagged.emplace_back(der);
@@ -54,10 +66,10 @@ namespace smtrat::cadcells::representation {
             bool valid_all_flagged = !ders_all_flagged.empty();
             if(valid_all_flagged) {
                 auto min_ders_all_flagged = compute_min_ders(ders_all_flagged);
-                /*SMTRAT_LOG_DEBUG("smtrat.covering","Can flagged intervals cover the real line: ");
-                for (auto& iter : min_ders_all_flagged) {
-                    SMTRAT_LOG_DEBUG("smtrat.covering",iter->cell());
-                }*/
+                //SMTRAT_LOG_DEBUG("smtrat.covering","Can flagged intervals cover the real line: ");
+                //for (auto& iter : min_ders_all_flagged) {
+                //    SMTRAT_LOG_DEBUG("smtrat.covering",iter->cell());
+                //}
                 for (auto& iter : min_ders_all_flagged) {
                     std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
                     if (!cell_result) {
@@ -74,7 +86,15 @@ namespace smtrat::cadcells::representation {
             }
 
             SMTRAT_LOG_DEBUG("smtrat.covering","Can pure flagged intervals cover the real line: " << valid_all_flagged);
-            if(valid_all_flagged) return result_all_flagged;
+            //SMTRAT_STATISTICS_CALL(getStatistics().heuristicCreatesInterval(valid_all_flagged, parent_level-1));
+            SMTRAT_STATISTICS_CALL(getStatistics().heuristicUse(valid_all_flagged));
+            if(valid_all_flagged) {
+                return result_all_flagged;
+            }
+
+            */
+
+            
 
             // Second: Default cover
             auto min_ders_smallest = compute_min_ders(ders);

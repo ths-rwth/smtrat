@@ -1,4 +1,5 @@
 #include "unsat_intervals.h"
+#include "../../smtrat-modules/NewCoveringModule/NewCoveringStatistics.h"
 
 namespace smtrat::cadcells::algorithms {
 
@@ -27,6 +28,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
     if (!covering_repr) {
         return std::nullopt;
     }
+    SMTRAT_STATISTICS_CALL(getStatistics().storeHeuristicUsed(sample.size()));
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << *covering_repr);
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute covering projection");

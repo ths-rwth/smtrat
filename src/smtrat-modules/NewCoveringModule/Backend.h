@@ -15,6 +15,7 @@
 #include "LevelWiseInformation.h"
 #include "NewCoveringModule.h"
 #include "NewCoveringSettings.h"
+#include "NewCoveringStatistics.h"
 
 #include <smtrat-cadcells/algorithms/unsat_intervals.h>
 #include <smtrat-cadcells/helper.h>
@@ -63,6 +64,7 @@ public:
 	// Set Variable Ordering and init cache helpers
 	void init(std::vector<carl::Variable>& varOrdering) {
 		mVariableOrdering = varOrdering;
+		getStatistics().setVariableOrdering(varOrdering);
 
 		// init Helpers
 		mPool = std::make_shared<datastructures::PolyPool>(mVariableOrdering);
@@ -78,7 +80,15 @@ public:
 		return mVariableOrdering.size();
 	}
 
+	const std::vector<carl::Variable>&  getVariableOrdering() {
+		return mVariableOrdering;
+	}
+
 	const carl::ran_assignment<Rational>& getCurrentAssignment() {
+		return mCurrentAssignment;
+	}
+
+	carl::ran_assignment<Rational>& getCurrentAssignmentForStats() {
 		return mCurrentAssignment;
 	}
 
@@ -135,6 +145,7 @@ public:
 	}
 
 	void updateAssignment(std::size_t level) {
+		SMTRAT_STATISTICS_CALL(getStatistics().getUnsatSampleSample(mCurrentAssignment, level));
 		mCurrentAssignment[mVariableOrdering[level]] = mCoveringInformation[level].getSampleOutside();
 	}
 
@@ -261,7 +272,7 @@ public:
 		if (mCurrentAssignment.find(mVariableOrdering[level]) == mCurrentAssignment.end()) {
 			processUnknownConstraints(level, false);
 			SMTRAT_LOG_DEBUG("smtrat-covering", "Computing Covering represenentation")
-			bool invalidates = mCoveringInformation[level].computeCovering();
+			bool invalidates = mCoveringInformation[level].computeCovering(mCurrentAssignment, level);
 			if (invalidates) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
 				resetStoredData(level + 1);
@@ -272,7 +283,7 @@ public:
 			if (mCoveringInformation[level].isUnknownCovering()) {
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Covering was invalidated, recomputing covering representation and processing all unknown constraints");
 				processUnknownConstraints(level, true);
-				bool invalidates = mCoveringInformation[level].computeCovering();
+				bool invalidates = mCoveringInformation[level].computeCovering(mCurrentAssignment, level);
 				if (invalidates) {
 					SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
 					resetStoredData(level + 1);
@@ -325,7 +336,7 @@ public:
 
 				// Recalculate the current covering
 				SMTRAT_LOG_DEBUG("smtrat.covering", "Computing covering representation");
-				bool invalidates = mCoveringInformation[level].computeCovering();
+				bool invalidates = mCoveringInformation[level].computeCovering(mCurrentAssignment, level);
 				if (invalidates) {
 					SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering invalidates all higher levels as the underlying sample point changed");
 					resetStoredData(level + 1);

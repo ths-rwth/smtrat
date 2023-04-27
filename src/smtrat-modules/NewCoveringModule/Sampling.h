@@ -56,7 +56,7 @@ inline std::string get_name(IsSampleOutsideAlgorithm samplingAlgorithm) {
 template<SamplingAlgorithm S>
 struct sampling {
 	template<typename T>
-	static size_t sample_outside(cadcells::RAN& sample, const std::set<cadcells::datastructures::SampledDerivationRef<T>, SampledDerivationRefCompare>& derivations);
+	static size_t sample_outside(cadcells::RAN& sample, const std::set<cadcells::datastructures::SampledDerivationRef<T>, SampledDerivationRefCompare>& derivations, carl::ran_assignment<Rational>& currentAssignment, size_t currentLevel);
 };
 
 /*
@@ -75,7 +75,7 @@ struct is_sample_outside {
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 	template<typename T>
-	static size_t sample_outside(cadcells::RAN& sample, const std::set<cadcells::datastructures::SampledDerivationRef<T>, SampledDerivationRefCompare>& derivationsSet) {
+	static size_t sample_outside(cadcells::RAN& sample, const std::set<cadcells::datastructures::SampledDerivationRef<T>, SampledDerivationRefCompare>& derivationsSet, carl::ran_assignment<Rational>& currentAssignment, size_t currentLevel) {
 		SMTRAT_LOG_DEBUG("smtrat.covering","Current Intervals");
 		auto iter2 = derivationsSet.begin();
 		while (iter2 != derivationsSet.end()) {
@@ -104,7 +104,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 			// There are no cells, just take trivially 0
 			sample = cadcells::RAN(0);
 			SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because set is empty.");
-			//SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+			SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
 			return 0;
 		}
 
@@ -112,7 +112,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 			// Lower bound is finite, just take a sufficiently large negative number
 			sample = carl::sample_below(derivationsVector.front()->cell().lower()->first);
 			SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because lowest interval not -oo.");
-			//SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+			SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
 			return 0;
 		}
 
@@ -120,7 +120,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 			// Upper bound is finite, just take a sufficiently large positive number
 			sample = carl::sample_above(derivationsVector.back()->cell().upper()->first);
 			SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because lowest interval not oo.");
-			//SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+			SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
 			return 0;
 		}
 
@@ -129,7 +129,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 			// We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
 			if (!derivationsVector[i]->cell().upper_unbounded() && !derivationsVector[i + 1]->cell().lower_unbounded() && derivationsVector[i]->cell().upper()->first < derivationsVector[i + 1]->cell().lower()->first) {
 				sample = carl::sample_between(derivationsVector[i]->cell().upper()->first, derivationsVector[i + 1]->cell().lower()->first);
-				//SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+				SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
 				SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because b < c and b][c or b)[c or b](c or b)(c. b=" << derivationsVector[i]->cell().upper()->first << " and c=" << derivationsVector[i + 1]->cell().lower()->first << ".");
 				return 0;
 
@@ -139,6 +139,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
 				sample = derivationsVector[i]->cell().upper()->first;
 				SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because b)(b. b=" << derivationsVector[i]->cell().upper()->first << ".");
 				//SMTRAT_STATISTICS_CALL(getStatistics().calledBoundSample());
+				SMTRAT_STATISTICS_CALL(getStatistics().calledBoundSample(!(sample.is_numeric())));
 				return 0;
 			}
 		}
@@ -204,7 +205,7 @@ struct is_sample_outside<IsSampleOutsideAlgorithm::DEFAULT> {
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 	template<typename T>
-	static size_t sample_outside(cadcells::RAN& sample, const std::set<cadcells::datastructures::SampledDerivationRef<T>, SampledDerivationRefCompare>& derivationsSet) {
+	static size_t sample_outside(cadcells::RAN& sample, const std::set<cadcells::datastructures::SampledDerivationRef<T>, SampledDerivationRefCompare>& derivationsSet, carl::ran_assignment<Rational>& currentAssignment, size_t currentLevel) {
 		SMTRAT_LOG_DEBUG("smtrat.covering","Current Intervals");
 		auto iter2 = derivationsSet.begin();
 		while (iter2 != derivationsSet.end()) {
@@ -233,6 +234,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 			// There are no cells, just take trivially 0
 			sample = cadcells::RAN(0);
 			SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+			SMTRAT_STATISTICS_CALL(getStatistics().calledSampleExtend(currentAssignment, currentLevel, !sample.is_numeric()));
 			SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because set is empty.");
 			return 0;
 		}
@@ -242,6 +244,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 			sample = carl::sample_below(derivationsVector.front()->cell().lower()->first);
 			SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because lowest interval not -oo.");
 			SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+			SMTRAT_STATISTICS_CALL(getStatistics().calledSampleExtend(currentAssignment, currentLevel, !sample.is_numeric()));
 			return 0;
 		}
 
@@ -250,6 +253,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 			sample = carl::sample_above(derivationsVector.back()->cell().upper()->first);
 			SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because highest interval not oo.");
 			SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+			SMTRAT_STATISTICS_CALL(getStatistics().calledSampleExtend(currentAssignment, currentLevel, !sample.is_numeric()));
 			return 0;
 		}
 
@@ -260,6 +264,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 				sample = carl::sample_between(derivationsVector[i]->cell().upper()->first, derivationsVector[i + 1]->cell().lower()->first);
 				SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because b < c and b][c or b)(c. b=" << derivationsVector[i]->cell().upper()->first << " and c=" << derivationsVector[i + 1]->cell().lower()->first << ".");
 				SMTRAT_STATISTICS_CALL(getStatistics().calledSample());
+				SMTRAT_STATISTICS_CALL(getStatistics().calledSampleExtend(currentAssignment, currentLevel, !sample.is_numeric()));
 				return 0;
 
 				// The check above does not care for open bounds
@@ -278,7 +283,9 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_WITH_BOUNDS> {
 					// We have the situation   ;a)(a; --> sampling needed
 					sample = derivationsVector[i]->cell().upper()->first;
 					SMTRAT_LOG_DEBUG("smtrat.covering","- Current Sample " << sample << " because b)(b. b=" << derivationsVector[i]->cell().upper()->first << ".");
-					SMTRAT_STATISTICS_CALL(getStatistics().calledBoundSample());
+					//SMTRAT_STATISTICS_CALL(getStatistics().calledBoundSample());
+					SMTRAT_STATISTICS_CALL(getStatistics().calledBoundSample(!(sample.is_numeric())));
+					SMTRAT_STATISTICS_CALL(getStatistics().calledSampleExtend(currentAssignment, currentLevel, !sample.is_numeric()));
 					return 0;
 				}
 			}
