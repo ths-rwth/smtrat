@@ -4,8 +4,8 @@
 
 **Contact**
 
-    Jasper Nalbach [nalbach@cs.rwth-aachen.de](mailto:nalbach@cs.rwth-aachen.de)
-    Philipp Bär [philipp.baer@rwth-aachen.de](mailto:philipp.baer@rwth-aachen.de)
+    Jasper Nalbach <nalbach@cs.rwth-aachen.de>
+    Philipp Bär <philipp.baer@rwth-aachen.de>
 
 ## Instructions
 
@@ -38,6 +38,10 @@ Return to your initial location to install SMT-RAT, e.g. your home directory. Th
 
 For further instructions, see the [SMT-RAT documentation](http://smtrat.github.io/).
 
+## Choice of the Heuristic
+
+We present the solvers CAlC-I and CAlC-IH. They differ in the used covering heuristic. Initially, the original heuristic is used (i.e. CAlC-I). The modified heuristic (i.e. CAlC-IH) can be activated by removing the comment symbols /* and */ is lines 46 and 95 of `src/smtrat-cadcells/representation/heuristics_covering.h`. You have to recompile SMT-RAT.
+
 ### Benchmarks
 
 Get the [QF_NRA benchmarks from SMT-LIB](https://clc-gitlab.cs.uiowa.edu:2443/SMT-LIB-benchmarks/QF_NRA/-/tree/r2021-05-26?ref_type=tags). The referenced version was used to evaluate the `NewCovering` Module.
@@ -64,12 +68,10 @@ Further instructions on running benchmax (i.e. running parallel jobs or using jo
 
 ## Results
 
-We converted the resulting XML file to CSV using `smtrat/utilities/xml2csv.py`. The CSV files used in the paper are contained in `results/`.
-- `CAlC_no_stats.csv`: The results of the original CAlC method on QF_NRA without statistics.
+We converted the resulting XML file to CSV using `smtrat/utilities/xml2csv.py`. The CSV files containing extended statistics among those used in the paper are contained in `results/`.
 - `CAlC_with_stats.csv`: The results of the original CAlC method on QF_NRA with statistics.
-- `CAlC-I_with_new_heuristic_no_stats.csv`: The results of the CAlC-I method with the new heuristic on QF_NRA without statistics.
-- `CAlC-I_with_new_heuristic_with_stats.csv`: The results of the CAlC-I method with the new heuristic on QF_NRA with statistics.
 - `CAlC-I_without_new_heuristic_with_stats.csv`: The results of the CAlC-I method without the new heuristic on QF_NRA with statistics.
+- `CAlC-IH_with_new_heuristic_with_stats.csv`: The results of the CAlC-IH method with the new heuristic on QF_NRA with statistics.
 
 ## Statistics
 
