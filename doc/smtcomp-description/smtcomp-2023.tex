@@ -34,7 +34,11 @@ We employ incomplete methods to handle simpler problem classes more efficiently.
 Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, a novel level-wise variant (currently under review) of the one-cell CAD \cite{brown2015constructing} and NLSAT-style model-based CAD projections \cite{jovanovic2012solving}, which are called in this order.
 The level-wise one-cell CAD uses linear approximations of some cell boundaries which would otherwise be defined by polynomials with high degree, as described in \cite{promies_msc}.
 The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
-Furthermore, our variable ordering is fully dynamic as suggested in \cite{Jovanovic2013}. % TODO: VS?
+Furthermore, our variable ordering is fully dynamic as suggested in \cite{Jovanovic2013}.
+
+TODO: Subtropical
+
+TODO: libpoly
 
 %\newpage
 
