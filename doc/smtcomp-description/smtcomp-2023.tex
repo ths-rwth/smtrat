@@ -4,7 +4,7 @@
 \usepackage[pdfpagelabels=true,linktocpage]{hyperref}
 \usepackage{color}
 
-\title{\texttt{SMT-RAT 22.06}}
+\title{\texttt{SMT-RAT 23.05}}
 
 \begin{document}
 
@@ -31,14 +31,12 @@ For linear arithmetic, we do not employ the methods used for non-linear inputs, 
 
 \paragraph{\texttt{SMT-RAT-MCSAT}} uses our implementation of the MCSAT framework \cite{Moura2013}.
 We employ incomplete methods to handle simpler problem classes more efficiently.
-Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, a novel level-wise variant (currently under review) of the one-cell CAD \cite{brown2015constructing} and NLSAT-style model-based CAD projections \cite{jovanovic2012solving}, which are called in this order.
+Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, a novel level-wise variant of the one-cell CAD \cite{brown2015constructing,nalbach2022levelwise} and NLSAT-style model-based CAD projections \cite{jovanovic2012solving}, which are called in this order.
 The level-wise one-cell CAD uses linear approximations of some cell boundaries which would otherwise be defined by polynomials with high degree, as described in \cite{promies_msc}.
-The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver, but is not particularly optimized yet.
-Furthermore, our variable ordering is fully dynamic as suggested in \cite{Jovanovic2013}.
-
-TODO: Subtropical
-
-TODO: libpoly
+The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver.
+Our variable ordering is fully dynamic as suggested in \cite{Jovanovic2013}.
+Furthermore, we supplement our solver with an incomplete check for subtropical satisfiability~\cite{Fontaine2017} before the main MCSAT solver is called.
+For algebraic operations, we use libpoly~\cite{libpoly}.
 
 %\newpage
 
