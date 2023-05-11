@@ -107,6 +107,7 @@ private:
 		std::ofstream out(settings_slurm().tmp_dir + "/slurmjobs", std::ios_base::app);
 		out << jobid << std::endl;
 		out.close();
+		mSlurmjobMutex.unlock();
 	}
 
 	std::vector<int> load_job_ids() {

@@ -34,6 +34,14 @@ In the SMT-RAT repository, two utilites for converting the result XML file are i
 * An XML filter `utilities/benchmax/OOCImporter.xsl` for converting it to a *Flat XML LibreOffice Calc Sheet*.
 * `utilities/benchmax/evaluation` is a small python library for importing the results into Python (or a Jupyter notebook), inspecting the results and preparing plots. For more information, see @subpage benchmax-evaluation.
 
+### Using a solver with options
+
+To pass options to the tested tool, use a string consisting of the path to the tool and the required options instead of only the path. In the example above, if we wanted to use the SMT-RAT tool at `/path/to/smtrat-static` with some option `--op` and argument `arg`, we would call
+```
+./benchmax -T 1m -M 4Gi -S "/path/to/smtrat-static -op arg" -X ...
+```
+(`...` being the same as before).
+
 ## Tools {#tools}
 
 A tool represents a binary that can be executed on some input files.

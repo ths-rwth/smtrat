@@ -977,12 +977,27 @@ namespace smtrat
         if( bound.isUpperBound() )
         {
             auto iter = var.lowerbounds().find( pinf );
-            while( (**iter).isActive() && (**iter) > bound.limit() )
+            while( /*(**iter).isActive() &&*/ (**iter) > bound.limit() )
             {
-                FormulaSetT infsubset;
-                collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
-                mInfeasibleSubsets.push_back( std::move(infsubset) );
+                if(!(*iter)->isActive())
+                {
+                    --iter;
+                    continue;
+                }
+                //FormulaSetT infsubset;
+                //collectOrigins( *bound.origins().begin(), infsubset );
+                //collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
+                //mInfeasibleSubsets.push_back( std::move(infsubset) );
+                for(const auto& o1 : bound.origins())
+                {
+                    FormulaSetT infsubset;
+                    collectOrigins( o1, infsubset );
+                    for (const auto& o2: (*iter)->origins()) {
+                        FormulaSetT infsubsetForO1(infsubset);
+                        collectOrigins( o2, infsubsetForO1 );
+                        mInfeasibleSubsets.push_back( std::move(infsubsetForO1) );
+                    }
+                }
                 assert( iter != var.lowerbounds().begin() );
                 --iter;
             }
@@ -996,12 +1011,25 @@ namespace smtrat
         if( bound.isLowerBound() )
         {
             auto iter = var.upperbounds().find( psup );
-            while( (**iter).isActive() && (**iter) < bound.limit() )
+            while( /*(**iter).isActive() &&*/ (**iter) < bound.limit() )
             {
-                FormulaSetT infsubset;
-                collectOrigins( *bound.origins().begin(), infsubset );
-                collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
-                mInfeasibleSubsets.push_back( std::move(infsubset) );
+                if (!(*iter)->isActive()) {
+                    ++iter;
+                    continue;
+                }
+                //FormulaSetT infsubset;
+                //collectOrigins( *bound.origins().begin(), infsubset );
+                //collectOrigins( *(**iter).pOrigins()->begin(), infsubset );
+                //mInfeasibleSubsets.push_back( std::move(infsubset) );
+                for (const auto& o1 : bound.origins()) {
+                    FormulaSetT infsubset;
+                    collectOrigins( o1, infsubset );
+                    for (const auto& o2: (*iter)->origins()) {
+                        FormulaSetT infsubsetForO1(infsubset);
+                        collectOrigins( o2, infsubsetForO1 );
+                        mInfeasibleSubsets.push_back( std::move(infsubsetForO1) );
+                    }
+                }
                 ++iter;
                 assert( iter != var.upperbounds().end() );
             }

@@ -148,7 +148,7 @@ public:
      * Removes the given constraints from the backend
      * Also removes all stored information about the removed constraints
      * @return True: If the model is still unsat after removing the constraints
-     * 	   False: If the model might needs recomputation for the higher levels
+     * 	   False: If the model might needs re-computation for the higher levels
      */
     bool removeConstraintsUNSAT();
 
@@ -166,7 +166,7 @@ public:
     /**
      * @brief The actual incremental algorithm, which is called when we have constraints to add and no constraints to remove
      *
-     * Tests the new constaints with the last satisfying assignment, if the new constraints are also satisfied.
+     * Tests the new constraints with the last satisfying assignment, if the new constraints are also satisfied.
      * If the new constraints are all satisfied SAT is returned accordingly
      * Otherwise std::nullopt is returned and the stored information from the lowest level with an unsatisfied new constraint is removed
      *
@@ -179,6 +179,6 @@ public:
      *
      * @return std::optional<Answer>, which contains the answer if it can be deduced directly
      */
-    std::optional<Answer> doIncremtalAndBacktracking();
+    std::optional<Answer> doIncrementalAndBacktracking();
 };
 } // namespace smtrat

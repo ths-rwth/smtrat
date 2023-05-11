@@ -17,8 +17,10 @@ namespace smtrat::mcsat::onecell {
 // using Settings = BCFilteredBoundsSettings;
 // using Settings = BCFilteredSamplesSettings;
 // using Settings = BCFilteredAllSelectiveSettings;
-using Settings = LDBFilteredAllSelectiveSettings;
-// using Settings = BCApproximationSettings;
+// using Settings = LDBFilteredAllSelectiveSettings;
+using Settings = BCApproximationSettings;
+
+bool clause_chain_with_equivalences = false;
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
@@ -82,16 +84,26 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
         for (const auto& f : reason) {
             expl.push_back(f.negated());
         }
-        for (const auto& f : *result) {
-            if (std::holds_alternative<cadcells::Constraint>(f)) {
-                expl.push_back(FormulaT(ConstraintT(carl::convert<Poly>(std::get<cadcells::Constraint>(f)))).negated());
-            } else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
-                expl.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))).negated());
-            } else {
-                assert(false);
+        bool is_clause = true;
+        for (const auto& disjunction : *result) {
+            std::vector<FormulaT> tmp;
+            for (const auto& f : disjunction) {
+                if (std::holds_alternative<cadcells::Constraint>(f)) {
+                    tmp.push_back(FormulaT(ConstraintT(carl::convert<Poly>(std::get<cadcells::Constraint>(f)))).negated());
+                } else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
+                    tmp.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))).negated());
+                } else {
+                    assert(false);
+                }
             }
+            if (tmp.size() > 1) is_clause = false;
+            expl.emplace_back(carl::FormulaType::AND, std::move(tmp));
         }
-        return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(expl)));
+        if (is_clause) {
+            return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(expl)));
+        } else {
+            return mcsat::Explanation(ClauseChain::from_formula(FormulaT(carl::FormulaType::OR, std::move(expl)), trail.model(), clause_chain_with_equivalences));
+        }
     } 
 }
 

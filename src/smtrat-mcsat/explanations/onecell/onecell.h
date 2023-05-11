@@ -15,7 +15,11 @@
 
 namespace smtrat::mcsat::onecell {
 
-struct LDBSettings {
+struct Base {
+    constexpr static bool use_approximation = false;
+};
+
+struct LDBSettings : Base {
     // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
     // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
@@ -25,43 +29,42 @@ struct LDBSettings {
     constexpr static auto op = cadcells::operators::op::mccallum;
 };
 
-struct LDBFilteredAllSelectiveSettings {
+struct LDBFilteredAllSelectiveSettings : Base {
     constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EW;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
 };
 
-struct BCSettings {
+struct BCSettings : Base {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
 };
 
-struct BCFilteredSettings {
+struct BCFilteredSettings : Base {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_EW;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
 };
 
-struct BCFilteredAllSettings : BCFilteredSettings{
+struct BCFilteredAllSettings : BCFilteredSettings {
     constexpr static auto op = cadcells::operators::op::mccallum_filtered_all;
 };
 
-struct BCFilteredBoundsSettings : BCFilteredSettings{
+struct BCFilteredBoundsSettings : BCFilteredSettings {
     constexpr static auto op = cadcells::operators::op::mccallum_filtered_bounds;
 };
 
-struct BCFilteredSamplesSettings : BCFilteredSettings{
+struct BCFilteredSamplesSettings : BCFilteredSettings {
     constexpr static auto op = cadcells::operators::op::mccallum_filtered_samples;
 };
 
-struct BCFilteredAllSelectiveSettings : BCFilteredSettings{
+struct BCFilteredAllSelectiveSettings : BCFilteredSettings {
     constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
 };
 
-constexpr static bool use_approximation = false;
-
 struct BCApproximationSettings : BCSettings {
+    constexpr static bool use_approximation = true;
     constexpr static auto cell_apx_heuristic = cadcells::representation::BIGGEST_CELL_APPROXIMATION;
 };
 
@@ -77,13 +80,13 @@ struct BCApproximationSettings : BCSettings {
  * @return A set of constraints whose conjunction describes an unsatisfying cell that can be concluded from the input constraints.
  */
 template<typename Settings>
-std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
+std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
     #ifdef SMTRAT_DEVOPTION_Statistics
         cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
         stats.newCell();
     #endif
 
-    bool consider_approximation = use_approximation && cadcells::representation::approximation::ApxCriteria::cell(constraints);
+    bool consider_approximation = Settings::use_approximation && cadcells::representation::approximation::ApxCriteria::cell(constraints);
     #ifdef SMTRAT_DEVOPTION_Statistics
         if (consider_approximation) stats.approximationConsidered();
     #endif
@@ -117,10 +120,10 @@ std::optional<std::vector<cadcells::Atom>> onecell(const std::vector<cadcells::A
         return std::nullopt;
     }
 
-    std::vector<cadcells::Atom> description;
+    cadcells::CNF description;
     while ((*derivation)->level() > 0) {
         std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
-        if constexpr (use_approximation) {
+        if constexpr (Settings::use_approximation) {
             if (consider_approximation && cadcells::representation::approximation::ApxCriteria::level((*derivation)->level())) {
                 lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_apx_heuristic>(*derivation);
             } else {

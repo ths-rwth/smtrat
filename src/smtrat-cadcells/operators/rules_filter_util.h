@@ -38,13 +38,14 @@ inline void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, 
 }
 
 template<typename P>
-inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const std::vector<datastructures::PolyRef>& polys) {
+inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const boost::container::flat_set<datastructures::PolyRef>& polys) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
     auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
     for (const auto& poly : polys) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << proj.ldcf(poly) << "])");
         subderiv->insert(properties::poly_pdel{ poly });
         subderiv->insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
+        assert(properties::poly_pdel{ poly }.level() == subderiv->level());
     }
     for(const auto& prop : subderiv->template properties<properties::poly_pdel>()) {
         if (!rules::poly_pdel(*subderiv, prop.poly)) return std::nullopt;
@@ -97,7 +98,7 @@ inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const d
         }
     }
     for (const auto& entry : root_map) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "conisdering root " << entry);
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "considering root " << entry);
         switch (filter_condition(entry.first)) {
         case result::NORMAL:
             for (const auto& ir : entry.second) {

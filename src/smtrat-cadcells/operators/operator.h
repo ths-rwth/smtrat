@@ -25,7 +25,7 @@
  * - delineate_properties (on each cell individually)
  * - project_covering_properties
  * 
- * ### Delineaton
+ * ### Delineation
  * 
  * - project_basic_properties
  * - delineate_properties
@@ -34,7 +34,7 @@
  */
 namespace smtrat::cadcells::operators {
 
-enum op { mccallum, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_bounds, mccallum_filtered_samples, mccallum_filtered_all_selective };
+enum op { mccallum, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_bounds, mccallum_filtered_samples, mccallum_filtered_all_selective, mccallum_filtered_all_compound };
 static const char * OpStrings[] = { "mccallum", "mccallum_filtered", "mccallum_filtered_all", "mccallum_filtered_bounds", "mccallum_filtered_samples", "mccallum_filtered_all_selective" };
 
 inline std::ostream& operator<<(std::ostream& os, op op){

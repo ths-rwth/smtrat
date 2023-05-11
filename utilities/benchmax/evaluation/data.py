@@ -8,8 +8,17 @@ def compare_results(answer1,time1,answer2,time2):
         return True
     elif not answer1 in ['sat','unsat'] and answer2 in ['sat','unsat']:
         return False
+    elif answer1 != 'unknown' and answer2 == 'unknown':
+        return True
+    elif answer1 == 'unknown' and answer2 != 'unknown':
+        return False
+    elif answer1 != 'memout' and answer2 == 'memout':
+        return True
+    elif answer1 == 'memout' and answer2 != 'memout':
+        return False
     else:
         assert (answer1 in ['sat','unsat']) == (answer2 in ['sat','unsat'])
+        assert ((answer1 == 'memout') == (answer2 == 'memout'))
         return int(time1)<int(time2)
     
 

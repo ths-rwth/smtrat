@@ -11,7 +11,7 @@ namespace vs {
 
 struct DefaultSettings {
 	static const bool reduceConflictConstraints = true;
-	static const bool clauseChainWithEquivalences = false;
+	static const bool clause_chain_with_equivalences = false;
 };
 
 template<class Settings>
@@ -153,7 +153,7 @@ public:
 		if (expl) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.vs", "Obtained explanation " << (*expl));
 			SMTRAT_VALIDATION_ADD("smtrat.mcsat.vs", "explanation", expl->negated(), false);
-			return mcsat::Explanation(ClauseChain::from_formula(*expl, mModel, Settings::clauseChainWithEquivalences));
+			return mcsat::Explanation(ClauseChain::from_formula(*expl, mModel, Settings::clause_chain_with_equivalences));
 		} else {
 			return std::nullopt;
 		}

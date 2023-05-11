@@ -23,7 +23,7 @@ FormulaT parse_smtlib(const std::string& filename) {
 namespace smtrat {
 
 FormulaT parse_smtlib(const std::string&) {
-	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone formula parsing.");
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone formula parsing. Please enable it by setting the corresponding CMake option.");
 	return FormulaT();
 }
 

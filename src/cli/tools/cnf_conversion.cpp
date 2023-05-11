@@ -56,12 +56,12 @@ int convert_to_cnf_smtlib(const std::string& filename, const std::string& outfil
 namespace smtrat {
 
 int convert_to_cnf_dimacs(const std::string&, const std::string&) {
-	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone CNF conversion.");
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone CNF conversion. Please enable it by setting the corresponding CMake option.");
 	return 0;
 }
 
 int convert_to_cnf_smtlib(const std::string&, const std::string&) {
-	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone CNF conversion.");
+	SMTRAT_LOG_ERROR("smtrat", "This version of SMT-RAT was compiled without support for stand-alone CNF conversion. Please enable it by setting the corresponding CMake option.");
 	return 0;
 }
 

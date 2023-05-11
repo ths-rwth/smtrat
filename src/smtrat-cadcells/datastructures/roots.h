@@ -37,79 +37,83 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
 /**
  * Represents the minimum function  of the contained indexed root functions.
  */
-struct CompoundMin {
-    std::vector<IndexedRoot> roots;
+struct CompoundMinMax {
+    std::vector<std::vector<IndexedRoot>> roots;
     void polys(boost::container::flat_set<PolyRef>& result) const {
         for (const auto& r : roots) {
-            result.insert(r.poly);
+            for (const auto& r1 : r) {
+                result.insert(r1.poly);
+            }
         }
     }
 };
-inline bool operator==(const CompoundMin& lhs, const CompoundMin& rhs) {
+inline bool operator==(const CompoundMinMax& lhs, const CompoundMinMax& rhs) {
     return lhs.roots == rhs.roots;
 }
-inline bool operator<(const CompoundMin& lhs, const CompoundMin& rhs) {
+inline bool operator<(const CompoundMinMax& lhs, const CompoundMinMax& rhs) {
     return lhs.roots < rhs.roots;
 }
-inline bool operator!=(const CompoundMin& lhs, const CompoundMin& rhs) {
+inline bool operator!=(const CompoundMinMax& lhs, const CompoundMinMax& rhs) {
     return !(lhs == rhs);
 }
-inline std::ostream& operator<<(std::ostream& os, const CompoundMin& data) {
-    os << "min(" << data.roots << ")";
+inline std::ostream& operator<<(std::ostream& os, const CompoundMinMax& data) {
+    os << "min-max(" << data.roots << ")";
     return os;
 }
 
 /**
  * Represents the maximum function  of the contained indexed root functions.
  */
-struct CompoundMax {
-    std::vector<IndexedRoot> roots;
+struct CompoundMaxMin {
+    std::vector<std::vector<IndexedRoot>> roots;
     void polys(boost::container::flat_set<PolyRef>& result) const {
         for (const auto& r : roots) {
-            result.insert(r.poly);
+            for (const auto& r1 : r) {
+                result.insert(r1.poly);
+            }
         }
     }
 };
-inline bool operator==(const CompoundMax& lhs, const CompoundMax& rhs) {
+inline bool operator==(const CompoundMaxMin& lhs, const CompoundMaxMin& rhs) {
     return lhs.roots == rhs.roots;
 }
-inline bool operator<(const CompoundMax& lhs, const CompoundMax& rhs) {
+inline bool operator<(const CompoundMaxMin& lhs, const CompoundMaxMin& rhs) {
     return lhs.roots < rhs.roots;
 }
-inline bool operator!=(const CompoundMax& lhs, const CompoundMax& rhs) {
+inline bool operator!=(const CompoundMaxMin& lhs, const CompoundMaxMin& rhs) {
     return !(lhs == rhs);
 }
-inline std::ostream& operator<<(std::ostream& os, const CompoundMax& data) {
-    os << "max(" << data.roots << ")";
+inline std::ostream& operator<<(std::ostream& os, const CompoundMaxMin& data) {
+    os << "max-min(" << data.roots << ")";
     return os;
 }
 
 class RootFunction {
-    std::variant<IndexedRoot, CompoundMin, CompoundMax> m_data;
+    std::variant<IndexedRoot, CompoundMinMax, CompoundMaxMin> m_data;
 
 public: 
     RootFunction(IndexedRoot data) : m_data(data) {}; 
-    RootFunction(CompoundMin&& data) : m_data(data) {}; 
-    RootFunction(CompoundMax&& data) : m_data(data) {};
+    RootFunction(CompoundMinMax&& data) : m_data(data) {}; 
+    RootFunction(CompoundMaxMin&& data) : m_data(data) {};
     bool is_root() const { return std::holds_alternative<IndexedRoot>(m_data); }
-    bool is_cmin() const { return std::holds_alternative<CompoundMin>(m_data); }
-    bool is_cmax() const { return std::holds_alternative<CompoundMax>(m_data); }
+    bool is_cminmax() const { return std::holds_alternative<CompoundMinMax>(m_data); }
+    bool is_cmaxmin() const { return std::holds_alternative<CompoundMaxMin>(m_data); }
     const IndexedRoot& root() const { return std::get<IndexedRoot>(m_data); }
-    const CompoundMin& cmin() const { return std::get<CompoundMin>(m_data); }
-    const CompoundMax& cmax() const { return std::get<CompoundMax>(m_data); }
+    const CompoundMinMax& cminmax() const { return std::get<CompoundMinMax>(m_data); }
+    const CompoundMaxMin& cmaxmin() const { return std::get<CompoundMaxMin>(m_data); }
 
     const auto& roots() const {
         assert(!is_root());
-        return is_cmin() ? cmin().roots : cmax().roots;
+        return is_cminmax() ? cminmax().roots : cmaxmin().roots;
     }
 
     void polys(boost::container::flat_set<PolyRef>& result) const {
         if (std::holds_alternative<IndexedRoot>(m_data)) {
             result.insert(std::get<IndexedRoot>(m_data).poly);
-        } else if (std::holds_alternative<CompoundMin>(m_data)) {
-            std::get<CompoundMin>(m_data).polys(result);
-        } else if (std::holds_alternative<CompoundMax>(m_data)) {
-            std::get<CompoundMax>(m_data).polys(result);
+        } else if (std::holds_alternative<CompoundMinMax>(m_data)) {
+            std::get<CompoundMinMax>(m_data).polys(result);
+        } else if (std::holds_alternative<CompoundMaxMin>(m_data)) {
+            std::get<CompoundMaxMin>(m_data).polys(result);
         }
     }
 
@@ -122,35 +126,45 @@ public:
     bool has_poly(const PolyRef poly) const {
         if (is_root()) {
             return root().poly == poly;
-        } else if (is_cmax()) {
-            auto it = std::find_if(cmax().roots.begin(), cmax().roots.end(), [&poly](const auto& root) { return root.poly == poly;});
-            return !(it == cmax().roots.end());
-        } else if (is_cmin()) {
-            auto it = std::find_if(cmin().roots.begin(), cmin().roots.end(), [&poly](const auto& root) { return root.poly == poly;});
-            return !(it == cmin().roots.end());
+        } else if (is_cmaxmin()) {
+            auto it = std::find_if(cmaxmin().roots.begin(), cmaxmin().roots.end(), [&poly](const auto& roots) {
+                return std::find_if(roots.begin(), roots.end(), [&poly](const auto& root) { return root.poly == poly;}) != roots.end();
+            });
+            return !(it == cmaxmin().roots.end());
+        } else if (is_cminmax()) {
+            auto it = std::find_if(cminmax().roots.begin(), cminmax().roots.end(), [&poly](const auto& roots) {
+                return std::find_if(roots.begin(), roots.end(), [&poly](const auto& root) { return root.poly == poly;}) != roots.end();
+            });
+            return !(it == cminmax().roots.end());
         } else {
             assert(false);
             return false;
         }
     }
 
-    std::optional<IndexedRoot> poly_root(const PolyRef poly) const {
-        if (is_root()) {
-            if (root().poly == poly) return root();
-            else return std::nullopt;
-        } else if (is_cmax()) {
-            auto it = std::find_if(cmax().roots.begin(), cmax().roots.end(), [&poly](const auto& root) { return root.poly == poly;});
-            if (!(it == cmax().roots.end())) return *it;
-            else return std::nullopt;
-        } else if (is_cmin()) {
-            auto it = std::find_if(cmin().roots.begin(), cmin().roots.end(), [&poly](const auto& root) { return root.poly == poly;});
-            if (!(it == cmin().roots.end())) return *it;
-            else return std::nullopt;
+    std::optional<IndexedRoot> poly_root_below(const PolyRef poly) const {
+        if (is_root() && root().poly == poly) {
+            return root();
+        } else if (is_cmaxmin()) {
+            auto it = std::find_if(cmaxmin().roots.begin(), cmaxmin().roots.end(), [&poly](const auto& roots) { return roots.size() == 1 && roots[0].poly == poly;;});
+            if (it == cmaxmin().roots.end()) return std::nullopt;
+            else return *it->begin();
         } else {
-            assert(false);
             return std::nullopt;
         }
-    }
+    };
+
+    std::optional<IndexedRoot> poly_root_above(const PolyRef poly) const {
+        if (is_root() && root().poly == poly) {
+            return root();
+        } else if (is_cminmax()) {
+            auto it = std::find_if(cminmax().roots.begin(), cminmax().roots.end(), [&poly](const auto& roots) { return roots.size() == 1 && roots[0].poly == poly;;});
+            if (it == cminmax().roots.end()) return std::nullopt;
+            else return *it->begin();
+        } else {
+            return std::nullopt;
+        }
+    };
 
     friend bool operator==(const RootFunction& lhs, const RootFunction& rhs);
     friend bool operator<(const RootFunction& lhs, const RootFunction& rhs);
@@ -227,7 +241,7 @@ public:
      */
     SymbolicInterval(IndexedRoot root) : m_lower(Bound::weak(root)), m_upper(Bound::weak(root)) {}
     /**
-     * Constructs an interval iwth arbitrary bounds.
+     * Constructs an interval with arbitrary bounds.
      */
     SymbolicInterval(Bound lower, Bound upper) : m_lower(lower), m_upper(upper) {
         assert(lower != upper || !(lower.is_strict() && upper.is_strict()));
@@ -449,26 +463,15 @@ public:
         boost::container::flat_set<RootFunction> reached({first});
         std::vector<RootFunction> active({first});
         std::optional<RootFunction> result;
-        auto matching_root = [&poly](const RootFunction& f) -> std::optional<IndexedRoot> {
-            if (f.is_root() && f.root().poly == poly) {
-                return f.root();
-            } else if (f.is_cmin()) {
-                auto it = std::find_if(f.cmin().roots.begin(), f.cmin().roots.end(), [&poly](const auto& root) { return root.poly == poly;});
-                if (it == f.cmin().roots.end()) return std::nullopt;
-                else return *it;
-            } else {
-                return std::nullopt;
-            }
-        };
-        if (matching_root(first)) return first;
+        if (first.poly_root_above(poly)) return first.poly_root_above(poly);
         while(!active.empty()) {
             auto current = active.back();
             active.pop_back();
             if (!strict && m_leq.contains(current)) {
                 for (const auto& e : m_leq.at(current)) {
                     if (!reached.contains(e)) {
-                        auto er = matching_root(e);
-                        if (er && (!result || matching_root(*result)->index > er->index)) result = e; 
+                        auto er = e.poly_root_above(poly);
+                        if (er && (!result || result->poly_root_above(poly)->index > er->index)) result = e; 
                         reached.insert(e);
                         active.push_back(e);
                     }
@@ -477,8 +480,8 @@ public:
             if (m_less.contains(current)) {
                 for (const auto& e : m_less.at(current)) {
                     if (!reached.contains(e)) {
-                        auto er = matching_root(e);
-                        if (er && (!result || matching_root(*result)->index > er->index)) result = e; 
+                        auto er = e.poly_root_above(poly);
+                        if (er && (!result || result->poly_root_above(poly)->index > er->index)) result = e; 
                         reached.insert(e);
                         active.push_back(e);
                     }
@@ -492,26 +495,15 @@ public:
         boost::container::flat_set<RootFunction> reached({second});
         std::vector<RootFunction> active({second});
         std::optional<RootFunction> result;
-        auto matching_root = [&poly](const RootFunction& f) -> std::optional<IndexedRoot> {
-            if (f.is_root() && f.root().poly == poly) {
-                return f.root();
-            } else if (f.is_cmax()) {
-                auto it = std::find_if(f.cmax().roots.begin(), f.cmax().roots.end(), [&poly](const auto& root) { return root.poly == poly;});
-                if (it == f.cmax().roots.end()) return std::nullopt;
-                else return *it;
-            } else {
-                return std::nullopt;
-            }
-        };
-        if (matching_root(second)) return second;
+        if (second.poly_root_below(poly)) return second.poly_root_below(poly);
         while(!active.empty()) {
             auto current = active.back();
             active.pop_back();
             if (!strict && m_geq.contains(current)) {
                 for (const auto& e : m_geq.at(current)) {
                     if (!reached.contains(e)) {
-                        auto er = matching_root(e);
-                        if (er && (!result || matching_root(*result)->index < er->index)) result = e; 
+                        auto er = e.poly_root_below(poly);
+                        if (er && (!result || result->poly_root_below(poly)->index < er->index)) result = e; 
                         reached.insert(e);
                         active.push_back(e);
                     }
@@ -520,8 +512,8 @@ public:
             if (m_greater.contains(current)) {
                 for (const auto& e : m_greater.at(current)) {
                     if (!reached.contains(e)) {
-                        auto er = matching_root(e);
-                        if (er && (!result || matching_root(*result)->index < er->index)) result = e; 
+                        auto er = e.poly_root_below(poly);
+                        if (er && (!result || result->poly_root_below(poly)->index < er->index)) result = e; 
                         reached.insert(e);
                         active.push_back(e);
                     }
