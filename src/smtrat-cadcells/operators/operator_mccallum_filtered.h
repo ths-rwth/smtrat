@@ -16,13 +16,17 @@ struct PropertiesSet {
     using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_irreducible_semi_sgn_inv,properties::poly_ord_inv,properties::root_well_def,properties::poly_pdel,properties::cell_connected,properties::poly_additional_root_outside,properties::poly_ord_inv_base,properties::root_ordering_holds>;
 };
 
-inline bool project_basic_properties(datastructures::DelineatedDerivation<PropertiesSet::type>& deriv) {
+inline bool project_basic_properties(datastructures::DelineatedDerivation<PropertiesSet::type>& deriv, bool enable_weak = true) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
+        if (enable_weak) {
+            rules::poly_semi_sgn_inv(deriv, prop.poly);
+        } else {
+            deriv.insert(properties::poly_sgn_inv{prop.poly});
+        }
+    }
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
         rules::poly_sgn_inv(deriv, prop.poly);
-    }
-    for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
-        rules::poly_semi_sgn_inv(deriv, prop.poly);
     }
     return true;
 }
@@ -131,14 +135,14 @@ inline bool project_covering_properties(datastructures::CoveringRepresentation<P
 
 }
 
-#define MCALLUMFILTEREDVARIANT(opname) \
+#define MCALLUMFILTEREDVARIANT(opname,enable_weak) \
     template <> \
     struct PropertiesSet<op::opname> { \
         using type = mccallum_filtered_impl::PropertiesSet::type; \
     }; \
     template <> \
     inline bool project_basic_properties<op::opname>(datastructures::DelineatedDerivation<PropertiesSet<op::opname>::type>& deriv) { \
-        return mccallum_filtered_impl::project_basic_properties(deriv); \
+        return mccallum_filtered_impl::project_basic_properties(deriv, enable_weak); \
     } \
     template <> \
     inline void delineate_properties<op::opname>(datastructures::DelineatedDerivation<PropertiesSet<op::opname>::type>& deriv) { \
@@ -157,7 +161,7 @@ inline bool project_covering_properties(datastructures::CoveringRepresentation<P
         return mccallum_filtered_impl::project_covering_properties(repr); \
     }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered)
+MCALLUMFILTEREDVARIANT(mccallum_filtered, false)
 template <>
 inline void delineate_properties<op::mccallum_filtered>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
@@ -167,7 +171,7 @@ inline void delineate_properties<op::mccallum_filtered>(datastructures::SampledD
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_all)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all, true)
 template <>
 inline void delineate_properties<op::mccallum_filtered_all>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
@@ -177,7 +181,7 @@ inline void delineate_properties<op::mccallum_filtered_all>(datastructures::Samp
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_bounds)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_bounds, true)
 template <>
 inline void delineate_properties<op::mccallum_filtered_bounds>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_bounds>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
@@ -187,7 +191,7 @@ inline void delineate_properties<op::mccallum_filtered_bounds>(datastructures::S
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_samples)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_samples, false)
 template <>
 inline void delineate_properties<op::mccallum_filtered_samples>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_samples>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
@@ -197,7 +201,7 @@ inline void delineate_properties<op::mccallum_filtered_samples>(datastructures::
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_all_selective)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_selective, true)
 template <>
 inline void delineate_properties<op::mccallum_filtered_all_selective>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_selective>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
@@ -207,7 +211,7 @@ inline void delineate_properties<op::mccallum_filtered_all_selective>(datastruct
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_all_compound)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_compound, false)
 template <>
 inline void delineate_properties<op::mccallum_filtered_all_compound>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_compound>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
@@ -217,6 +221,14 @@ inline void delineate_properties<op::mccallum_filtered_all_compound>(datastructu
     }
 }
 
-
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_compound_ew, true)
+template <>
+inline void delineate_properties<op::mccallum_filtered_all_compound_ew>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_compound_ew>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    delineate_properties<op::mccallum_filtered_all_compound_ew>(*deriv.delineated());
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate_all_compound(deriv, prop);
+    }
+}
 
 }
