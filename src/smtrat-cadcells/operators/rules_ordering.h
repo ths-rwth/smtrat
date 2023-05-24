@@ -209,9 +209,10 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                             else return filter_util::result::NORMAL;
                         }
                     } else {
-                        assert(pair.first.is_cmaxmin() && pair.first.is_cminmax());
-                        auto poly_first = pair.first.root().poly == poly1 ? poly1 : poly2;
-                        auto poly_second = pair.first.root().poly == poly1 ? poly2 : poly1;
+                        assert(pair.first.is_cmaxmin() && pair.second.is_cminmax());
+                        auto poly_first = (pair.first.has_poly(poly1) && pair.second.has_poly(poly2)) ? poly1 : poly2;
+                        auto poly_second = (pair.first.has_poly(poly1) && pair.second.has_poly(poly2)) ? poly2 : poly1;
+                        assert(pair.first.has_poly(poly_first) && pair.second.has_poly(poly_second));
 
                         bool relevant = true;
                         auto cb_polys = pair.first.polys();
@@ -220,7 +221,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         assert(delineable_interval_cb);
                         if (delineable_interval_cb->contains(ran)) {
                             auto res1 = compound_util::evaluate(deriv.proj(), ass, pair.first.cmaxmin());
-                            auto res2 = compound_util::evaluate(deriv.proj(), ass, pair.first.cminmax());
+                            auto res2 = compound_util::evaluate(deriv.proj(), ass, pair.second.cminmax());
                             relevant = false;
                             if (res1.first == res2.first) {
                                 relevant = std::find_if(res1.second.begin(), res1.second.end(), [&](const auto& ir) { return ir.poly == poly_first; }) != res1.second.end() && std::find_if(res2.second.begin(), res2.second.end(), [&](const auto& ir) { return ir.poly == poly_second; }) != res2.second.end();

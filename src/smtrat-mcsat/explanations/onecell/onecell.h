@@ -103,7 +103,7 @@ std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constrai
             // Negated VariableComparisons evaluate to true where its MultivariateRoot is undefined. Thus, their unsatisfying region is never closed! 
             if (vc.negated()) return true;
             if (!carl::is_strict(vc.relation())) return true;
-            // If the VariableComparison is not well-defined at the given sample, then the unsatusfying region is not closed, as it might get well-defined at the boundary.
+            // If the VariableComparison is not well-defined at the given sample, then the unsatisfying region is not closed, as it might get well-defined at the boundary.
             auto mv = std::get<carl::MultivariateRoot<cadcells::Polynomial>>(vc.value());
             auto mvp = pool(mv.poly());
             if (proj.is_nullified(sample, mvp) || proj.real_roots(sample, mvp).size() < mv.k()) return true;
@@ -140,6 +140,7 @@ std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constrai
             lvl->second.set_to_closure();
         }
         auto res = cadcells::helper::to_formula(proj.polys(), lvl->first, lvl->second);
+        // TODO if res contains indexed root expression, then set constraints_all_strict to false 
         description.insert(description.end(), res.begin(), res.end());
         proj.clear_assignment_cache((*derivation)->sample());
         (*derivation) = (*derivation)->underlying().sampled_ref();
