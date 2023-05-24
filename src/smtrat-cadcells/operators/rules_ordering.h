@@ -211,7 +211,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                     } else {
                         assert(pair.first.is_cmaxmin() && pair.second.is_cminmax());
                         auto poly_first = pair.first.root().poly == poly1 ? poly1 : poly2;
-                        auto poly_second = pair.second.root().poly == poly1 ? poly2 : poly1;
+                        auto poly_second = pair.first.root().poly == poly1 ? poly2 : poly1;
 
                         bool relevant = true;
                         auto cb_polys = pair.first.polys();
