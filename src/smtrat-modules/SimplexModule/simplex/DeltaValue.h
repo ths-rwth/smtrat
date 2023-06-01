@@ -29,6 +29,8 @@ public:
 
     DeltaValue<Number>& operator=  (const DeltaValue<Number>& value);
 
+    // Arithmetic operators
+
     DeltaValue<Number>  operator+  (const DeltaValue<Number>& value) const;
     void                operator+= (const DeltaValue<Number>& value);
 
@@ -44,24 +46,25 @@ public:
     DeltaValue<Number>  operator/  (const Number& a) const;
     void                operator/= (const Number& a);
 
+    // Comparison operators
 
-    bool           operator<  (const DeltaValue<Number>& value) const;
-    bool           operator>  (const DeltaValue<Number>& value) const {  return value < *this; }
+    bool operator<  (const DeltaValue<Number>& value) const;
+    bool operator>  (const DeltaValue<Number>& value) const {  return value < *this; }
 
-    bool           operator<= (const DeltaValue<Number>& value) const;
-    bool           operator>= (const DeltaValue<Number>& value) const { return value <= *this; }
+    bool operator<= (const DeltaValue<Number>& value) const;
+    bool operator>= (const DeltaValue<Number>& value) const { return value <= *this; }
 
-    bool           operator== (const DeltaValue<Number>& value) const;
-    bool           operator!= (const DeltaValue<Number>& value) const { return !(*this == value); }
+    bool operator== (const DeltaValue<Number>& value) const;
+    bool operator!= (const DeltaValue<Number>& value) const { return !(*this == value); }
 
-    bool           operator== (const Number& a) const;
-    bool           operator!= (const Number& a) const { return !(*this == a); }
+    bool operator== (const Number& a) const;
+    bool operator!= (const Number& a) const { return !(*this == a); }
 
-    bool           operator<  (const Number& a) const;
-    bool           operator>  (const Number& a) const;
+    bool operator<  (const Number& a) const;
+    bool operator>  (const Number& a) const;
 
-    bool           operator<= (const Number& a) const;
-    bool           operator>= (const Number& a) const;
+    bool operator<= (const Number& a) const;
+    bool operator>= (const Number& a) const;
 };
 
 template<typename Number>
