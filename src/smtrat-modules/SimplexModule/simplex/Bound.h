@@ -38,7 +38,7 @@ std::ostream& operator<<(std::ostream& out, const Bound<Val>& bound) {
  * Gives out handles in the form of Ref objects,
  * so that simplex only needs to store these handles in its various datastructures.
  * This could also be achieved by using references, (smart) pointers or iterators,
- * but I claim that this approach leads to more readable code.
+ * but I claim that this approach leads to more readable and less error-prone code.
  * Each bound is also associated to a Formula from which it originated.
  * 
  * TODO: add possibility for deleting bounds and reusing the storage. E.g.: use a reference counter

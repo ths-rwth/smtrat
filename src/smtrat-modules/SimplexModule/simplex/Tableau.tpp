@@ -15,9 +15,7 @@ void Tableau<T>::Row::compress(std::vector<Column>& cols) {
         if (t1.is_dead()) continue;
         if (curr_entry_idx != new_entry_idx) {
             RowEntry& t2 = this->m_entries[new_entry_idx];
-            T tmp = t1.m_coeff;
-            t1.m_coeff = t2.m_coeff;
-            t2.m_coeff = tmp; // TODO: swap?
+            std::swap(t1.m_coeff, t2.m_coeff);
             t2.m_var = t1.m_var;
             t2.m_position_in_col = t1.m_position_in_col;
             assert(!t2.is_dead());
@@ -199,7 +197,6 @@ void Tableau<T>::div(RowID r, const T& n) {
 
 template<typename T>
 void Tableau<T>::gcd_normalize(RowID r, T& g) {
-    // TODO: make sure this works with the base/non-base representation
     g = T(0);
     row_iterator end = row_end(r);
     for (row_iterator it = row_begin(r); it != end && !carl::is_one(g); ++it) {
