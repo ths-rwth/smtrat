@@ -913,8 +913,10 @@ void SimplexModule<Settings>::propagate_lower(const BoundRef b) {
     const auto& ubs = m_upper_bounds[get_variable(b)];
     // iterating from lowest ub to highest ub
     for (auto upper_it = ubs.begin(); upper_it != ubs.end(); ++upper_it) {
-        if (is_below(b, *upper_it)) break;
+        if (!is_below(*upper_it, b)) break;
         if (is_active(*upper_it)) continue; // TODO: what about is_active("complement(upper_bound)")?
+        // TODO: also, can't we leave out is_active here? if it were active, then there woudl have
+        // been a conflict while activating...
         // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
         propagate(b, *upper_it, /*conclusion_negated : */ true);
     }
@@ -939,7 +941,7 @@ void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
     const auto& lbs = m_lower_bounds[get_variable(b)];
     // iterating from highest lb to lowest lb => reverse iterator
     for (auto lower_it = lbs.rbegin(); lower_it != lbs.rend(); ++lower_it) {
-        if (is_below(*lower_it, b)) break;
+        if (!is_below(b, *lower_it)) break;
         if (is_active(*lower_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
         // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
         propagate(b, *lower_it, /*conclusion_negated : */ true);
@@ -1010,6 +1012,9 @@ void SimplexModule<Settings>::propagate(const BoundRef premise,
     collectOrigins(get_origin(premise), premise_origins);
     FormulaT conclusion_formula = conclusion_negated ? get_origin(conclusion).negated()
                                                      : get_origin(conclusion);
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "Premises: " << premise_origins);
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "Conclusion: " << conclusion_formula);
+    
     mTheoryPropagations.emplace_back(std::move(premise_origins), conclusion_formula);
     SMTRAT_LOG_DEBUG("smtrat.simplex", "...done");
 } 
