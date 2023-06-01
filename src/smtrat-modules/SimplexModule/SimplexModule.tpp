@@ -415,8 +415,8 @@ template<class Settings>
 Answer SimplexModule<Settings>::checkCore() {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "checking...");
     /*
-    * Not yet clear: Bound learning, theory propagation, SOI, optimization, integer...
-    */
+     * Not yet clear: SOI, optimization, integer...
+     */
 
     if constexpr (Settings::reactivate_derived_bounds) {
         if (!reactivate_derived_bounds()) return Answer::UNSAT;
@@ -438,6 +438,9 @@ Answer SimplexModule<Settings>::checkCore() {
         }
 
         pivot_and_update(conflict_or_pivot.pivot_candidate());
+
+        // Bound learning after pivot can lead to conflicts, stored in mInfeasibleSubsets
+        if (!mInfeasibleSubsets.empty()) return Answer::UNSAT;
     }
 
     m_model_computed = false;
@@ -844,6 +847,10 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
             add_derived_bound(base_var, BoundType::UPPER, new_bound_value, involved_bounds);
         }
     }
+
+    if (!has_consistent_range(base_var)) {
+        construct_infeasible_subset({lower_bound(base_var), upper_bound(base_var)});
+    }
 }
 
 
@@ -873,8 +880,13 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
 
     switch (type) {
     case BoundType::EQUAL: {
-        set_lower_bound(var, b);
-        set_upper_bound(var, b);
+        // this extra check is for catching conflicting bounds. If we set both bounds, it is missed
+        if (!has_lower_bound(var) || (value > get_value(lower_bound(var)))) {
+            set_lower_bound(var, b);
+        }
+        if (!has_upper_bound(var) || (value < get_value(upper_bound(var)))) {
+            set_upper_bound(var, b);
+        }
         break;
     }
     case BoundType::LOWER: { set_lower_bound(var, b); break; }
