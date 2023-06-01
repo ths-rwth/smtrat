@@ -24,7 +24,8 @@ class SimplexModule : public Module {
 /* //////////////////////////////////    Type Definitions    /////////////////////////////////// */
 /* ============================================================================================= */
 private:
-    using SimplexVariable = std::size_t;
+    using SimplexVariable = std::size_t; // TODO: make it so it becomes clear that this is
+                                         // the same type as Tableau::ColID and Bound::Var
     using DeltaRational   = simplex::DeltaValue<Rational>;
     using Tableau         = simplex::Tableau<Rational>;
 
