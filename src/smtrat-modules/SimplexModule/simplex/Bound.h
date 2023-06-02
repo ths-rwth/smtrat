@@ -21,7 +21,7 @@ struct Bound {
 
 template<class Val>
 std::ostream& operator<<(std::ostream& out, const Bound<Val>& bound) {
-    out << "(" << "x_" << bound.m_var;
+    out << "(" << "sv_" << bound.m_var;
     switch (bound.m_type) {
     case BoundType::LOWER: out << " >= "; break;
     case BoundType::UPPER: out << " <= "; break;

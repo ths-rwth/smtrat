@@ -239,7 +239,7 @@ bool SimplexModule<Settings>::activate_neq(const FormulaT& f) {
 
 template<class Settings>
 bool SimplexModule<Settings>::find_conflicting_bounds(const SimplexVariable v, bool lower) {
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "collecting conflicting bounds for " << v);
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "collecting conflicting bounds for sv_" << v);
 
     if (has_consistent_range(v)) return false;
 
@@ -419,7 +419,10 @@ Answer SimplexModule<Settings>::checkCore() {
      */
 
     if constexpr (Settings::reactivate_derived_bounds) {
-        if (!reactivate_derived_bounds()) return Answer::UNSAT;
+        if (!reactivate_derived_bounds()) {
+            SMTRAT_LOG_DEBUG("smtrat.simplex", "reactivating bounds lead to conflict");
+            return Answer::UNSAT;
+        }
     }
 
     if constexpr (Settings::simple_theory_propagation) {
@@ -440,7 +443,10 @@ Answer SimplexModule<Settings>::checkCore() {
         pivot_and_update(conflict_or_pivot.pivot_candidate());
 
         // Bound learning after pivot can lead to conflicts, stored in mInfeasibleSubsets
-        if (!mInfeasibleSubsets.empty()) return Answer::UNSAT;
+        if (!mInfeasibleSubsets.empty()) {
+            SMTRAT_LOG_DEBUG("smtrat.simplex", "Deriving bounds lead to conflict");
+            return Answer::UNSAT;
+        }
     }
 
     m_model_computed = false;
@@ -470,6 +476,7 @@ bool SimplexModule<Settings>::reactivate_derived_bounds() {
             }
         }
         if (all_origins_active) {
+            SMTRAT_LOG_DEBUG("smtrat.simplex", "reactivating " << m_bounds[b]);
             activate(b);
             SimplexVariable v = get_variable(b);
             if (!update_range(v, b)) return false;
@@ -798,6 +805,8 @@ void SimplexModule<Settings>::derive_bounds(const Tableau::RowID rid) {
             if (pos_coeff) upper_derivable = false;
             else lower_derivable = false;
             equal_derivable = false;
+        } else if (get_type(upper_bound(entry_var)) != BoundType::EQUAL) {
+            equal_derivable = false;
         }
     }
 
@@ -849,6 +858,9 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
     }
 
     if (!has_consistent_range(base_var)) {
+        SMTRAT_LOG_DEBUG("smtrat.simplex", "Derived Conflict: " << m_bounds[lower_bound(base_var)]
+                                            << ", " << m_bounds[upper_bound(base_var)]);
+
         construct_infeasible_subset({lower_bound(base_var), upper_bound(base_var)});
     }
 }
@@ -859,7 +871,6 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
                                                 const BoundType type,
                                                 const DeltaRational& value,
                                                 const BoundVec& premises) {
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "add derived bound");
     FormulaSetT single_origins;
     for (const BoundRef p : premises) {
         const FormulaT& o = get_origin(p);
@@ -878,9 +889,12 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
         m_bounds_derived_from[o].push_back(b);
     }
 
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "Add derived bound " << m_bounds[b] << " from " << origin_conj);
+
     switch (type) {
     case BoundType::EQUAL: {
-        // this extra check is for catching conflicting bounds. If we set both bounds, it is missed
+        // this extra check is for catching conflicting bounds.
+        // If we set both bounds, we might miss a conflict
         if (!has_lower_bound(var) || (value > get_value(lower_bound(var)))) {
             set_lower_bound(var, b);
         }
@@ -1019,16 +1033,14 @@ template<class Settings>
 void SimplexModule<Settings>::propagate(const BoundRef premise,
                                         const BoundRef conclusion,
                                         bool conclusion_negated) {
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "propagating single bound...");
     FormulasT premise_origins;
     collectOrigins(get_origin(premise), premise_origins);
     FormulaT conclusion_formula = conclusion_negated ? get_origin(conclusion).negated()
                                                      : get_origin(conclusion);
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "Premises: " << premise_origins);
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "Conclusion: " << conclusion_formula);
+
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "("<< premise_origins <<") => ("<< conclusion_formula <<")");
     
     mTheoryPropagations.emplace_back(std::move(premise_origins), conclusion_formula);
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "...done");
 } 
 
 }
