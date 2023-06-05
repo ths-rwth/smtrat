@@ -240,29 +240,7 @@ private:
         return get_value(lower_bound(v)) <= get_value(upper_bound(v));
     }
 
-    void update_range(SimplexVariable v) {
-        // NOTE: the bound vectors are ordered ascendingly by bound value
-        // Therefore we use the reverse iterator for lower bounds
-
-        auto it_lower = m_lower_bounds[v].rbegin();
-        for (; it_lower != m_lower_bounds[v].rend(); ++it_lower) {
-            if (is_active(*it_lower)) {
-                set_lower_bound(v, *it_lower);
-                break;
-            }
-        }
-        if (it_lower == m_lower_bounds[v].rend()) set_lower_unbounded(v);
-
-        auto it_upper = m_upper_bounds[v].begin();
-        for (; it_upper != m_upper_bounds[v].end(); ++it_upper) {
-            if (is_active(*it_upper)) {
-                set_upper_bound(v, *it_upper);
-                break;
-            }
-        }
-        if (it_upper == m_upper_bounds[v].end()) set_upper_unbounded(v);
-    }
-
+    void update_range(const SimplexVariable v);
     bool update_range(const SimplexVariable v, const BoundRef b);
 
 /* ===================================== Variable Creation ===================================== */

@@ -337,6 +337,31 @@ void SimplexModule<Settings>::deactivate_neq(const FormulaT& f) {
 
 
 template<class Settings>
+void SimplexModule<Settings>::update_range(const SimplexVariable v) {
+    // NOTE: the bound vectors are ordered ascendingly by bound value
+    // Therefore we use the reverse iterator for lower bounds
+
+    auto it_lower = m_lower_bounds[v].rbegin();
+    for (; it_lower != m_lower_bounds[v].rend(); ++it_lower) {
+        if (is_active(*it_lower)) {
+            set_lower_bound(v, *it_lower);
+            break;
+        }
+    }
+    if (it_lower == m_lower_bounds[v].rend()) set_lower_unbounded(v);
+
+    auto it_upper = m_upper_bounds[v].begin();
+    for (; it_upper != m_upper_bounds[v].end(); ++it_upper) {
+        if (is_active(*it_upper)) {
+            set_upper_bound(v, *it_upper);
+            break;
+        }
+    }
+    if (it_upper == m_upper_bounds[v].end()) set_upper_unbounded(v);
+}
+
+
+template<class Settings>
 void SimplexModule<Settings>::deactivate_bounds_derived_from(const FormulaT& f) {
     assert(Settings::derive_bounds);
     SMTRAT_LOG_DEBUG("smtrat.simplex", "deactivating derived bounds");
@@ -600,7 +625,9 @@ SimplexModule<Settings>::ConflictOrPivot SimplexModule<Settings>::find_conflict_
 
 
 template<class Settings>
-std::optional<typename SimplexModule<Settings>::BoundRef> SimplexModule<Settings>::check_suitable_for_pivot(const Tableau::Entry& entry, const BoundRef b, bool increase) const {
+std::optional<typename SimplexModule<Settings>::BoundRef> SimplexModule<Settings>::check_suitable_for_pivot(const Tableau::Entry& entry,
+                                                                                                            const BoundRef b,
+                                                                                                            bool increase) const {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "checking suitability for pivot");
     // TODO: use b to have further restrictions
 
