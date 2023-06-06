@@ -61,16 +61,14 @@ public:
         explicit Ref(std::size_t id) : m_value(id) {}
 
     public:
-        Ref(const Ref& other) : m_value(other.m_value) {}
+        Ref(const Ref& other) = default;
+        Ref& operator=(const Ref& other) = default;
+
         bool operator==(const Ref& other) const {
             return this->m_value == other.m_value;
         }
         bool operator!=(const Ref& other) const {
             return this->m_value != other.m_value;
-        }
-        Ref& operator=(const Ref& other) {
-            m_value = other.m_value;
-            return *this;
         }
 
         struct cmp {
