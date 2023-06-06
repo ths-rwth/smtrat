@@ -950,7 +950,7 @@ void SimplexModule<Settings>::propagate_derived_lower(const SimplexVariable v, c
 
     // iterate from strictest (greatest) lb to weakest (lowest) -> reverse_iterator
     for (auto it = m_lower_bounds[v].rbegin(); it != m_lower_bounds[v].rend(); ++it) {
-        if (!is_below(*it, b)) {
+        if (!is_below(b, *it)) {
             // it is next weaker lower bound
             propagate(b, *it);
             break;
@@ -964,7 +964,7 @@ void SimplexModule<Settings>::propagate_derived_upper(const SimplexVariable v, c
 
     // iterate from strictest (lowest) ub to weakest (greatest) -> forward iterator
     for (auto it = m_upper_bounds[v].begin(); it != m_upper_bounds[v].end(); ++it) {
-        if (!is_below(b, *it)) {
+        if (!is_below(*it, b)) {
             // it is next weaker upper bound
             propagate(b, *it);
             break;
