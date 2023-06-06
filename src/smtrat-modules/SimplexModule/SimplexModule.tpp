@@ -209,13 +209,13 @@ bool SimplexModule<Settings>::update_range(const SimplexVariable v, const BoundR
     if (type == BoundType::UPPER || type == BoundType::EQUAL) {
         if (!has_upper_bound(v) || is_below(b, upper_bound(v))) {
             set_upper_bound(v,b);
-            if (find_conflicting_bounds(v, /* lower: */ true)) return false;
+            if (find_conflicting_lower_bounds(v,b)) return false;
         }
     }
     if (type == BoundType::LOWER || type == BoundType::EQUAL) {
         if (!has_lower_bound(v) || is_below(lower_bound(v), b)) {
             set_lower_bound(v,b);
-            if (find_conflicting_bounds(v, /* lower: */ false)) return false;
+            if (find_conflicting_upper_bounds(v,b)) return false;
         }
     }
 
@@ -236,41 +236,36 @@ bool SimplexModule<Settings>::activate_neq(const FormulaT& f) {
     return true;
 }
 
-
 template<class Settings>
-bool SimplexModule<Settings>::find_conflicting_bounds(const SimplexVariable v, bool lower) {
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "collecting conflicting bounds for sv_" << v);
-
+bool SimplexModule<Settings>::find_conflicting_lower_bounds(const SimplexVariable v, BoundRef b) {
     if (has_consistent_range(v)) return false;
 
-    if (lower) {
-        BoundRef b = upper_bound(v);
-        const DeltaRational& b_val = get_value(b);
+    const DeltaRational& b_val = get_value(b);
 
-        const BoundRef lb = lower_bound(v);
-        if (is_derived(lb)) {
-            if (get_value(lb) > b_val) construct_infeasible_subset({lb, b});
-        }
-        
-        for (auto lb_it = m_lower_bounds[v].begin(); lb_it != m_lower_bounds[v].end(); ++lb_it) {
-            if (is_active(*lb_it) && (get_value(*lb_it) > b_val))
-                construct_infeasible_subset({*lb_it, b});
-            if (*lb_it == lower_bound(v)) break; // NOTE: only works because bounds are ordered
-        }
-    } else {
-        BoundRef b = lower_bound(v);
-        const DeltaRational& b_val = get_value(b);
+    const BoundRef lb = lower_bound(v);
+    if (is_derived(lb) && (get_value(lb) > b_val)) construct_infeasible_subset({lb, b});
+    
+    for (auto lb_it = m_lower_bounds[v].begin(); lb_it != m_lower_bounds[v].end(); ++lb_it) {
+        if (is_active(*lb_it) && (get_value(*lb_it) > b_val))
+            construct_infeasible_subset({*lb_it, b});
+        if (*lb_it == lower_bound(v)) break; // NOTE: only works because bounds are ordered
+    }
+    return true;
+}
 
-        const BoundRef ub = upper_bound(v);
-        if (is_derived(ub)) {
-            if (get_value(ub) < b_val) construct_infeasible_subset({ub, b});
-        }
+template<class Settings>
+bool SimplexModule<Settings>::find_conflicting_upper_bounds(const SimplexVariable v, BoundRef b) {
+    if (has_consistent_range(v)) return false;
 
-        for (auto ub_it = m_upper_bounds[v].rbegin(); ub_it != m_upper_bounds[v].rend(); ++ub_it) {
-            if (is_active(*ub_it) && (get_value(*ub_it) < b_val))
-                construct_infeasible_subset({*ub_it, b});
-            if (*ub_it == upper_bound(v)) break; // NOTE: only works because bounds are ordered
-        }
+    const DeltaRational& b_val = get_value(b);
+
+    const BoundRef ub = upper_bound(v);
+    if (is_derived(ub) && (get_value(ub) < b_val)) construct_infeasible_subset({ub, b});
+
+    for (auto ub_it = m_upper_bounds[v].rbegin(); ub_it != m_upper_bounds[v].rend(); ++ub_it) {
+        if (is_active(*ub_it) && (get_value(*ub_it) < b_val))
+            construct_infeasible_subset({*ub_it, b});
+        if (*ub_it == upper_bound(v)) break; // NOTE: only works because bounds are ordered
     }
     return true;
 }
@@ -898,6 +893,7 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
                                                 const BoundType type,
                                                 const DeltaRational& value,
                                                 const BoundVec& premises) {
+    // collect the origins of all premises
     FormulaSetT single_origins;
     for (const BoundRef p : premises) {
         const FormulaT& o = get_origin(p);
@@ -907,32 +903,72 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
             single_origins.insert(o);
         }
     }
-
     const FormulaT origin_conj = FormulaT(carl::FormulaType::AND, single_origins);
+
+    // create the bound, add it to bookkeeping
     const BoundRef b = m_bounds.add_derived(var, type, value, origin_conj);
     m_derived_bounds.push_back(b);
     activate(b);
     for (const auto& o : single_origins) {
         m_bounds_derived_from[o].push_back(b);
     }
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "Add " << m_bounds[b] << " derived from " << origin_conj);
 
-    SMTRAT_LOG_DEBUG("smtrat.simplex", "Add derived bound " << m_bounds[b] << " from " << origin_conj);
-
+    // update range and learn lemmas
     switch (type) {
     case BoundType::EQUAL: {
         // this extra check is for catching conflicting bounds.
-        // If we set both bounds, we might miss a conflict
+        // If we set both bounds at once, we might miss a conflict
         if (!has_lower_bound(var) || (value > get_value(lower_bound(var)))) {
             set_lower_bound(var, b);
+            propagate_derived_lower(var, b);
         }
         if (!has_upper_bound(var) || (value < get_value(upper_bound(var)))) {
             set_upper_bound(var, b);
+            propagate_derived_upper(var, b);
         }
         break;
     }
-    case BoundType::LOWER: { set_lower_bound(var, b); break; }
-    case BoundType::UPPER: { set_upper_bound(var, b); break; }
+    case BoundType::LOWER: { 
+        set_lower_bound(var, b);
+        propagate_derived_lower(var, b);
+        break;
+    }
+    case BoundType::UPPER: {
+        set_upper_bound(var, b);
+        propagate_derived_upper(var, b);
+        break;
+    }
     default: assert(false);
+    }
+}
+
+
+template<class Settings>
+void SimplexModule<Settings>::propagate_derived_lower(const SimplexVariable v, const BoundRef b) {
+    if constexpr (!Settings::create_lemmas_from_derived) return;
+
+    // iterate from strictest (greatest) lb to weakest (lowest) -> reverse_iterator
+    for (auto it = m_lower_bounds[v].rbegin(); it != m_lower_bounds[v].rend() ++it) {
+        if (!is_below(*it, b)) {
+            // it is next weaker lower bound
+            propagate(b, *it);
+            break;
+        }
+    }
+}
+
+template<class Settings>
+void SimplexModule<Settings>::propagate_derived_upper(const SimplexVariable v, const BoundRef b) {
+    if constexpr (!Settings::create_lemmas_from_derived) return;
+
+    // iterate from strictest (lowest) ub to weakest (greatest) -> forward iterator
+    for (auto it = m_upper_bounds[v].begin(); it != m_upper_bounds[v].end() ++it) {
+        if (!is_below(b, *it)) {
+            // it is next weaker upper bound
+            propagate(b, *it);
+            break;
+        }
     }
 }
 
@@ -971,7 +1007,7 @@ void SimplexModule<Settings>::propagate_lower(const BoundRef b) {
         // TODO: also, can't we leave out is_active here? if it were active, then there woudl have
         // been a conflict while activating...
         // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
-        propagate(b, *upper_it, /*conclusion_negated : */ true);
+        propagate_negated(b, *upper_it);
     }
 
     const auto& lbs = m_lower_bounds[get_variable(b)];
@@ -983,7 +1019,7 @@ void SimplexModule<Settings>::propagate_lower(const BoundRef b) {
         if (is_active(*lower_it)) continue;
         if (get_type(*lower_it) == BoundType::EQUAL) continue;
 
-        propagate(b, *lower_it, /*conclusion_negated : */ false);
+        propagate(b, *lower_it);
     }
 }
 
@@ -997,7 +1033,7 @@ void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
         if (!is_below(b, *lower_it)) break;
         if (is_active(*lower_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
         // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
-        propagate(b, *lower_it, /*conclusion_negated : */ true);
+        propagate_negated(b, *lower_it);
     }
 
     const auto& ubs = m_upper_bounds[get_variable(b)];
@@ -1009,7 +1045,7 @@ void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
         if (is_active(*upper_it)) continue;
         if (get_type(*upper_it) == BoundType::EQUAL) continue;
 
-        propagate(b, *upper_it, /*conclusion_negated : */ false);
+        propagate(b, *upper_it);
     }
 }
 
@@ -1024,19 +1060,19 @@ void SimplexModule<Settings>::propagate_equal(const BoundRef b) {
     for (; lower_it != lbs.end() && is_below(*lower_it, b); ++lower_it) {
         if (is_active(*lower_it)) continue;
         if (get_type(*lower_it) == BoundType::EQUAL) {
-            propagate(b, *lower_it, /*conclusion_negated : */ true);
+            propagate_negated(b, *lower_it);
         } else {
-            propagate(b, *lower_it, /*conclusion_negated : */ false);
+            propagate(b, *lower_it);
         }
     }
 
     for (; lower_it != lbs.end() && !is_below(b, *lower_it); ++lower_it) {
-        if (!is_active(*lower_it)) propagate(b, *lower_it, /*conclusion_negated : */ false);
+        if (!is_active(*lower_it)) propagate(b, *lower_it);
     }
 
     for (; lower_it != lbs.end(); ++lower_it) {
         if (is_active(*lower_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
-        propagate(b, *lower_it, /*conclusion_negated : */ true);
+        propagate_negated(b, *lower_it);
     }
 
     const auto& ubs = m_upper_bounds[get_variable(b)];
@@ -1046,28 +1082,34 @@ void SimplexModule<Settings>::propagate_equal(const BoundRef b) {
         if (is_active(*upper_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
         if (get_type(*upper_it) == BoundType::EQUAL) continue; 
 
-        propagate(b, *upper_it, /*conclusion_negated : */ true);
+        propagate_negated(b, *upper_it);
     }
 
     for (; upper_it != ubs.end(); ++upper_it) {
         if (is_active(*upper_it)) continue;
         if (get_type(*upper_it) == BoundType::EQUAL) continue; 
-        propagate(b, *upper_it, /*conclusion_negated : */ false);
+        propagate(b, *upper_it);
     }
 }
 
 template<class Settings>
-void SimplexModule<Settings>::propagate(const BoundRef premise,
-                                        const BoundRef conclusion,
-                                        bool conclusion_negated) {
+void SimplexModule<Settings>::propagate(const BoundRef premise, const BoundRef conclusion) {
     FormulasT premise_origins;
     collectOrigins(get_origin(premise), premise_origins);
-    FormulaT conclusion_formula = conclusion_negated ? get_origin(conclusion).negated()
-                                                     : get_origin(conclusion);
-
+    FormulaT conclusion_formula = get_origin(conclusion);
     SMTRAT_LOG_DEBUG("smtrat.simplex", "("<< premise_origins <<") => ("<< conclusion_formula <<")");
     
     mTheoryPropagations.emplace_back(std::move(premise_origins), conclusion_formula);
-} 
+}
+
+template<class Settings>
+void SimplexModule<Settings>::propagate_negated(const BoundRef premise, const BoundRef conclusion) {
+    FormulasT premise_origins;
+    collectOrigins(get_origin(premise), premise_origins);
+    FormulaT conclusion_formula = get_origin(conclusion).negated();
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "("<< premise_origins <<") => ("<< conclusion_formula <<")");
+    
+    mTheoryPropagations.emplace_back(std::move(premise_origins), conclusion_formula);
+}
 
 }

@@ -282,7 +282,8 @@ private:
 
 /* ======================================= Bound Creation ====================================== */
 
-    bool find_conflicting_bounds(const SimplexVariable v, bool lower);
+    bool find_conflicting_lower_bounds(const SimplexVariable v, BoundRef b);
+    bool find_conflicting_upper_bounds(const SimplexVariable v, BoundRef b);
     void add_bound_to_sets(const BoundRef b);
     std::pair<SimplexVariable, Rational> add_to_tableau(const Poly& linear_term);
 
@@ -353,13 +354,15 @@ private:
 
 /* ====================================== Bound Learning ======================================= */
 
-    void learn_bounds();
     void derive_bounds(const Tableau::RowID rid);
     void derive_bound (const Tableau::RowID rid, const BoundType type);
     void add_derived_bound(const SimplexVariable var,
                            const BoundType type,
                            const DeltaRational& value,
                            const BoundVec& premises);
+
+    void propagate_derived_lower(const SimplexVariable v, const BoundRef b);
+    void propagate_derived_upper(const SimplexVariable v, const BoundRef b);
 
     void deactivate_bounds_derived_from(const FormulaT& f);
     bool reactivate_derived_bounds();
@@ -368,7 +371,8 @@ private:
 
     void simple_theory_propagation();
 
-    void propagate(const BoundRef premise, const BoundRef conclusion, bool conclusion_negated);
+    void propagate         (const BoundRef premise, const BoundRef conclusion);
+    void propagate_negated (const BoundRef premise, const BoundRef conclusion);
 
     void propagate_lower(const BoundRef b);
     void propagate_upper(const BoundRef b);
