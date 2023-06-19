@@ -120,8 +120,8 @@ namespace compound_util {
 }
 
 template<typename P>
-void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
+void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ", " << enable_weak << ")");
 
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {
@@ -138,11 +138,11 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
                 if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
-                    if (all_relations_weak) return filter_util::result::INCLUSIVE;
+                    if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE;
                     else return filter_util::result::NORMAL;
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
-                    if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                    if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                     else return filter_util::result::NORMAL_OPTIONAL;
                 }
             } else {
@@ -161,7 +161,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         assert(index_second <= roots_second.size());
                         if (roots_first[index_first-1] == roots_second[index_second-1]) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                            if (!pair.is_strict) return filter_util::result::INCLUSIVE;
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
                         }
                     } else if (pair.first.is_root()) {
@@ -183,7 +183,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         }
                         if (relevant) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                            if (!pair.is_strict) return filter_util::result::INCLUSIVE;
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
                         }
                     } else if (pair.second.is_root()) {
@@ -205,7 +205,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         }
                         if (relevant) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                            if (!pair.is_strict) return filter_util::result::INCLUSIVE;
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
                         }
                     } else {
@@ -229,13 +229,13 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         }
                         if (relevant) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                            if (!pair.is_strict) return filter_util::result::INCLUSIVE;
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
                         }
                     }
                 }
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
-                if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                 else return filter_util::result::NORMAL_OPTIONAL;
             }
         });
