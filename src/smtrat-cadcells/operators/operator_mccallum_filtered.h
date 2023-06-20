@@ -217,7 +217,7 @@ inline void delineate_properties<op::mccallum_filtered_all_compound>(datastructu
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     delineate_properties<op::mccallum_filtered_all_compound>(*deriv.delineated());
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        rules::delineate_all_compound(deriv, prop, false);
+        rules::delineate_all_compound(deriv, prop, false, false);
     }
 }
 
@@ -227,7 +227,7 @@ inline void delineate_properties<op::mccallum_filtered_all_compound_ew>(datastru
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     delineate_properties<op::mccallum_filtered_all_compound_ew>(*deriv.delineated());
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        rules::delineate_all_compound(deriv, prop, true);
+        rules::delineate_all_compound(deriv, prop, true, false);
     }
 }
 

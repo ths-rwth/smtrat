@@ -120,7 +120,7 @@ namespace compound_util {
 }
 
 template<typename P>
-void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true) {
+void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true, bool enable_regular = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ", " << enable_weak << ")");
 
     auto decomposed = ordering_util::decompose(prop.ordering);
@@ -132,9 +132,12 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
         boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
         auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
+        bool only_regular = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair) { return !(pair.first.is_root() && pair.second.is_root()); }) == d.second.end();
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+            if (!enable_regular && only_regular) return filter_util::result::NORMAL;
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
+                if (!enable_regular) return filter_util::result::NORMAL;
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
                 if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
