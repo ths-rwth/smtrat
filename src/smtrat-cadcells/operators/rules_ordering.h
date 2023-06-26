@@ -137,8 +137,8 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
             if (!enable_regular && only_regular) return filter_util::result::NORMAL;
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
-                if (!enable_regular) return filter_util::result::NORMAL;
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
+                if (!enable_regular) return filter_util::result::NORMAL;
                 if (filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
                     if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE;
@@ -156,6 +156,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                 auto roots2 = deriv.proj().real_roots(ass,poly2);
                 for (const auto& pair : d.second) {
                     if (pair.first.is_root() && pair.second.is_root()) {
+                        if (!enable_regular) return filter_util::result::NORMAL;
                         const auto& roots_first = pair.first.root().poly == poly1 ? roots1 : roots2;
                         const auto& roots_second = pair.first.root().poly == poly1 ? roots2 : roots1;
                         auto index_first = pair.first.root().index;
@@ -231,6 +232,68 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                             }
                         }
                         if (relevant) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
+                            else return filter_util::result::NORMAL;
+                        }
+                    }
+                }
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
+                if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                else return filter_util::result::NORMAL_OPTIONAL;
+            }
+        });
+    }
+}
+
+template<typename P>
+void delineate_all_compound_piecewiselinear(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ", " << enable_weak << ")");
+
+    auto decomposed = ordering_util::decompose(prop.ordering);
+    for (const auto& d : decomposed) {
+        const auto& poly1 = d.first.first;
+        const auto& poly2 = d.first.second;
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
+        bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
+        boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
+        auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
+        assert(delineable_interval);
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+            Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
+            if (!delineable_interval->contains(ran)) {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
+                return filter_util::result::NORMAL;
+            } else {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
+                for (const auto& pair : d.second) {
+                    if (pair.first.is_root() && pair.second.is_root()) {
+                        return filter_util::result::NORMAL;
+                    } else if (pair.first.is_root()) {
+                        assert(pair.second.is_cminmax() || pair.second.is_cmaxmin());
+                        auto poly_second = pair.first.root().poly == poly1 ? poly2 : poly1;
+                        if ((pair.second.is_cminmax() && pair.second.cminmax().bounds->poly_bound_at(poly_second, ran)) ||
+                            (pair.second.is_cmaxmin() && pair.second.cmaxmin().bounds->poly_bound_at(poly_second, ran))) {
+                            // we could check whether the correct roots intersect at the given point (i.e. check whether the first indexed root expression is equal to the corresponding bound; but we omit that here...)
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
+                            else return filter_util::result::NORMAL;
+                        }
+                    } else if (pair.second.is_root()) {
+                        assert(pair.first.is_cminmax() || pair.first.is_cmaxmin());
+                        auto poly_first = pair.second.root().poly == poly1 ? poly2 : poly1;
+                        if ((pair.first.is_cminmax() && pair.first.cminmax().bounds->poly_bound_at(poly_first, ran)) ||
+                            (pair.first.is_cmaxmin() && pair.first.cmaxmin().bounds->poly_bound_at(poly_first, ran))) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                            if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
+                            else return filter_util::result::NORMAL;
+                        }
+                    } else {
+                        assert(pair.first.is_cmaxmin() && pair.second.is_cminmax());
+                        auto poly_first = (pair.first.has_poly(poly1) && pair.second.has_poly(poly2)) ? poly1 : poly2;
+                        auto poly_second = (pair.first.has_poly(poly1) && pair.second.has_poly(poly2)) ? poly2 : poly1;
+                        assert(pair.first.has_poly(poly_first) && pair.second.has_poly(poly_second));
+                        if (pair.first.cmaxmin().bounds->poly_bound_at(poly_first, ran) && pair.second.cminmax().bounds->poly_bound_at(poly_second, ran)) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                             if (!pair.is_strict && enable_weak) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;

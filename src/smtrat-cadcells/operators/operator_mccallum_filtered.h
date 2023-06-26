@@ -231,4 +231,24 @@ inline void delineate_properties<op::mccallum_filtered_all_compound_ew>(datastru
     }
 }
 
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_compound_piecewiselinear, false)
+template <>
+inline void delineate_properties<op::mccallum_filtered_all_compound_piecewiselinear>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_compound_piecewiselinear>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    delineate_properties<op::mccallum_filtered_all_compound_piecewiselinear>(*deriv.delineated());
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate_all_compound_piecewiselinear(deriv, prop, false);
+    }
+}
+
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_compound_piecewiselinear_ew, true)
+template <>
+inline void delineate_properties<op::mccallum_filtered_all_compound_piecewiselinear_ew>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_compound_piecewiselinear_ew>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    delineate_properties<op::mccallum_filtered_all_compound_piecewiselinear_ew>(*deriv.delineated());
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate_all_compound_piecewiselinear(deriv, prop, true);
+    }
+}
+
 }

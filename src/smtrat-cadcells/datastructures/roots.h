@@ -34,6 +34,20 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     return os;
 }
 
+struct PiecewiseLinearInfo {
+    /// Active linear bound from -oo to including the first intersection point (or oo if no such point exists)
+    IndexedRoot first;
+    /// List of intersection points and linear bounds which are active beginning from including the given intersection point to including the next intersection point (or oo if no such point exists); at intersection points, two bounds are active; the list needs to be sorted by intersection point
+    std::vector<std::pair<Rational,IndexedRoot>> bounds;
+
+    bool poly_bound_at(const PolyRef& poly, const RAN& r) const {
+        if (bounds.empty()) return first.poly == poly;
+        auto it = bounds.begin();
+        while(it+1 != bounds.end() && r < (it+1)->first) it++;
+        return it->second.poly == poly;
+    }
+};
+
 /**
  * Represents the minimum function  of the contained indexed root functions.
  */
@@ -46,6 +60,7 @@ struct CompoundMinMax {
             }
         }
     }
+    std::optional<PiecewiseLinearInfo> bounds;
 };
 inline bool operator==(const CompoundMinMax& lhs, const CompoundMinMax& rhs) {
     return lhs.roots == rhs.roots;
@@ -73,6 +88,7 @@ struct CompoundMaxMin {
             }
         }
     }
+    std::optional<PiecewiseLinearInfo> bounds;
 };
 inline bool operator==(const CompoundMaxMin& lhs, const CompoundMaxMin& rhs) {
     return lhs.roots == rhs.roots;
