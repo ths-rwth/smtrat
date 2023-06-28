@@ -52,7 +52,7 @@ public:
         addKeyValuePair( "theory_propagations", m_theory_propagations);
         addKeyValuePair( "checks",              m_checks);
         addKeyValuePair( "checks_with_pivots",  m_checks_with_pivot);
-        addKeyValuePair( "avg_check_size",      save_divide(m_sum_check_sizes, m_checks));
+        addKeyValuePair( "avg_check_size",      safe_divide(m_sum_check_sizes, m_checks));
         addKeyValuePair( "neq_splits",          m_neq_splits);
     }
 

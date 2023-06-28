@@ -434,19 +434,26 @@ void SimplexModule<Settings>::updateModel() const {
 template<class Settings>
 Answer SimplexModule<Settings>::checkCore() {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "checking...");
-    /*
-     * Not yet clear: SOI, optimization, integer...
-     */
+    /* Not yet clear: SOI, optimization, integer... */
 
     if constexpr (Settings::reactivate_derived_bounds) {
         if (!reactivate_derived_bounds()) {
             SMTRAT_LOG_DEBUG("smtrat.simplex", "reactivating bounds lead to conflict");
-            return Answer::UNSAT;
+            return process_result(Answer::UNSAT);
         }
     }
 
     if constexpr (Settings::simple_theory_propagation) {
         simple_theory_propagation();
+    }
+
+    if constexpr (Settings::initial_bound_derivation) {
+        for (Tableau::RowID r = 0; r < m_tableau.num_rows(); ++r) derive_bounds(r);
+        // Bound learning after pivot can lead to conflicts, stored in mInfeasibleSubsets
+        if (!mInfeasibleSubsets.empty()) {
+            SMTRAT_LOG_DEBUG("smtrat.simplex", "Deriving bounds lead to conflict");
+            return process_result(Answer::UNSAT);
+        }
     }
 
     m_num_pivots = 0;
@@ -457,7 +464,7 @@ Answer SimplexModule<Settings>::checkCore() {
 
         if (conflict_or_pivot.is_conflict()) {
             construct_infeasible_subset(conflict_or_pivot.conflict());
-            return Answer::UNSAT;
+            return process_result(Answer::UNSAT);
         }
 
         pivot_and_update(conflict_or_pivot.pivot_candidate());
@@ -465,18 +472,11 @@ Answer SimplexModule<Settings>::checkCore() {
         // Bound learning after pivot can lead to conflicts, stored in mInfeasibleSubsets
         if (!mInfeasibleSubsets.empty()) {
             SMTRAT_LOG_DEBUG("smtrat.simplex", "Deriving bounds lead to conflict");
-            return Answer::UNSAT;
+            return process_result(Answer::UNSAT);
         }
     }
 
-    m_model_computed = false;
-    updateModel();
-
-    if constexpr (Settings::neq_handling == simplex::NEQHandling::SPLITTING_ON_DEMAND) {
-        if (!check_neqs()) return Answer::UNKNOWN;
-    }
-
-    return Answer::SAT;
+    return process_result(Answer::SAT);
 }
 
 
@@ -720,7 +720,14 @@ void SimplexModule<Settings>::pivot_and_update(PivotCandidate pivot_candidate) {
     update(x_i, diff);
 
     if constexpr (Settings::derive_bounds) {
-        derive_bounds(get_tableau_index(x_j));
+        if constexpr (Settings::derive_bounds_eager) {
+            auto end = m_tableau.col_end(x_i);
+            for (auto it = m_tableau.col_begin(x_i); it != end; ++it) {
+                derive_bounds(it.get_row());
+            }
+        } else {
+            derive_bounds(get_tableau_index(x_j));
+        }
     }
 
     m_changed_basic_vars.erase(x_i);
@@ -748,6 +755,7 @@ void SimplexModule<Settings>::update(SimplexVariable nonbase_var, const DeltaRat
 template<class Settings>
 void SimplexModule<Settings>::pivot(SimplexVariable x_i, SimplexVariable x_j, const Rational& a_ij) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "pivot");
+    SMTRAT_STATISTICS_CALL(m_statistics.pivot());
 
     // swap basic and nonbasic
     Tableau::RowID r_i = get_tableau_index(x_i);
@@ -791,6 +799,7 @@ bool SimplexModule<Settings>::check_neqs() {
         if (!carl::satisfied_by(neq, mModel)) {
             SMTRAT_LOG_DEBUG("smtrat.simplex", "NEQ " << neq << " is not satisfied!");
             all_satisfied = false;
+            SMTRAT_STATISTICS_CALL(m_statistics.neq_split());
             splitUnequalConstraint(neq);
         }
     }
@@ -878,13 +887,6 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
             add_derived_bound(base_var, BoundType::UPPER, new_bound_value, involved_bounds);
         }
     }
-
-    if (!has_consistent_range(base_var)) {
-        SMTRAT_LOG_DEBUG("smtrat.simplex", "Derived Conflict: " << m_bounds[lower_bound(base_var)]
-                                            << ", " << m_bounds[upper_bound(base_var)]);
-
-        construct_infeasible_subset({lower_bound(base_var), upper_bound(base_var)});
-    }
 }
 
 
@@ -893,6 +895,8 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
                                                 const BoundType type,
                                                 const DeltaRational& value,
                                                 const BoundVec& premises) {
+    SMTRAT_STATISTICS_CALL(m_statistics.refinement());
+
     // collect the origins of all premises
     FormulaSetT single_origins;
     for (const BoundRef p : premises) {
@@ -921,21 +925,25 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
         // If we set both bounds at once, we might miss a conflict
         if (!has_lower_bound(var) || (value > get_value(lower_bound(var)))) {
             set_lower_bound(var, b);
+            find_conflicting_upper_bounds(var, b);
             propagate_derived_lower(var, b);
         }
         if (!has_upper_bound(var) || (value < get_value(upper_bound(var)))) {
             set_upper_bound(var, b);
+            find_conflicting_lower_bounds(var, b);
             propagate_derived_upper(var, b);
         }
         break;
     }
     case BoundType::LOWER: { 
         set_lower_bound(var, b);
+        find_conflicting_upper_bounds(var, b);
         propagate_derived_lower(var, b);
         break;
     }
     case BoundType::UPPER: {
         set_upper_bound(var, b);
+        find_conflicting_lower_bounds(var, b);
         propagate_derived_upper(var, b);
         break;
     }
@@ -1100,7 +1108,7 @@ void SimplexModule<Settings>::propagate(const BoundRef premise, const BoundRef c
     collectOrigins(get_origin(premise), premise_origins);
     FormulaT conclusion_formula = get_origin(conclusion);
     SMTRAT_LOG_DEBUG("smtrat.simplex", "("<< premise_origins <<") => ("<< conclusion_formula <<")");
-    
+    SMTRAT_STATISTICS_CALL(m_statistics.theory_propagation());
     mTheoryPropagations.emplace_back(std::move(premise_origins), conclusion_formula);
 }
 
@@ -1110,7 +1118,7 @@ void SimplexModule<Settings>::propagate_negated(const BoundRef premise, const Bo
     collectOrigins(get_origin(premise), premise_origins);
     FormulaT conclusion_formula = get_origin(conclusion).negated();
     SMTRAT_LOG_DEBUG("smtrat.simplex", "("<< premise_origins <<") => ("<< conclusion_formula <<")");
-    
+    SMTRAT_STATISTICS_CALL(m_statistics.theory_propagation());
     mTheoryPropagations.emplace_back(std::move(premise_origins), conclusion_formula);
 }
 

@@ -91,8 +91,13 @@ public:
     std::size_t row_size    (RowID r) const { return m_rows[r].num_nonzero_entries(); }
     std::size_t column_size (ColID v) const { return m_columns[v].num_nonzero_entries(); }
 
-    std::size_t num_vars() const { return m_columns.size(); }
-    std::size_t num_rows() const { return m_rows.size(); }
+    std::size_t num_vars()    const { return m_columns.size(); }
+    std::size_t num_rows()    const { return m_rows.size(); }
+    std::size_t num_entries() const {
+        std::size_t result = 0;
+        for (const auto& r : m_rows) result += r.num_entries();
+        return result;
+    }
 
     void add_var(RowID r, const T& n, ColID var);
     void add    (RowID r, const T& n, RowID src);

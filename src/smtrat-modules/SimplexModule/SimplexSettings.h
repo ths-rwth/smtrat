@@ -36,7 +36,9 @@ struct SimplexSettings1 {
     static constexpr bool    simple_theory_propagation = true;
     static constexpr bool                derive_bounds = true;
     static constexpr bool    reactivate_derived_bounds = derive_bounds && true;
-    static constexpr bool   lemmas_from_derived_bounds = derive_bounds && true;
+    static constexpr bool   lemmas_from_derived_bounds = derive_bounds && false;
+    static constexpr bool     initial_bound_derivation = derive_bounds && true;
+    static constexpr bool          derive_bounds_eager = derive_bounds && true;
 
     static constexpr bool internal_neq_handling() {
         return (neq_handling == simplex::NEQHandling::UPDATE_PERTURBATION) ||

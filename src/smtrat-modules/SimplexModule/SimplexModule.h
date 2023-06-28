@@ -14,6 +14,7 @@
 #include "simplex/VariableInfo.h"
 #include "simplex/Bound.h"
 #include "simplex/Tableau.h"
+#include "SimplexStatistics.h"
 
 namespace smtrat {
 
@@ -125,6 +126,9 @@ private:
     FormulasT                          m_neq_constraints; // used by SPLITTING_ON_DEMAND
     std::vector<BoundSet>              m_neq_bounds;      // used by UPDATE_PERTURBATION and PIVOT
 
+    #ifdef SMTRAT_DEVOPTION_Statistics
+    SimplexStatistics& m_statistics = statistics_get<SimplexStatistics>("Simplex");
+    #endif
 
 /* ============================================================================================= */
 /* //////////////////////////////////    Public Interfaces    ////////////////////////////////// */
@@ -199,6 +203,25 @@ public:
 /* //////////////////////////////////    Interior Methods    /////////////////////////////////// */
 /* ============================================================================================= */
 private:
+
+    Answer process_result(Answer a) {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+            m_statistics.check(rReceivedFormula());
+            m_statistics.tableau_entries(m_tableau.num_entries());
+            m_statistics.tableau_size(m_tableau.num_rows()*m_tableau.num_vars());
+        #endif
+        if (a == Answer::SAT) {
+            m_model_computed = false;
+            updateModel();
+
+            if constexpr (Settings::neq_handling == simplex::NEQHandling::SPLITTING_ON_DEMAND) {
+                if (!check_neqs()) return Answer::UNKNOWN;
+            }
+        } else {
+            SMTRAT_STATISTICS_CALL(m_statistics.conflict(mInfeasibleSubsets));
+        }
+        return a;
+    }
 
 /* ============================= Access to Bound data via BoundRef ============================= */
 
