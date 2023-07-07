@@ -7,6 +7,8 @@
 #include <carl-arith/constraint/Conversion.h>
 #include <carl-arith/extended/Conversion.h>
 
+#include "../../utils/RootExpr.h"
+
 
 namespace smtrat::mcsat::onecell {
 
@@ -20,7 +22,8 @@ namespace smtrat::mcsat::onecell {
 // using Settings = LDBFilteredAllSelectiveSettings;
 using Settings = BCApproximationSettings;
 
-bool clause_chain_with_equivalences = false;
+constexpr bool clause_chain_with_equivalences = false;
+constexpr bool enforce_tarski = false;
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
@@ -91,7 +94,16 @@ Explanation::operator()(const mcsat::Bookkeeping& trail, carl::Variable var, con
                 if (std::holds_alternative<cadcells::Constraint>(f)) {
                     tmp.push_back(FormulaT(ConstraintT(carl::convert<Poly>(std::get<cadcells::Constraint>(f)))).negated());
                 } else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
-                    tmp.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))).negated());
+                    auto transf = constr_from_vc(std::get<cadcells::VariableComparison>(f), ass, enforce_tarski);
+                    if (transf.empty()) {
+                        tmp.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))).negated());
+                    } else {
+                        std::vector<FormulaT> tmp2;
+                        for (const auto& c : transf) {
+                            tmp2.push_back(FormulaT(ConstraintT(carl::convert<Poly>(c))).negated());
+                        }
+                        tmp.emplace_back(carl::FormulaType::OR, std::move(tmp2));
+                    }
                 } else {
                     assert(false);
                 }
