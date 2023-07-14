@@ -521,10 +521,9 @@ void SimplexModule<Settings>::build_initial_assignment() {
     } else {
         // there is an assignment from a previous run
         for (SimplexVariable v = 0; v < m_num_variables; ++v) {
-            if (is_basic(v)) continue;
-            if (assigned_in_range(v)) continue;
-            if (has_lower_bound(v))    m_assignment[v] = get_value(lower_bound(v));
-            else /*(has_upper_bound(v)) */ m_assignment[v] = get_value(upper_bound(v));
+            if (is_basic(v) || assigned_in_range(v)) continue;
+            if (has_lower_bound(v))     m_assignment[v] = get_value(lower_bound(v));
+            else /*has_upper_bound(v)*/ m_assignment[v] = get_value(upper_bound(v));
         }
     }
     compute_basic_assignment();
@@ -558,19 +557,13 @@ bool SimplexModule<Settings>::exist_violated_bounds() {
     std::vector<SimplexVariable> no_fix_needed;
     for (SimplexVariable v : m_changed_basic_vars) {
         bool needs_fix = false;
-        if (has_lower_bound(v)) {
-            BoundRef b = lower_bound(v);
-            if (m_assignment[v] < get_value(b)) {
-                m_violated_bounds.push_back(b);
-                needs_fix = true;
-            }
+        if (violates_lower(v)) {
+            m_violated_bounds.push_back(lower_bound(v));
+            needs_fix = true;
         }
-        if (has_upper_bound(v)) {
-            BoundRef b = upper_bound(v);
-            if (m_assignment[v] > get_value(b)) {
-                m_violated_bounds.push_back(b);
-                needs_fix = true;
-            }
+        if (violates_upper(v)) {
+            m_violated_bounds.push_back(upper_bound(v));
+            needs_fix = true;
         }
         if (!needs_fix) no_fix_needed.push_back(v);
     }
@@ -626,12 +619,15 @@ std::optional<typename SimplexModule<Settings>::BoundRef> SimplexModule<Settings
     SMTRAT_LOG_DEBUG("smtrat.simplex", "checking suitability for pivot");
     // TODO: use b to have further restrictions
 
-    if (increase == (entry.coeff() > 0)) {
-        if (is_at_upper(entry.var())) return upper_bound(entry.var());
-        return std::nullopt;
+    if constexpr (Settings::pivot_strategy == simplex::PivotStrategy::FMPLEX) {
+
     }
 
-    if (is_at_lower(entry.var())) return lower_bound(entry.var());
+    if (increase == (entry.coeff() > 0)) {
+        if (is_at_upper(entry.var())) return upper_bound(entry.var());
+    } else {
+        if (is_at_lower(entry.var())) return lower_bound(entry.var());
+    }
     return std::nullopt;
 }
 

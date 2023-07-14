@@ -325,13 +325,11 @@ private:
     }
 
     bool is_at_lower(const SimplexVariable v) const {
-        if (!has_lower_bound(v)) return false;
-        return m_assignment[v] == get_value(lower_bound(v));
+        return has_lower_bound(v) && (m_assignment[v] == get_value(lower_bound(v)));
     }
 
     bool is_at_upper(const SimplexVariable v) const {
-        if (!has_upper_bound(v)) return false;
-        return m_assignment[v] == get_value(upper_bound(v));
+        return has_upper_bound(v) && (m_assignment[v] == get_value(upper_bound(v)));
     }
 
     void compute_basic_assignment();
