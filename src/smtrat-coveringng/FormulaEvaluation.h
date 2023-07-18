@@ -110,4 +110,4 @@ public:
 
 } // namespace smtrat::coveringng::formula
 
-#include "FormulaEvaluation.h"
+#include "FormulaEvaluationGraph.h"

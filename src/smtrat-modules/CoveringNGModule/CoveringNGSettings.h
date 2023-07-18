@@ -79,5 +79,15 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     };
 };
 
+struct CoveringNGSettingsGraph : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create() {
+            return Type();
+        }
+    };
+};
+
 
 } // namespace smtrat
