@@ -470,10 +470,15 @@ struct FormulaGraph {
 
 class GraphEvaluation {
 
+using ImplicantComplexityOrdering = std::function<bool(const boost::container::flat_set<cadcells::Constraint>&, const boost::container::flat_set<cadcells::Constraint>&)>;
+
 private:
     formula_ds::FormulaGraph true_graph;
     formula_ds::FormulaGraph false_graph;
     cadcells::Assignment assignment;
+
+    ImplicantComplexityOrdering m_implicant_complexity_ordering;
+    std::size_t m_results;
 
     carl::Variable new_var(const cadcells::Assignment& old_ass, const cadcells::Assignment& new_ass) {
         for (const auto& [k,v] : new_ass) {
@@ -483,7 +488,7 @@ private:
     }
 
 public:
-    GraphEvaluation() {}
+    GraphEvaluation(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t results) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
         {std::map<std::size_t,formula_ds::FormulaID> cache;
@@ -533,14 +538,20 @@ public:
         auto reasons = (root_valuation() == Valuation::FALSE) ? true_graph.conflict_reasons() : false_graph.conflict_reasons();
         auto& graph = (root_valuation() == Valuation::FALSE) ? true_graph : false_graph;
 
-        std::vector<boost::container::flat_set<cadcells::Constraint>> result;
+        std::vector<boost::container::flat_set<cadcells::Constraint>> implicants;
         for (const auto& r : reasons) {
-            result.emplace_back();
+            implicants.emplace_back();
             for (const auto& c : r) {
-                result.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint);
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint);
             }
         }
-        return result;
+
+        if (m_results != 0) {
+            std::sort(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
+            if (m_results < implicants.size())
+                implicants.erase(implicants.begin() + m_results, implicants.end());
+        }
+        return implicants;
     }
     
     Valuation root_valuation() const {

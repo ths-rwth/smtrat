@@ -79,15 +79,37 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     };
 };
 
-struct CoveringNGSettingsGraph : CoveringNGSettingsDefault  {
+struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type();
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 0);
         }
     };
 };
 
+struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 1);
+        }
+    };
+};
+
+struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create() {
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 2);
+        }
+    };
+};
 
 } // namespace smtrat
