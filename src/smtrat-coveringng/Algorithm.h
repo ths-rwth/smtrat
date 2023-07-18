@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "FormulaEvaluation.h"
+#include "FormulaEvaluationGraph.h"
 #include "Sampling.h"
 
 namespace smtrat::covering_ng {
