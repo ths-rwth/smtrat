@@ -289,7 +289,16 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
 
             auto val = db[id].valuation();
             if (val == Valuation::MULTIVARIATE) {
-                if (multivariate_sub.empty() && !true_sub.empty()) {
+                if (!true_sub.empty() && !false_sub.empty()) {
+                    Formula::Reasons reasons;
+                    for (const auto t : true_sub) {
+                        for (const auto f : false_sub) {
+                            auto tmp = combine_reasons(db[t].reasons_true,db[f].reasons_false);
+                            reasons.insert(tmp.begin(), tmp.end());
+                        }
+                    }
+                    add_reasons_false(id, reasons);
+                } else if (multivariate_sub.empty() && !true_sub.empty()) {
                     Formula::Reasons reasons;
                     reasons.emplace();
                     for (const auto t : true_sub) {
@@ -303,16 +312,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                         reasons = combine_reasons(reasons, db[f].reasons_false);
                     }
                     add_reasons_true(id, reasons);
-                } else if (!true_sub.empty() && !false_sub.empty()) {
-                    Formula::Reasons reasons;
-                    for (const auto t : true_sub) {
-                        for (const auto f : false_sub) {
-                            auto tmp = combine_reasons(db[t].reasons_true,db[f].reasons_false);
-                            reasons.insert(tmp.begin(), tmp.end());
-                        }
-                    }
-                    add_reasons_false(id, reasons);
-                }
+                } 
             } else if (val == Valuation::TRUE) {
                 for (const auto t : true_sub) {
                     for (const auto sub : c.subformulas) {
