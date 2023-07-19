@@ -269,8 +269,79 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 }
             } else assert(false);
         },
-        [&](IFF& c) { // TODO
-            assert(false);
+        [&](IFF& c) {
+            std::vector<FormulaID> true_sub;
+            std::vector<FormulaID> false_sub;
+            std::vector<FormulaID> multivariate_sub;
+            for (const auto subformula : c.subformulas) {
+                auto sub_val = db[subformula].valuation();
+                if (sub_val == Valuation::FALSE) {
+                    false_sub.push_back(subformula);
+                } else if (sub_val == Valuation::TRUE) {
+                    true_sub.push_back(subformula);
+                } else if (sub_val == Valuation::MULTIVARIATE) {
+                    multivariate_sub.push_back(subformula);
+                } else {
+                    assert(sub_val == Valuation::UNKNOWN);
+                    return;
+                }
+            }
+
+            auto val = db[id].valuation();
+            if (val == Valuation::MULTIVARIATE) {
+                if (multivariate_sub.empty() && !true_sub.empty()) {
+                    Formula::Reasons reasons;
+                    reasons.emplace();
+                    for (const auto t : true_sub) {
+                        reasons = combine_reasons(reasons, db[t].reasons_true);
+                    }
+                    add_reasons_true(id, reasons);
+                } else if (multivariate_sub.empty() && !false_sub.empty()) {
+                    Formula::Reasons reasons;
+                    reasons.emplace();
+                    for (const auto f : false_sub) {
+                        reasons = combine_reasons(reasons, db[f].reasons_false);
+                    }
+                    add_reasons_true(id, reasons);
+                } else if (!true_sub.empty() && !false_sub.empty()) {
+                    Formula::Reasons reasons;
+                    for (const auto t : true_sub) {
+                        for (const auto f : false_sub) {
+                            auto tmp = combine_reasons(db[t].reasons_true,db[f].reasons_false);
+                            reasons.insert(tmp.begin(), tmp.end());
+                        }
+                    }
+                    add_reasons_false(id, reasons);
+                }
+            } else if (val == Valuation::TRUE) {
+                for (const auto t : true_sub) {
+                    for (const auto sub : c.subformulas) {
+                        add_reasons_true(sub, combine_reasons(db[id].reasons_true, db[t].reasons_true));
+                    }
+                }
+                for (const auto f : false_sub) {
+                    for (const auto sub : c.subformulas) {
+                        add_reasons_false(sub, combine_reasons(db[id].reasons_true, db[f].reasons_false));
+                    }
+                }
+            } else if (val == Valuation::FALSE) {
+                if (multivariate_sub.size() == 1 && (true_sub.empty() || false_sub.empty())) {
+                    if (true_sub.empty()) {
+                        Formula::Reasons reasons = db[id].reasons_false;
+                        for (const auto f : false_sub) {
+                            reasons = combine_reasons(reasons, db[f].reasons_false);
+                        }
+                        add_reasons_true(*multivariate_sub.begin(), reasons);
+                    } else {
+                        assert(false_sub.empty());
+                        Formula::Reasons reasons = db[id].reasons_false;
+                        for (const auto t : true_sub) {
+                            reasons = combine_reasons(reasons, db[t].reasons_true);
+                        }
+                        add_reasons_false(*multivariate_sub.begin(), reasons);
+                    }
+                }
+            } else assert(false);
         },
         [&](XOR& c) {
             std::optional<FormulaID> implied;
