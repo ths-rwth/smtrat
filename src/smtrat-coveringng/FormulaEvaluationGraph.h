@@ -35,14 +35,13 @@ struct CONSTRAINT { // TODO later: we add formulas like p<0 -> not p>0 and so on
 struct Formula {
     using Reasons = boost::container::flat_set<boost::container::flat_set<FormulaID>>;
 
-    FormulaID id;
     std::variant<TRUE,FALSE,NOT,AND,OR,IFF,XOR,BOOL,CONSTRAINT> content;
     boost::container::flat_set<FormulaID> parents;
     Reasons reasons_true;
     Reasons reasons_false;
 
     template<typename C>
-    Formula(FormulaID i, C&& c) : id(i), content(std::move(c)) {}
+    Formula(C&& c) : content(std::move(c)) {}
 
     Valuation valuation() {
         if (reasons_true.empty() && reasons_false.empty()) return Valuation::MULTIVARIATE;

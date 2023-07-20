@@ -3,7 +3,10 @@
 #include <carl-arith/constraint/Conversion.h>
 #include <carl-arith/ran/Conversion.h>
 
+#include <carl-common/util/streamingOperators.h>
+
 namespace smtrat::covering_ng::formula {
+using carl::operator<<;
 
 namespace formula_ds {
 
@@ -24,21 +27,21 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             return to_formula_db(c, FormulaT(carl::FormulaType::OR, FormulaT(carl::FormulaType::AND, f.condition(), f.first_case()), FormulaT(carl::FormulaType::AND, f.condition().negated(), f.second_case())), db, vartof, cache);
         }
         case carl::FormulaType::TRUE: {
-            db.emplace_back(db.size()-1, TRUE{ });
+            db.emplace_back(TRUE{ });
             return db.size()-1;
         }
         case carl::FormulaType::FALSE: {
-            db.emplace_back(db.size()-1, FALSE{ });
+            db.emplace_back(FALSE{ });
             return db.size()-1;
         }
         case carl::FormulaType::BOOL: {
-            db.emplace_back(db.size()-1, BOOL{ f.boolean() });
+            db.emplace_back(BOOL{ f.boolean() });
             vartof.try_emplace(f.boolean()).first->second.insert(db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::NOT: {
             auto child = to_formula_db(c,f.subformula(),db,vartof, cache);
-            db.emplace_back(db.size()-1, NOT{ child });
+            db.emplace_back(NOT{ child });
             db[child].parents.insert(db.size()-1);
             return db.size()-1;
         }
@@ -50,7 +53,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto& sf : f.subformulas()) {
                 subformulas.emplace_back(to_formula_db(c,sf, db, vartof, cache));
             }
-            db.emplace_back(db.size()-1, AND{ subformulas });
+            db.emplace_back(AND{ subformulas });
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
@@ -61,7 +64,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto& sf : f.subformulas()) {
                 subformulas.emplace_back(to_formula_db(c,sf, db, vartof, cache));
             }
-            db.emplace_back(db.size()-1, OR{ subformulas });
+            db.emplace_back(OR{ subformulas });
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
@@ -72,7 +75,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto& sf : f.subformulas()) {
                 subformulas.emplace_back(to_formula_db(c,sf, db, vartof, cache));
             }
-            db.emplace_back(db.size()-1, XOR{ subformulas });
+            db.emplace_back(XOR{ subformulas });
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
@@ -83,7 +86,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto& sf : f.subformulas()) {
                 subformulas.emplace_back(to_formula_db(c,sf, db, vartof, cache));
             }
-            db.emplace_back(db.size()-1, IFF{ subformulas });
+            db.emplace_back(IFF{ subformulas });
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
@@ -91,7 +94,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
         }
         case carl::FormulaType::CONSTRAINT: {
             auto bc = carl::convert<cadcells::Polynomial>(c, f.constraint().constr());
-            db.emplace_back(db.size()-1, CONSTRAINT{ bc });
+            db.emplace_back(CONSTRAINT{ bc });
             for (const auto var : f.constraint().variables()) {
                 vartof.try_emplace(var).first->second.insert(db.size()-1);
             }
@@ -99,7 +102,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
         }
         default: {
             assert(false);
-            db.emplace_back(db.size()-1, FALSE{});
+            db.emplace_back(FALSE{});
             return db.size()-1;
         }
     }
@@ -456,7 +459,8 @@ Formula::Reasons FormulaGraph::conflict_reasons() const {
 }
 
 void FormulaGraph::backtrack(FormulaID id) {
-    for (auto& f : db) {
+    for (std::size_t idx = 0; idx < db.size(); ++idx) {
+        auto& f = db[idx];
         for (auto reason = f.reasons_true.begin(); reason != f.reasons_true.end(); ) {
             if (reason->find(id) != reason->end()) {
                 f.reasons_true.erase(reason);
@@ -473,7 +477,7 @@ void FormulaGraph::backtrack(FormulaID id) {
         }
 
         if (f.reasons_true.empty() || f.reasons_false.empty()) {
-            conflicts.erase(f.id);
+            conflicts.erase(idx);
         }
     }
 }
