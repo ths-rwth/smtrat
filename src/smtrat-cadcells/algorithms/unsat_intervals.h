@@ -133,16 +133,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         bool below = relation == carl::Relation::GREATER || relation == carl::Relation::GEQ || relation == carl::Relation::EQ;
         bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
 
-        deriv->insert(operators::properties::poly_pdel{ iroot.poly });
-        //deriv->insert(operators::properties::root_well_def{ iroot });
-        deriv->insert(operators::properties::poly_sgn_inv{ proj.ldcf(iroot.poly) });
-        // if (carl::is_strict(relation)) {
-        //     deriv->insert(operators::properties::root_semi_inv{ iroot });
-        // } else {
-        //     deriv->insert(operators::properties::root_inv{ iroot });
-        // }
-        // if (!operators::project_basic_properties<op>(*deriv)) return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
-        // operators::delineate_properties<op>(*deriv);
+        deriv->insert(operators::properties::poly_del{ iroot.poly });
         deriv->delin().add_root(root, datastructures::TaggedIndexedRoot{iroot, (op == cadcells::operators::op::mccallum_filtered) && carl::is_strict(relation)});
 
         if (point) {
@@ -163,13 +154,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
             deriv->insert(operators::properties::poly_irreducible_sgn_inv{ poly });
             deriv->delin().add_poly_nullified(poly);
         } else if (proj.num_roots(sample, poly) == 0) {
-            // deriv->insert(operators::properties::poly_pdel{ poly });
             deriv->insert(operators::properties::poly_irreducible_sgn_inv{ poly });
             deriv->delin().add_poly_nonzero(poly);
         } else {
             assert(proj.num_roots(sample, poly) > 0 && proj.num_roots(sample, poly) < std::get<MultivariateRoot>(c.value()).k());
-            deriv->insert(operators::properties::poly_pdel{ poly });
-            deriv->insert(operators::properties::poly_sgn_inv{ deriv->proj().ldcf(poly) });
+            deriv->insert(operators::properties::poly_del{ poly });
         }
         results.emplace_back(datastructures::make_sampled_derivation(deriv, RAN(0)));
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());

@@ -1,6 +1,10 @@
 #include "../operators/properties.h"
 
+#include <carl-common/util/streamingOperators.h>
+
 namespace smtrat::cadcells::representation {
+
+    using carl::operator<<;
 
 template<typename T>
 inline void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
@@ -30,6 +34,99 @@ void maintain_connectedness(datastructures::SampledDerivationRef<T>& der, datast
     }
 }
 
+
+inline boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> resultants(const datastructures::IndexedRootOrdering& ordering) {
+    boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> result;
+    for (const auto& rel : ordering.data()) {
+        for (const auto& p1 : rel.first.polys()) {
+            for (const auto& p2 : rel.second.polys()) {
+                result.try_emplace(p1).first->second.insert(p2);
+                result.try_emplace(p2).first->second.insert(p1);
+            }
+        }
+    }
+    return result;
+}
+
+inline boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> roots_below(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval, bool closest) {
+    boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> result;
+    if (!interval.lower_unbounded()) {
+        auto it = interval.lower();
+        while(true) {
+            for (const auto& root : it->second) {
+                if (!closest || result.find(root.root.poly) == result.end()) {
+                    result.emplace(root.root.poly, root.root);
+                }
+            }
+            if (it != delin.roots().begin()) it--;
+            else break;
+        }
+    }
+    return result;
+}
+
+inline boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> roots_above(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval, bool closest) {
+    boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> result;
+    if (!interval.upper_unbounded()) {
+        auto it = interval.upper();
+        while(it != delin.roots().end()) {
+            for (const auto& root : it->second) {
+                if (!closest || result.find(root.root.poly) == result.end()) {
+                    result.emplace(root.root.poly, root.root);
+                }
+            }
+            it++;
+        }
+    }
+    return result;
+}
+
+template<typename T>
+void extend_to_projective_ordering(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
+    auto res = resultants(response.ordering);
+    auto polys = response.ordering.polys();
+    auto p_closest_below = roots_below(der->delin(), der->cell(), true);
+    auto p_closest_above = roots_above(der->delin(), der->cell(), true);
+    auto p_farthest_below = roots_below(der->delin(), der->cell(), false);
+    auto p_farthest_above = roots_above(der->delin(), der->cell(), false);
+
+    for (const auto& poly : polys) {
+        bool is_below = p_closest_below.find(poly) != p_closest_below.end();
+        bool is_above = p_closest_above.find(poly) != p_closest_above.end();
+        assert(is_below || is_above);
+        if (is_below && !is_above) {
+            std::optional<datastructures::IndexedRoot> other_root;
+            for (const auto& other_poly : res.at(poly)) {
+                if (p_closest_above.find(other_poly) != p_closest_above.end()) {
+                    other_root = p_closest_above.at(other_poly);
+                    break;
+                }
+            }
+
+            if (other_root) {
+                response.ordering.add_leq(*other_root, p_farthest_below.at(poly));
+            } else {
+                response.ordering.set_non_projective(poly);
+            }
+        } else if (!is_below && is_above) {
+            std::optional<datastructures::IndexedRoot> other_root;
+            for (const auto& other_poly : res.at(poly)) {
+                if (p_closest_below.find(other_poly) != p_closest_below.end()) {
+                    other_root = p_closest_below.at(other_poly);
+                    break;
+                }
+            }
+
+            if (other_root) {
+                response.ordering.add_leq(*other_root, p_farthest_above.at(poly));
+            } else {
+                response.ordering.set_non_projective(poly);
+            }
+        }
+    }
+    response.ordering.set_projective();
+}
+
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL> {
     template<typename T>
@@ -50,10 +147,22 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
             if (!res) return std::nullopt;
             response.ordering = *res;
             for (const auto& poly_delin : poly_delins.data) {
-                add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
+                add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
         }
         maintain_connectedness(der, response);
+        return response;
+    }
+};
+
+template <>
+struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
+    template<typename T>
+    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+        auto response = cell<CellHeuristic::BIGGEST_CELL>::compute(der);
+        if (response) {
+            extend_to_projective_ordering(der, *response);
+        }
         return response;
     }
 };
@@ -272,7 +381,7 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
 
     for (const auto& poly_delin : poly_delins.data) {
         if (section && response.equational.contains(poly_delin.first)) continue;
-        add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
+        add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
     }
 }
 
@@ -316,6 +425,18 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
             compute_barriers(der, response, false);
         }
         maintain_connectedness(der, response);
+        return response;
+    }
+};
+
+template <>
+struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
+    template<typename T>
+    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+        auto response = cell<CellHeuristic::LOWEST_DEGREE_BARRIERS>::compute(der);
+        if (response) {
+            extend_to_projective_ordering(der, *response);
+        }
         return response;
     }
 };

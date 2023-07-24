@@ -21,8 +21,6 @@ inline void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, 
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
                 } else {
                     if (considered_polys.contains(factor)) {
-                        deriv.insert(properties::poly_additional_root_outside{ factor });
-                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add additional_root_outside(" << factor << ") ");
                     } else {
                         deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
@@ -42,13 +40,12 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
     auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
     for (const auto& poly : polys) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable(" << poly << ") <= proj_del(" << poly << ") && sgn_inv(ldcf(" << poly << ") [" << proj.ldcf(poly) << "])");
-        subderiv->insert(properties::poly_pdel{ poly });
-        subderiv->insert(properties::poly_sgn_inv{ proj.ldcf(poly) });
-        assert(properties::poly_pdel{ poly }.level() == subderiv->level());
+        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable(" << poly << ") <= del(" << poly << ")");
+        subderiv->insert(properties::poly_del{ poly });
+        assert(properties::poly_del{ poly }.level() == subderiv->level());
     }
-    for(const auto& prop : subderiv->template properties<properties::poly_pdel>()) {
-        if (!rules::poly_pdel(*subderiv, prop.poly)) return std::nullopt;
+    for(const auto& prop : subderiv->template properties<properties::poly_del>()) {
+        if (!rules::poly_del(*subderiv, prop.poly)) return std::nullopt;
     }
     for(const auto& prop : subderiv->template properties<properties::poly_ord_inv>()) {
         rules::poly_ord_inv(*subderiv, prop.poly);

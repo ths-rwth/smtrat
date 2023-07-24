@@ -405,6 +405,9 @@ class IndexedRootOrdering {
     
     std::vector<IndexedRootRelation> m_data;
 
+    boost::container::flat_set<PolyRef> m_non_projective;
+    bool m_is_projective = false;
+
 public:
     void add_leq(RootFunction first, RootFunction second) {
         //assert(first.poly.level == second.poly.level);
@@ -550,6 +553,22 @@ public:
         boost::container::flat_set<PolyRef> result;
         polys(result);
         return result;
+    }
+
+    void set_projective() {
+        m_is_projective = true;
+    }
+
+    bool is_projective() const {
+        return m_is_projective;
+    }
+
+    void set_non_projective(PolyRef poly) {
+        m_non_projective.insert(poly);
+    }
+
+    const auto& non_projective_polys() const {
+        return m_non_projective;
     }
 };
 inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {

@@ -519,8 +519,8 @@ bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv,
         const auto& poly1 = d.first.first;
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
-        assert(deriv.contains(properties::poly_pdel{ poly1 }));
-        assert(deriv.contains(properties::poly_pdel{ poly2 }));
+        assert(deriv.contains(properties::poly_del{ poly1 }));
+        assert(deriv.contains(properties::poly_del{ poly2 }));
         filter_util::pseudo_order_invariant(deriv, deriv.proj().res(poly1, poly2), underlying_ordering.polys());
     }
     return true;
