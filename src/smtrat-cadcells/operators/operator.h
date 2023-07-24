@@ -65,7 +65,7 @@ inline void delineate_properties(datastructures::SampledDerivation<typename Prop
  * Project cell properties that depend on a delineation.
  */
 template <op Op>
-inline bool project_delineated_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv, bool cell_represents = true);
+inline bool project_delineated_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv);
 
 /**
  * Project cell properties.

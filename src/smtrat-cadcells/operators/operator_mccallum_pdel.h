@@ -42,8 +42,8 @@ inline void delineate_properties<op::mccallum_pdel>(datastructures::SampledDeriv
 }
 
 template <>
-inline bool project_delineated_cell_properties<op::mccallum_pdel>(datastructures::CellRepresentation<PropertiesSet<op::mccallum_pdel>::type>& repr, bool cell_represents) {
-    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr << ", " << cell_represents);
+inline bool project_delineated_cell_properties<op::mccallum_pdel>(datastructures::CellRepresentation<PropertiesSet<op::mccallum_pdel>::type>& repr) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     auto& deriv = *repr.derivation;
 
     for(const auto& poly : repr.description.polys()) {
@@ -63,9 +63,7 @@ inline bool project_delineated_cell_properties<op::mccallum_pdel>(datastructures
         rules::cell_connected(deriv, repr.description, repr.ordering);
     }
     rules::cell_analytic_submanifold(deriv, repr.description);
-    if (cell_represents) {
-        rules::cell_represents(deriv, repr.description);
-    }
+    rules::cell_represents(deriv, repr.description);
 
     for (const auto& poly : repr.equational) {
         rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
@@ -100,7 +98,7 @@ template <>
 inline bool project_covering_properties<op::mccallum_pdel>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum_pdel>::type>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     for (auto& cell_repr : repr.cells) {
-        project_delineated_cell_properties<op::mccallum_pdel>(cell_repr, false);
+        project_delineated_cell_properties<op::mccallum_pdel>(cell_repr);
     }
     auto cov = repr.get_covering();
     rules::root_ordering_holds_pdel(repr.cells.front().derivation->underlying().sampled(), repr.ordering);

@@ -41,8 +41,8 @@ inline void delineate_properties(datastructures::DelineatedDerivation<Properties
     }
 }
 
-inline bool project_delineated_cell_properties(datastructures::CellRepresentation<PropertiesSet::type>& repr, bool cell_represents) {
-    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr << ", " << cell_represents);
+inline bool project_delineated_cell_properties(datastructures::CellRepresentation<PropertiesSet::type>& repr) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr );
     auto& deriv = *repr.derivation;
 
     for(const auto& poly : repr.description.polys()) {
@@ -72,9 +72,7 @@ inline bool project_delineated_cell_properties(datastructures::CellRepresentatio
         rules::cell_connected(deriv, repr.description, repr.ordering);
     }
     rules::cell_analytic_submanifold(deriv, repr.description);
-    if (cell_represents) {
-        rules::cell_represents(deriv, repr.description);
-    }
+    rules::cell_represents(deriv, repr.description);
 
     if (!repr.equational.empty()) {
         deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(repr.description.section_defining().poly) });
@@ -118,7 +116,7 @@ inline bool project_cell_properties(datastructures::SampledDerivation<Properties
 inline bool project_covering_properties(datastructures::CoveringRepresentation<PropertiesSet::type>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     for (auto& cell_repr : repr.cells) {
-        project_delineated_cell_properties(cell_repr, false);
+        project_delineated_cell_properties(cell_repr);
     }
     auto cov = repr.get_covering();
     repr.cells.front().derivation->underlying().sampled().insert(properties::root_ordering_holds{ repr.ordering, repr.cells.front().derivation->underlying().sampled().level() });
@@ -142,8 +140,8 @@ inline bool project_covering_properties(datastructures::CoveringRepresentation<P
         return mccallum_filtered_impl::delineate_properties(deriv); \
     } \
     template <> \
-    inline bool project_delineated_cell_properties<op::opname>(datastructures::CellRepresentation<PropertiesSet<op::opname>::type>& repr, bool cell_represents) { \
-        return mccallum_filtered_impl::project_delineated_cell_properties(repr, cell_represents); \
+    inline bool project_delineated_cell_properties<op::opname>(datastructures::CellRepresentation<PropertiesSet<op::opname>::type>& repr) { \
+        return mccallum_filtered_impl::project_delineated_cell_properties(repr); \
     } \
     template <> \
     inline bool project_cell_properties<op::opname>(datastructures::SampledDerivation<PropertiesSet<op::opname>::type>& deriv) { \
