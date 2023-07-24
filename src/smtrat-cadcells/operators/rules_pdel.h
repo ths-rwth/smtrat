@@ -64,9 +64,6 @@ void root_ordering_holds_pdel(datastructures::SampledDerivation<P>& deriv, const
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     assert(ordering.is_projective());
     deriv.insert(properties::cell_connected{ deriv.level() });
-    for (const auto poly : ordering.non_projective_polys()) {
-        deriv.insert(properties::poly_proj_del{ poly });
-    }
     for (const auto& rel : ordering.data()) {
         assert(rel.first.is_root() && rel.second.is_root());
         auto& first = rel.first.root();
@@ -79,5 +76,16 @@ void root_ordering_holds_pdel(datastructures::SampledDerivation<P>& deriv, const
         }
     }
 }
+
+template<typename P>
+void poly_irreducible_sgn_inv_pdel(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    if (ordering.non_projective_polys().find(poly) != ordering.non_projective_polys().end()) {
+        deriv.insert(properties::poly_proj_del{ poly });
+    } else if (cell.lower().is_infty() || cell.upper().is_infty()) {
+        deriv.insert(properties::poly_proj_del{ poly });
+    }
+}
+
 
 }

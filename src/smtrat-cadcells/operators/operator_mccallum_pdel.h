@@ -73,7 +73,7 @@ inline bool project_delineated_cell_properties<op::mccallum_pdel>(datastructures
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
-            rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
+            rules::poly_irreducible_sgn_inv_pdel(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
     return true;
