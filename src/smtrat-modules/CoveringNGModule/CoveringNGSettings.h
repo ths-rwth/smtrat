@@ -80,7 +80,7 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
 };
 
 struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
-    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphMulti>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
@@ -91,7 +91,7 @@ struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
 };
 
 struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
-    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingle>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
@@ -102,7 +102,7 @@ struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
 };
 
 struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
-    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraph>";
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphTwo>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
