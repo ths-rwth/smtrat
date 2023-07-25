@@ -81,9 +81,11 @@ template<typename P>
 void poly_irreducible_sgn_inv_pdel(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     if (ordering.non_projective_polys().find(poly) != ordering.non_projective_polys().end()) {
-        deriv.insert(properties::poly_proj_del{ poly });
+        deriv.insert(properties::poly_del{ poly });
     } else if (cell.lower().is_infty() || cell.upper().is_infty()) {
-        deriv.insert(properties::poly_proj_del{ poly });
+        deriv.insert(properties::poly_del{ poly });
+    } else {
+        assert(deriv.contains(properties::poly_proj_del{ poly }));
     }
 }
 
