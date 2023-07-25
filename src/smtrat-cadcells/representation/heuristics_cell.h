@@ -83,48 +83,53 @@ inline boost::container::flat_map<datastructures::PolyRef, datastructures::Index
 
 template<typename T>
 void extend_to_projective_ordering(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
-    auto res = resultants(response.ordering);
-    auto polys = response.ordering.polys();
-    auto p_closest_below = roots_below(der->delin(), der->cell(), true);
-    auto p_closest_above = roots_above(der->delin(), der->cell(), true);
-    auto p_farthest_below = roots_below(der->delin(), der->cell(), false);
-    auto p_farthest_above = roots_above(der->delin(), der->cell(), false);
+    response.ordering.set_projective();
 
-    for (const auto& poly : polys) {
-        bool is_below = p_closest_below.find(poly) != p_closest_below.end();
-        bool is_above = p_closest_above.find(poly) != p_closest_above.end();
-        assert(is_below || is_above);
-        if (is_below && !is_above) {
-            std::optional<datastructures::IndexedRoot> other_root;
-            for (const auto& other_poly : res.at(poly)) {
-                if (p_closest_above.find(other_poly) != p_closest_above.end()) {
-                    other_root = p_closest_above.at(other_poly);
-                    break;
+    if (interval.lower_unbounded() || interval.upper_unbounded()) {
+        response.ordering.set_non_projective(poly);
+    } else {
+        auto res = resultants(response.ordering);
+        auto polys = response.ordering.polys();
+        auto p_closest_below = roots_below(der->delin(), der->cell(), true);
+        auto p_closest_above = roots_above(der->delin(), der->cell(), true);
+        auto p_farthest_below = roots_below(der->delin(), der->cell(), false);
+        auto p_farthest_above = roots_above(der->delin(), der->cell(), false);
+
+        for (const auto& poly : polys) {
+            bool is_below = p_closest_below.find(poly) != p_closest_below.end();
+            bool is_above = p_closest_above.find(poly) != p_closest_above.end();
+            assert(is_below || is_above);
+            if (is_below && !is_above) {
+                std::optional<datastructures::IndexedRoot> other_root;
+                for (const auto& other_poly : res.at(poly)) {
+                    if (p_closest_above.find(other_poly) != p_closest_above.end()) {
+                        other_root = p_closest_above.at(other_poly);
+                        break;
+                    }
                 }
-            }
 
-            if (other_root) {
-                response.ordering.add_leq(*other_root, p_farthest_below.at(poly));
-            } else {
-                response.ordering.set_non_projective(poly);
-            }
-        } else if (!is_below && is_above) {
-            std::optional<datastructures::IndexedRoot> other_root;
-            for (const auto& other_poly : res.at(poly)) {
-                if (p_closest_below.find(other_poly) != p_closest_below.end()) {
-                    other_root = p_closest_below.at(other_poly);
-                    break;
+                if (other_root) {
+                    response.ordering.add_leq(*other_root, p_farthest_below.at(poly));
+                } else {
+                    response.ordering.set_non_projective(poly);
                 }
-            }
+            } else if (!is_below && is_above) {
+                std::optional<datastructures::IndexedRoot> other_root;
+                for (const auto& other_poly : res.at(poly)) {
+                    if (p_closest_below.find(other_poly) != p_closest_below.end()) {
+                        other_root = p_closest_below.at(other_poly);
+                        break;
+                    }
+                }
 
-            if (other_root) {
-                response.ordering.add_leq(*other_root, p_farthest_above.at(poly));
-            } else {
-                response.ordering.set_non_projective(poly);
+                if (other_root) {
+                    response.ordering.add_leq(*other_root, p_farthest_above.at(poly));
+                } else {
+                    response.ordering.set_non_projective(poly);
+                }
             }
         }
     }
-    response.ordering.set_projective();
 }
 
 template <>
