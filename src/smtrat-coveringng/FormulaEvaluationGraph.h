@@ -72,20 +72,20 @@ struct FormulaGraph {
 
 class GraphEvaluation {
 
-using ImplicantComplexityOrdering = std::function<bool(const boost::container::flat_set<cadcells::Constraint>&, const boost::container::flat_set<cadcells::Constraint>&)>;
-
 private:
     formula_ds::FormulaGraph true_graph;
     formula_ds::FormulaGraph false_graph;
     formula_ds::VariableToFormula vartof;
     cadcells::Assignment assignment;
 
-    ImplicantComplexityOrdering m_implicant_complexity_ordering;
+    ImplicantOrdering m_implicant_complexity_ordering;
     std::size_t m_results;
+    ConstraintOrdering m_constraint_complexity_ordering;
     bool m_stop_evaluation_on_conflict;
+    bool m_preprocess;
 
 public:
-    GraphEvaluation(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t results, bool stop_evaluation_on_conflict) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict) {}
+    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);

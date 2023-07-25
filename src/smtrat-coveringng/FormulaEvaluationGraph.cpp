@@ -486,12 +486,70 @@ carl::Variable new_var(const cadcells::Assignment& old_ass, const cadcells::Assi
     return carl::Variable::NO_VARIABLE;
 }
 
+namespace pp {
+
+inline carl::BasicConstraint<Poly> normalize(const carl::BasicConstraint<Poly>& c) {
+	assert(c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::EQ || c.relation() == carl::Relation::NEQ);
+	return carl::BasicConstraint<Poly>(c.lhs().normalize(), carl::is_negative(c.lhs().lcoeff()) ? carl::turn_around(c.relation()) : c.relation());
+}
+
+struct PolyInfo {
+    bool EQ = false;
+    bool NEQ = false;
+    bool LESS = false;
+    bool LEQ = false;
+    bool GREATER = false;
+    bool GEQ = false;
+    void set(carl::Relation rel) {
+        if (rel == carl::Relation::EQ) EQ = true;
+        else if (rel == carl::Relation::NEQ) NEQ = true;
+        else if (rel == carl::Relation::LESS) LESS = true;
+        else if (rel == carl::Relation::LEQ) LEQ = true;
+        else if (rel == carl::Relation::GREATER) GREATER = true;
+        else if (rel == carl::Relation::GEQ) GEQ = true;
+    }
+};
+
+FormulaT preprocess(const FormulaT& f) {
+    std::vector<ConstraintT> constraints;
+    carl::arithmetic_constraints(f, constraints);
+    boost::container::flat_map<Poly,PolyInfo> info;
+    for (const auto& c : constraints) {
+        auto constr = normalize(c.constr());
+        info.try_emplace(constr.lhs()).first->second.set(constr.relation());
+    }
+
+    std::vector<FormulaT> lemmas;
+    for (const auto& [poly,rels] : info) {
+        if ((rels.LESS || rels.GEQ) && (rels.GREATER || rels.LEQ)) {
+            lemmas.emplace_back(carl::FormulaType::OR, FormulaT(ConstraintT(poly,carl::Relation::GEQ)), FormulaT(ConstraintT(poly,carl::Relation::LEQ)));
+        }
+        if ((rels.LESS || rels.GEQ) && (rels.EQ || rels.NEQ)) {
+            lemmas.emplace_back(carl::FormulaType::OR, FormulaT(ConstraintT(poly,carl::Relation::NEQ)), FormulaT(ConstraintT(poly,carl::Relation::GEQ)));
+        }
+        if ((rels.GREATER || rels.LEQ) && (rels.EQ || rels.NEQ)) {
+            lemmas.emplace_back(carl::FormulaType::OR, FormulaT(ConstraintT(poly,carl::Relation::NEQ)), FormulaT(ConstraintT(poly,carl::Relation::LEQ)));
+        }
+        if ((rels.LESS || rels.GEQ) && (rels.GREATER || rels.LEQ) && (rels.EQ || rels.NEQ)) {
+            lemmas.emplace_back(carl::FormulaType::OR, FormulaT(ConstraintT(poly,carl::Relation::EQ)), FormulaT(ConstraintT(poly,carl::Relation::LESS)), FormulaT(ConstraintT(poly,carl::Relation::GREATER)));
+        }
+    }
+
+    lemmas.push_back(f);
+    return FormulaT(carl::FormulaType::AND, std::move(lemmas));
+}
+
+}
+
 
 void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
-    // TODO later: we add formulas like p<0 -> not p>0 and so on for all such constraint pairs
+    auto input = f;
+    if (m_preprocess) {
+        input = pp::preprocess(input);
+    }
     
     std::map<std::size_t,formula_ds::FormulaID> cache;
-    true_graph.root = to_formula_db(c, f, true_graph.db, vartof, cache);
+    true_graph.root = to_formula_db(c, input, true_graph.db, vartof, cache);
     false_graph = true_graph;
     true_graph.propagate_root(true_graph.root, true);
     false_graph.propagate_root(false_graph.root, false);
@@ -505,10 +563,10 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
     if (atomset == vartof.end()) return;
 
     std::vector<formula_ds::FormulaID> atoms(atomset->second.begin(), atomset->second.end());
-    std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) { // TODO make configurable
+    std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) {
         const auto& constr_a = std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
         const auto& constr_b = std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
-        return constr_a.lhs().total_degree() < constr_b.lhs().total_degree();
+        return m_constraint_complexity_ordering(constr_a, constr_b);
     });
 
     for (const auto id : atoms) {

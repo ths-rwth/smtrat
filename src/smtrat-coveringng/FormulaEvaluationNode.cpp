@@ -1,4 +1,4 @@
-#include "FormulaEvaluation.h"
+#include "FormulaEvaluationNode.h"
 #include <carl-arith/constraint/Conversion.h>
 #include <carl-arith/ran/Conversion.h>
 
@@ -562,7 +562,7 @@ void ExhaustiveImplicants::revert_valuation(const cadcells::Assignment& ass) {
 namespace exhaustive_implicants_helper {
 
 // TODO store only ids of constraints / change data structure
-std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants(const node_ds::Node& f, std::size_t pruning, ExhaustiveImplicants::ImplicantComplexityOrdering implicant_complexity_ordering) {
+std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants(const node_ds::Node& f, std::size_t pruning, ImplicantOrdering implicant_complexity_ordering) {
     assert (f.c().valuation == Valuation::TRUE || f.c().valuation == Valuation::FALSE);
     std::vector<boost::container::flat_set<cadcells::Constraint>> implicants;
     std::visit(overloaded{

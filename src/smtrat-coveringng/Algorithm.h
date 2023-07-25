@@ -2,6 +2,7 @@
 
 #include "types.h"
 #include "FormulaEvaluation.h"
+#include "FormulaEvaluationNode.h"
 #include "FormulaEvaluationGraph.h"
 #include "Sampling.h"
 
