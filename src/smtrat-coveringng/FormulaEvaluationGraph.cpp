@@ -34,11 +34,6 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             db.emplace_back(FALSE{ });
             return db.size()-1;
         }
-        case carl::FormulaType::BOOL: {
-            db.emplace_back(BOOL{ f.boolean() });
-            vartof.try_emplace(f.boolean()).first->second.insert(db.size()-1);
-            return db.size()-1;
-        }
         case carl::FormulaType::NOT: {
             auto child = to_formula_db(c,f.subformula(),db,vartof, cache);
             db.emplace_back(NOT{ child });
@@ -95,9 +90,14 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
         case carl::FormulaType::CONSTRAINT: {
             auto bc = carl::convert<cadcells::Polynomial>(c, f.constraint().constr());
             db.emplace_back(CONSTRAINT{ bc });
-            for (const auto var : f.constraint().variables()) {
-                vartof.try_emplace(var).first->second.insert(db.size()-1);
-            }
+            //for (const auto var : f.constraint().variables())
+            auto var = bc.lhs().main_var();
+            vartof.try_emplace(var).first->second.insert(db.size()-1);
+            return db.size()-1;
+        }
+        case carl::FormulaType::BOOL: {
+            db.emplace_back(BOOL{ f.boolean() });
+            vartof.try_emplace(f.boolean()).first->second.insert(db.size()-1);
             return db.size()-1;
         }
         default: {
@@ -408,20 +408,15 @@ void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
     propagate_consistency(id);
 }
 
-void FormulaGraph::evaluate(FormulaID id, const cadcells::Assignment& ass, carl::Variable main_var) {
-    assert(std::holds_alternative<CONSTRAINT>(db[id].content));
-    const auto& constr = std::get<CONSTRAINT>(db[id].content).constraint;
-    if (constr.lhs().main_var() != main_var) return;
-    auto res = carl::evaluate(constr, ass);
-    if (!boost::indeterminate(res)) {
-        boost::container::flat_set<boost::container::flat_set<FormulaID>> reasons;
-        reasons.insert(boost::container::flat_set<FormulaID>({id}));
-        if (res) {
-            add_reasons_true(id, reasons);
-        } else {
-            add_reasons_false(id, reasons);
-        }
+void FormulaGraph::propagate_decision(FormulaID id, bool is_true) {
+    boost::container::flat_set<boost::container::flat_set<FormulaID>> reasons;
+    reasons.insert(boost::container::flat_set<FormulaID>({id}));
+    if (is_true) {
+        add_reasons_true(id, reasons);
+    } else {
+        add_reasons_false(id, reasons);
     }
+    propagate_consistency(id);
 }
 
 void FormulaGraph::add_reasons_true(FormulaID id, const Formula::Reasons& reasons) {
@@ -493,32 +488,42 @@ carl::Variable new_var(const cadcells::Assignment& old_ass, const cadcells::Assi
 
 
 void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
+    // TODO later: we add formulas like p<0 -> not p>0 and so on for all such constraint pairs
+    
     std::map<std::size_t,formula_ds::FormulaID> cache;
-    true_graph.root = to_formula_db(c, f, true_graph.db, true_graph.vartof, cache);
+    true_graph.root = to_formula_db(c, f, true_graph.db, vartof, cache);
     false_graph = true_graph;
-
     true_graph.propagate_root(true_graph.root, true);
     false_graph.propagate_root(false_graph.root, false);
-
-    // TODO replace vartof by constraint_to_formula?
-
-    // TODO later: we add formulas like p<0 -> not p>0 and so on for all such constraint pairs
 }
 
 void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
     auto var = new_var(assignment, ass);
     assignment = ass; 
     if (var == carl::Variable::NO_VARIABLE) return;
+    auto atomset = vartof.find(var);
+    if (atomset == vartof.end()) return;
 
-    // TODO only evaluate once!
-    // and propagate simultaneously constraint by constraint, sorted by complexity!
+    std::vector<formula_ds::FormulaID> atoms(atomset->second.begin(), atomset->second.end());
+    std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) { // TODO make configurable
+        const auto& constr_a = std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
+        const auto& constr_b = std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
+        return constr_a.lhs().total_degree() < constr_b.lhs().total_degree();
+    });
 
-    for (const auto id : true_graph.vartof.find(var)->second) {
-        true_graph.evaluate(id,ass,var);
-    }
+    for (const auto id : atoms) {
+        const auto& constr = std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
+        assert (constr.lhs().main_var() == var);
 
-    for (const auto id : false_graph.vartof.find(var)->second) {
-        false_graph.evaluate(id,ass,var);
+        auto res = carl::evaluate(constr, ass);
+        if (!boost::indeterminate(res)) {
+            true_graph.propagate_decision(id, (bool)res);
+            false_graph.propagate_decision(id, (bool)res);
+        }
+
+        if (m_stop_evaluation_on_conflict && root_valuation() != Valuation::MULTIVARIATE) {
+            break;
+        }
     }
 }
 
@@ -526,12 +531,11 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
     auto var = new_var(ass, assignment);
     assignment = ass; 
     if (var == carl::Variable::NO_VARIABLE) return;
+    auto atomset = vartof.find(var);
+    if (atomset == vartof.end()) return;
 
-    for (const auto id : true_graph.vartof.find(var)->second) {
+    for (const auto id : atomset->second) {
         true_graph.backtrack(id);
-    }
-
-    for (const auto id : false_graph.vartof.find(var)->second) {
         false_graph.backtrack(id);
     }
 }

@@ -41,7 +41,7 @@ struct Formula {
     Reasons reasons_false;
 
     template<typename C>
-    Formula(C&& c) : content(std::move(c)) {}
+    Formula(const C& c) : content(c) {}
 
     Valuation valuation() {
         if (reasons_true.empty() && reasons_false.empty()) return Valuation::MULTIVARIATE;
@@ -57,12 +57,11 @@ using VariableToFormula = boost::container::flat_map<carl::Variable, boost::cont
 struct FormulaGraph {
     FormulaDB db;
     FormulaID root;
-    VariableToFormula vartof;
     boost::container::flat_set<FormulaID> conflicts;
 
     void propagate_consistency(FormulaID id);
     void propagate_root(FormulaID id, bool is_true);
-    void evaluate(FormulaID id, const cadcells::Assignment& ass, carl::Variable main_var);
+    void propagate_decision(FormulaID id, bool is_true);
     void add_reasons_true(FormulaID id, const Formula::Reasons& reasons);
     void add_reasons_false(FormulaID id, const Formula::Reasons& reasons);
     Formula::Reasons conflict_reasons() const;
@@ -78,13 +77,15 @@ using ImplicantComplexityOrdering = std::function<bool(const boost::container::f
 private:
     formula_ds::FormulaGraph true_graph;
     formula_ds::FormulaGraph false_graph;
+    formula_ds::VariableToFormula vartof;
     cadcells::Assignment assignment;
 
     ImplicantComplexityOrdering m_implicant_complexity_ordering;
     std::size_t m_results;
+    bool m_stop_evaluation_on_conflict;
 
 public:
-    GraphEvaluation(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t results) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results) {}
+    GraphEvaluation(ImplicantComplexityOrdering implicant_complexity_ordering, std::size_t results, bool stop_evaluation_on_conflict) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);

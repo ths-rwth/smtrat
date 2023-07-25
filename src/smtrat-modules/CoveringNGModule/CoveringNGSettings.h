@@ -85,7 +85,7 @@ struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 0);
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 0, false);
         }
     };
 };
@@ -96,7 +96,7 @@ struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 1);
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 1, true);
         }
     };
 };
@@ -107,7 +107,7 @@ struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 2);
+            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_min_size_implicant, 2, false);
         }
     };
 };
