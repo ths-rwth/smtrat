@@ -85,17 +85,18 @@ template<typename T>
 void extend_to_projective_ordering(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
     response.ordering.set_projective();
 
-    if (interval.lower_unbounded() || interval.upper_unbounded()) {
-        response.ordering.set_non_projective(poly);
+    if (der->cell().lower_unbounded() || der->cell().upper_unbounded()) {
+        for (const auto& poly : response.ordering.polys()) {
+            response.ordering.set_non_projective(poly);
+        }
     } else {
         auto res = resultants(response.ordering);
-        auto polys = response.ordering.polys();
         auto p_closest_below = roots_below(der->delin(), der->cell(), true);
         auto p_closest_above = roots_above(der->delin(), der->cell(), true);
         auto p_farthest_below = roots_below(der->delin(), der->cell(), false);
         auto p_farthest_above = roots_above(der->delin(), der->cell(), false);
 
-        for (const auto& poly : polys) {
+        for (const auto& poly : response.ordering.polys()) {
             bool is_below = p_closest_below.find(poly) != p_closest_below.end();
             bool is_above = p_closest_above.find(poly) != p_closest_above.end();
             assert(is_below || is_above);
