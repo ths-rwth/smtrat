@@ -28,7 +28,7 @@ struct XOR {
 struct BOOL {
     carl::Variable variable;
 };
-struct CONSTRAINT { // TODO later: we add formulas like p<0 -> not p>0 and so on for all such constraint pairs
+struct CONSTRAINT {
     carl::BasicConstraint<cadcells::Polynomial> constraint;
 };
 

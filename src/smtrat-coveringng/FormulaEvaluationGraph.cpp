@@ -493,19 +493,25 @@ carl::Variable new_var(const cadcells::Assignment& old_ass, const cadcells::Assi
 
 
 void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
-    {std::map<std::size_t,formula_ds::FormulaID> cache;
+    std::map<std::size_t,formula_ds::FormulaID> cache;
     true_graph.root = to_formula_db(c, f, true_graph.db, true_graph.vartof, cache);
-    true_graph.propagate_root(true_graph.root, true);}
+    false_graph = true_graph;
 
-    {std::map<std::size_t,formula_ds::FormulaID> cache;
-    false_graph.root = to_formula_db(c, f, false_graph.db, false_graph.vartof, cache);
-    false_graph.propagate_root(false_graph.root, false);}
+    true_graph.propagate_root(true_graph.root, true);
+    false_graph.propagate_root(false_graph.root, false);
+
+    // TODO replace vartof by constraint_to_formula?
+
+    // TODO later: we add formulas like p<0 -> not p>0 and so on for all such constraint pairs
 }
 
 void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
     auto var = new_var(assignment, ass);
     assignment = ass; 
     if (var == carl::Variable::NO_VARIABLE) return;
+
+    // TODO only evaluate once!
+    // and propagate simultaneously constraint by constraint, sorted by complexity!
 
     for (const auto id : true_graph.vartof.find(var)->second) {
         true_graph.evaluate(id,ass,var);
