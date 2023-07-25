@@ -88,7 +88,7 @@ inline std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& 
 
 // TODO later: close cell if possible based on flag - implement here or in smtrat-cadcells?
 // TODO later: sampling also based on formula
-// TODO later: do Boolean propagation while solving
+// TODO later: do Boolean propagation while solving - done, how about a complete Boolean check?
 // TODO later: optionally clear caches
 
 template<typename FE, cadcells::operators::op op, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm>

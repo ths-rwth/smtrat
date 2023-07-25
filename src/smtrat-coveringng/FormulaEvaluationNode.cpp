@@ -561,7 +561,6 @@ void ExhaustiveImplicants::revert_valuation(const cadcells::Assignment& ass) {
 
 namespace exhaustive_implicants_helper {
 
-// TODO store only ids of constraints / change data structure
 std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants(const node_ds::Node& f, std::size_t pruning, ImplicantOrdering implicant_complexity_ordering) {
     assert (f.c().valuation == Valuation::TRUE || f.c().valuation == Valuation::FALSE);
     std::vector<boost::container::flat_set<cadcells::Constraint>> implicants;
@@ -613,7 +612,7 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                         assert(i == implicants.size());
                     }
                 }
-                // TODO remove duplicates
+                // remove duplicates ?
             }
         },
         [&](const node_ds::OR& c) {
@@ -648,7 +647,7 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                         assert(i == implicants.size());
                     }
                 }
-                // TODO remove duplicates
+                // remove duplicates ?
             }
         },
         [&](const node_ds::IFF& c) {
@@ -675,7 +674,7 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                         assert(i == implicants.size());
                     }
                 }
-                // TODO remove duplicates
+                // remove duplicates ?
             } else {
                 std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants_true;
                 std::vector<boost::container::flat_set<cadcells::Constraint>> sub_implicants_false;
@@ -694,7 +693,7 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants
                         implicants.back().insert(sub_implicant_false.begin(), sub_implicant_false.end());
                     }    
                 }
-                // TODO remove duplicates
+                // remove duplicates ?
             }
         },
         [&](const node_ds::XOR& c) {
