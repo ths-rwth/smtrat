@@ -15,33 +15,115 @@ template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 // explicit deduction guide (not needed as of C++20)
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
+void print(std::ostream& stream, const FormulaDB& db, const FormulaID id, const std::size_t level) {
+    std::visit(overloaded{
+        [&](const TRUE&) {
+            stream << std::string(level, ' ') << "TRUE";
+        },
+        [&](const FALSE&) {
+            stream << std::string(level, ' ') << "FALSE";
+        },
+        [&](const NOT& c) {
+            stream << std::string(level, ' ') << "NOT(" << std::endl;
+            print(stream, db, c.subformula, level+1);
+            stream << std::endl << std::string(level, ' ') << ")";
+        },
+        [&](const AND& c) {
+            stream << std::string(level, ' ') << "AND(" << std::endl;
+            for (const auto subformula : c.subformulas) {
+                print(stream, db, subformula, level+1);
+                stream << std::endl;
+            }
+            stream << std::string(level, ' ') << ")";
+        },
+        [&](const OR& c) {
+            stream << std::string(level, ' ') << "OR(" << std::endl;
+            for (const auto subformula : c.subformulas) {
+                print(stream, db, subformula, level+1);
+                stream << std::endl;
+            }
+            stream << std::string(level, ' ') << ")";
+        },
+        [&](const IFF& c) {
+            stream << std::string(level, ' ') << "IFF(" << std::endl;
+            for (const auto subformula : c.subformulas) {
+                print(stream, db, subformula, level+1);
+                stream << std::endl;
+            }
+            stream << std::string(level, ' ') << ")";
+        },
+        [&](const XOR& c) {
+            stream << std::string(level, ' ') << "XOR(" << std::endl;
+            for (const auto subformula : c.subformulas) {
+                print(stream, db, subformula, level+1);
+                stream << std::endl;
+            }
+            stream << std::string(level, ' ') << ")";
+        },
+        [&](const BOOL& c) {
+            stream << std::string(level, ' ') << c.variable;
+        },
+        [&](const CONSTRAINT& c) {
+            stream << std::string(level, ' ') << c.constraint;
+        },
+    }, db[id].content);
+
+    std::size_t spacing = 50 - level;
+    if (level > 50) spacing = 4;
+
+    stream << std::string(spacing, ' ') << "id: " << id << " T: " << db[id].reasons_true << " F: " << db[id].reasons_false;
+}
+
+void log(const FormulaDB& db, const FormulaID id) {
+    std::stringstream ss;
+    ss << std::endl;
+    print(ss, db, id, 0);
+    ss << std::endl;
+    SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", ss.str());
+}
+
 
 FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const FormulaT& f,  FormulaDB& db, VariableToFormula& vartof, std::map<std::size_t,FormulaID>& cache) {
-
     {
         auto cache_it = cache.find(f.id());
         if (cache_it != cache.end()) return cache_it->second;
     }
+
+    if (f.id() > f.negated().id()) {
+        auto child = to_formula_db(c,f.negated(),db,vartof, cache);
+        db.emplace_back(NOT{ child });
+        db[child].parents.insert(db.size()-1);
+        cache.emplace(f.id(), db.size()-1);
+        return db.size()-1;
+    }
+    
     switch(f.type()) {
         case carl::FormulaType::ITE: {
-            return to_formula_db(c, FormulaT(carl::FormulaType::OR, FormulaT(carl::FormulaType::AND, f.condition(), f.first_case()), FormulaT(carl::FormulaType::AND, f.condition().negated(), f.second_case())), db, vartof, cache);
+            auto id = to_formula_db(c, FormulaT(carl::FormulaType::OR, FormulaT(carl::FormulaType::AND, f.condition(), f.first_case()), FormulaT(carl::FormulaType::AND, f.condition().negated(), f.second_case())), db, vartof, cache);
+            cache.emplace(f.id(), id);
+            return id;
         }
         case carl::FormulaType::TRUE: {
             db.emplace_back(TRUE{ });
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::FALSE: {
             db.emplace_back(FALSE{ });
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::NOT: {
             auto child = to_formula_db(c,f.subformula(),db,vartof, cache);
             db.emplace_back(NOT{ child });
             db[child].parents.insert(db.size()-1);
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::IMPLIES: {
-            return to_formula_db(c, FormulaT(carl::FormulaType::OR, f.premise().negated(), f.conclusion()), db, vartof, cache);
+            auto id = to_formula_db(c, FormulaT(carl::FormulaType::OR, f.premise().negated(), f.conclusion()), db, vartof, cache);
+            cache.emplace(f.id(), id);
+            return id;
         }
         case carl::FormulaType::AND: {
             std::vector<FormulaID> subformulas;
@@ -52,6 +134,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::OR: {
@@ -63,6 +146,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::XOR: {
@@ -74,6 +158,7 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::IFF: {
@@ -85,24 +170,27 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             for (const auto child : subformulas) {
                 db[child].parents.insert(db.size()-1);
             }
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::CONSTRAINT: {
             auto bc = carl::convert<cadcells::Polynomial>(c, f.constraint().constr());
             db.emplace_back(CONSTRAINT{ bc });
-            //for (const auto var : f.constraint().variables())
             auto var = bc.lhs().main_var();
             vartof.try_emplace(var).first->second.insert(db.size()-1);
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         case carl::FormulaType::BOOL: {
             db.emplace_back(BOOL{ f.boolean() });
             vartof.try_emplace(f.boolean()).first->second.insert(db.size()-1);
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
         default: {
             assert(false);
             db.emplace_back(FALSE{});
+            cache.emplace(f.id(), db.size()-1);
             return db.size()-1;
         }
     }
@@ -144,23 +232,23 @@ bool merge_reasons(boost::container::flat_set<boost::container::flat_set<Formula
 }
 
 void FormulaGraph::propagate_consistency(FormulaID id) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id);
+    log(db, root);
+
     return std::visit(overloaded{
         [&](TRUE&) {},
         [&](FALSE&) {},
         [&](NOT& c) {
             auto val = db[id].valuation();
             auto sub_val = db[c.subformula].valuation();
-            if (val != Valuation::MULTIVARIATE && sub_val == Valuation::MULTIVARIATE) {
-                if (val == Valuation::TRUE) add_reasons_false(c.subformula, db[id].reasons_true);
-                else if (val == Valuation::FALSE) add_reasons_true(c.subformula, db[id].reasons_false);
-                else assert(false);
-            } else if (val == Valuation::MULTIVARIATE && sub_val != Valuation::MULTIVARIATE) {
+            if (val == Valuation::MULTIVARIATE) {
                 if (sub_val == Valuation::TRUE) add_reasons_false(id, db[c.subformula].reasons_true);
                 else if (sub_val == Valuation::FALSE) add_reasons_true(id, db[c.subformula].reasons_false);
-                else assert(false);
-            } else {
-                assert((val == Valuation::TRUE && sub_val == Valuation::FALSE) || (val == Valuation::FALSE && sub_val == Valuation::TRUE));
-            }
+            } else if (val == Valuation::TRUE) {
+                add_reasons_false(c.subformula, db[id].reasons_true);
+            } else if (val == Valuation::FALSE) {
+                add_reasons_true(c.subformula, db[id].reasons_false);
+            } else assert(false);
         },
         [&](AND& c) {
             auto val = db[id].valuation();
@@ -546,11 +634,16 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     auto input = f;
     if (m_preprocess) {
         input = pp::preprocess(input);
+        SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Got " << input);
     }
     
     std::map<std::size_t,formula_ds::FormulaID> cache;
     true_graph.root = to_formula_db(c, input, true_graph.db, vartof, cache);
     false_graph = true_graph;
+
+    SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Initial formula:");
+    log(true_graph.db, true_graph.root);
+
     true_graph.propagate_root(true_graph.root, true);
     false_graph.propagate_root(false_graph.root, false);
 }
