@@ -247,18 +247,23 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
         [&](NOT& c) {
             auto val = db[id].valuation();
             auto sub_val = db[c.subformula].valuation();
-            if (val == Valuation::MULTIVARIATE) {
-                if (sub_val == Valuation::TRUE) add_reasons_false(id, db[c.subformula].reasons_true);
-                else if (sub_val == Valuation::FALSE) add_reasons_true(id, db[c.subformula].reasons_false);
-            } else if (val == Valuation::TRUE) {
+
+            // upwards propagation
+            if (sub_val == Valuation::TRUE) add_reasons_false(id, db[c.subformula].reasons_true);
+            else if (sub_val == Valuation::FALSE) add_reasons_true(id, db[c.subformula].reasons_false);
+
+            // downwards propagation
+            if (val == Valuation::TRUE && sub_val == Valuation::MULTIVARIATE) { // sub_val == Valuation::MULTIVARIATE to avoid redundancies
                 add_reasons_false(c.subformula, db[id].reasons_true);
-            } else if (val == Valuation::FALSE) {
+            } else if (val == Valuation::FALSE && sub_val == Valuation::MULTIVARIATE) {
                 add_reasons_true(c.subformula, db[id].reasons_false);
-            } else assert(false);
+            }
         },
         [&](AND& c) {
             auto val = db[id].valuation();
-            if (val == Valuation::MULTIVARIATE) {
+
+            // upwards propagation
+            {
                 Formula::Reasons reasons_true;
                 reasons_true.emplace();
                 for (const auto subformula : c.subformulas) {
@@ -278,9 +283,15 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 if (!reasons_true.empty()) {
                     add_reasons_true(id, reasons_true);
                 }
-            } else if (val == Valuation::TRUE) {
+            }
+
+            // downwards propagation
+            if (val == Valuation::TRUE) {
                 for (const auto subformula : c.subformulas) {
-                    add_reasons_true(subformula, db[id].reasons_true);
+                    auto sub_val = db[subformula].valuation();
+                    if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
+                        add_reasons_true(subformula, db[id].reasons_true);
+                    }
                 }
             } else if (val == Valuation::FALSE) {
                 Formula::Reasons reasons_false;
@@ -309,11 +320,13 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 if (implied_false) {
                     add_reasons_false(*implied_false, reasons_false);
                 }
-            } else assert(false);
+            }
         },
         [&](OR& c) {
             auto val = db[id].valuation();
-            if (val == Valuation::MULTIVARIATE) {
+
+            // upwards propagation
+            {
                 Formula::Reasons reasons_false;
                 reasons_false.emplace();
                 for (const auto subformula : c.subformulas) {
@@ -333,7 +346,10 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 if (!reasons_false.empty()) {
                     add_reasons_false(id, reasons_false);
                 }
-            } else if (val == Valuation::TRUE) {
+            } 
+            
+            // downwards propagation
+            if (val == Valuation::TRUE) {
                 Formula::Reasons reasons_true;
                 std::optional<FormulaID> implied_true;
                 reasons_true = db[id].reasons_true;
@@ -362,9 +378,12 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 }
             } else if (val == Valuation::FALSE) {
                 for (const auto subformula : c.subformulas) {
-                    add_reasons_false(subformula, db[id].reasons_false);
+                    auto sub_val = db[subformula].valuation();
+                    if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
+                        add_reasons_false(subformula, db[id].reasons_false);
+                    }
                 }
-            } else assert(false);
+            }
         },
         [&](IFF& c) {
             std::vector<FormulaID> true_sub;
@@ -385,7 +404,9 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             }
 
             auto val = db[id].valuation();
-            if (val == Valuation::MULTIVARIATE) {
+
+            // upwards propagation
+            {
                 if (!true_sub.empty() && !false_sub.empty()) {
                     Formula::Reasons reasons;
                     for (const auto t : true_sub) {
@@ -410,15 +431,24 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                     }
                     add_reasons_true(id, reasons);
                 } 
-            } else if (val == Valuation::TRUE) {
+            }
+            
+            // downwards propagation
+            if (val == Valuation::TRUE) {
                 for (const auto t : true_sub) {
                     for (const auto sub : c.subformulas) {
-                        add_reasons_true(sub, combine_reasons(db[id].reasons_true, db[t].reasons_true));
+                        auto sub_val = db[sub].valuation();
+                        if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
+                            add_reasons_true(sub, combine_reasons(db[id].reasons_true, db[t].reasons_true));
+                        }
                     }
                 }
                 for (const auto f : false_sub) {
                     for (const auto sub : c.subformulas) {
-                        add_reasons_false(sub, combine_reasons(db[id].reasons_true, db[f].reasons_false));
+                        auto sub_val = db[sub].valuation();
+                        if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
+                            add_reasons_false(sub, combine_reasons(db[id].reasons_true, db[f].reasons_false));
+                        }
                     }
                 }
             } else if (val == Valuation::FALSE) {
@@ -438,9 +468,9 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                         add_reasons_false(*multivariate_sub.begin(), reasons);
                     }
                 }
-            } else assert(false);
+            }
         },
-        [&](XOR& c) {
+        [&](XOR& c) { // TODO refactor XOR for upwards and downwards propagation
             std::optional<FormulaID> implied;
             Formula::Reasons reasons;
             bool value;
@@ -494,6 +524,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
 }
 
 void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
     if (is_true) {
         db[id].reasons_true.emplace();
     } else {
@@ -503,6 +534,7 @@ void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
 }
 
 void FormulaGraph::propagate_decision(FormulaID id, bool is_true) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
     boost::container::flat_set<boost::container::flat_set<FormulaID>> reasons;
     reasons.insert(boost::container::flat_set<FormulaID>({id}));
     if (is_true) {
@@ -649,7 +681,9 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Initial formula:");
     log(true_graph.db, true_graph.root);
 
+    SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
     true_graph.propagate_root(true_graph.root, true);
+    SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update false_graph");
     false_graph.propagate_root(false_graph.root, false);
 }
 
@@ -671,9 +705,12 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
         const auto& constr = std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
         assert (constr.lhs().main_var() == var);
 
+        SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Evaluate constraint " << constr);
         auto res = carl::evaluate(constr, ass);
         if (!boost::indeterminate(res)) {
+            SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
             true_graph.propagate_decision(id, (bool)res);
+            SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update false_graph");
             false_graph.propagate_decision(id, (bool)res);
         }
 
