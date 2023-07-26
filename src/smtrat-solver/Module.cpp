@@ -868,7 +868,9 @@ namespace smtrat
         {
             mModelComputed = false;
         }
+        #ifdef SMTRAT_DEVOPTION_Expensive
         assert( !is_sat(_answer) || checkModel() != 0 );
+        #endif
         return _answer;
     }
 

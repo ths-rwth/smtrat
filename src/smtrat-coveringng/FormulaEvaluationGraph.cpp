@@ -237,7 +237,9 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
     }
 
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id);
+    #ifdef SMTRAT_DEVOPTION_Expensive
     log(db, root);
+    #endif
 
     return std::visit(overloaded{
         [&](TRUE&) {},

@@ -41,6 +41,8 @@ option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 option(SMTRAT_DEVOPTION_Checkpoints "Enable checkpoints" OFF)
+option(SMTRAT_DEVOPTION_Expensive "Enable expensive logging and assertions" OFF )
+
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE" "RELWITHDEBINFO")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
