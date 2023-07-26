@@ -232,6 +232,10 @@ bool merge_reasons(boost::container::flat_set<boost::container::flat_set<Formula
 }
 
 void FormulaGraph::propagate_consistency(FormulaID id) {
+    if (db[id].valuation() == Valuation::UNKNOWN) {
+        return;
+    }
+
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id);
     log(db, root);
 
@@ -504,7 +508,6 @@ void FormulaGraph::propagate_decision(FormulaID id, bool is_true) {
     } else {
         add_reasons_false(id, reasons);
     }
-    propagate_consistency(id);
 }
 
 void FormulaGraph::add_reasons_true(FormulaID id, const Formula::Reasons& reasons) {
