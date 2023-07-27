@@ -250,7 +250,6 @@ bool SimplexModule<Settings>::activate_neq(const FormulaT& f) {
     } else {
         activate(m_bounds.get_from_origin(f));
     }
-    // TODO: quick check for conflicts with equalities?
     return true;
 }
 
@@ -263,7 +262,7 @@ bool SimplexModule<Settings>::find_conflicting_lower_bounds(const simplex::Varia
     // Derived bounds are not stored in m_lower_bounds, so we check the range additionally
     const BoundRef lb = lower_bound(v);
     if (is_derived(lb) && (get_value(lb) > b_val)) construct_infeasible_subset({lb, b});
-    
+
     for (const auto l : m_lower_bounds[v]) {
         if (is_active(l) && (get_value(l) > b_val)) {
             construct_infeasible_subset({l, b});
@@ -336,7 +335,7 @@ void SimplexModule<Settings>::removeCore( ModuleInput::const_iterator _subformul
     }
 
     simplex::Variable v = get_variable(b);
-    update_range(v); // TODO: can we somehow move directly to the right bounds?
+    update_range(v);
 }
 
 
@@ -387,7 +386,7 @@ void SimplexModule<Settings>::deactivate_bounds_derived_from(const FormulaT& f) 
 
         deactivate(b);
         simplex::Variable v = get_variable(b);
-        update_range(v); // TODO: can we somehow move directly to the right bounds?
+        update_range(v);
     }
 }
 
@@ -435,8 +434,8 @@ void SimplexModule<Settings>::updateModel() const {
     assert(delta > 0);
     // TODO: NEQ handling?
     // TODO: find nice value for delta
-    // transform m_assignment into rational model
 
+    // transform m_assignment into rational model
     for (const auto [carl_var, simplex_var] : m_to_simplex_var) {
         const auto& asgn = m_assignment[simplex_var];
         Rational val = asgn.real() + (delta * asgn.delta());
@@ -617,7 +616,7 @@ SimplexModule<Settings>::ConflictOrPivot SimplexModule<Settings>::find_conflict_
             if (non_basic_var == basic_var) continue;
             assert(!is_basic(non_basic_var));
             auto prohibitive_bound = check_suitable_for_pivot(entry, b, increase);
-            if (prohibitive_bound) {
+            if (prohibitive_bound.has_value()) {
                 conflict.push_back(*prohibitive_bound);
             } else {
                 suitable_entries.push_back(&entry);
@@ -685,7 +684,7 @@ SimplexModule<Settings>::PivotCandidate SimplexModule<Settings>::choose_pivot_he
             min_row_it = it;
             min_row_len = row_len;
         }
-        // TODO: tiebreaker
+        // tiebreaker is implicitly blands rule ("smallest" suitable)
     }
 
     const auto& col_candidates = min_row_it->second;
@@ -699,7 +698,7 @@ SimplexModule<Settings>::PivotCandidate SimplexModule<Settings>::choose_pivot_he
             min_col_it = it;
             min_col_len = col_len;
         }
-        // TODO: tiebreaker
+        // tiebreaker is implicitly blands rule ("smallest" suitable)
     }
 
     return PivotCandidate(min_row_it->first, **min_col_it);
@@ -775,7 +774,6 @@ void SimplexModule<Settings>::pivot(simplex::Variable x_i, simplex::Variable x_j
     // swap basic and nonbasic
     Tableau::RowID r_i = tableau_index(x_i);
     m_base[r_i] = x_j;
-    // todo nobase, update x_i
     set_tableau_index(x_j, r_i);
     set_tableau_index(x_i, x_i);
     set_basic(x_j, true );
@@ -836,7 +834,7 @@ void SimplexModule<Settings>::derive_bounds(const Tableau::RowID rid) {
 
     for (const auto& entry : m_tableau.get_row(rid)) {
         simplex::Variable entry_var = entry.var();
-        if (entry_var == m_base[rid]) continue; // REVIEW: can we make this more efficient?
+        if (entry_var == m_base[rid]) continue;
         bool pos_coeff = (entry.coeff() > 0);
 
         if (!has_lower_bound(entry_var)) {
@@ -875,7 +873,7 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
 
     for (const auto& entry : m_tableau.get_row(rid)) {
         simplex::Variable entry_var = entry.var();
-        if (entry_var == base_var) continue; // REVIEW: can we make this more efficient?
+        if (entry_var == base_var) continue;
         bool pos_coeff = (entry.coeff() > 0);
         // use lower bound if: (we derive a lower bound <=> the coeff is positive)
         BoundRef b = (lower_or_equal == pos_coeff) ? lower_bound(entry_var)
@@ -893,7 +891,7 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
             add_derived_bound(base_var, BoundType::EQUAL, new_bound_value, involved_bounds);
         }
     } else if ((base_coeff > 0) == lower_or_equal) {
-        // derived bound is a lower bound on var if (it's a lower bound <=> base coeff is >0)
+        // derived bound is a lower bound on var if (it's a lower bound <=> base coeff is > 0)
         if (!has_lower_bound(base_var) || new_bound_value > get_value(lower_bound(base_var))) {
             add_derived_bound(base_var, BoundType::LOWER, new_bound_value, involved_bounds);
         }
@@ -1028,7 +1026,6 @@ void SimplexModule<Settings>::propagate_lower(const BoundRef b) {
     for (const auto u : m_upper_bounds[get_variable(b)]) {
         if (!is_below(u, b)) break;
         assert(!is_active(u));
-        // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
         propagate_negated(b, u);
     }
 
@@ -1048,7 +1045,6 @@ void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
     for (const auto l : simplex::helpers::reversed(m_lower_bounds[get_variable(b)])) {
         if (!is_below(b, l)) break;
         assert(!is_active(l));
-        // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
         propagate_negated(b, l);
     }
 
@@ -1064,7 +1060,6 @@ void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
 template<class Settings>
 void SimplexModule<Settings>::propagate_equal(const BoundRef b) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "propagating equal bound");
-    // TODO: we might need to consider NEQ handling
     const auto& lbs = m_lower_bounds[get_variable(b)];
     auto lower_it = lbs.begin();
     // iterating from lowest lb to highest lb

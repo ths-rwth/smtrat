@@ -100,8 +100,9 @@ public:
     Ref add(Variable var, BoundType type, const Val& rhs, const FormulaT& origin) {
         Ref result(m_data.size());
         m_data.emplace_back(var, type, rhs, origin);
-        m_origin_to_bound.emplace(origin, result); // TODO: what if the origin already exists?
-                                                   // this can happen for derived bounds
+        m_origin_to_bound[origin] = result; // Different bounds with the same origin can only occur
+                                            // if the bounds are derived. In that case, only the
+                                            // strictest (= most recent) bound is remembered.
         return result;
     }
 

@@ -30,7 +30,7 @@ namespace smtrat {
 struct SimplexSettings1 {
     static constexpr auto                   moduleName = "SimplexModule<SimplexSettings1>";
     static constexpr std::size_t  pivots_before_blands = 50;
-    
+
     static const simplex::NEQHandling     neq_handling = simplex::NEQHandling::SPLITTING_ON_DEMAND;
     static const simplex::PivotStrategy pivot_strategy = simplex::PivotStrategy::MIN_ROW_MIN_COL;
     static constexpr bool    simple_theory_propagation = true;

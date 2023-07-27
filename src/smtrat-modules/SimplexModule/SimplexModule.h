@@ -63,6 +63,8 @@ private:
         : m_basic_var(v), mr_nonbasic(e) {}
     };
 
+    // Maps basic variables to lists of (pointers to) suitable pivot entries in the respective row.
+    // Pointers are used here to save storage.
     using PivotCandidates = std::map<simplex::Variable, std::vector<const Tableau::Entry*>>;
 
     class ConflictOrPivot {
@@ -242,7 +244,7 @@ private:
     bool        is_integer    (simplex::Variable v) const { return m_var_info[v].m_is_integer;    }
     bool        is_original   (simplex::Variable v) const { return m_var_info[v].m_is_original;   }
     std::size_t tableau_index (simplex::Variable v) const { return m_var_info[v].m_tableau_index; }
-    
+
     void        set_basic         (simplex::Variable v, bool is_basic) { m_var_info[v].m_is_basic = is_basic; }
     void        set_tableau_index (simplex::Variable v, std::size_t i) { m_var_info[v].m_tableau_index = i;   }
 
@@ -412,6 +414,7 @@ private:
      * (a_i < 0 => x_i has a lower bound c_i) and (a_i > 0 => x_i has an upper bound c_i), then
      * we can derive s >= a_1*c_1 + ... + a_n*c_n, possibly stronger than an existing bound on s.
      * Exchanging lower and upper bounds allows to derive upper bounds on s.
+     * If all involved bounds are equalities, an "equals" bound is derived.
      */
     void derive_bounds(const Tableau::RowID rid);
     void derive_bound (const Tableau::RowID rid, const BoundType type);
@@ -437,6 +440,7 @@ private:
      *         not(x =  d) if c <  d              not(x =  d) if c <  d
      * 
      * Notice that these simple bounds are translated back to original constraints for this.
+     * We don't consider propagations for != bounds as these should be mostly covered by the = case.
      */
     void simple_theory_propagation();
 
