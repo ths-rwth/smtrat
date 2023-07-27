@@ -470,23 +470,11 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 }
             }
         },
-        [&](XOR& c) { // TODO refactor XOR for upwards and downwards propagation
+        [&](XOR& c) {
             std::optional<FormulaID> implied;
             Formula::Reasons reasons;
-            bool value;
-
-            auto val = db[id].valuation();
-            if (val == Valuation::MULTIVARIATE) {
-                implied = id;
-                value = true;
-                reasons.emplace();
-            } else if (val == Valuation::TRUE) {
-                value = false;
-                reasons = db[id].reasons_true;
-            } else if (val == Valuation::FALSE) {
-                value = true;
-                reasons = db[id].reasons_false;
-            } else assert(false);
+            reasons.emplace();
+            bool value = false;
 
             for (const auto subformula : c.subformulas) {
                 auto sub_val = db[subformula].valuation();
@@ -505,11 +493,26 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 } else {
                     assert(sub_val == Valuation::UNKNOWN);
                     implied = std::nullopt;
-                        reasons.clear();
+                    reasons.clear();
                 }
             }
 
-            if (implied) {
+            // upwards propagation
+            if (!implied && !reasons.empty()) {
+                if (value) {
+                    add_reasons_true(*implied, reasons);
+                } else {
+                    add_reasons_false(*implied, reasons);
+                }
+            } else if (implied && !reasons.empty()) { // downwards propagation
+                auto val = db[id].valuation();
+                if (val == Valuation::TRUE) {
+                    reasons = db[id].reasons_true;
+                    value = !value;
+                } else if (val == Valuation::FALSE) {
+                    reasons = db[id].reasons_false;
+                }
+
                 if (value) {
                     add_reasons_true(*implied, reasons);
                 } else {
