@@ -744,7 +744,12 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
     for (const auto& r : reasons) {
         implicants.emplace_back();
         for (const auto& c : r) {
-            implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint);
+            if (graph.db[c].valuation() == Valuation::TRUE) {
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint);
+            } else {
+                assert(graph.db[c].valuation() == Valuation::FALSE);
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint.negation());
+            }
         }
     }
 
