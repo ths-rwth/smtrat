@@ -39,6 +39,8 @@ struct Formula {
     boost::container::flat_set<FormulaID> parents;
     Reasons reasons_true;
     Reasons reasons_false;
+    bool decided_true = false;
+    bool decided_false = false;
 
     template<typename C>
     Formula(const C& c) : content(c) {}

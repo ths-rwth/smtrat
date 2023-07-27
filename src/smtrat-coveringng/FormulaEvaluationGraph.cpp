@@ -530,8 +530,10 @@ void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
     if (is_true) {
         db[id].reasons_true.emplace();
+        db[id].decided_true = true;
     } else {
         db[id].reasons_false.emplace();
+        db[id].decided_false = true;
     }
     propagate_consistency(id);
 }
@@ -542,8 +544,10 @@ void FormulaGraph::propagate_decision(FormulaID id, bool is_true) {
     reasons.insert(boost::container::flat_set<FormulaID>({id}));
     if (is_true) {
         add_reasons_true(id, reasons);
+        db[id].decided_true = true;
     } else {
         add_reasons_false(id, reasons);
+        db[id].decided_false = true;
     }
 }
 
@@ -582,6 +586,9 @@ Formula::Reasons FormulaGraph::conflict_reasons() const {
 }
 
 void FormulaGraph::backtrack(FormulaID id) {
+    db[id].decided_true = false;
+    db[id].decided_false = false;
+
     for (std::size_t idx = 0; idx < db.size(); ++idx) {
         auto& f = db[idx];
         for (auto reason = f.reasons_true.begin(); reason != f.reasons_true.end(); ) {
@@ -744,10 +751,10 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
     for (const auto& r : reasons) {
         implicants.emplace_back();
         for (const auto& c : r) {
-            if (graph.db[c].valuation() == Valuation::TRUE) {
+            if (graph.db[c].decided_true) {
                 implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint);
             } else {
-                assert(graph.db[c].valuation() == Valuation::FALSE);
+                assert(graph.db[c].decided_false);
                 implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint.negation());
             }
         }
