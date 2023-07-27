@@ -43,7 +43,7 @@ struct Formula {
     template<typename C>
     Formula(const C& c) : content(c) {}
 
-    Valuation valuation() {
+    Valuation valuation() const {
         if (reasons_true.empty() && reasons_false.empty()) return Valuation::MULTIVARIATE;
         else if (reasons_true.empty()) return Valuation::FALSE;
         else if (reasons_false.empty()) return Valuation::TRUE;
