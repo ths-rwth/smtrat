@@ -7,9 +7,9 @@
 namespace smtrat::simplex {
 
 /**
- * A class for Numbers enriched with an infinitesimal constant delta
- * This yields a new number type with elements of the form a + b*delta, where a,b are of
- * the underlying Number type.
+ * A class for Numbers enriched with an infinitesimal constant delta.
+ * This yields a new number type with elements of the form a + b*delta,
+ * where a,b are of the underlying Number type.
  */
 template<class Number>
 class DeltaValue {

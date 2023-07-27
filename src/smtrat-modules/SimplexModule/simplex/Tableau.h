@@ -1,26 +1,34 @@
 #pragma once
 
 #include "SparseVector.h"
+#include "VariableInfo.h"
 
 namespace smtrat::simplex {
 
+/**
+ * Class representing and performing operations on a simplex tableau.
+ * 
+ * Stores the values in sparse vectors, each representing a row for a basic variable.
+ * Additionally maintains sparse vectors for columns,
+ * which indicate the rows containing the actual values.
+ * Note that there is a column for each variable, including the basic variables.
+ */
 template<typename T>
 class Tableau {
 
 /*/////////////////////////////////////// Type definitions //////////////////////////////////////*/
 
 public:
-    using ColID = std::size_t;
     using RowID = std::size_t;
 
     struct Entry {
         T     m_coeff;
-        ColID m_var;
+        Variable m_var;
 
-        Entry(T&& c, ColID v) : m_coeff(std::move(c)), m_var(v) {}
+        Entry(T&& c, Variable v) : m_coeff(std::move(c)), m_var(v) {}
 
         inline const T& coeff() const { return m_coeff; }
-        inline ColID    var()   const { return m_var;   }
+        inline Variable   var()   const { return m_var;   }
     };
 
 private:
@@ -32,7 +40,7 @@ private:
             std::size_t m_position_in_col;
             std::size_t m_next_free_idx;
         };
-        RowEntry(T && c, ColID v) : Entry(std::move(c), v), m_position_in_col(0) {}
+        RowEntry(T && c, Variable v) : Entry(std::move(c), v), m_position_in_col(0) {}
         RowEntry() : Entry(T(), DEAD_ID), m_position_in_col(0) {}
         bool is_dead () const { return Entry::m_var == DEAD_ID; }
         void set_dead()       { Entry::m_var = DEAD_ID; }
@@ -84,12 +92,12 @@ public:
     Tableau(): m_rows(), m_columns(), m_var_pos(), m_var_pos_idx(), m_zero(0) {}
     ~Tableau();
 
-    void ensure_var(ColID v);
+    void ensure_var(Variable v);
 
     RowID mk_row();
 
-    std::size_t row_size    (RowID r) const { return m_rows[r].num_nonzero_entries(); }
-    std::size_t column_size (ColID v) const { return m_columns[v].num_nonzero_entries(); }
+    std::size_t row_size    (RowID r)    const { return m_rows[r].num_nonzero_entries(); }
+    std::size_t column_size (Variable v) const { return m_columns[v].num_nonzero_entries(); }
 
     std::size_t num_vars()    const { return m_columns.size(); }
     std::size_t num_rows()    const { return m_rows.size(); }
@@ -99,7 +107,7 @@ public:
         return result;
     }
 
-    void add_var(RowID r, const T& n, ColID var);
+    void add_var(RowID r, const T& n, Variable var);
     void add    (RowID r, const T& n, RowID src);
     void mul    (RowID r, const T& n);
     void div    (RowID r, const T& n);
@@ -107,7 +115,7 @@ public:
 
     void gcd_normalize(RowID r, T& g);
 
-    const T& get_coeff(RowID r, ColID v);
+    const T& get_coeff(RowID r, Variable v);
 
 /*//////////////////////////////////// Iterators & Iterables ////////////////////////////////////*/
 
@@ -161,13 +169,13 @@ public:
         }
     };
 
-    col_iterator col_begin(ColID v) { return col_iterator(m_columns[v], m_rows, true ); }
-    col_iterator col_end  (ColID v) { return col_iterator(m_columns[v], m_rows, false); }
+    col_iterator col_begin(Variable v) { return col_iterator(m_columns[v], m_rows, true ); }
+    col_iterator col_end  (Variable v) { return col_iterator(m_columns[v], m_rows, false); }
 
     class ColEntries {
         friend class Tableau;
         Tableau& t;
-        ColID    v;
+        Variable v;
         ColEntries(Tableau& t, int v): t(t), v(v) {}
     public:
         col_iterator begin() { return t.col_begin(v); }

@@ -9,7 +9,7 @@
  * // N //  This file can be mostly read from top to bottom in the sense that
  * // O //  if a function f uses another function g, then g is implemented immediately **after** f.
  * // T //  So it can be read as "f : do sth including g, where g : ...".
- * // E //  This does not apply to auxiliary functions implemented in .h
+ * // E //  This does not apply to auxiliary functions implemented in SimplexModule.h
  * ================================================================================================
  */
 
@@ -22,6 +22,10 @@
 
 namespace smtrat::simplex::helpers {
 
+/**
+ * Converts the given relation of a constraint into a BoundType
+ * and indicates whether an infinitesimal delta needs to be added (1) or substracted (-1)
+*/
 inline std::pair<BoundType, Rational> convert_relation(carl::Relation rel) {
     switch (rel) {
     case carl::Relation::GREATER: return { BoundType::LOWER, Rational(1) };
@@ -30,30 +34,29 @@ inline std::pair<BoundType, Rational> convert_relation(carl::Relation rel) {
     case carl::Relation::LEQ:     return { BoundType::UPPER, Rational(0) };
     case carl::Relation::EQ:      return { BoundType::EQUAL, Rational(0) };
     case carl::Relation::NEQ:     return { BoundType::NEQ,   Rational(0) };
-    default: assert(false);
+    default: assert(false); return {BoundType::EQUAL, Rational(0)}; // unreachable
     }
-    return {BoundType::EQUAL, Rational(0)};
 }
 
+/**
+ * @param l1, l2 linear polynomials
+ * @returns a rational constant c with c*l1 = l2 if l1,l2 are colinear, and std::nullopt otherwise.
+ * NOTE: This implementation only works because polys are ordered!
+*/
 std::optional<Rational> find_scale(const Poly& l1, const Poly& l2) {
-    // NOTE: This only works because polys are ordered!
     auto it1 = l1.begin();
     auto it2 = l2.begin();
+    assert(it1 != l1.end() && it2 != l2.end());
 
-    if (it1->single_variable() != it2->single_variable()) {
-        return std::nullopt;
-    }
+    if (it1->single_variable() != it2->single_variable()) return std::nullopt;
 
     Rational scale = it2->coeff()/it1->coeff();
     ++it1;
     ++it2;
+
     while ((it1 != l1.end()) && (it2 != l2.end())) {
-        if (it1->single_variable() != it2->single_variable()) {
-            return std::nullopt;
-        }
-        if (scale * (it1->coeff()) != it2->coeff()) {
-            return std::nullopt;
-        }
+        if (it1->single_variable() != it2->single_variable()) return std::nullopt;
+        if (scale * (it1->coeff()) != it2->coeff()) return std::nullopt;
         ++it1;
         ++it2;
         if ((it1 == l1.end()) != (it2 == l2.end())) return std::nullopt;
@@ -61,7 +64,18 @@ std::optional<Rational> find_scale(const Poly& l1, const Poly& l2) {
     return scale;
 }
 
-}
+/// struct for enabling reverse range based for loops, in particular for BoundSets
+template<typename T>
+struct ReverseAdaptor {
+    const T& m_container;
+    auto begin() const { return m_container.rbegin(); }
+    auto end()   const { return m_container.rend();   }
+};
+
+template<typename T>
+ReverseAdaptor<T> reversed(const T& t) { return {t}; }
+
+} // namespace smtrat::simplex::helpers
 
 namespace smtrat {
 
@@ -92,18 +106,21 @@ bool SimplexModule<Settings>::informCore( const FormulaT& f ) {
     translate_variables(f);
 
     carl::Relation rel = f.constraint().relation();
-    Poly lin_term = f.constraint().lhs();
 
     if constexpr (Settings::neq_handling == simplex::NEQHandling::NONE) {
         if (rel == carl::Relation::NEQ) return true;
     }
 
-    SimplexVariable v;
-    Rational coeff;
+    // (ax + b ~ 0) -> (ax ~ -b)
+    Poly lin_term = f.constraint().lhs();
     Rational rhs = (-1)*lin_term.constant_part();
     lin_term += rhs;
 
+    // (ax ~ b) -> (ax = c*s and s ~' b/c), possibly add row to tableau
+    simplex::Variable v;
+    Rational coeff;
     if (lin_term.is_univariate()) {
+        // already a bound
         v = m_to_simplex_var[lin_term.single_variable()];
         coeff = lin_term.lcoeff();
     } else {
@@ -111,12 +128,11 @@ bool SimplexModule<Settings>::informCore( const FormulaT& f ) {
         v = _v;
         coeff = _coeff;
     }
-
     assert(!carl::is_zero(coeff));
-
     if (coeff < 0) rel = carl::turn_around(rel);
     rhs /= coeff;
 
+    // Store bound
     auto [type, delta] = simplex::helpers::convert_relation(rel);
     BoundRef b = m_bounds.add(v, type, DeltaRational(rhs, delta), f);
     add_bound_to_sets(b);
@@ -141,23 +157,23 @@ void SimplexModule<Settings>::add_bound_to_sets(const BoundRef b) {
         }
         break;
     }
-    default: assert(false);
+    default: assert(false); // unreachable
     }
 }
 
 
 template<class Settings>
-std::pair<typename SimplexModule<Settings>::SimplexVariable, Rational> SimplexModule<Settings>::add_to_tableau(const Poly& linear_term) {
+std::pair<simplex::Variable, Rational> SimplexModule<Settings>::add_to_tableau(const Poly& linear_term) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "adding term " << linear_term << " to tableau");
-
     assert(!linear_term.has_constant_term());
-    // is there already a slack variable for this linear term (maybe scaled by some coeff)?
+    // looking for an existing slack variable for this linear term (possibly scaled by some coeff)
     for (const auto& [lhs, var] : m_lhs_to_var) {
         auto scale = simplex::helpers::find_scale(lhs, linear_term);
         if (scale) return {var, *scale};
     }
+
     // none of the prior slacks fits => create a new one and add the respective row to the tableau
-    SimplexVariable slack_var = new_slack_variable(linear_term);
+    simplex::Variable slack_var = new_slack_variable(linear_term);
     set_basic(slack_var, true);
 
     Tableau::RowID r = m_tableau.mk_row();
@@ -182,6 +198,7 @@ template<class Settings>
 bool SimplexModule<Settings>::addCore( ModuleInput::const_iterator _subformula ) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "adding " << _subformula->formula());
 
+    // trivial cases
     const FormulaT& f = _subformula->formula();
     if (f.type() == carl::FormulaType::FALSE) {
         FormulaSetT inf_subset;
@@ -195,15 +212,16 @@ bool SimplexModule<Settings>::addCore( ModuleInput::const_iterator _subformula )
         return activate_neq(f);
     }
 
+    // The module should have been informed at this point, so the corresponding bound exists.
     BoundRef b = m_bounds.get_from_origin(f);
     activate(b);
-    SimplexVariable v = get_variable(b);
+    simplex::Variable v = get_variable(b);
     return update_range(v,b);
 }
 
 
 template<class Settings>
-bool SimplexModule<Settings>::update_range(const SimplexVariable v, const BoundRef b) {
+bool SimplexModule<Settings>::update_range(const simplex::Variable v, const BoundRef b) {
     BoundType type = get_type(b);
 
     if (type == BoundType::UPPER || type == BoundType::EQUAL) {
@@ -237,35 +255,39 @@ bool SimplexModule<Settings>::activate_neq(const FormulaT& f) {
 }
 
 template<class Settings>
-bool SimplexModule<Settings>::find_conflicting_lower_bounds(const SimplexVariable v, BoundRef b) {
+bool SimplexModule<Settings>::find_conflicting_lower_bounds(const simplex::Variable v, BoundRef b) {
     if (has_consistent_range(v)) return false;
 
     const DeltaRational& b_val = get_value(b);
 
+    // Derived bounds are not stored in m_lower_bounds, so we check the range additionally
     const BoundRef lb = lower_bound(v);
     if (is_derived(lb) && (get_value(lb) > b_val)) construct_infeasible_subset({lb, b});
     
-    for (auto lb_it = m_lower_bounds[v].begin(); lb_it != m_lower_bounds[v].end(); ++lb_it) {
-        if (is_active(*lb_it) && (get_value(*lb_it) > b_val))
-            construct_infeasible_subset({*lb_it, b});
-        if (*lb_it == lower_bound(v)) break; // NOTE: only works because bounds are ordered
+    for (const auto l : m_lower_bounds[v]) {
+        if (is_active(l) && (get_value(l) > b_val)) {
+            construct_infeasible_subset({l, b});
+        }
+        if (l == lower_bound(v)) break; // NOTE: only works because bounds are ordered
     }
     return true;
 }
 
 template<class Settings>
-bool SimplexModule<Settings>::find_conflicting_upper_bounds(const SimplexVariable v, BoundRef b) {
+bool SimplexModule<Settings>::find_conflicting_upper_bounds(const simplex::Variable v, BoundRef b) {
     if (has_consistent_range(v)) return false;
 
     const DeltaRational& b_val = get_value(b);
 
+    // Derived bounds are not stored in m_upper_bounds, so we check the range additionally
     const BoundRef ub = upper_bound(v);
     if (is_derived(ub) && (get_value(ub) < b_val)) construct_infeasible_subset({ub, b});
 
-    for (auto ub_it = m_upper_bounds[v].rbegin(); ub_it != m_upper_bounds[v].rend(); ++ub_it) {
-        if (is_active(*ub_it) && (get_value(*ub_it) < b_val))
-            construct_infeasible_subset({*ub_it, b});
-        if (*ub_it == upper_bound(v)) break; // NOTE: only works because bounds are ordered
+    for (const auto u : simplex::helpers::reversed(m_upper_bounds[v])){
+        if (is_active(u) && (get_value(u) < b_val)) {
+            construct_infeasible_subset({u, b});
+        }
+        if (u == upper_bound(v)) break; // NOTE: only works because bounds are ordered
     }
     return true;
 }
@@ -313,7 +335,7 @@ void SimplexModule<Settings>::removeCore( ModuleInput::const_iterator _subformul
         deactivate_bounds_derived_from(f);
     }
 
-    SimplexVariable v = get_variable(b);
+    simplex::Variable v = get_variable(b);
     update_range(v); // TODO: can we somehow move directly to the right bounds?
 }
 
@@ -332,27 +354,24 @@ void SimplexModule<Settings>::deactivate_neq(const FormulaT& f) {
 
 
 template<class Settings>
-void SimplexModule<Settings>::update_range(const SimplexVariable v) {
-    // NOTE: the bound vectors are ordered ascendingly by bound value
-    // Therefore we use the reverse iterator for lower bounds
-
-    auto it_lower = m_lower_bounds[v].rbegin();
-    for (; it_lower != m_lower_bounds[v].rend(); ++it_lower) {
-        if (is_active(*it_lower)) {
-            set_lower_bound(v, *it_lower);
+void SimplexModule<Settings>::update_range(const simplex::Variable v) {
+    // Iterate from highest to lowest => reverse iterator
+    set_lower_unbounded(v);
+    for (const auto l : simplex::helpers::reversed(m_lower_bounds[v])) {
+        if (is_active(l)) {
+            set_lower_bound(v, l);
             break;
         }
     }
-    if (it_lower == m_lower_bounds[v].rend()) set_lower_unbounded(v);
 
-    auto it_upper = m_upper_bounds[v].begin();
-    for (; it_upper != m_upper_bounds[v].end(); ++it_upper) {
-        if (is_active(*it_upper)) {
-            set_upper_bound(v, *it_upper);
+    // Iterate from lowest to highest
+    set_upper_unbounded(v);
+    for (const auto u : m_upper_bounds[v]) {
+        if (is_active(u)) {
+            set_upper_bound(v, u);
             break;
         }
     }
-    if (it_upper == m_upper_bounds[v].end()) set_upper_unbounded(v);
 }
 
 
@@ -367,7 +386,7 @@ void SimplexModule<Settings>::deactivate_bounds_derived_from(const FormulaT& f) 
         if (!is_active(b)) continue;
 
         deactivate(b);
-        SimplexVariable v = get_variable(b);
+        simplex::Variable v = get_variable(b);
         update_range(v); // TODO: can we somehow move directly to the right bounds?
     }
 }
@@ -386,7 +405,7 @@ void SimplexModule<Settings>::updateModel() const {
 
     // compute suitable delta
     Rational delta = 1;
-    for (SimplexVariable v = 0; v < m_num_variables; ++v) {
+    for (simplex::Variable v = 0; v < m_num_variables; ++v) {
         if (carl::is_zero(m_assignment[v].delta())) continue;
 
         if (has_lower_bound(v)) {
@@ -498,7 +517,7 @@ bool SimplexModule<Settings>::reactivate_derived_bounds() {
         if (all_origins_active) {
             SMTRAT_LOG_DEBUG("smtrat.simplex", "reactivating " << m_bounds[b]);
             activate(b);
-            SimplexVariable v = get_variable(b);
+            simplex::Variable v = get_variable(b);
             if (!update_range(v, b)) return false;
         }
     }
@@ -512,7 +531,7 @@ void SimplexModule<Settings>::build_initial_assignment() {
 
     if (m_assignment.empty()) {
         m_assignment.resize(m_num_variables);
-        for (SimplexVariable v = 0; v < m_num_variables; ++v) {
+        for (simplex::Variable v = 0; v < m_num_variables; ++v) {
             if (is_basic(v)) continue;
             else if (has_lower_bound(v)) m_assignment[v] = get_value(lower_bound(v));
             else if (has_upper_bound(v)) m_assignment[v] = get_value(upper_bound(v));
@@ -520,7 +539,7 @@ void SimplexModule<Settings>::build_initial_assignment() {
         }
     } else {
         // there is an assignment from a previous run
-        for (SimplexVariable v = 0; v < m_num_variables; ++v) {
+        for (simplex::Variable v = 0; v < m_num_variables; ++v) {
             if (is_basic(v) || assigned_in_range(v)) continue;
             if (has_lower_bound(v))     m_assignment[v] = get_value(lower_bound(v));
             else /*has_upper_bound(v)*/ m_assignment[v] = get_value(upper_bound(v));
@@ -534,7 +553,7 @@ template<class Settings>
 void SimplexModule<Settings>::compute_basic_assignment() {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "computing basic assignment");
     for (Tableau::RowID r = 0; r < m_tableau.num_rows(); ++r) {
-        SimplexVariable basic_var = m_base[r];
+        simplex::Variable basic_var = m_base[r];
         DeltaRational& val = m_assignment[basic_var];
         val = Rational(0);
         for (const auto& entry : m_tableau.get_row(r)) {
@@ -554,8 +573,8 @@ bool SimplexModule<Settings>::exist_violated_bounds() {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "looking for violated bounds");
 
     m_violated_bounds.clear();
-    std::vector<SimplexVariable> no_fix_needed;
-    for (SimplexVariable v : m_changed_basic_vars) {
+    std::vector<simplex::Variable> no_fix_needed;
+    for (simplex::Variable v : m_changed_basic_vars) {
         bool needs_fix = false;
         if (violates_lower(v)) {
             m_violated_bounds.push_back(lower_bound(v));
@@ -567,7 +586,7 @@ bool SimplexModule<Settings>::exist_violated_bounds() {
         }
         if (!needs_fix) no_fix_needed.push_back(v);
     }
-    for (SimplexVariable v : no_fix_needed) m_changed_basic_vars.erase(v);
+    for (simplex::Variable v : no_fix_needed) m_changed_basic_vars.erase(v);
 
     // TODO: NEQHandling
     return !m_violated_bounds.empty();
@@ -581,20 +600,20 @@ SimplexModule<Settings>::ConflictOrPivot SimplexModule<Settings>::find_conflict_
     PivotCandidates possible_pivots;
 
     for (const auto& b : m_violated_bounds) {
-        SimplexVariable basic_var = get_variable(b);
+        simplex::Variable basic_var = get_variable(b);
         assert(is_basic(basic_var));
         bool lower_violated = (get_type(b) == BoundType::LOWER) || (violates_lower(basic_var));
-        bool increase = ((m_base_coeffs[get_tableau_index(basic_var)] > 0) == lower_violated);
+        bool increase = ((m_base_coeffs[tableau_index(basic_var)] > 0) == lower_violated);
         auto [it, _] = possible_pivots.emplace(basic_var, std::vector<const Tableau::Entry*>());
         auto& suitable_entries = it->second;
-        Tableau::RowID r = get_tableau_index(basic_var);
+        Tableau::RowID r = tableau_index(basic_var);
 
         BoundVec conflict;
         conflict.reserve(m_tableau.row_size(r));
         conflict.push_back(b);
 
         for (const auto& entry : m_tableau.get_row(r)) {
-            SimplexVariable non_basic_var = entry.var();
+            simplex::Variable non_basic_var = entry.var();
             if (non_basic_var == basic_var) continue;
             assert(!is_basic(non_basic_var));
             auto prohibitive_bound = check_suitable_for_pivot(entry, b, increase);
@@ -661,7 +680,7 @@ SimplexModule<Settings>::PivotCandidate SimplexModule<Settings>::choose_pivot_he
     std::size_t min_row_len = m_tableau.num_vars();
 
     for (auto it = min_row_it; it != possible_pivots.end(); ++it) {
-        std::size_t row_len = m_tableau.row_size(get_tableau_index(it->first));
+        std::size_t row_len = m_tableau.row_size(tableau_index(it->first));
         if (row_len < min_row_len) {
             min_row_it = it;
             min_row_len = row_len;
@@ -675,7 +694,7 @@ SimplexModule<Settings>::PivotCandidate SimplexModule<Settings>::choose_pivot_he
     std::size_t min_col_len = m_tableau.num_rows();
 
     for (auto it = min_col_it; it != col_candidates.end(); ++it) {
-        std::size_t col_len = m_tableau.column_size(get_tableau_index((*it)->var()));
+        std::size_t col_len = m_tableau.column_size(tableau_index((*it)->var()));
         if (col_len < min_col_len) {
             min_col_it = it;
             min_col_len = col_len;
@@ -705,8 +724,8 @@ template<class Settings>
 void SimplexModule<Settings>::pivot_and_update(PivotCandidate pivot_candidate) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "pivot and update");
 
-    SimplexVariable x_i = pivot_candidate.basic_var();
-    SimplexVariable x_j = pivot_candidate.nonbasic_var();
+    simplex::Variable x_i = pivot_candidate.basic_var();
+    simplex::Variable x_j = pivot_candidate.nonbasic_var();
 
     // TODO: make the value needed to fix more accessible (also for is_suitable)
     DeltaRational diff = violates_lower(x_i) ? get_value(lower_bound(x_i)) - m_assignment[x_i]
@@ -722,7 +741,7 @@ void SimplexModule<Settings>::pivot_and_update(PivotCandidate pivot_candidate) {
                 derive_bounds(it.get_row());
             }
         } else {
-            derive_bounds(get_tableau_index(x_j));
+            derive_bounds(tableau_index(x_j));
         }
     }
 
@@ -731,7 +750,7 @@ void SimplexModule<Settings>::pivot_and_update(PivotCandidate pivot_candidate) {
 
 
 template<class Settings>
-void SimplexModule<Settings>::update(SimplexVariable nonbase_var, const DeltaRational& diff) {
+void SimplexModule<Settings>::update(simplex::Variable nonbase_var, const DeltaRational& diff) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "update");
 
     // Already updates the basic variables
@@ -739,7 +758,7 @@ void SimplexModule<Settings>::update(SimplexVariable nonbase_var, const DeltaRat
     auto end = m_tableau.col_end(nonbase_var);
     for (auto it = m_tableau.col_begin(nonbase_var); it != end; ++it) {
         Tableau::RowID r = it.get_row();
-        SimplexVariable base_var      = m_base[r];
+        simplex::Variable base_var      = m_base[r];
         const Rational& base_coeff    = m_base_coeffs[r];
         const Rational& nonbase_coeff = it.get_row_entry().coeff();
         m_assignment[base_var] += diff * (nonbase_coeff/base_coeff);
@@ -749,12 +768,12 @@ void SimplexModule<Settings>::update(SimplexVariable nonbase_var, const DeltaRat
 
 
 template<class Settings>
-void SimplexModule<Settings>::pivot(SimplexVariable x_i, SimplexVariable x_j, const Rational& a_ij) {
+void SimplexModule<Settings>::pivot(simplex::Variable x_i, simplex::Variable x_j, const Rational& a_ij) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "pivot");
     SMTRAT_STATISTICS_CALL(m_statistics.pivot());
 
     // swap basic and nonbasic
-    Tableau::RowID r_i = get_tableau_index(x_i);
+    Tableau::RowID r_i = tableau_index(x_i);
     m_base[r_i] = x_j;
     // todo nobase, update x_i
     set_tableau_index(x_j, r_i);
@@ -816,7 +835,7 @@ void SimplexModule<Settings>::derive_bounds(const Tableau::RowID rid) {
     bool upper_derivable = true;
 
     for (const auto& entry : m_tableau.get_row(rid)) {
-        SimplexVariable entry_var = entry.var();
+        simplex::Variable entry_var = entry.var();
         if (entry_var == m_base[rid]) continue; // REVIEW: can we make this more efficient?
         bool pos_coeff = (entry.coeff() > 0);
 
@@ -850,12 +869,12 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
     SMTRAT_LOG_DEBUG("smtrat.simplex", "derive single bound for row " << rid);
     DeltaRational new_bound_value(Rational(0));
     bool lower_or_equal = ((type == BoundType::LOWER) || (type == BoundType::EQUAL));
-    SimplexVariable base_var = m_base[rid];
+    simplex::Variable base_var = m_base[rid];
 
     std::vector<BoundRef> involved_bounds;
 
     for (const auto& entry : m_tableau.get_row(rid)) {
-        SimplexVariable entry_var = entry.var();
+        simplex::Variable entry_var = entry.var();
         if (entry_var == base_var) continue; // REVIEW: can we make this more efficient?
         bool pos_coeff = (entry.coeff() > 0);
         // use lower bound if: (we derive a lower bound <=> the coeff is positive)
@@ -887,7 +906,7 @@ void SimplexModule<Settings>::derive_bound(const Tableau::RowID rid, const Bound
 
 
 template<class Settings>
-void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
+void SimplexModule<Settings>::add_derived_bound(const simplex::Variable var,
                                                 const BoundType type,
                                                 const DeltaRational& value,
                                                 const BoundVec& premises) {
@@ -949,30 +968,30 @@ void SimplexModule<Settings>::add_derived_bound(const SimplexVariable var,
 
 
 template<class Settings>
-void SimplexModule<Settings>::propagate_derived_lower(const SimplexVariable v, const BoundRef b) {
+void SimplexModule<Settings>::propagate_derived_lower(const simplex::Variable v, const BoundRef b) {
     if constexpr (!Settings::lemmas_from_derived_bounds) return;
 
     // iterate from strictest (greatest) lb to weakest (lowest) -> reverse_iterator
-    for (auto it = m_lower_bounds[v].rbegin(); it != m_lower_bounds[v].rend(); ++it) {
-        if (get_type(*it) == BoundType::EQUAL) continue; // cannot make implications about eq
-        if (!is_below(b, *it)) {
-            // it is next weaker lower bound
-            propagate(b, *it);
+    for (const auto l : simplex::helpers::reversed(m_lower_bounds[v])) {
+        if (get_type(l) == BoundType::EQUAL) continue; // cannot make implications about eq
+        if (!is_below(b, l)) {
+            // l is next weaker lower bound
+            propagate(b, l);
             break;
         }
     }
 }
 
 template<class Settings>
-void SimplexModule<Settings>::propagate_derived_upper(const SimplexVariable v, const BoundRef b) {
+void SimplexModule<Settings>::propagate_derived_upper(const simplex::Variable v, const BoundRef b) {
     if constexpr (!Settings::lemmas_from_derived_bounds) return;
 
     // iterate from strictest (lowest) ub to weakest (greatest) -> forward iterator
-    for (auto it = m_upper_bounds[v].begin(); it != m_upper_bounds[v].end(); ++it) {
-        if (get_type(*it) == BoundType::EQUAL) continue; // cannot make implications about eq
-        if (!is_below(*it, b)) {
-            // it is next weaker upper bound
-            propagate(b, *it);
+    for (const auto u : m_upper_bounds[v]) {
+        if (get_type(u) == BoundType::EQUAL) continue; // cannot make implications about eq
+        if (!is_below(u, b)) {
+            // u is next weaker upper bound
+            propagate(b, u);
             break;
         }
     }
@@ -1005,27 +1024,19 @@ void SimplexModule<Settings>::simple_theory_propagation() {
 template<class Settings>
 void SimplexModule<Settings>::propagate_lower(const BoundRef b) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "propagating lower bound");
-    const auto& ubs = m_upper_bounds[get_variable(b)];
     // iterating from lowest ub to highest ub
-    for (auto upper_it = ubs.begin(); upper_it != ubs.end(); ++upper_it) {
-        if (!is_below(*upper_it, b)) break;
-        if (is_active(*upper_it)) continue; // TODO: what about is_active("complement(upper_bound)")?
-        // TODO: also, can't we leave out is_active here? if it were active, then there woudl have
-        // been a conflict while activating...
+    for (const auto u : m_upper_bounds[get_variable(b)]) {
+        if (!is_below(u, b)) break;
+        assert(!is_active(u));
         // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
-        propagate_negated(b, *upper_it);
+        propagate_negated(b, u);
     }
 
-    const auto& lbs = m_lower_bounds[get_variable(b)];
     // iterating from lowest lb to highest lb
-    for (auto lower_it = lbs.begin(); lower_it != lbs.end(); ++lower_it) {
-        if (b == *lower_it) break;
-        if (is_below(b, *lower_it)) break;
-
-        if (is_active(*lower_it)) continue;
-        if (get_type(*lower_it) == BoundType::EQUAL) continue;
-
-        propagate(b, *lower_it);
+    for (const auto l : m_lower_bounds[get_variable(b)]) {
+        if ((b == l) || is_below(b, l)) break;
+        if (is_active(l) || (get_type(l) == BoundType::EQUAL)) continue;
+        propagate(b, l);
     }
 }
 
@@ -1033,25 +1044,19 @@ void SimplexModule<Settings>::propagate_lower(const BoundRef b) {
 template<class Settings>
 void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "propagating upper bound");
-    const auto& lbs = m_lower_bounds[get_variable(b)];
     // iterating from highest lb to lowest lb => reverse iterator
-    for (auto lower_it = lbs.rbegin(); lower_it != lbs.rend(); ++lower_it) {
-        if (!is_below(b, *lower_it)) break;
-        if (is_active(*lower_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
+    for (const auto l : simplex::helpers::reversed(m_lower_bounds[get_variable(b)])) {
+        if (!is_below(b, l)) break;
+        assert(!is_active(l));
         // TODO: if it is an EQUAL bound, we might need to consider NEQ handling
-        propagate_negated(b, *lower_it);
+        propagate_negated(b, l);
     }
 
-    const auto& ubs = m_upper_bounds[get_variable(b)];
     // iterating from highest ub to lowest ub => reverse iterator
-    for (auto upper_it = ubs.rbegin(); upper_it != ubs.rend(); ++upper_it) {
-        if (b == *upper_it) break;
-        if (is_below(*upper_it, b)) break;
-
-        if (is_active(*upper_it)) continue;
-        if (get_type(*upper_it) == BoundType::EQUAL) continue;
-
-        propagate(b, *upper_it);
+    for (const auto u : m_upper_bounds[get_variable(b)]) {
+        if ((u == b) || is_below(u, b)) break;
+        if (is_active(u) || (get_type(u) == BoundType::EQUAL)) continue;
+        propagate(b, u);
     }
 }
 
@@ -1077,23 +1082,19 @@ void SimplexModule<Settings>::propagate_equal(const BoundRef b) {
     }
 
     for (; lower_it != lbs.end(); ++lower_it) {
-        if (is_active(*lower_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
-        propagate_negated(b, *lower_it);
+        if (!is_active(*lower_it)) propagate_negated(b, *lower_it);
     }
 
     const auto& ubs = m_upper_bounds[get_variable(b)];
     auto upper_it = ubs.begin();
     // iterating from lowest ub to highest ub
     for (; upper_it != ubs.end() && is_below(*upper_it, b); ++upper_it) {
-        if (is_active(*upper_it)) continue; // TODO: what about is_active("complement(lower_bound)")?
-        if (get_type(*upper_it) == BoundType::EQUAL) continue; 
-
+        if (is_active(*upper_it) || (get_type(*upper_it) == BoundType::EQUAL)) continue;
         propagate_negated(b, *upper_it);
     }
 
     for (; upper_it != ubs.end(); ++upper_it) {
-        if (is_active(*upper_it)) continue;
-        if (get_type(*upper_it) == BoundType::EQUAL) continue; 
+        if (is_active(*upper_it) || (get_type(*upper_it) == BoundType::EQUAL)) continue;
         propagate(b, *upper_it);
     }
 }

@@ -25,20 +25,22 @@ class SimplexModule : public Module {
 /* //////////////////////////////////    Type Definitions    /////////////////////////////////// */
 /* ============================================================================================= */
 private:
-    using SimplexVariable = std::size_t; // TODO: make it so it becomes clear that this is
-                                         // the same type as Tableau::ColID and Bound::Var
-    using DeltaRational   = simplex::DeltaValue<Rational>;
-    using Tableau         = simplex::Tableau<Rational>;
+    using DeltaRational = simplex::DeltaValue<Rational>;
+    using Tableau       = simplex::Tableau<Rational>;
 
-    using Bound           = simplex::Bound<DeltaRational>;
-    using BoundType       = simplex::BoundType;
-    using Bounds          = simplex::Bounds<DeltaRational>;
-    using BoundRef        = Bounds::Ref;
-    using BoundSet        = BoundRef::Set;
-    using BoundVec        = std::vector<BoundRef>;
+    using Bound         = simplex::Bound<DeltaRational>;
+    using BoundType     = simplex::BoundType;
+    using Bounds        = simplex::Bounds<DeltaRational>;
+    using BoundRef      = Bounds::Ref;
+    using BoundSet      = BoundRef::Set;
+    using BoundVec      = std::vector<BoundRef>;
 
-    using VarIndex        = std::map<carl::Variable, SimplexVariable>;
+    using VarIndex      = std::map<carl::Variable, simplex::Variable>;
 
+    /**
+     * The range (lower bound, upper bound) of a variable.
+     * If a bound is nullopt, then the respective side is unbounded.
+     */
     struct Range {
         std::optional<BoundRef> m_lower = std::nullopt;
         std::optional<BoundRef> m_upper = std::nullopt;
@@ -50,18 +52,18 @@ private:
     };
 
     struct PivotCandidate {
-        SimplexVariable       m_basic_var;
+        simplex::Variable     m_basic_var;
         const Tableau::Entry& mr_nonbasic;
 
-        Tableau::RowID basic_var   () const { return m_basic_var; }
-        Tableau::ColID nonbasic_var() const { return mr_nonbasic.var(); }
-        Rational       coeff       () const { return mr_nonbasic.coeff(); }
+        simplex::Variable basic_var   () const { return m_basic_var; }
+        simplex::Variable nonbasic_var() const { return mr_nonbasic.var(); }
+        Rational          coeff       () const { return mr_nonbasic.coeff(); }
 
-        PivotCandidate(SimplexVariable v, const Tableau::Entry& e)
+        PivotCandidate(simplex::Variable v, const Tableau::Entry& e)
         : m_basic_var(v), mr_nonbasic(e) {}
     };
 
-    using PivotCandidates = std::map<SimplexVariable, std::vector<const Tableau::Entry*>>;
+    using PivotCandidates = std::map<simplex::Variable, std::vector<const Tableau::Entry*>>;
 
     class ConflictOrPivot {
     private:
@@ -89,38 +91,37 @@ private:
 /* //////////////////////////////////        Members        //////////////////////////////////// */
 /* ============================================================================================= */
 
-    // information about variables
+    // Information about variables
     std::size_t                        m_num_variables = 0;
     VarIndex                           m_to_simplex_var;
     std::vector<simplex::VariableInfo> m_var_info;
 
-    // stored assignments
+    // working assignment
     std::vector<DeltaRational>         m_assignment;
     mutable bool                       m_model_computed = false;
-    std::set<SimplexVariable>          m_changed_basic_vars;
 
-    // the tableau
+    // Tableau data
     Tableau                            m_tableau;
-    std::vector<SimplexVariable>       m_base;        // = map : Tableau::RowID -> SimplexVariable
+    std::vector<simplex::Variable>     m_base;        // = map : Tableau::RowID -> simplex::Variable
     std::vector<Rational>              m_base_coeffs; // = map : Tableau::RowID -> Rational
-    std::vector<SimplexVariable>       m_nonbase;     // = map : Tableau::ColID -> SimplexVariable
+    std::vector<simplex::Variable>     m_nonbase;
     // TODO: use nonbase? we can store a variable's index in the nonbase in tableau_index (rename)
     // build_initial_assignment could be made more efficient with that.
+    std::map<Poly, simplex::Variable>  m_lhs_to_var;  // slack variable transformation
 
+    // Information for pivoting
     std::size_t                        m_num_pivots = 0;
+    std::set<simplex::Variable>        m_changed_basic_vars; // basic vars which might be violated
 
-    // stored bounds
+    // Stored bounds
     Bounds                             m_bounds;          // owns the bounds
     std::vector<BoundSet>              m_lower_bounds;
     std::vector<BoundSet>              m_upper_bounds;
     std::vector<Range>                 m_ranges;
     BoundVec                           m_violated_bounds; // temporary storage
-    BoundRef::cmp                      m_ref_cmp;
-
+    BoundRef::cmp                      m_ref_cmp;         // needed for ordering BoundRefs in sets
     BoundVec                           m_derived_bounds;
     std::map<FormulaT, BoundVec>       m_bounds_derived_from;
-
-    std::map<Poly, SimplexVariable>    m_lhs_to_var;
 
     // NEQHandling
     FormulasT                          m_neq_constraints; // used by SPLITTING_ON_DEMAND
@@ -135,15 +136,13 @@ private:
 /* ============================================================================================= */
 public:
 
-    SimplexModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager = nullptr);
+    SimplexModule(const ModuleInput*, Conditionals&, Manager* = nullptr);
 
     ~SimplexModule();
 
 
     typedef Settings SettingsType;
-    std::string moduleName() const {
-        return SettingsType::moduleName;
-    }
+    std::string moduleName() const { return SettingsType::moduleName; }
 
     /**
      * Informs the module about the given constraint. It should be tried to inform this
@@ -218,6 +217,7 @@ private:
                 if (!check_neqs()) return Answer::UNKNOWN;
             }
         } else {
+            assert(a == Answer::UNSAT);
             SMTRAT_STATISTICS_CALL(m_statistics.conflict(mInfeasibleSubsets));
         }
         return a;
@@ -225,51 +225,61 @@ private:
 
 /* ============================= Access to Bound data via BoundRef ============================= */
 
-    const DeltaRational& get_value   (BoundRef bound_ref) const { return m_bounds[bound_ref].m_value;      }
-    SimplexVariable      get_variable(BoundRef bound_ref) const { return m_bounds[bound_ref].m_var;        }
-    BoundType            get_type    (BoundRef bound_ref) const { return m_bounds[bound_ref].m_type;       }
-    FormulaT             get_origin  (BoundRef bound_ref) const { return m_bounds[bound_ref].m_origin;     }
-    bool                 is_derived  (BoundRef bound_ref) const { return m_bounds[bound_ref].m_is_derived; }
-    bool                 is_active   (BoundRef bound_ref) const { return m_bounds[bound_ref].m_is_active;  }
-    void                 activate    (BoundRef bound_ref)       { m_bounds[bound_ref].m_is_active = true;  }
-    void                 deactivate  (BoundRef bound_ref)       { m_bounds[bound_ref].m_is_active = false; }
+    const DeltaRational& get_value   (BoundRef b) const { return m_bounds[b].m_value;      }
+    simplex::Variable    get_variable(BoundRef b) const { return m_bounds[b].m_var;        }
+    BoundType            get_type    (BoundRef b) const { return m_bounds[b].m_type;       }
+    FormulaT             get_origin  (BoundRef b) const { return m_bounds[b].m_origin;     }
+    bool                 is_derived  (BoundRef b) const { return m_bounds[b].m_is_derived; }
+    bool                 is_active   (BoundRef b) const { return m_bounds[b].m_is_active;  }
+    void                 activate    (BoundRef b)       { m_bounds[b].m_is_active = true;  }
+    void                 deactivate  (BoundRef b)       { m_bounds[b].m_is_active = false; }
 
     bool is_below (const BoundRef l, const BoundRef u) const { return get_value(l) < get_value(u); }
 
 /* ==================== Access and modification of a variable's information ==================== */
 
-    bool        is_basic         (SimplexVariable v) const { return m_var_info[v].m_is_basic;      }
-    bool        is_integer       (SimplexVariable v) const { return m_var_info[v].m_is_integer;    }
-    bool        is_original      (SimplexVariable v) const { return m_var_info[v].m_is_original;   }
-    std::size_t get_tableau_index(SimplexVariable v) const { return m_var_info[v].m_tableau_index; }
+    bool        is_basic      (simplex::Variable v) const { return m_var_info[v].m_is_basic;      }
+    bool        is_integer    (simplex::Variable v) const { return m_var_info[v].m_is_integer;    }
+    bool        is_original   (simplex::Variable v) const { return m_var_info[v].m_is_original;   }
+    std::size_t tableau_index (simplex::Variable v) const { return m_var_info[v].m_tableau_index; }
     
-    void        set_basic         (SimplexVariable v, bool is_basic) { m_var_info[v].m_is_basic = is_basic; }
-    void        set_tableau_index (SimplexVariable v, std::size_t i) { m_var_info[v].m_tableau_index = i;   }
-
+    void        set_basic         (simplex::Variable v, bool is_basic) { m_var_info[v].m_is_basic = is_basic; }
+    void        set_tableau_index (simplex::Variable v, std::size_t i) { m_var_info[v].m_tableau_index = i;   }
 
 /* ======================= Access and modification of a variable's range ======================= */
 
-    bool has_lower_bound    (SimplexVariable v) const { return m_ranges[v].m_lower.has_value(); }
-    bool has_upper_bound    (SimplexVariable v) const { return m_ranges[v].m_upper.has_value(); }
-    BoundRef lower_bound    (SimplexVariable v) const { assert(has_lower_bound(v)); return *(m_ranges[v].m_lower); }
-    BoundRef upper_bound    (SimplexVariable v) const { assert(has_upper_bound(v)); return *(m_ranges[v].m_upper); }
-    void set_lower_unbounded(SimplexVariable v)       { m_ranges[v].m_lower = std::nullopt; }
-    void set_upper_unbounded(SimplexVariable v)       { m_ranges[v].m_upper = std::nullopt; }
-    void set_lower_bound    (SimplexVariable v, BoundRef bound_ref) { m_ranges[v].m_lower = bound_ref; }
-    void set_upper_bound    (SimplexVariable v, BoundRef bound_ref) { m_ranges[v].m_upper = bound_ref; }
+    bool has_lower_bound    (simplex::Variable v) const { return m_ranges[v].has_lower(); }
+    bool has_upper_bound    (simplex::Variable v) const { return m_ranges[v].has_upper(); }
+    BoundRef lower_bound    (simplex::Variable v) const { return m_ranges[v].lower(); }
+    BoundRef upper_bound    (simplex::Variable v) const { return m_ranges[v].upper(); }
+    void set_lower_unbounded(simplex::Variable v)       { m_ranges[v].m_lower = std::nullopt; }
+    void set_upper_unbounded(simplex::Variable v)       { m_ranges[v].m_upper = std::nullopt; }
+    void set_lower_bound    (simplex::Variable v, BoundRef b) { m_ranges[v].m_lower = b; }
+    void set_upper_bound    (simplex::Variable v, BoundRef b) { m_ranges[v].m_upper = b; }
 
-    bool has_consistent_range(SimplexVariable v) const {
-        if (!(has_lower_bound(v) && has_upper_bound(v))) return true;
+    bool has_consistent_range(simplex::Variable v) const {
+        if (!has_lower_bound(v) || !has_upper_bound(v)) return true;
         return get_value(lower_bound(v)) <= get_value(upper_bound(v));
     }
 
-    void update_range(const SimplexVariable v);
-    bool update_range(const SimplexVariable v, const BoundRef b);
+    /**
+     * @brief Sets the given variable's range to the strictest active bounds.
+     * @param v the variable whose range is updated.
+     */
+    void update_range(const simplex::Variable v);
+
+    /**
+     * @brief Updates the given variable's range using the given bound.
+     * @param v the variable whose range is updated.
+     * @param b the bound to consider as new lower or upper bound
+     * @return false if the updated range is inconsistent, and true otherwise
+     */
+    bool update_range(const simplex::Variable v, const BoundRef b);
 
 /* ===================================== Variable Creation ===================================== */
 
-    SimplexVariable add_var(bool is_int, bool is_original) {
-        SimplexVariable v = m_num_variables;
+    simplex::Variable add_var(bool is_int, bool is_original) {
+        simplex::Variable v = m_num_variables;
         ++m_num_variables;
         m_upper_bounds.emplace_back(m_ref_cmp);
         m_lower_bounds.emplace_back(m_ref_cmp);
@@ -288,8 +298,8 @@ private:
         add_var(is_int, /*is_orig: */ true);
     }
 
-    SimplexVariable new_slack_variable(const Poly& lin_term) {
-        SimplexVariable new_slack_var = add_var(/*is_int: */ false, /*is_orig: */ false);
+    simplex::Variable new_slack_variable(const Poly& lin_term) {
+        simplex::Variable new_slack_var = add_var(/*is_int: */ false, /*is_orig: */ false);
         m_lhs_to_var.emplace(lin_term, new_slack_var);
         return new_slack_var;
     }
@@ -305,30 +315,51 @@ private:
 
 /* ======================================= Bound Creation ====================================== */
 
-    bool find_conflicting_lower_bounds(const SimplexVariable v, BoundRef b);
-    bool find_conflicting_upper_bounds(const SimplexVariable v, BoundRef b);
+    /**
+     * Looks for conflicts between the given upper bound on v and v's active lower bounds.
+     * All found conflicts are stored as infeasible subsets in mInfeasibleSubsets.
+     * @returns true if at least one conflict was found
+     */
+    bool find_conflicting_lower_bounds(const simplex::Variable v, BoundRef b);
+
+    /**
+     * Looks for conflicts between the given lower bound on v and v's active upper bounds.
+     * All found conflicts are stored as infeasible subsets in mInfeasibleSubsets.
+     * @returns true if at least one conflict was found
+     */
+    bool find_conflicting_upper_bounds(const simplex::Variable v, BoundRef b);
+
+    /**
+     * Adds the given BoundRef to the respective member sets (m_lower_bounds, m_upper_bounds, ...).
+     */
     void add_bound_to_sets(const BoundRef b);
-    std::pair<SimplexVariable, Rational> add_to_tableau(const Poly& linear_term);
 
-/* ================================== Assignment Initialization ================================ */
+    /**
+     * Adds a given linear term to m_tableau.
+     * If there already is a slack variable for this term (or a colinear one), nothing is added.
+     * @returns the corresponding slack variable s and a factor c so that c*s = linear_term.
+     */
+    std::pair<simplex::Variable, Rational> add_to_tableau(const Poly& linear_term);
 
-    bool violates_lower(const SimplexVariable v) const {
+/* ============================= Assignment Check and Initialization =========================== */
+
+    bool violates_lower(const simplex::Variable v) const {
         return has_lower_bound(v) && (get_value(lower_bound(v)) > m_assignment[v]);
     }
 
-    bool violates_upper(const SimplexVariable v) const {
+    bool violates_upper(const simplex::Variable v) const {
         return has_upper_bound(v) && (get_value(upper_bound(v)) < m_assignment[v]);
     }
 
-    bool assigned_in_range(const SimplexVariable v) const {
+    bool assigned_in_range(const simplex::Variable v) const {
         return !(violates_lower(v) || violates_upper(v));
     }
 
-    bool is_at_lower(const SimplexVariable v) const {
+    bool is_at_lower(const simplex::Variable v) const {
         return has_lower_bound(v) && (m_assignment[v] == get_value(lower_bound(v)));
     }
 
-    bool is_at_upper(const SimplexVariable v) const {
+    bool is_at_upper(const simplex::Variable v) const {
         return has_upper_bound(v) && (m_assignment[v] == get_value(upper_bound(v)));
     }
 
@@ -363,8 +394,8 @@ private:
                                                      bool increase ) const;
 
     void pivot_and_update(PivotCandidate pivot_candidate);
-    void update          (SimplexVariable nonbase_var, const DeltaRational& diff);
-    void pivot           (SimplexVariable x_i, SimplexVariable x_j, const Rational& a_ij);
+    void update          (simplex::Variable nonbase_var, const DeltaRational& diff);
+    void pivot           (simplex::Variable x_i, simplex::Variable x_j, const Rational& a_ij);
 
 
 /* ======================================= NEQ Handling ======================================== */
@@ -375,21 +406,38 @@ private:
 
 /* ====================================== Bound Learning ======================================= */
 
+    /*
+     * Derives bounds from a row of the tableau using existing bounds on the involved variables.
+     * If s = a_1*x_1 + ... + a_n*x_n (chosen so that a_i != 0 for all i) and for each i holds 
+     * (a_i < 0 => x_i has a lower bound c_i) and (a_i > 0 => x_i has an upper bound c_i), then
+     * we can derive s >= a_1*c_1 + ... + a_n*c_n, possibly stronger than an existing bound on s.
+     * Exchanging lower and upper bounds allows to derive upper bounds on s.
+     */
     void derive_bounds(const Tableau::RowID rid);
     void derive_bound (const Tableau::RowID rid, const BoundType type);
-    void add_derived_bound(const SimplexVariable var,
+    void add_derived_bound(const simplex::Variable var,
                            const BoundType type,
                            const DeltaRational& value,
                            const BoundVec& premises);
 
-    void propagate_derived_lower(const SimplexVariable v, const BoundRef b);
-    void propagate_derived_upper(const SimplexVariable v, const BoundRef b);
+    void propagate_derived_lower(const simplex::Variable v, const BoundRef b);
+    void propagate_derived_upper(const simplex::Variable v, const BoundRef b);
 
     void deactivate_bounds_derived_from(const FormulaT& f);
     bool reactivate_derived_bounds();
 
 /* ===================================== Theory Propagation ==================================== */
 
+    /*
+     * Passes to a preceding SATModule theory lemmas of the following form, where x is a variable:
+     * 
+     * x <= c (or x = c) implies          x >= c (or x = c) implies             
+     *         x <= d      if c <= d              x >= d      if c >= d
+     *         not(x >= d) if c <  d              not(x <= d) if c >  d
+     *         not(x =  d) if c <  d              not(x =  d) if c <  d
+     * 
+     * Notice that these simple bounds are translated back to original constraints for this.
+     */
     void simple_theory_propagation();
 
     void propagate         (const BoundRef premise, const BoundRef conclusion);

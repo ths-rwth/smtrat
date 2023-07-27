@@ -91,7 +91,7 @@ void Tableau<T>::reset_var_pos() {
 }
 
 template<typename T>
-void Tableau<T>::ensure_var(ColID v) {
+void Tableau<T>::ensure_var(Variable v) {
     while (m_columns.size() <= v) {
         m_columns.push_back(Column());
         m_var_pos.push_back(DEAD_ID);
@@ -106,7 +106,7 @@ typename Tableau<T>::RowID Tableau<T>::mk_row() {
 }
 
 template<typename T>
-void Tableau<T>::add_var(RowID dst, const T& n, ColID v) {
+void Tableau<T>::add_var(RowID dst, const T& n, Variable v) {
     if (carl::is_zero(n)) return;
 
     Row&    r = m_rows[dst];
@@ -138,7 +138,7 @@ void Tableau<T>::add(RowID row1, const T& n, RowID row2) {
 
     row_iterator end = row_end(row2);
     for (row_iterator it  = row_begin(row2); it != end; ++it) {
-        ColID v = it->m_var;
+        Variable v = it->m_var;
         std::size_t pos = m_var_pos[v];
         if (pos == DEAD_ID) {
             // variable v is not in row1
@@ -170,10 +170,10 @@ void Tableau<T>::del_row_entry(Row& r, std::size_t pos) {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "deleting row entry with index " << pos);
 
     RowEntry& r_entry = r.m_entries[pos];
-    ColID cid = r_entry.m_var;
+    Variable col_var = r_entry.m_var;
     std::size_t position_in_col = r_entry.m_position_in_col;
     r.del_entry(pos);
-    Column& c = m_columns[cid];
+    Column& c = m_columns[col_var];
     c.del_entry(position_in_col);
     c.compress_if_needed(m_rows);
 }
@@ -214,7 +214,7 @@ void Tableau<T>::gcd_normalize(RowID r, T& g) {
 }
 
 template<typename T>
-const T& Tableau<T>::get_coeff(RowID r, ColID v) {
+const T& Tableau<T>::get_coeff(RowID r, Variable v) {
     for (auto& e : get_row(r))
         if (e.m_var == v) return e.m_coeff;
     return m_zero;

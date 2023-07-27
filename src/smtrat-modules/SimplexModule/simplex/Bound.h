@@ -1,21 +1,26 @@
 #pragma once
+#include "VariableInfo.h"
 
 namespace smtrat::simplex {
 
-using Var = std::size_t; // TODO: unify with SimplexVariable?
-
 enum class BoundType { LOWER, UPPER, EQUAL, NEQ };
 
+/**
+ * Represents a bound x ~ c where x is a simlpex variable, c is a constant and
+ * ~ is <= (UPPER), >= (LOWER), = (EQUAL) or != (NEQ).
+ * Each bound originates from some fromula, which may be a conjunction of
+ * multiple atoms if the bound was derived. 
+ */
 template<typename Val>
 struct Bound {
     Val       m_value;
-    Var       m_var;
+    Variable  m_var;
     BoundType m_type;
     FormulaT  m_origin;
     bool      m_is_derived = false;
     bool      m_is_active  = false;
 
-    Bound(Var var, BoundType type, const Val& rhs, const FormulaT& origin)
+    Bound(Variable var, BoundType type, const Val& rhs, const FormulaT& origin)
     : m_value(rhs), m_var(var), m_type(type), m_origin(origin) {}
 };
 
@@ -54,7 +59,7 @@ private:
     std::map<FormulaT, Ref> m_origin_to_bound;
 
 public:
-    /// @brief wrapper around index into the internal container of Bounds
+    /// Wrapper around index into the internal container of Bounds
     class Ref {
     private:
         friend class Bounds;
@@ -72,6 +77,7 @@ public:
             return this->m_value != other.m_value;
         }
 
+        /// Compares two Refs based on their value stored in the pool.
         struct cmp {
         private:
             const Bounds& m_comparison_data;
@@ -89,28 +95,24 @@ public:
 
     /**
      * Inserts a new Bound into the storage and associates it with the given origin.
-     * @return a Ref object containing the index of the new bound in m_data
+     * @returns a Ref object containing the index of the new bound in m_data.
      */
-    Ref add(Var var, BoundType type, const Val& rhs, const FormulaT& origin) {
+    Ref add(Variable var, BoundType type, const Val& rhs, const FormulaT& origin) {
         Ref result(m_data.size());
         m_data.emplace_back(var, type, rhs, origin);
         m_origin_to_bound.emplace(origin, result); // TODO: what if the origin already exists?
+                                                   // this can happen for derived bounds
         return result;
     }
 
-    Ref add_derived(Var var, BoundType type, const Val& rhs, const FormulaT& origin) {
+    Ref add_derived(Variable var, BoundType type, const Val& rhs, const FormulaT& origin) {
         Ref result = add(var, type, rhs, origin);
         m_data[result.m_value].m_is_derived = true;
         return result;
     }
 
-    Bound<Val>& operator[](const Ref& id) {
-        return m_data[id.m_value];
-    }
-
-    const Bound<Val>& operator[](const Ref& id) const {
-        return m_data[id.m_value];
-    }
+          Bound<Val>& operator[](const Ref& id)       { return m_data[id.m_value]; }
+    const Bound<Val>& operator[](const Ref& id) const { return m_data[id.m_value]; }
 
     Ref get_from_origin(const FormulaT& origin) const {
         auto it = m_origin_to_bound.find(origin);
@@ -118,9 +120,7 @@ public:
         return it->second;
     }
 
-    void reserve(std::size_t n) const {
-        m_data.reserve(n);
-    }
+    void reserve(std::size_t n) const { m_data.reserve(n); }
 };
 
 }

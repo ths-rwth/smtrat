@@ -5,8 +5,12 @@ namespace smtrat::simplex {
 
 /**
  * A Sparse Vector data structure used as base for both Columns and Rows in the simplex Tableau.
+ * 
  * The Element type is required to offer
- * bool is_dead(), void set_dead() and std::size_t m_next_free_idx, with the following purpose:
+ * - bool is_dead(),
+ * - void set_dead(),
+ * - std::size_t m_next_free_idx,
+ * with the following purpose:
  * If an element is deleted from the sparse vector, it is not destroyed, but marked as "dead".
  * If then a new element is added, it can be first stored in a dead entry instead of creating
  * a new entry.
@@ -55,7 +59,8 @@ struct SparseVector {
 
 /**
  * Base class for iterators over SparseVectors.
- * This does not work as an actual iterator as it misses the dereferenciation operator *().
+ * This does not work as an actual iterator as it misses the dereferenciation operator *(),
+ * which needs to be defined in implementing child classes.
  */
 template<typename Vec>
 struct sparse_iterator_base {
@@ -63,7 +68,7 @@ struct sparse_iterator_base {
     Vec&        m_vec;
 
     void move_to_used() {
-        while (m_curr < m_vec.num_entries() && m_vec.m_entries[m_curr].is_dead()) {
+        while ((m_curr < m_vec.num_entries()) && m_vec.m_entries[m_curr].is_dead()) {
             ++m_curr;
         }
     }
@@ -74,8 +79,6 @@ struct sparse_iterator_base {
     }
 
     sparse_iterator_base& operator++()    { ++m_curr; move_to_used(); return *this; }
-    // REVIEW: do we need this?
-    sparse_iterator_base  operator++(int) { sparse_iterator_base tmp = *this; ++*this; return tmp; }
 
     bool operator==(sparse_iterator_base const & it) const { return m_curr == it.m_curr; }
     bool operator!=(sparse_iterator_base const & it) const { return m_curr != it.m_curr; }
