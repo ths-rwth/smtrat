@@ -231,6 +231,33 @@ bool merge_reasons(boost::container::flat_set<boost::container::flat_set<Formula
     return change;
 }
 
+struct FormulaClassification {
+    std::vector<FormulaID> tru;
+    std::vector<FormulaID> fals;
+    std::vector<FormulaID> multi;
+    std::vector<FormulaID> confl;
+};
+
+FormulaClassification classify_formulas(const FormulaDB& db, const std::vector<FormulaID>& formulas) {
+    FormulaClassification subs;
+    for (const auto f : formulas) {
+        auto sub_val = db[f].valuation();
+        if (sub_val == Valuation::FALSE) {
+            subs.fals.push_back(f);
+        } else if (sub_val == Valuation::TRUE) {
+            subs.tru.push_back(f);
+        } else if (sub_val == Valuation::MULTIVARIATE) {
+            subs.multi.push_back(f);
+        } else {
+            assert(sub_val == Valuation::UNKNOWN);
+            subs.confl.push_back(f);
+        }
+    }
+    return subs;
+}
+
+
+
 void FormulaGraph::propagate_consistency(FormulaID id) {
     if (db[id].valuation() == Valuation::UNKNOWN) {
         return;
@@ -253,7 +280,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             else if (sub_val == Valuation::FALSE) add_reasons_true(id, db[c.subformula].reasons_false);
 
             // downwards propagation
-            if (val == Valuation::TRUE && sub_val == Valuation::MULTIVARIATE) { // sub_val == Valuation::MULTIVARIATE to avoid redundancies
+            if (val == Valuation::TRUE && sub_val == Valuation::MULTIVARIATE) { // sub_val == Valuation::MULTIVARIATE to avoid redundancies // TODO geht hierdurch was verloren?
                 add_reasons_false(c.subformula, db[id].reasons_true);
             } else if (val == Valuation::FALSE && sub_val == Valuation::MULTIVARIATE) {
                 add_reasons_true(c.subformula, db[id].reasons_false);
@@ -261,172 +288,100 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
         },
         [&](AND& c) {
             auto val = db[id].valuation();
+            auto subs = classify_formulas(db, c.subformulas);
 
             // upwards propagation
             {
-                Formula::Reasons reasons_true;
-                reasons_true.emplace();
-                for (const auto subformula : c.subformulas) {
-                    auto sub_val = db[subformula].valuation();
-                    if (sub_val == Valuation::FALSE) {
+                if (!subs.fals.empty()) {
+                    for (const auto& subformula : subs.fals) {
                         add_reasons_false(id, db[subformula].reasons_false);
-                        reasons_true.clear();
-                    } else if (sub_val == Valuation::TRUE) {
-                        reasons_true = combine_reasons(reasons_true, db[subformula].reasons_true);
-                    } else if (sub_val == Valuation::MULTIVARIATE) {
-                        reasons_true.clear();
-                    } else {
-                        assert(sub_val == Valuation::UNKNOWN);
-                        reasons_true.clear();
                     }
-                }
-                if (!reasons_true.empty()) {
-                    add_reasons_true(id, reasons_true);
+                } else if (subs.confl.empty() && subs.multi.empty() && subs.fals.empty()) {
+                    Formula::Reasons reasons;
+                    reasons.emplace();
+                    for (const auto& subformula : subs.tru) {
+                        reasons = combine_reasons(reasons, db[subformula].reasons_true);
+                    }
+                    add_reasons_true(id, reasons);
                 }
             }
 
             // downwards propagation
             if (val == Valuation::TRUE) {
-                for (const auto subformula : c.subformulas) {
-                    auto sub_val = db[subformula].valuation();
-                    if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
-                        add_reasons_true(subformula, db[id].reasons_true);
-                    }
+                for (const auto subformula : subs.multi) { // avoids redundancy
+                    add_reasons_true(subformula, db[id].reasons_true);
                 }
             } else if (val == Valuation::FALSE) {
-                Formula::Reasons reasons_false;
-                std::optional<FormulaID> implied_false;
-                reasons_false = db[id].reasons_false;
-                for (const auto subformula : c.subformulas) {
-                    auto sub_val = db[subformula].valuation();
-                    if (sub_val == Valuation::FALSE) {
-                        reasons_false.clear();
-                        implied_false = std::nullopt;
-                    } else if (sub_val == Valuation::TRUE) {
-                        reasons_false = combine_reasons(reasons_false, db[subformula].reasons_true);
-                    } else if (sub_val == Valuation::MULTIVARIATE) {
-                        if (!implied_false) {
-                            implied_false = subformula;
-                        } else {
-                            reasons_false.clear();
-                            implied_false = std::nullopt;
-                        }
-                    } else {
-                        assert(sub_val == Valuation::UNKNOWN);
-                        reasons_false.clear();
-                        implied_false = std::nullopt;
+                if (subs.multi.size() == 1 && subs.confl.empty() && subs.fals.empty()) {
+                    Formula::Reasons reasons = db[id].reasons_false;
+                    for (const auto& subformula : subs.tru) {
+                        reasons = combine_reasons(reasons, db[subformula].reasons_true);
                     }
-                }
-                if (implied_false) {
-                    add_reasons_false(*implied_false, reasons_false);
+                    add_reasons_false(*subs.multi.begin(), reasons);
                 }
             }
         },
         [&](OR& c) {
             auto val = db[id].valuation();
+            auto subs = classify_formulas(db, c.subformulas);
 
             // upwards propagation
             {
-                Formula::Reasons reasons_false;
-                reasons_false.emplace();
-                for (const auto subformula : c.subformulas) {
-                    auto sub_val = db[subformula].valuation();
-                    if (sub_val == Valuation::FALSE) {
-                        reasons_false = combine_reasons(reasons_false, db[subformula].reasons_false);
-                    } else if (sub_val == Valuation::TRUE) {
+                if (!subs.tru.empty()) {
+                    for (const auto& subformula : subs.tru) {
                         add_reasons_true(id, db[subformula].reasons_true);
-                        reasons_false.clear();
-                    } else if (sub_val == Valuation::MULTIVARIATE) {
-                        reasons_false.clear();
-                    } else {
-                        assert(sub_val == Valuation::UNKNOWN);
-                        reasons_false.clear();
                     }
-                }
-                if (!reasons_false.empty()) {
-                    add_reasons_false(id, reasons_false);
+                } else if (subs.confl.empty() && subs.multi.empty() && subs.tru.empty()) {
+                    Formula::Reasons reasons;
+                    reasons.emplace();
+                    for (const auto& subformula : subs.fals) {
+                        reasons = combine_reasons(reasons, db[subformula].reasons_false);
+                    }
+                    add_reasons_false(id, reasons);
                 }
             } 
             
             // downwards propagation
             if (val == Valuation::TRUE) {
-                Formula::Reasons reasons_true;
-                std::optional<FormulaID> implied_true;
-                reasons_true = db[id].reasons_true;
-                for (const auto subformula : c.subformulas) {
-                    auto sub_val = db[subformula].valuation();
-                    if (sub_val == Valuation::FALSE) {
-                        reasons_true = combine_reasons(reasons_true, db[subformula].reasons_false);
-                    } else if (sub_val == Valuation::TRUE) {
-                        reasons_true.clear();
-                        implied_true = std::nullopt;
-                    } else if (sub_val == Valuation::MULTIVARIATE) {
-                        if (!implied_true) {
-                            implied_true = subformula;
-                        } else {
-                            reasons_true.clear();
-                            implied_true = std::nullopt;
-                        }
-                    } else {
-                        assert(sub_val == Valuation::UNKNOWN);
-                        reasons_true.clear();
-                        implied_true = std::nullopt;
+                if (subs.multi.size() == 1 && subs.confl.empty() && subs.tru.empty()) {
+                    Formula::Reasons reasons = db[id].reasons_true;
+                    for (const auto& subformula : subs.fals) {
+                        reasons = combine_reasons(reasons, db[subformula].reasons_false);
                     }
-                }
-                if (implied_true) {
-                    add_reasons_true(*implied_true, reasons_true);
+                    add_reasons_true(*subs.multi.begin(), reasons);
                 }
             } else if (val == Valuation::FALSE) {
-                for (const auto subformula : c.subformulas) {
-                    auto sub_val = db[subformula].valuation();
-                    if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
-                        add_reasons_false(subformula, db[id].reasons_false);
-                    }
+                for (const auto subformula : subs.multi) { // avoids redundancy
+                    add_reasons_false(subformula, db[id].reasons_false);
                 }
             }
         },
         [&](IFF& c) {
-            std::vector<FormulaID> true_sub;
-            std::vector<FormulaID> false_sub;
-            std::vector<FormulaID> multivariate_sub;
-            for (const auto subformula : c.subformulas) {
-                auto sub_val = db[subformula].valuation();
-                if (sub_val == Valuation::FALSE) {
-                    false_sub.push_back(subformula);
-                } else if (sub_val == Valuation::TRUE) {
-                    true_sub.push_back(subformula);
-                } else if (sub_val == Valuation::MULTIVARIATE) {
-                    multivariate_sub.push_back(subformula);
-                } else {
-                    assert(sub_val == Valuation::UNKNOWN);
-                    return;
-                }
-            }
-
+            auto subs = classify_formulas(db, c.subformulas);
             auto val = db[id].valuation();
 
             // upwards propagation
             {
-                if (!true_sub.empty() && !false_sub.empty()) {
+                if (!subs.tru.empty() && !subs.fals.empty()) {
                     Formula::Reasons reasons;
-                    for (const auto t : true_sub) {
-                        for (const auto f : false_sub) {
+                    for (const auto t : subs.tru) {
+                        for (const auto f : subs.fals) {
                             auto tmp = combine_reasons(db[t].reasons_true,db[f].reasons_false);
                             reasons.insert(tmp.begin(), tmp.end());
                         }
                     }
                     add_reasons_false(id, reasons);
-                } else if (multivariate_sub.empty() && !true_sub.empty()) {
+                } else if (subs.multi.empty() && !subs.tru.empty()) {
                     Formula::Reasons reasons;
                     reasons.emplace();
-                    for (const auto t : true_sub) {
+                    for (const auto t : subs.tru) {
                         reasons = combine_reasons(reasons, db[t].reasons_true);
                     }
                     add_reasons_true(id, reasons);
-                } else if (multivariate_sub.empty() && !false_sub.empty()) {
+                } else if (subs.multi.empty() && !subs.fals.empty()) {
                     Formula::Reasons reasons;
                     reasons.emplace();
-                    for (const auto f : false_sub) {
+                    for (const auto f : subs.fals) {
                         reasons = combine_reasons(reasons, db[f].reasons_false);
                     }
                     add_reasons_true(id, reasons);
@@ -435,7 +390,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             
             // downwards propagation
             if (val == Valuation::TRUE) {
-                for (const auto t : true_sub) {
+                for (const auto t : subs.tru) {
                     for (const auto sub : c.subformulas) {
                         auto sub_val = db[sub].valuation();
                         if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
@@ -443,7 +398,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                         }
                     }
                 }
-                for (const auto f : false_sub) {
+                for (const auto f : subs.fals) {
                     for (const auto sub : c.subformulas) {
                         auto sub_val = db[sub].valuation();
                         if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
@@ -452,71 +407,62 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                     }
                 }
             } else if (val == Valuation::FALSE) {
-                if (multivariate_sub.size() == 1 && (true_sub.empty() || false_sub.empty())) {
-                    if (true_sub.empty()) {
+                if (subs.multi.size() == 1 && (subs.tru.empty() || subs.fals.empty())) {
+                    if (subs.tru.empty()) {
                         Formula::Reasons reasons = db[id].reasons_false;
-                        for (const auto f : false_sub) {
+                        for (const auto f : subs.fals) {
                             reasons = combine_reasons(reasons, db[f].reasons_false);
                         }
-                        add_reasons_true(*multivariate_sub.begin(), reasons);
+                        add_reasons_true(*subs.multi.begin(), reasons);
                     } else {
-                        assert(false_sub.empty());
+                        assert(subs.fals.empty());
                         Formula::Reasons reasons = db[id].reasons_false;
-                        for (const auto t : true_sub) {
+                        for (const auto t : subs.tru) {
                             reasons = combine_reasons(reasons, db[t].reasons_true);
                         }
-                        add_reasons_false(*multivariate_sub.begin(), reasons);
+                        add_reasons_false(*subs.multi.begin(), reasons);
                     }
                 }
             }
         },
         [&](XOR& c) {
-            std::optional<FormulaID> implied;
-            Formula::Reasons reasons;
-            reasons.emplace();
-            bool value = false;
+            auto val = db[id].valuation();
+            auto subs = classify_formulas(db, c.subformulas);
 
-            for (const auto subformula : c.subformulas) {
-                auto sub_val = db[subformula].valuation();
-                if (sub_val == Valuation::MULTIVARIATE) {
-                    if (implied) {
-                        implied = id;
-                    } else {
-                        implied = std::nullopt;
-                        reasons.clear();
-                    }
-                } else if (sub_val == Valuation::FALSE) {
-                    reasons = combine_reasons(reasons, db[subformula].reasons_false);
-                } else if (sub_val == Valuation::TRUE) {
+            if (subs.confl.empty() && (subs.multi.empty() || subs.multi.size() == 1)) {
+                Formula::Reasons reasons;
+                reasons.emplace();
+                for (const auto subformula : subs.tru) {
                     reasons = combine_reasons(reasons, db[subformula].reasons_true);
-                    value = !value;
-                } else {
-                    assert(sub_val == Valuation::UNKNOWN);
-                    implied = std::nullopt;
-                    reasons.clear();
                 }
-            }
-
-            // upwards propagation
-            if (!implied && !reasons.empty()) {
-                if (value) {
-                    add_reasons_true(*implied, reasons);
-                } else {
-                    add_reasons_false(*implied, reasons);
-                }
-            } else if (implied && !reasons.empty()) { // downwards propagation
-                auto val = db[id].valuation();
-                if (val == Valuation::TRUE) {
-                    reasons = db[id].reasons_true;
-                    value = !value;
-                } else if (val == Valuation::FALSE) {
-                    reasons = db[id].reasons_false;
+                for (const auto subformula : subs.fals) {
+                    reasons = combine_reasons(reasons, db[subformula].reasons_false);
                 }
 
-                if (value) {
-                    add_reasons_true(*implied, reasons);
-                } else {
-                    add_reasons_false(*implied, reasons);
+                // upwards propagation
+                if (subs.multi.empty() && subs.confl.empty()) {
+                    if (subs.tru.size() % 2 != 0) {
+                        add_reasons_true(id, reasons);
+                    } else {
+                        add_reasons_false(id, reasons);
+                    }
+                }
+
+                // downwards propagation
+                if (subs.multi.size() == 1 && subs.confl.empty()) {
+                    bool value = (subs.tru.size() % 2 != 0);
+                    if (val == Valuation::TRUE) {
+                        reasons = combine_reasons(reasons, db[id].reasons_true);
+                        value = !value;
+                    } else if (val == Valuation::FALSE) {
+                        reasons = combine_reasons(reasons, db[id].reasons_false);
+                    }
+
+                    if (value) {
+                        add_reasons_true(*subs.multi.begin(), reasons);
+                    } else {
+                        add_reasons_false(*subs.multi.begin(), reasons);
+                    }
                 }
             }
         },
