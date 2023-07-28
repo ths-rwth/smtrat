@@ -5,12 +5,12 @@
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
-class CoveringNG_PPGraphSingleChoiceStdeg: public Manager {
+class CoveringNG_PPGraphSingleChoiceFact: public Manager {
 public:
-	CoveringNG_PPGraphSingleChoiceStdeg() : Manager() {
+	CoveringNG_PPGraphSingleChoiceFact() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
-                addBackend<CoveringNGModule<CoveringNGSettingsGraphSingleChoiceStdeg>>()
+                addBackend<CoveringNGModule<CoveringNGSettingsGraphSingleChoiceFact>>()
             })
         );
 	}

@@ -3,18 +3,21 @@
 namespace smtrat::covering_ng::formula::complexity {
     
 // TODO sum of total degrees (see Dolzmann et al 2004) (sum of tdegs of all monomials)
-// TODO factorize polynomials before calculation of complexity
 
-inline bool min_sum_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) { 
-    std::size_t a_sum_total_degree = 0;
+inline bool min_max_tdeg_min_size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    std::size_t a_max_total_degree = 0;
     for (const auto& el : a) {
-        a_sum_total_degree += el.lhs().total_degree();
+        for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
+            a_max_total_degree = std::max(a_max_total_degree, proj.total_degree(f));
+        }
     }
-    std::size_t b_sum_total_degree = 0;
+    std::size_t b_max_total_degree = 0;
     for (const auto& el : b) {
-        b_sum_total_degree += el.lhs().total_degree();
+        for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
+            b_max_total_degree = std::max(b_max_total_degree, proj.total_degree(f));
+        }
     }
-    return a_sum_total_degree < b_sum_total_degree || (a_sum_total_degree == b_sum_total_degree && a.size() < b.size());
+    return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a.size() < b.size());
 }
 
 inline bool min_max_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {

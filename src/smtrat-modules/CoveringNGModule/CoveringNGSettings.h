@@ -21,7 +21,7 @@ struct CoveringNGSettingsDefault {
     // Implicant computation
     struct formula_evaluation {
         using Type = covering_ng::formula::Minimal;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::node_ds::complexity::min_tdeg_ordering);
         }
     };
@@ -32,7 +32,7 @@ struct CoveringNGSettingsMinLvlMinTdeg : CoveringNGSettingsDefault  {
 
     struct formula_evaluation {
         using Type = covering_ng::formula::Minimal;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::node_ds::complexity::min_lvl_min_tdeg_ordering);
         }
     };
@@ -42,7 +42,7 @@ struct CoveringNGSettingsExImplicants : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicants>";
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1);
         }
     };
@@ -53,7 +53,7 @@ struct CoveringNGSettingsExImplicantsMulti : CoveringNGSettingsDefault  {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 0);
         }
     };
@@ -63,7 +63,7 @@ struct CoveringNGSettingsExImplicantsMinSize : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicantsMinSize>";
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_size_min_tdeg, 1);
         }
     };
@@ -73,7 +73,7 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsExImplicantsPruning>";
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, 2);
         }
     };
@@ -84,7 +84,7 @@ struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 0, covering_ng::formula::complexity::min_tdeg, false, true);
         }
     };
@@ -95,7 +95,7 @@ struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, true, true);
         }
     };
@@ -106,7 +106,7 @@ struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 2, covering_ng::formula::complexity::min_tdeg, false, true);
         }
     };
@@ -117,19 +117,19 @@ struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
-        static auto create() {
+        static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true);
         }
     };
 };
 
-struct CoveringNGSettingsGraphSingleChoiceStdeg : CoveringNGSettingsDefault  {
+struct CoveringNGSettingsGraphSingleChoiceFact : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoiceStdeg>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
-        static auto create() {
-            return Type(covering_ng::formula::complexity::min_sum_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true);
+        static auto create(cadcells::datastructures::Projections& proj) {
+            return Type(std::bind_front(covering_ng::formula::complexity::min_max_tdeg_min_size_fact, proj), 1, covering_ng::formula::complexity::min_tdeg, false, true);
         }
     };
 };
