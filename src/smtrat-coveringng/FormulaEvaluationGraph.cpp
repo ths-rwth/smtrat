@@ -476,10 +476,10 @@ void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
     if (is_true) {
         db[id].reasons_true.emplace();
-        db[id].decided_true = true;
+        //db[id].decided_true = true;
     } else {
         db[id].reasons_false.emplace();
-        db[id].decided_false = true;
+        //db[id].decided_false = true;
     }
     propagate_consistency(id);
 }
@@ -638,8 +638,24 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     log(true_graph.db, true_graph.root);
 
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
+    for (std::size_t i = 0; i < true_graph.db.size(); i++) {
+        if (std::holds_alternative<formula_ds::TRUE>(true_graph.db[i].content)) {
+            true_graph.propagate_root(i, true);
+        }
+        if (std::holds_alternative<formula_ds::FALSE>(true_graph.db[i].content)) {
+            true_graph.propagate_root(i, false);
+        }
+    }
     true_graph.propagate_root(true_graph.root, true);
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update false_graph");
+    for (std::size_t i = 0; i < false_graph.db.size(); i++) {
+        if (std::holds_alternative<formula_ds::TRUE>(false_graph.db[i].content)) {
+            false_graph.propagate_root(i, true);
+        }
+        if (std::holds_alternative<formula_ds::FALSE>(false_graph.db[i].content)) {
+            false_graph.propagate_root(i, false);
+        }
+    }
     false_graph.propagate_root(false_graph.root, false);
 }
 
