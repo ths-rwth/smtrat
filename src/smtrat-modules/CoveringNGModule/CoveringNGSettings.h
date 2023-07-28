@@ -43,7 +43,7 @@ struct CoveringNGSettingsExImplicants : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::complexity::min_tdeg_min_size, 1);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1);
         }
     };
 };
@@ -54,7 +54,7 @@ struct CoveringNGSettingsExImplicantsMulti : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::complexity::min_tdeg_min_size, 0);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 0);
         }
     };
 };
@@ -74,7 +74,7 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create() {
-            return Type(covering_ng::formula::complexity::min_tdeg_min_size, 1, 2);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, 2);
         }
     };
 };
@@ -85,7 +85,7 @@ struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type(covering_ng::formula::complexity::min_tdeg_min_size, 0, covering_ng::formula::complexity::min_tdeg, false, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 0, covering_ng::formula::complexity::min_tdeg, false, true);
         }
     };
 };
@@ -96,7 +96,7 @@ struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type(covering_ng::formula::complexity::min_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, true, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, true, true);
         }
     };
 };
@@ -107,7 +107,29 @@ struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create() {
-            return Type(covering_ng::formula::complexity::min_tdeg_min_size, 2, covering_ng::formula::complexity::min_tdeg, false, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 2, covering_ng::formula::complexity::min_tdeg, false, true);
+        }
+    };
+};
+
+struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoice>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create() {
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true);
+        }
+    };
+};
+
+struct CoveringNGSettingsGraphSingleChoiceStdeg : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoiceStdeg>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create() {
+            return Type(covering_ng::formula::complexity::min_sum_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true);
         }
     };
 };

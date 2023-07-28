@@ -1,8 +1,23 @@
 #pragma once
 
 namespace smtrat::covering_ng::formula::complexity {
+    
+// TODO sum of total degrees (see Dolzmann et al 2004) (sum of tdegs of all monomials)
+// TODO factorize polynomials before calculation of complexity
 
-inline bool min_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+inline bool min_sum_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) { 
+    std::size_t a_sum_total_degree = 0;
+    for (const auto& el : a) {
+        a_sum_total_degree += el.lhs().total_degree();
+    }
+    std::size_t b_sum_total_degree = 0;
+    for (const auto& el : b) {
+        b_sum_total_degree += el.lhs().total_degree();
+    }
+    return a_sum_total_degree < b_sum_total_degree || (a_sum_total_degree == b_sum_total_degree && a.size() < b.size());
+}
+
+inline bool min_max_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     std::size_t a_max_total_degree = 0;
     for (const auto& el : a) {
         a_max_total_degree = std::max(a_max_total_degree, el.lhs().total_degree());
@@ -42,7 +57,7 @@ inline bool min_size_min_tdeg(const boost::container::flat_set<cadcells::Constra
     }
 }
 
-inline bool min_tdeg(const cadcells::Constraint& a, const cadcells::Constraint & b) {
+inline bool min_tdeg(const cadcells::Constraint& a, const cadcells::Constraint& b) {
     assert(a.lhs().main_var() == b.lhs().main_var());
     return a.lhs().total_degree() < b.lhs().total_degree(); 
 }
