@@ -6,18 +6,22 @@ namespace smtrat::covering_ng::formula::complexity {
 
 inline bool min_max_tdeg_min_size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     std::size_t a_max_total_degree = 0;
+    std::size_t a_size = 0;
     for (const auto& el : a) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
             a_max_total_degree = std::max(a_max_total_degree, proj.total_degree(f));
+            a_size++;
         }
     }
     std::size_t b_max_total_degree = 0;
+    std::size_t b_size = 0;
     for (const auto& el : b) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
             b_max_total_degree = std::max(b_max_total_degree, proj.total_degree(f));
+            b_size++;
         }
     }
-    return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a.size() < b.size());
+    return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a_size < b_size);
 }
 
 inline bool min_max_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
