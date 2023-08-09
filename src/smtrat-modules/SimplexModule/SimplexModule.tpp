@@ -1049,7 +1049,7 @@ void SimplexModule<Settings>::propagate_upper(const BoundRef b) {
     }
 
     // iterating from highest ub to lowest ub => reverse iterator
-    for (const auto u : m_upper_bounds[get_variable(b)]) {
+    for (const auto u : simplex::helpers::reversed(m_upper_bounds[get_variable(b)])) {
         if ((u == b) || is_below(u, b)) break;
         if (is_active(u) || (get_type(u) == BoundType::EQUAL)) continue;
         propagate(b, u);
