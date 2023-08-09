@@ -632,8 +632,8 @@ SimplexModule<Settings>::ConflictOrPivot SimplexModule<Settings>::find_conflict_
 
 template<class Settings>
 std::optional<typename SimplexModule<Settings>::BoundRef> SimplexModule<Settings>::check_suitable_for_pivot(const Tableau::Entry& entry,
-                                                                                                            const BoundRef b,
-                                                                                                            bool increase) const {
+                                                                                                            const BoundRef,
+                                                                                                            const bool increase) const {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "checking suitability for pivot");
     // TODO: use b to have further restrictions
 
@@ -684,7 +684,7 @@ SimplexModule<Settings>::PivotCandidate SimplexModule<Settings>::choose_pivot_he
             min_row_it = it;
             min_row_len = row_len;
         }
-        // tiebreaker is implicitly blands rule ("smallest" suitable)
+        // tiebreaker is implicitly blands rule ("smallest index")
     }
 
     const auto& col_candidates = min_row_it->second;
@@ -698,7 +698,7 @@ SimplexModule<Settings>::PivotCandidate SimplexModule<Settings>::choose_pivot_he
             min_col_it = it;
             min_col_len = col_len;
         }
-        // tiebreaker is implicitly blands rule ("smallest" suitable)
+        // tiebreaker is implicitly blands rule ("smallest index")
     }
 
     return PivotCandidate(min_row_it->first, **min_col_it);

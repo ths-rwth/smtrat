@@ -121,7 +121,7 @@ void Tableau<T>::add_var(RowID dst, const T& n, Variable v) {
 }
 
 /**
-     \brief Set row1 <- row1 + row2 * n
+ * Set row1 = row1 + row2 * n
 */
 template<typename T>
 void Tableau<T>::add(RowID row1, const T& n, RowID row2) {

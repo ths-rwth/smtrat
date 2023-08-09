@@ -6,7 +6,8 @@
 namespace smtrat::simplex {
 
 /**
- * Class representing and performing operations on a simplex tableau.
+ * Class for representing and performing operations on a simplex tableau.
+ * Mostly inspired by z3's simplex.
  * 
  * Stores the values in sparse vectors, each representing a row for a basic variable.
  * Additionally maintains sparse vectors for columns,
@@ -28,7 +29,7 @@ public:
         Entry(T&& c, Variable v) : m_coeff(std::move(c)), m_var(v) {}
 
         inline const T& coeff() const { return m_coeff; }
-        inline Variable   var()   const { return m_var;   }
+        inline Variable   var() const { return m_var;   }
     };
 
 private:

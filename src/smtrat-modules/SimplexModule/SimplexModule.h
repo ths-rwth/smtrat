@@ -236,7 +236,7 @@ private:
     void                 activate    (BoundRef b)       { m_bounds[b].m_is_active = true;  }
     void                 deactivate  (BoundRef b)       { m_bounds[b].m_is_active = false; }
 
-    bool is_below (const BoundRef l, const BoundRef u) const { return get_value(l) < get_value(u); }
+    bool is_below (BoundRef l, BoundRef u) const { return get_value(l) < get_value(u); }
 
 /* ==================== Access and modification of a variable's information ==================== */
 
@@ -245,8 +245,8 @@ private:
     bool        is_original   (simplex::Variable v) const { return m_var_info[v].m_is_original;   }
     std::size_t tableau_index (simplex::Variable v) const { return m_var_info[v].m_tableau_index; }
 
-    void        set_basic         (simplex::Variable v, bool is_basic) { m_var_info[v].m_is_basic = is_basic; }
-    void        set_tableau_index (simplex::Variable v, std::size_t i) { m_var_info[v].m_tableau_index = i;   }
+    void        set_basic        (simplex::Variable v, bool is_basic) { m_var_info[v].m_is_basic = is_basic; }
+    void        set_tableau_index(simplex::Variable v, std::size_t i) { m_var_info[v].m_tableau_index = i;   }
 
 /* ======================= Access and modification of a variable's range ======================= */
 
@@ -254,8 +254,9 @@ private:
     bool has_upper_bound    (simplex::Variable v) const { return m_ranges[v].has_upper(); }
     BoundRef lower_bound    (simplex::Variable v) const { return m_ranges[v].lower(); }
     BoundRef upper_bound    (simplex::Variable v) const { return m_ranges[v].upper(); }
-    void set_lower_unbounded(simplex::Variable v)       { m_ranges[v].m_lower = std::nullopt; }
-    void set_upper_unbounded(simplex::Variable v)       { m_ranges[v].m_upper = std::nullopt; }
+
+    void set_lower_unbounded(simplex::Variable v) { m_ranges[v].m_lower = std::nullopt; }
+    void set_upper_unbounded(simplex::Variable v) { m_ranges[v].m_upper = std::nullopt; }
     void set_lower_bound    (simplex::Variable v, BoundRef b) { m_ranges[v].m_lower = b; }
     void set_upper_bound    (simplex::Variable v, BoundRef b) { m_ranges[v].m_upper = b; }
 
@@ -365,7 +366,16 @@ private:
         return has_upper_bound(v) && (m_assignment[v] == get_value(upper_bound(v)));
     }
 
+    /**
+     * Computes the assignment of the basic variables using the assignment of the non-basic ones.
+     * I.e. for a basic variable b using the tableau row b = a_1 x_1 +...+ a_n x_n (x_i non-basic).
+     */
     void compute_basic_assignment();
+
+    /**
+     * Builds an initial assignment by setting all non-basic variables to be within their bounds,
+     * and then computing the values for basic variables accordingly.
+     */
     void build_initial_assignment();
 
     void collect_nonbase() {
@@ -392,8 +402,8 @@ private:
 
     ConflictOrPivot         find_conflict_or_pivot();
     std::optional<BoundRef> check_suitable_for_pivot(const Tableau::Entry& entry,
-                                                     const BoundRef b,
-                                                     bool increase ) const;
+                                                     const BoundRef        b,
+                                                     const bool            increase ) const;
 
     void pivot_and_update(PivotCandidate pivot_candidate);
     void update          (simplex::Variable nonbase_var, const DeltaRational& diff);
@@ -419,9 +429,9 @@ private:
     void derive_bounds(const Tableau::RowID rid);
     void derive_bound (const Tableau::RowID rid, const BoundType type);
     void add_derived_bound(const simplex::Variable var,
-                           const BoundType type,
-                           const DeltaRational& value,
-                           const BoundVec& premises);
+                           const BoundType         type,
+                           const DeltaRational&    value,
+                           const BoundVec&         premises);
 
     void propagate_derived_lower(const simplex::Variable v, const BoundRef b);
     void propagate_derived_upper(const simplex::Variable v, const BoundRef b);
@@ -444,8 +454,8 @@ private:
      */
     void simple_theory_propagation();
 
-    void propagate         (const BoundRef premise, const BoundRef conclusion);
-    void propagate_negated (const BoundRef premise, const BoundRef conclusion);
+    void propagate        (const BoundRef premise, const BoundRef conclusion);
+    void propagate_negated(const BoundRef premise, const BoundRef conclusion);
 
     void propagate_lower(const BoundRef b);
     void propagate_upper(const BoundRef b);
