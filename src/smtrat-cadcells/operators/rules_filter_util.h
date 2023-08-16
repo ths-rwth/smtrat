@@ -3,39 +3,6 @@
 namespace smtrat::cadcells::operators::rules::filter_util {
 
 template<typename P>
-inline void pseudo_order_invariant(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const boost::container::flat_set<datastructures::PolyRef>& considered_polys) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "pseudo_ord_inv(" << poly << ") wrt " << considered_polys);
-    auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).delineated_ref();
-    if (deriv.proj().is_const(poly)) return;
-    for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
-        deriv.insert(properties::poly_ord_inv_base{ factor });
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv_base(" << factor << ") ");
-        if (factor.level == deriv.level()) {
-            if (deriv.proj().is_nullified(deriv.underlying_sample(), factor)) {
-                deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
-            } else {
-                auto roots = deriv.proj().real_roots(deriv.underlying_sample(), factor);
-                if (roots.empty()) {
-                    deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
-                } else {
-                    if (considered_polys.contains(factor)) {
-                    } else {
-                        deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
-                    }
-                }
-            }
-        } else {
-            assert(factor.level < deriv.level());
-            deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
-        }
-    }
-}
-
-template<typename P>
 inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const boost::container::flat_set<datastructures::PolyRef>& polys) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
     auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
