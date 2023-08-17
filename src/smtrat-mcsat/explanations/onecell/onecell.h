@@ -5,6 +5,7 @@
 #include <smtrat-cadcells/helper_formula.h>
 
 #include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
 #include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
@@ -26,7 +27,14 @@ struct LDBSettings : Base {
     constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
+    //constexpr static auto op = cadcells::operators::op::mccallum;
     constexpr static auto op = cadcells::operators::op::mccallum;
+};
+
+struct LDBpdelSettings : Base {
+    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_PDEL;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_PDEL;
+    constexpr static auto op = cadcells::operators::op::mccallum_pdel;
 };
 
 struct LDBFilteredAllSelectiveSettings : Base {
@@ -39,6 +47,12 @@ struct BCSettings : Base {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
     constexpr static auto op = cadcells::operators::op::mccallum;
+};
+
+struct BCpdelSettings : Base {
+    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_PDEL;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_PDEL;
+    constexpr static auto op = cadcells::operators::op::mccallum_pdel;
 };
 
 struct BCFilteredSettings : Base {

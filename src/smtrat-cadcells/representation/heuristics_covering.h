@@ -57,6 +57,23 @@ namespace smtrat::cadcells::representation {
     };
 
     template <>
+    struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_PDEL> {
+        template<typename T>
+        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+            datastructures::CoveringRepresentation<T> result;
+            auto min_derivs = compute_min_derivs(derivs);
+            for (auto& iter : min_derivs) {
+                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL_PDEL>::compute(iter);
+                if (!cell_result) return std::nullopt;
+                result.cells.emplace_back(*cell_result);
+            }
+            result.ordering = compute_default_ordering(result.cells);
+            result.ordering.set_projective();
+            return result;
+        }
+    };
+
+    template <>
     struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_EW> {
         template<typename T>
         static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {

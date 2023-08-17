@@ -34,10 +34,10 @@
  */
 namespace smtrat::cadcells::operators {
 
-enum op { mccallum, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_bounds, mccallum_filtered_samples, mccallum_filtered_all_selective, mccallum_filtered_all_compound, mccallum_filtered_all_compound_ew, mccallum_filtered_all_compound_piecewiselinear, mccallum_filtered_all_compound_piecewiselinear_ew };
-static const char * OpStrings[] = { "mccallum", "mccallum_filtered", "mccallum_filtered_all", "mccallum_filtered_bounds", "mccallum_filtered_samples", "mccallum_filtered_all_selective", "mccallum_filtered_all_compound", "mccallum_filtered_all_compound_ew", "mccallum_filtered_all_compound_piecewiselinear", "mccallum_filtered_all_compound_piecewiselinear_ew" };
+enum op { mccallum, mccallum_pdel, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_bounds, mccallum_filtered_samples, mccallum_filtered_all_selective, mccallum_filtered_all_compound, mccallum_filtered_all_compound_ew, mccallum_filtered_all_compound_piecewiselinear, mccallum_filtered_all_compound_piecewiselinear_ew };
+static const char * OpStrings[] = { "mccallum", "mccallum_pdel", "mccallum_filtered", "mccallum_filtered_all", "mccallum_filtered_bounds", "mccallum_filtered_samples", "mccallum_filtered_all_selective", "mccallum_filtered_all_compound", "mccallum_filtered_all_compound_ew", "mccallum_filtered_all_compound_piecewiselinear", "mccallum_filtered_all_compound_piecewiselinear_ew" };
 
-inline std::ostream& operator<<(std::ostream& os, op op){
+inline std::ostream& operator<<(std::ostream& os, op op) {
     return os << OpStrings[op];
 }
 
@@ -65,7 +65,7 @@ inline void delineate_properties(datastructures::SampledDerivation<typename Prop
  * Project cell properties that depend on a delineation.
  */
 template <op Op>
-inline bool project_delineated_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv, bool cell_represents = true);
+inline bool project_delineated_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv);
 
 /**
  * Project cell properties.

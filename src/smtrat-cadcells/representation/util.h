@@ -214,7 +214,7 @@ inline void decompose(const datastructures::Delineation& delin, const datastruct
 }
 
 inline void add_chain_ordering(datastructures::IndexedRootOrdering& out, const datastructures::PolyRef& poly, const PolyDelineation& poly_delin) {
-    assert(poly_delin.critical_lower_root == 0 && poly_delin.critical_lower_root == 0);
+    //assert(poly_delin.critical_lower_root == 0 && poly_delin.critical_upper_root == 0);
     for (auto it = poly_delin.delineated_roots.begin(); it != poly_delin.delineated_roots.end() && it != std::prev(poly_delin.delineated_roots.end()); it++) {
         out.add_less(datastructures::IndexedRoot(poly,*it),datastructures::IndexedRoot(poly,*(it+1)));
     }
