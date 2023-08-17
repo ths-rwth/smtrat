@@ -58,7 +58,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
     cadcells::datastructures::Projections proj(pool);
 
     cadcells::Assignment ass;
-    auto f = Settings::formula_evaluation::create();
+    auto f = Settings::formula_evaluation::create(proj);
     f.set_formula(context, input);
     f.extend_valuation(ass);
     if (f.root_valuation() == covering_ng::formula::Valuation::FALSE) {

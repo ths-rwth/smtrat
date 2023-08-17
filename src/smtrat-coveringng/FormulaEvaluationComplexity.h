@@ -1,17 +1,30 @@
 #pragma once
 
-namespace smtrat::covering_ng::formula::node_ds::complexity {
+namespace smtrat::covering_ng::formula::complexity {
     
-inline bool min_tdeg_ordering(const Node& a, const Node& b) {
-    return a.c().max_total_degree < b.c().max_total_degree;
+// TODO sum of total degrees (see Dolzmann et al 2004) (sum of tdegs of all monomials)
+
+inline bool min_max_tdeg_min_size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    std::size_t a_max_total_degree = 0;
+    std::size_t a_size = 0;
+    for (const auto& el : a) {
+        for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
+            a_max_total_degree = std::max(a_max_total_degree, proj.total_degree(f));
+            a_size++;
+        }
+    }
+    std::size_t b_max_total_degree = 0;
+    std::size_t b_size = 0;
+    for (const auto& el : b) {
+        for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
+            b_max_total_degree = std::max(b_max_total_degree, proj.total_degree(f));
+            b_size++;
+        }
+    }
+    return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a_size < b_size);
 }
 
-inline bool min_lvl_min_tdeg_ordering(const Node& a, const Node& b) {
-    return a.c().max_level < b.c().max_level || (a.c().max_level == b.c().max_level && a.c().max_total_degree < b.c().max_total_degree);
-}
-
-inline bool min_tdeg_min_size_implicant(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
-    // TODO this is rather inefficient
+inline bool min_max_tdeg_min_size(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     std::size_t a_max_total_degree = 0;
     for (const auto& el : a) {
         a_max_total_degree = std::max(a_max_total_degree, el.lhs().total_degree());
@@ -23,8 +36,7 @@ inline bool min_tdeg_min_size_implicant(const boost::container::flat_set<cadcell
     return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a.size() < b.size());
 }
 
-inline bool min_size_min_tdeg_implicant(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
-    // TODO this is rather inefficient
+inline bool min_size_min_tdeg(const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     std::vector<std::size_t> a_levels;
     for (const auto& el : a) a_levels.push_back(carl::level_of(el.lhs()));
     std::vector<std::size_t> b_levels;
@@ -52,7 +64,11 @@ inline bool min_size_min_tdeg_implicant(const boost::container::flat_set<cadcell
     }
 }
 
+inline bool min_tdeg(const cadcells::Constraint& a, const cadcells::Constraint& b) {
+    assert(a.lhs().main_var() == b.lhs().main_var());
+    return a.lhs().total_degree() < b.lhs().total_degree(); 
+}
 
-// TODO orderings
+
 
 } // namespace smtrat::covering_ng::formula::complexity
