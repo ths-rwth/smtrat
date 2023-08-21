@@ -21,7 +21,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
     }
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing covering representation");
-    auto covering_repr = representation::covering<covering_heuristic>::compute(unsat_cells); // TODO distinguish between: not enough interval for covering and mccallum fails
+    auto covering_repr = representation::covering<covering_heuristic>::compute(unsat_cells);
     if (!covering_repr) {
         return std::nullopt;
     }
