@@ -226,6 +226,22 @@ public:
     void add_poly_nullified(PolyRef poly) {
         m_polys_nullified.insert(poly);
     }
+
+    void merge_with(const Delineation& other) {
+        for (const auto& [k, v] : other.m_roots) {
+            for (const auto& r : v) {
+                add_root(k,r);
+            }
+        }
+
+        for (const auto& o : other.m_polys_nullified) {
+            add_poly_nullified(o);
+        }
+
+        for (const auto& o : other.m_polys_nonzero) {
+            add_poly_nonzero(o);
+        }
+    }
 };
 inline std::ostream& operator<<(std::ostream& os, const Delineation& data) {
     os << "(roots: " << data.roots() << "; nonzero: " << data.nonzero() << "; nullified: "  << data.nullified() << ")";
