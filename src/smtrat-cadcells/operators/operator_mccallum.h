@@ -44,17 +44,17 @@ inline bool project_delineated_cell_properties<op::mccallum>(datastructures::Cel
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     auto& deriv = *repr.derivation;
 
+    for (const auto poly : deriv.delin().nullified()) {
+        if (deriv.contains(properties::poly_del{ poly })) {
+            return false;
+        }
+    }
+
     for(const auto& poly : repr.description.polys()) {
         deriv.insert(properties::poly_del{ poly });
     }
     for(const auto& poly : repr.ordering.polys()) {
         deriv.insert(properties::poly_del{ poly });
-    }
-
-    for (const auto& poly : deriv.delin().nonzero()) {
-        if (repr.equational.find(poly) == repr.equational.end()) {
-            rules::poly_irreducible_nonzero_sgn_inv(*deriv.delineated(), poly);
-        }
     }
 
     if (deriv.contains(properties::cell_connected{deriv.level()})) {
@@ -63,14 +63,16 @@ inline bool project_delineated_cell_properties<op::mccallum>(datastructures::Cel
     rules::cell_analytic_submanifold(deriv, repr.description);
     rules::cell_represents(deriv, repr.description);
 
-    for (const auto& poly : repr.equational) {
-        rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, poly);
-    }
-
     rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-        if (repr.equational.find(prop.poly) == repr.equational.end() && deriv.delin().nonzero().find(prop.poly) == deriv.delin().nonzero().end()) {
+        if (repr.equational.find(prop.poly) != repr.equational.end()) {
+            rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, prop.poly);
+        } else if (deriv.delin().nonzero().find(prop.poly) != deriv.delin().nonzero().end()) {
+            rules::poly_irreducible_nonzero_sgn_inv(*deriv.delineated(), prop.poly);
+        } else if (deriv.delin().nullified().find(prop.poly) != deriv.delin().nullified().end()) {
+            rules::poly_irreducible_null_sgn_inv(deriv, prop.poly);
+        } else {
             rules::poly_irreducible_sgn_inv(deriv, repr.description, repr.ordering, prop.poly);
         }
     }
@@ -93,7 +95,9 @@ template <>
 inline bool project_covering_properties<op::mccallum>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     for (auto& cell_repr : repr.cells) {
-        project_delineated_cell_properties<op::mccallum>(cell_repr);
+        if (!project_delineated_cell_properties<op::mccallum>(cell_repr)) {
+            return false;
+        }
     }
     auto cov = repr.get_covering();
     rules::root_ordering_holds(repr.cells.front().derivation->underlying().sampled(), repr.ordering);

@@ -136,22 +136,18 @@ void extend_to_projective_ordering(datastructures::SampledDerivationRef<T>& der,
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell());
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            // auto res = simplest_biggest_cell_ordering(der->proj(), der->delin(), der->cell(), response.description);
-            // if (!res) return std::nullopt;
-            // response.ordering = *res;
+            // response.ordering = simplest_biggest_cell_ordering(der->proj(), der->delin(), der->cell(), response.description);
             datastructures::Delineation reduced_delineation;
             util::PolyDelineations poly_delins;
             util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-            auto res = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description);
-            if (!res) return std::nullopt;
-            response.ordering = *res;
+            response.ordering = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description);
             for (const auto& poly_delin : poly_delins.data) {
                 add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
@@ -164,7 +160,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         auto response = cell<CellHeuristic::BIGGEST_CELL>::compute(der);
         if (response) {
             extend_to_projective_ordering(der, *response);
@@ -176,7 +172,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL_EW> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell(), true);
         if (der->cell().is_section()) {
@@ -186,9 +182,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_EW> {
             util::PolyDelineations poly_delins;
             util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-            auto res = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, true);
-            if (!res) return std::nullopt;
-            response.ordering = *res;
+            response.ordering = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, true);
             for (const auto& poly_delin : poly_delins.data) {
                 add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
@@ -202,21 +196,17 @@ struct cell<CellHeuristic::BIGGEST_CELL_EW> {
 template <>
 struct cell<CellHeuristic::CHAIN_EQ> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            if (!der->delin().nullified().empty()) return std::nullopt;
-
             datastructures::Delineation reduced_delineation;
             util::PolyDelineations poly_delins;
             util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
-            auto res = util::simplest_chain_ordering(der->proj(), reduced_delineation);
-            if (!res) return std::nullopt;
-            response.ordering = *res;
+            response.ordering = util::simplest_chain_ordering(der->proj(), reduced_delineation);
             for (const auto& poly_delin : poly_delins.data) {
                 add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
@@ -394,14 +384,13 @@ inline void compute_barriers(datastructures::SampledDerivationRef<T>& der, datas
 template <>
 struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            if (!der->delin().nullified().empty()) return std::nullopt;
             compute_barriers(der, response, false);
         }
         maintain_connectedness(der, response);
@@ -413,7 +402,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
 template <>
 struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
@@ -427,7 +416,6 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
 
             compute_barriers(der, response, true);
         } else { // sector
-            if (!der->delin().nullified().empty()) return std::nullopt;
             compute_barriers(der, response, false);
         }
         maintain_connectedness(der, response);
@@ -438,7 +426,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
 template <>
 struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         auto response = cell<CellHeuristic::LOWEST_DEGREE_BARRIERS>::compute(der);
         if (response) {
             extend_to_projective_ordering(der, *response);
@@ -450,7 +438,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
 template <>
 struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EW> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
         response.description = util::compute_simplest_cell(der->proj(), der->cell(), true);
 
@@ -464,7 +452,6 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EW> {
 
             compute_barriers(der, response, true, true);
         } else { // sector
-            if (!der->delin().nullified().empty()) return std::nullopt;
             compute_barriers(der, response, false, true);
             util::add_weird_ordering(response.ordering, der->delin(), der->cell(), response.description);
         }

@@ -23,13 +23,13 @@ namespace smtrat::cadcells::representation {
     template<CellHeuristic H>
     struct cell {
         template<typename T>
-        static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der);
+        static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der);
     };
 
     template<CoveringHeuristic H>
     struct covering {
         template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders);
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& ders);
     };
 
     inline std::ostream& operator<<(std::ostream& os, CellHeuristic heuristic){

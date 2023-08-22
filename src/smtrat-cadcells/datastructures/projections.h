@@ -184,7 +184,7 @@ public:
     }
 
     bool is_zero(const Assignment& sample, PolyRef p) {
-        auto restricted_sample = restrict_assignment(sample ,p);
+        auto restricted_sample = restrict_assignment(sample, p);
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
@@ -246,6 +246,14 @@ public:
 
     bool is_zero(PolyRef p) {
         return carl::is_zero(m_pool(p));
+    }
+
+    std::vector<PolyRef> coeffs(PolyRef p) const {
+        std::vector<PolyRef> result;
+        for (const auto& coeff :  m_pool(p).coefficients()) {
+            result.emplace_back(m_pool(coeff));
+        }
+        return result;
     }
 
     bool has_const_coeff(PolyRef p) const {

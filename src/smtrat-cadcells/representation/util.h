@@ -22,11 +22,10 @@ inline bool compare_simplest(datastructures::Projections& proj, datastructures::
     return max_degree(proj, rf1) < max_degree(proj, rf2);
 }
 
-inline std::optional<datastructures::IndexedRoot> simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::TaggedIndexedRoot>& bounds, const boost::container::flat_set<datastructures::PolyRef>& ignoring, bool enable_weak = false) {
+inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::TaggedIndexedRoot>& bounds, bool enable_weak = false) {
     assert(!bounds.empty());
     auto simplest = bounds.begin();
     for (auto iter = bounds.begin(); iter != bounds.end(); iter++) {
-        if (ignoring.contains(iter->root.poly)) continue;
         if (enable_weak && iter->is_inclusive != simplest->is_inclusive) {
             if (simplest->is_inclusive) {
                 simplest = iter;
@@ -35,13 +34,7 @@ inline std::optional<datastructures::IndexedRoot> simplest_bound(datastructures:
             simplest = iter;
         }
     }
-    if (ignoring.contains(bounds.begin()->root.poly)) return std::nullopt;
     return simplest->root;
-}
-
-inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& proj, const std::vector<datastructures::TaggedIndexedRoot>& bounds, bool enable_weak = false) {
-    boost::container::flat_set<datastructures::PolyRef> ignoring;
-    return *simplest_bound(proj, bounds, ignoring, enable_weak);
 }
 
 inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del, bool enable_weak = false) {
@@ -70,12 +63,11 @@ inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Pr
     }
 }
 
-inline std::optional<datastructures::IndexedRootOrdering> simplest_biggest_cell_ordering(datastructures::Projections& /*proj*/, datastructures::Delineation& delin, datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, bool enable_weak = false) {
+inline datastructures::IndexedRootOrdering simplest_biggest_cell_ordering(datastructures::Projections& /*proj*/, datastructures::Delineation& delin, datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, bool enable_weak = false) {
     // assumes that interval is the simplest cell
 
     datastructures::IndexedRootOrdering ordering;
 
-    if (!delin.nullified().empty()) return std::nullopt;
     if (delin.roots().empty()) return ordering;
     
     if (!delin_interval.lower_unbounded()) {
@@ -130,12 +122,11 @@ inline std::optional<datastructures::IndexedRootOrdering> simplest_biggest_cell_
     return ordering;
 }
 
-inline std::optional<datastructures::IndexedRootOrdering> simplest_chain_ordering(datastructures::Projections& proj, datastructures::Delineation& delin, bool enable_weak = false) {
+inline datastructures::IndexedRootOrdering simplest_chain_ordering(datastructures::Projections& proj, datastructures::Delineation& delin, bool enable_weak = false) {
     assert(!enable_weak); // not supported
 
     datastructures::IndexedRootOrdering ordering;
 
-    if (!delin.nullified().empty()) return std::nullopt;
     if (delin.roots().empty()) return ordering;
 
     auto it = delin.roots().begin();

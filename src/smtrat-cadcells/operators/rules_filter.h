@@ -574,11 +574,6 @@ bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv,
     return true;
 }
 
-// template<typename P>
-// void poly_irreducible_semi_sgn_inv(datastructures::SampledDerivation<P>& /*deriv*/, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, [[maybe_unused]] datastructures::PolyRef poly) {
-//     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible");
-// }
-
 template<typename P>
 void poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& /*deriv*/, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, [[maybe_unused]] datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
@@ -587,6 +582,20 @@ void poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& /*d
 template<typename P>
 void poly_irreducible_semi_sgn_inv_filtered(datastructures::SampledDerivation<P>& /*deriv*/, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, [[maybe_unused]] datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible");
+}
+
+template<typename P>
+void poly_irreducible_nonzero_semi_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible and non-zero");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= sgn_inv(" << poly << ")");
+    poly_irreducible_nonzero_sgn_inv(deriv, poly);
+}
+
+template<typename P>
+void poly_irreducible_null_semi_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible and nullified");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= sgn_inv(" << poly << ")");
+    poly_irreducible_null_sgn_inv(deriv, poly);
 }
 
 }

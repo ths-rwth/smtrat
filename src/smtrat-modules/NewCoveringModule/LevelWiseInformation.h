@@ -294,12 +294,15 @@ public:
         auto usedConstraints = getConstraintsOfCovering(mDerivationToConstraint);
         auto cell_derivs = fullCovering.sampled_derivations();
         datastructures::merge_underlying(cell_derivs);
-        operators::project_covering_properties<op>(fullCovering);
+        if (!operators::project_covering_properties<op>(fullCovering)) {
+            SMTRAT_LOG_DEBUG("smtrat.covering", "Could not project properties");
+            SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
+            return std::nullopt;
+        }
         datastructures::SampledDerivationRef<PropSet> new_deriv = fullCovering.cells.front().derivation->underlying().sampled_ref();
         if (!operators::project_cell_properties<op>(*new_deriv)) {
             SMTRAT_LOG_DEBUG("smtrat.covering", "Could not project properties");
             SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
-
             return std::nullopt;
         }
         operators::project_basic_properties<op>(*new_deriv->delineated());

@@ -47,9 +47,8 @@ namespace smtrat::cadcells::representation {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
-                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(iter);
-                if (!cell_result) return std::nullopt;
-                result.cells.emplace_back(*cell_result);
+                datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL>::compute(iter);
+                result.cells.emplace_back(cell_result);
             }
             result.ordering = compute_default_ordering(result.cells);
             return result;
@@ -63,9 +62,8 @@ namespace smtrat::cadcells::representation {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
-                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL_PDEL>::compute(iter);
-                if (!cell_result) return std::nullopt;
-                result.cells.emplace_back(*cell_result);
+                datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL_PDEL>::compute(iter);
+                result.cells.emplace_back(cell_result);
             }
             result.ordering = compute_default_ordering(result.cells);
             result.ordering.set_projective();
@@ -80,9 +78,8 @@ namespace smtrat::cadcells::representation {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
-                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL_EW>::compute(iter);
-                if (!cell_result) return std::nullopt;
-                result.cells.emplace_back(*cell_result);
+                datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL_EW>::compute(iter);
+                result.cells.emplace_back(cell_result);
             }
             result.ordering = compute_default_ordering(result.cells, true);
             return result;
@@ -128,7 +125,7 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_MIN_TDEG> {
         template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             struct Data {
                 datastructures::SampledDerivationRef<T> deriv;
                 std::size_t tdeg;
@@ -158,8 +155,7 @@ namespace smtrat::cadcells::representation {
             assert(util::is_covering(set));
             datastructures::CoveringRepresentation<T> result;
             for (auto& deriv : set) {
-                std::optional<datastructures::CellRepresentation<T>> cell_result = cell<BIGGEST_CELL>::compute(deriv);
-                if (!cell_result) return std::nullopt;
+                datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL>::compute(deriv);
                 result.cells.emplace_back(*cell_result);
             }
             result.ordering = compute_default_ordering(result.cells);
@@ -188,7 +184,6 @@ namespace smtrat::cadcells::representation {
                     delineation.add_root((iter)->cell().lower()->first,datastructures::TaggedIndexedRoot {cell_result.description.section_defining() });
                 } else {
                     ord_idx.push_back(result.cells.size()-1);
-                    if (!(iter)->delin().nullified().empty()) return std::nullopt;
                     util::decompose((iter)->delin(), (iter)->cell(), delineation, poly_delins);
                 }
             }
@@ -196,7 +191,6 @@ namespace smtrat::cadcells::representation {
             assert (ord_idx.size() > 0); 
             auto& proj = (*min_derivs.begin())->proj();
             auto res = util::simplest_chain_ordering(proj, delineation);
-            if (!res) return std::nullopt;
             result.ordering = *res;
             for (const auto& poly_delin : poly_delins.data) {
                 add_chain_ordering(result.ordering, poly_delin.first, poly_delin.second);

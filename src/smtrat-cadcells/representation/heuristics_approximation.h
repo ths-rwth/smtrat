@@ -11,7 +11,7 @@ using IR = datastructures::IndexedRoot;
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
     template<typename T>
-    static std::optional<datastructures::CellRepresentation<T>> compute(datastructures::SampledDerivationRef<T>& der) {
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         approximation::CellApproximator apx(der);
 
         datastructures::CellRepresentation<T> response(der);
@@ -24,9 +24,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
             util::PolyDelineations poly_delins;
             util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-            auto res = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description);
-            if (!res) return std::nullopt;
-            response.ordering = *res;
+            response.ordering = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description);
             for (const auto& poly_delin : poly_delins.data) {
                 add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
             }
