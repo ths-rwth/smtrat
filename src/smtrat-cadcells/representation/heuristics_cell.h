@@ -8,6 +8,8 @@ namespace smtrat::cadcells::representation {
 
 template<typename T>
 inline void compute_section_all_equational(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
+    // TODO sometimes it might be beneficial to not include nullified or nonzero polynomials
+
     for (const auto& poly : der->delin().nullified()) {
         response.equational.insert(poly);
     }
