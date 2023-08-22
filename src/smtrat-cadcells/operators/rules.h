@@ -259,7 +259,7 @@ void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& /*deriv*/, c
 template<typename P>
 void poly_irreducible_null_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and nullified");
-    assert(deriv.proj().is_nullified(deriv.sample(), poly));
+    assert(deriv.proj().is_nullified(deriv.underlying_sample(), poly));
 
     for (const auto coeff : deriv.proj().coeffs(poly)) {
         assert(deriv.proj().is_zero(deriv.sample(), coeff));
