@@ -156,7 +156,7 @@ namespace smtrat::cadcells::representation {
             datastructures::CoveringRepresentation<T> result;
             for (auto& deriv : set) {
                 datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL>::compute(deriv);
-                result.cells.emplace_back(*cell_result);
+                result.cells.emplace_back(cell_result);
             }
             result.ordering = compute_default_ordering(result.cells);
             return result;
