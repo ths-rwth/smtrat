@@ -25,7 +25,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << covering_repr);
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute covering projection");
-    auto cell_derivs = covering_repr->sampled_derivations();
+    auto cell_derivs = covering_repr.sampled_derivations();
     datastructures::merge_underlying(cell_derivs);
     if (!operators::project_covering_properties<op>(covering_repr)) return std::nullopt;
 

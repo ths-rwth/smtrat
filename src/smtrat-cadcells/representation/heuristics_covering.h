@@ -43,7 +43,7 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING> {
         template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
@@ -58,7 +58,7 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_PDEL> {
         template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
@@ -74,7 +74,7 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_EW> {
         template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
@@ -166,7 +166,7 @@ namespace smtrat::cadcells::representation {
     template <>
     struct covering<CoveringHeuristic::CHAIN_COVERING> {
         template<typename T>
-        static std::optional<datastructures::CoveringRepresentation<T>> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             
             auto min_derivs = compute_min_derivs(derivs);
