@@ -12,7 +12,7 @@
 
 namespace smtrat::mcsat::onecell {
 
-// using Settings = LDBSettings; // current default
+using Settings = LDBSettings; // current default
 // using Settings = BCSettings;
 // using Settings = BCpdelSettings;
 // using Settings = LDBpdelSettings;
@@ -22,7 +22,7 @@ namespace smtrat::mcsat::onecell {
 // using Settings = BCFilteredSamplesSettings;
 // using Settings = BCFilteredAllSelectiveSettings;
 // using Settings = LDBFilteredAllSelectiveSettings;
-using Settings = BCApproximationSettings;
+// using Settings = BCApproximationSettings;
 
 constexpr bool clause_chain_with_equivalences = false;
 constexpr bool enforce_tarski = false;

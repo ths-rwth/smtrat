@@ -162,9 +162,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         auto response = cell<CellHeuristic::BIGGEST_CELL>::compute(der);
-        if (response) {
-            extend_to_projective_ordering(der, *response);
-        }
+        extend_to_projective_ordering(der, response);
         return response;
     }
 };
@@ -428,9 +426,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         auto response = cell<CellHeuristic::LOWEST_DEGREE_BARRIERS>::compute(der);
-        if (response) {
-            extend_to_projective_ordering(der, *response);
-        }
+        extend_to_projective_ordering(der, response);
         return response;
     }
 };

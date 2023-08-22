@@ -74,10 +74,9 @@ inline std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& 
     SMTRAT_LOG_FUNC("smtrat.covering_ng", intervals);
     std::vector<Interval<op>> derivations(intervals.begin(), intervals.end());
     auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
-    if (!representation) return std::nullopt;
-    auto cell_derivs = representation->sampled_derivations();
+    auto cell_derivs = representation.sampled_derivations();
     cadcells::datastructures::merge_underlying(cell_derivs);
-    if (!cadcells::operators::project_covering_properties<op>(*representation)) return std::nullopt;
+    if (!cadcells::operators::project_covering_properties<op>(representation)) return std::nullopt;
     Interval<op> new_deriv = cell_derivs.front()->underlying().sampled_ref();
     if (!cadcells::operators::project_cell_properties<op>(*new_deriv)) return std::nullopt;
     cadcells::operators::project_basic_properties<op>(*new_deriv->delineated());
