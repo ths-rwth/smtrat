@@ -32,8 +32,7 @@ auto get_interval_using(datastructures::SampledDerivationRef<typename operators:
     assert((cell_deriv)->level() > 0);
 	SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties");
-    if (!operators::project_cell_properties<op>(*cell_deriv)) return CNF();
-    if (!operators::project_basic_properties<op>(*cell_deriv->delineated())) return CNF();
+    if (!operators::project_basic_properties<op>(*cell_deriv)) return CNF();
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
     operators::delineate_properties<op>(*cell_deriv);
     cell_deriv->delineate_cell();
@@ -42,7 +41,7 @@ auto get_interval_using(datastructures::SampledDerivationRef<typename operators:
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << cell_repr);
     if (cell_deriv->level() > 1) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
-        if (!operators::project_delineated_cell_properties<op>(cell_repr)) return CNF();
+        if (!operators::project_cell_properties<op>(cell_repr)) return CNF();
     }
 	return helper::to_formula(cell_deriv->polys(), cell_deriv->main_var(), cell_repr.description);
 }

@@ -81,51 +81,30 @@ void poly_ord_inv(datastructures::SampledDerivation<P>& deriv, datastructures::P
 }
 
 template<typename P>
-void poly_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
+void poly_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << ")");
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= " << poly << " const");
     } else if (deriv.contains(properties::poly_ord_inv{ poly })) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= ord_inv(" << poly << ")");
-    } else {
-        auto factors = deriv.proj().factors_nonconst(poly);
-        for (const auto& factor : factors) {
-            if (factor.level < poly.level && deriv.proj().is_zero(deriv.underlying_sample(), factor)) {
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= sgn_inv(" << factor << ") && "<< factor <<"("<< deriv.underlying_sample() <<")=0");
-                deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-                return;
+    } else { 
+        std::optional<datastructures::PolyRef> lowest_zero_factor;
+        for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
+            if (deriv.proj().is_zero(deriv.sample(), factor)) {
+                if (lowest_zero_factor == std::nullopt || factor.level < lowest_zero_factor->level || (factor.level == lowest_zero_factor->level && deriv.proj().total_degree(factor) < deriv.proj().total_degree(*lowest_zero_factor))) {
+                    lowest_zero_factor = factor;
+                }
             }
         }
 
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= sgn_inv(factors(" << poly << ")) <=> sgn_inv(" << factors << ")");
-        for (const auto& factor : factors) {
-            deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-        }
-    }
-}
-
-template<typename P>
-void poly_semi_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << ")");
-    if (deriv.proj().is_const(poly)) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= " << poly << " const");
-    } else if (deriv.contains(properties::poly_ord_inv{ poly })) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= ord_inv(" << poly << ")");
-    } else if (deriv.contains(properties::poly_sgn_inv{ poly }) || deriv.contains(properties::poly_irreducible_sgn_inv{ poly })) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= poly_sgn_inv(" << poly << ")");
-    } else {
-        auto factors = deriv.proj().factors_nonconst(poly);
-        for (const auto& factor : factors) {
-            if (factor.level < poly.level && deriv.proj().is_zero(deriv.underlying_sample(), factor)) {
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= sgn_inv(" << factor << ") && "<< factor <<"("<< deriv.underlying_sample() <<")=0");
+        if (lowest_zero_factor) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= sgn_inv(" << *lowest_zero_factor << ") && "<< *lowest_zero_factor <<"("<< deriv.underlying_sample() <<")=0");
+            deriv.insert(properties::poly_irreducible_sgn_inv{ *lowest_zero_factor });
+        } else {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= sgn_inv(factors(" << poly << ")) <=> sgn_inv(" << deriv.proj().factors_nonconst(poly) << ")");
+            for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
                 deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
-                return;
             }
-        }
-
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= semi_sgn_inv(factors(" << poly << ")) <=> semi_sgn_inv(" << factors << ")");
-        for (const auto& factor : factors) {
-            deriv.insert(properties::poly_irreducible_semi_sgn_inv{ factor });
         }
     }
 }

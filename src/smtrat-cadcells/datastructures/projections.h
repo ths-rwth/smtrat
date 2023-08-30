@@ -205,7 +205,7 @@ public:
         return cache(sample).real_roots.at(p).roots().size();
     }
 
-    std::vector<RAN> real_roots(const Assignment& sample, PolyRef p) {
+    const std::vector<RAN>& real_roots(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
         if (cache(sample).real_roots.find(p) == cache(sample).real_roots.end()) {

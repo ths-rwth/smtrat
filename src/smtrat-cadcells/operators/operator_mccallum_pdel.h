@@ -17,8 +17,17 @@ struct PropertiesSet<op::mccallum_pdel> {
 };
 
 template <>
-inline bool project_basic_properties<op::mccallum_pdel>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum_pdel>::type>& deriv) {
+inline bool project_basic_properties<op::mccallum_pdel>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_pdel>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    for(const auto& prop : deriv.properties<properties::poly_del>()) {
+        if (!rules::poly_del_pdel(deriv, prop.poly)) return false;
+    }
+    for(const auto& prop : deriv.properties<properties::poly_proj_del>()) {
+        if (!rules::poly_proj_del(deriv, prop.poly)) return false;
+    }
+    for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
+        rules::poly_ord_inv_pdel(deriv, prop.poly);
+    }
     for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
         deriv.insert(properties::poly_sgn_inv{prop.poly});
     }
@@ -29,20 +38,15 @@ inline bool project_basic_properties<op::mccallum_pdel>(datastructures::Delineat
 }
 
 template <>
-inline void delineate_properties<op::mccallum_pdel>(datastructures::DelineatedDerivation<PropertiesSet<op::mccallum_pdel>::type>& deriv) {
+inline void delineate_properties<op::mccallum_pdel>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_pdel>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
-        rules::delineate(deriv, prop);
+        rules::delineate(*deriv.delineated(), prop);
     }
 }
 
 template <>
-inline void delineate_properties<op::mccallum_pdel>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_pdel>::type>& deriv) {
-    delineate_properties<op::mccallum_pdel>(*deriv.delineated());
-}
-
-template <>
-inline bool project_delineated_cell_properties<op::mccallum_pdel>(datastructures::CellRepresentation<PropertiesSet<op::mccallum_pdel>::type>& repr) {
+inline bool project_cell_properties<op::mccallum_pdel>(datastructures::CellRepresentation<PropertiesSet<op::mccallum_pdel>::type>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     auto& deriv = *repr.derivation;
 
@@ -82,25 +86,10 @@ inline bool project_delineated_cell_properties<op::mccallum_pdel>(datastructures
 }
 
 template <>
-inline bool project_cell_properties<op::mccallum_pdel>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_pdel>::type>& deriv) {
-    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
-    for(const auto& prop : deriv.properties<properties::poly_del>()) {
-        if (!rules::poly_del_pdel(deriv, prop.poly)) return false;
-    }
-    for(const auto& prop : deriv.properties<properties::poly_proj_del>()) {
-        if (!rules::poly_proj_del(deriv, prop.poly)) return false;
-    }
-    for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
-        rules::poly_ord_inv_pdel(deriv, prop.poly);
-    }
-    return true;
-}
-
-template <>
 inline bool project_covering_properties<op::mccallum_pdel>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum_pdel>::type>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     for (auto& cell_repr : repr.cells) {
-        if (!project_delineated_cell_properties<op::mccallum_pdel>(cell_repr)) {
+        if (!project_cell_properties<op::mccallum_pdel>(cell_repr)) {
             return false;
         }
     }

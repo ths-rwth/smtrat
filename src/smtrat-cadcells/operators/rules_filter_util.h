@@ -18,7 +18,7 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
         rules::poly_ord_inv(*subderiv, prop.poly);
     }
     for(const auto& prop : subderiv->template properties<properties::poly_sgn_inv>()) {
-        rules::poly_sgn_inv(*subderiv->delineated(), prop.poly);
+        rules::poly_sgn_inv(*subderiv, prop.poly);
     }
     for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
         rules::delineate(*subderiv->delineated(), prop);

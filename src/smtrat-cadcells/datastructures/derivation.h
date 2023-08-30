@@ -391,6 +391,17 @@ SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef
 }
 
 /**
+ * Initializes a sampled derivation w.r.t. the delineated derivation and sample.
+ */
+template<typename Properties>
+SampledDerivationRef<Properties> make_sampled_derivation(SampledDerivationRef<Properties> underlying, const RAN& main_sample) {
+    auto base_ref = std::make_shared<BaseDerivation<Properties>>(underlying->proj(), underlying, underlying->level()+1);
+    auto delineated_ref = std::make_shared<DelineatedDerivation<Properties>>(base_ref);
+    auto sampled_ref = std::make_shared<SampledDerivation<Properties>>(delineated_ref, main_sample);
+    return sampled_ref;
+}
+
+/**
  * Merges the underlying derivations of a set of sampled derivations. After the operation, all sampled derivations point to the same underlying derivation.
  */
 template<typename Properties>

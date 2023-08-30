@@ -295,12 +295,11 @@ public:
             return std::nullopt;
         }
         datastructures::SampledDerivationRef<PropSet> new_deriv = fullCovering.cells.front().derivation->underlying().sampled_ref();
-        if (!operators::project_cell_properties<op>(*new_deriv)) {
+        if (!operators::project_basic_properties<op>(*new_deriv)) {
             SMTRAT_LOG_DEBUG("smtrat.covering", "Could not project properties");
             SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
             return std::nullopt;
         }
-        operators::project_basic_properties<op>(*new_deriv->delineated());
         operators::delineate_properties<op>(*new_deriv);
         new_deriv->delineate_cell();
         SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());

@@ -78,8 +78,7 @@ inline std::optional<Interval<op>> characterize_covering(const IntervalSet<op>& 
     cadcells::datastructures::merge_underlying(cell_derivs);
     if (!cadcells::operators::project_covering_properties<op>(representation)) return std::nullopt;
     Interval<op> new_deriv = cell_derivs.front()->underlying().sampled_ref();
-    if (!cadcells::operators::project_cell_properties<op>(*new_deriv)) return std::nullopt;
-    cadcells::operators::project_basic_properties<op>(*new_deriv->delineated());
+    if (!cadcells::operators::project_basic_properties<op>(*new_deriv)) return std::nullopt;
     cadcells::operators::delineate_properties<op>(*new_deriv);
     new_deriv->delineate_cell();
     return new_deriv;
