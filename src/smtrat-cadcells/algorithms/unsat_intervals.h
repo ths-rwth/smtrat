@@ -19,7 +19,9 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
 
     boost::container::flat_set<RAN> roots;
     for (const auto& factor : proj.factors_nonconst(poly_ref)) {
-        roots.insert(proj.real_roots(sample, factor).begin(), proj.real_roots(sample, factor).end());
+        if (factor.level == poly_ref.level && !proj.is_nullified(sample, factor)) {
+            roots.insert(proj.real_roots(sample, factor).begin(), proj.real_roots(sample, factor).end());
+        }
     }
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
 
