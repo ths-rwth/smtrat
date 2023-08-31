@@ -21,6 +21,9 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     for (const auto& factor : proj.factors_nonconst(poly_ref)) {
         if (factor.level == poly_ref.level && !proj.is_nullified(sample, factor)) {
             roots.insert(proj.real_roots(sample, factor).begin(), proj.real_roots(sample, factor).end());
+        } else if (factor.level < poly_ref.level && proj.is_zero(sample, factor)) {
+            roots.clear();
+            break;
         }
     }
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
