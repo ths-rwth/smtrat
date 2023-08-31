@@ -90,7 +90,7 @@ void poly_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::P
     } else { 
         std::optional<datastructures::PolyRef> lowest_zero_factor;
         for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
-            if (deriv.proj().is_zero(deriv.sample(), factor)) {
+            if (deriv.proj().is_zero(deriv.sample(), factor) && !(factor.level == poly.level && deriv.proj().is_nullified(deriv.underlying_sample(), factor))) {
                 if (lowest_zero_factor == std::nullopt || factor.level < lowest_zero_factor->level || (factor.level == lowest_zero_factor->level && deriv.proj().total_degree(factor) < deriv.proj().total_degree(*lowest_zero_factor))) {
                     lowest_zero_factor = factor;
                 }
