@@ -705,6 +705,30 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
     }
 }
 
+void postprocess(boost::container::flat_set<cadcells::Constraint>& implicant) {
+    // Replace equations by their Gröbner basis if possible
+    // TODO reduce other constraints using the gröbner basis?
+    std::vector<cadcells::Polynomial> equations;
+    for (const auto& c : implicant) {
+        if (c.relation() == carl::Relation::EQ) {
+            equations.emplace_back(c.lhs());
+        }
+    }
+    if (equations.size()>1) {
+        equations = carl::groebner_basis(equations);
+        for (auto it = implicant.begin(); it != implicant.end(); ) {
+            if (it->relation() == carl::Relation::EQ) {
+                it = implicant.erase(it);
+            } else {
+                it++;
+            }
+        }
+        for (const auto& poly : equations) {
+            implicant.emplace(poly, carl::Relation::EQ);
+        }
+    }
+}
+
 std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::compute_implicants() const {
     auto reasons = (root_valuation() == Valuation::FALSE) ? true_graph.conflict_reasons() : false_graph.conflict_reasons();
     auto& graph = (root_valuation() == Valuation::FALSE) ? true_graph : false_graph;
@@ -727,6 +751,13 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
         if (m_results < implicants.size())
             implicants.erase(implicants.begin() + m_results, implicants.end());
     }
+
+    if (m_postprocess) {
+        for (auto& implicant : implicants) {
+            postprocess(implicant);
+        }
+    }
+
     return implicants;
 }
 
