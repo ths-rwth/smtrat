@@ -49,7 +49,7 @@ inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructur
             }
         }
     }
-    if (!cadcells::operators::project_basic_properties<op>(*deriv->delineated())) return std::nullopt;
+    if (!cadcells::operators::project_basic_properties<op>(*deriv)) return std::nullopt;
     cadcells::operators::delineate_properties<op>(*deriv);
     deriv->delineate_cell();
     SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cell " << deriv->cell() << " w.r.t. delineation " << deriv->delin());
