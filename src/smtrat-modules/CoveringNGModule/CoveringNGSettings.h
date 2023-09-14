@@ -112,7 +112,7 @@ struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
     };
 };
 
-struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  { // currently the best!
+struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoice>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
