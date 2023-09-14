@@ -10,7 +10,8 @@ enum class VariableOrdering {
 	GreedyMaxUnivariate,
 	FeatureBased,
 	FeatureBasedZ3,
-	FeatureBasedBrown
+	FeatureBasedBrown,
+	FeatureBasedPickering
 };
 
 inline std::string get_name(VariableOrdering ordering) {
@@ -19,6 +20,7 @@ inline std::string get_name(VariableOrdering ordering) {
 		case VariableOrdering::FeatureBased: return "FeatureBased";
 		case VariableOrdering::FeatureBasedZ3: return "FeatureBasedZ3";
 		case VariableOrdering::FeatureBasedBrown: return "FeatureBasedBrown";
+		case VariableOrdering::FeatureBasedPickering: return "FeatureBasedPickering";
 	}
 }
 
@@ -45,6 +47,8 @@ std::vector<carl::Variable> calculate_variable_order(const Constraints& c) {
 			return variableordering::feature_based_z3(constraints);
 		case VariableOrdering::FeatureBasedBrown:
 			return variableordering::feature_based_brown(constraints);
+		case VariableOrdering::FeatureBasedPickering:
+			return variableordering::feature_based_pickering(constraints);
 	}
 }
 
@@ -60,6 +64,8 @@ std::vector<carl::Variable> calculate_variable_order(const std::vector<Constrain
 			return variableordering::feature_based_z3(constraints);
 		case VariableOrdering::FeatureBasedBrown:
 			return variableordering::feature_based_brown(constraints);
+		case VariableOrdering::FeatureBasedPickering:
+			return variableordering::feature_based_pickering(constraints);
 	}
 }
 

@@ -123,6 +123,14 @@ struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  { // cur
     };
 };
 
+struct CoveringNGSettingsGraphSingleChoicePickering : CoveringNGSettingsGraphSingleChoice {
+    static constexpr mcsat::VariableOrdering variable_ordering = mcsat::VariableOrdering::FeatureBasedPickering;
+};
+
+struct CoveringNGSettingsGraphSingleChoiceBrown : CoveringNGSettingsGraphSingleChoice {
+    static constexpr mcsat::VariableOrdering variable_ordering = mcsat::VariableOrdering::FeatureBasedBrown;
+};
+
 struct CoveringNGSettingsGraphSingleChoiceFact : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoiceStdeg>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;

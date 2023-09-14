@@ -113,6 +113,48 @@ double num_occurrences(const Constraints& constraints, carl::Variable v) {
 	);
 }
 
+template<typename Constraints>
+double sum_max_degree(const Constraints& constraints, carl::Variable v) {
+	return abstract_feature(constraints, 0.0,
+		[](double a, double b){ return a+b; },
+		[v](const auto& c){ return static_cast<double>(c.maxDegree(v)); }
+	);
+}
+
+template<typename Constraints>
+double sum_sum_degree(const Constraints& constraints, carl::Variable v) {
+	return abstract_feature(constraints, 0.0,
+		[](double a, double b){ return a+b; },
+		[v](const auto& c){
+			std::size_t sum = 0;
+			for (const auto& t: c.lhs()) {
+				if (t.monomial() == nullptr) continue;
+				std::size_t c = t.monomial()->exponent_of_variable(v);
+				sum += c;
+			}
+			return static_cast<double>(sum);
+		}
+	);
+}
+
+template<typename Constraints>
+double avg_avg_degree(const Constraints& constraints, carl::Variable v) {
+	auto num_constr = constraints.size();
+	return abstract_feature(constraints, 0.0,
+		[num_constr](double a, double b){ return a + b / (double)num_constr; },
+		[v](const auto& c){
+			std::size_t sum = 0;
+			std::size_t count = 0;
+			for (const auto& t: c.lhs()) {
+				if (t.monomial() == nullptr) continue;
+				std::size_t c = t.monomial()->exponent_of_variable(v);
+				sum += c;
+			}
+			return static_cast<double>(sum)/static_cast<double>(count);
+		}
+	);
+}
+
 }
 	
 template<typename Constraints>
@@ -158,6 +200,28 @@ std::vector<carl::Variable> feature_based_brown(const Constraints& c) {
 	features.addFeature(detail::max_degree<Constraints>, 0, -1.0);
 	features.addFeature(detail::max_term_total_degree<Constraints>, 1, -1.0);
 	features.addFeature(detail::num_occurrences<Constraints>, 2, -1.0);
+
+	carl::carlVariables vars;
+	gatherVariables(vars, c);
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Collected variables " << vars);
+	auto orderedVars = features.sortVariables(c, vars.as_vector());
+	
+	SMTRAT_LOG_DEBUG("smtrat.mcsat.variableorder", "Calculated variable ordering " << orderedVars);
+	return orderedVars;
+}
+
+/**
+ * According to
+ * Pickering, Lynn, Tereso Del Rio Almajano, Matthew England, and Kelly Cohen. ‘Explainable AI Insights for Symbolic Computation: A Case Study on Selecting the Variable Ordering for Cylindrical Algebraic Decomposition’. arXiv, 29 August 2023. http://arxiv.org/abs/2304.12154.
+ * 
+ */
+template<typename Constraints>
+std::vector<carl::Variable> feature_based_pickering(const Constraints& c) {
+	detail::FeatureCollector<Constraints> features;
+	
+	features.addFeature(detail::sum_max_degree<Constraints>, 0, -1.0);
+	features.addFeature(detail::avg_avg_degree<Constraints>, 1, -1.0);
+	features.addFeature(detail::sum_sum_degree<Constraints>, 2, -1.0);
 
 	carl::carlVariables vars;
 	gatherVariables(vars, c);
