@@ -85,7 +85,7 @@ struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections&) {
-            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 0, covering_ng::formula::complexity::min_tdeg, false, true, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 0, covering_ng::formula::complexity::min_tdeg, false, true, false);
         }
     };
 };
@@ -96,7 +96,7 @@ struct CoveringNGSettingsGraphSingle : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections&) {
-            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, true, true, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, true, true, false);
         }
     };
 };
@@ -107,29 +107,29 @@ struct CoveringNGSettingsGraphTwo : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections&) {
-            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 2, covering_ng::formula::complexity::min_tdeg, false, true, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 2, covering_ng::formula::complexity::min_tdeg, false, true, false);
         }
     };
 };
 
-struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  {
-    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoice>";
-    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
-    struct formula_evaluation {
-        using Type = covering_ng::formula::GraphEvaluation;
-        static auto create(cadcells::datastructures::Projections&) {
-            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true, true);
-        }
-    };
-};
-
-struct CoveringNGSettingsGraphSingleChoiceNoPostprocess : CoveringNGSettingsDefault  { // currently the best!
+struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  {// currently the best!
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoice>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections&) {
             return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true, false);
+        }
+    };
+};
+
+struct CoveringNGSettingsGraphSingleChoicePostprocess : CoveringNGSettingsDefault  { 
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoice>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create(cadcells::datastructures::Projections&) {
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true, true);
         }
     };
 };
@@ -148,7 +148,7 @@ struct CoveringNGSettingsGraphSingleChoiceFact : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {
-            return Type(std::bind_front(covering_ng::formula::complexity::min_max_tdeg_min_size_fact, proj), 1, covering_ng::formula::complexity::min_tdeg, false, true, true);
+            return Type(std::bind_front(covering_ng::formula::complexity::min_max_tdeg_min_size_fact, proj), 1, covering_ng::formula::complexity::min_tdeg, false, true, false);
         }
     };
 };
