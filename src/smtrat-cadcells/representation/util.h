@@ -1,3 +1,7 @@
+#pragma once
+
+#include "../CADCellsStatistics.h"
+
 namespace smtrat::cadcells::representation::util {
 
 inline bool compare_simplest(datastructures::Projections& proj, datastructures::PolyRef p1, datastructures::PolyRef p2) {
@@ -39,6 +43,11 @@ inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& p
 
 inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del, bool enable_weak = false) {
     if (del.is_section()) {
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        auto max_level = proj.polys().get_context().variable_ordering().size();
+        auto level = del.lower()->second.at(0).root.poly.level;
+        statistics().equational_constr(max_level-level, del.lower()->second.size());
+        #endif
         return datastructures::SymbolicInterval(util::simplest_bound(proj, del.lower()->second));
     } else {
         datastructures::Bound lower = datastructures::Bound::infty();
