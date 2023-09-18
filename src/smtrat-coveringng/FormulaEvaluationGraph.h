@@ -79,6 +79,8 @@ private:
     formula_ds::VariableToFormula vartof;
     cadcells::Assignment assignment;
     boost::container::flat_map<formula_ds::FormulaID, bool> m_decisions;
+    formula_ds::Formula::Reasons m_true_conflict_reasons;
+    formula_ds::Formula::Reasons m_false_conflict_reasons;
 
     ImplicantOrdering m_implicant_complexity_ordering;
     std::size_t m_results;
@@ -86,9 +88,10 @@ private:
     bool m_stop_evaluation_on_conflict;
     bool m_preprocess;
     bool m_postprocess;
+    bool m_full_boolean_check;
 
 public:
-    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess) {}
+    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, bool full_boolean_check) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_full_boolean_check(full_boolean_check) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);

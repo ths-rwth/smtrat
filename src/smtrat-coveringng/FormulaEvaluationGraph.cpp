@@ -652,6 +652,49 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     false_graph.propagate_root(false_graph.root, false);
 }
 
+formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph, const formula_ds::VariableToFormula& vartof) {
+    // this is a quick and dirty implementation of a SAT solver
+    std::optional<formula_ds::FormulaID> next_dec_id;
+    for (const auto& [k,vs] : vartof) {
+        for (const auto& v : vs) {
+            if (graph.db[v].reasons_true.empty() && graph.db[v].reasons_false.empty()) {
+                next_dec_id = v;
+                break;
+            }
+        }
+        if (next_dec_id) break;
+    }
+    if (!next_dec_id) return formula_ds::Formula::Reasons();
+
+    graph.propagate_decision(*next_dec_id, true);
+    auto true_conflicts = graph.conflict_reasons();
+    if (true_conflicts.empty()) {
+        true_conflicts = explore(graph, vartof);
+    }
+    graph.backtrack(*next_dec_id, true);
+    if (true_conflicts.empty()) {
+        return formula_ds::Formula::Reasons();   
+    }
+
+    graph.propagate_decision(*next_dec_id, false);
+    auto false_conflicts = graph.conflict_reasons();
+    if (false_conflicts.empty()) {
+        false_conflicts = explore(graph, vartof);
+    }
+    graph.backtrack(*next_dec_id, false);
+    if (false_conflicts.empty()) {
+        return formula_ds::Formula::Reasons();   
+    }
+
+    formula_ds::Formula::Reasons conflicts;
+    for (auto conflict : formula_ds::combine_reasons(true_conflicts, false_conflicts)) {
+        conflict.erase(std::make_pair(*next_dec_id, true));
+        conflict.erase(std::make_pair(*next_dec_id, false));
+        conflicts.insert(conflict);
+    }
+    return conflicts;
+}
+
 void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
     auto var = new_var(assignment, ass);
     assignment = ass; 
@@ -680,10 +723,31 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
             false_graph.propagate_decision(id, (bool)res);
         }
 
-        if (m_stop_evaluation_on_conflict && root_valuation() != Valuation::MULTIVARIATE) {
+        if (m_stop_evaluation_on_conflict && (!true_graph.conflicts.empty() || !false_graph.conflicts.empty())) {
             break;
         }
     }
+
+    if (!true_graph.conflicts.empty()) {
+        assert(m_true_conflict_reasons.empty());
+        m_true_conflict_reasons = true_graph.conflict_reasons();
+    }
+    if (!false_graph.conflicts.empty()) {
+        assert(m_false_conflict_reasons.empty());
+        m_false_conflict_reasons = false_graph.conflict_reasons();
+    }
+
+    if (m_full_boolean_check) {
+        if (m_true_conflict_reasons.empty()) {
+            m_true_conflict_reasons = explore(true_graph, vartof);
+        }
+        if (m_false_conflict_reasons.empty()) {
+            m_false_conflict_reasons = explore(false_graph, vartof);
+        }
+        assert(m_true_conflict_reasons.empty() || m_false_conflict_reasons.empty());
+    }
+
+    // TODO gröbner propagation
 }
 
 void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
@@ -696,6 +760,23 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
     for (const auto id : atomset->second) {
         true_graph.backtrack(id, m_decisions[id]);
         false_graph.backtrack(id, m_decisions[id]);
+
+        for (auto iter = m_true_conflict_reasons.begin(); iter != m_true_conflict_reasons.end(); ) {
+            if (iter->find(std::make_pair(id, m_decisions[id])) != iter->end()) {
+                iter = m_true_conflict_reasons.erase(iter);
+            } else {
+                iter++;
+            }
+        }
+
+        for (auto iter = m_false_conflict_reasons.begin(); iter != m_false_conflict_reasons.end(); ) {
+            if (iter->find(std::make_pair(id, m_decisions[id])) != iter->end()) {
+                iter = m_false_conflict_reasons.erase(iter);
+            } else {
+                iter++;
+            }
+        }
+
         m_decisions.erase(id);
     }
 }
@@ -725,17 +806,16 @@ void postprocess(boost::container::flat_set<cadcells::Constraint>& implicant) {
 }
 
 std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::compute_implicants() const {
-    auto reasons = (root_valuation() == Valuation::FALSE) ? true_graph.conflict_reasons() : false_graph.conflict_reasons();
-    auto& graph = (root_valuation() == Valuation::FALSE) ? true_graph : false_graph;
+    auto reasons = (root_valuation() == Valuation::FALSE) ? m_true_conflict_reasons : m_false_conflict_reasons;
 
     std::vector<boost::container::flat_set<cadcells::Constraint>> implicants;
     for (const auto& r : reasons) {
         implicants.emplace_back();
         for (const auto& c : r) {
             if (c.second) {
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c.first].content).constraint);
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint);
             } else {
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c.first].content).constraint.negation());
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint.negation());
             }
         }
     }
@@ -756,9 +836,9 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
 }
 
 Valuation GraphEvaluation::root_valuation() const {
-    assert(true_graph.conflicts.empty() || false_graph.conflicts.empty());
-    if (!true_graph.conflicts.empty()) return Valuation::FALSE;
-    else if (!false_graph.conflicts.empty()) return Valuation::TRUE;
+    assert(m_true_conflict_reasons.empty() || m_false_conflict_reasons.empty());
+    if (!m_true_conflict_reasons.empty()) return Valuation::FALSE;
+    else if (!m_false_conflict_reasons.empty()) return Valuation::TRUE;
     else return Valuation::MULTIVARIATE;
 }
 
