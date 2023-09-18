@@ -33,14 +33,13 @@ struct CONSTRAINT {
 };
 
 struct Formula {
-    using Reasons = boost::container::flat_set<boost::container::flat_set<FormulaID>>;
+    using Reason = boost::container::flat_set<std::pair<FormulaID,bool>>;
+    using Reasons = boost::container::flat_set<Reason>;
 
     std::variant<TRUE,FALSE,NOT,AND,OR,IFF,XOR,BOOL,CONSTRAINT> content;
     boost::container::flat_set<FormulaID> parents;
     Reasons reasons_true;
     Reasons reasons_false;
-    bool decided_true = false;
-    bool decided_false = false;
 
     template<typename C>
     Formula(const C& c) : content(c) {}
@@ -67,7 +66,7 @@ struct FormulaGraph {
     void add_reasons_true(FormulaID id, const Formula::Reasons& reasons);
     void add_reasons_false(FormulaID id, const Formula::Reasons& reasons);
     Formula::Reasons conflict_reasons() const;
-    void backtrack(FormulaID id);
+    void backtrack(FormulaID id, bool is_true);
 };
 
 }
@@ -79,6 +78,7 @@ private:
     formula_ds::FormulaGraph false_graph;
     formula_ds::VariableToFormula vartof;
     cadcells::Assignment assignment;
+    boost::container::flat_map<formula_ds::FormulaID, bool> m_decisions;
 
     ImplicantOrdering m_implicant_complexity_ordering;
     std::size_t m_results;

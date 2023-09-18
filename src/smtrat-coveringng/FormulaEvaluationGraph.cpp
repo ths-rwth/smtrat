@@ -200,7 +200,7 @@ Formula::Reasons combine_reasons(const Formula::Reasons& a, const Formula::Reaso
     Formula::Reasons results;
     for (const auto& ar : a) {
         for (const auto& br : b) {
-            boost::container::flat_set<FormulaID> tmp = ar;
+            auto tmp = ar;
             tmp.insert(br.begin(),br.end());
             results.insert(tmp);
         }
@@ -208,7 +208,7 @@ Formula::Reasons combine_reasons(const Formula::Reasons& a, const Formula::Reaso
     return results;
 }
 
-bool merge_reasons(boost::container::flat_set<boost::container::flat_set<FormulaID>>& set, const boost::container::flat_set<boost::container::flat_set<FormulaID>>& add) {
+bool merge_reasons(Formula::Reasons& set, const Formula::Reasons& add) {
     bool change = false;
     for (const auto& a : add) {
         // if there is a set that is a subset of the set to be added, we can stop
@@ -476,24 +476,20 @@ void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
     if (is_true) {
         db[id].reasons_true.emplace();
-        //db[id].decided_true = true;
     } else {
         db[id].reasons_false.emplace();
-        //db[id].decided_false = true;
     }
     propagate_consistency(id);
 }
 
 void FormulaGraph::propagate_decision(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
-    boost::container::flat_set<boost::container::flat_set<FormulaID>> reasons;
-    reasons.insert(boost::container::flat_set<FormulaID>({id}));
+    Formula::Reasons reasons;
+    reasons.insert(Formula::Reason({std::make_pair(id, is_true)}));
     if (is_true) {
         add_reasons_true(id, reasons);
-        db[id].decided_true = true;
     } else {
         add_reasons_false(id, reasons);
-        db[id].decided_false = true;
     }
 }
 
@@ -531,21 +527,18 @@ Formula::Reasons FormulaGraph::conflict_reasons() const {
     return reasons;
 }
 
-void FormulaGraph::backtrack(FormulaID id) {
-    db[id].decided_true = false;
-    db[id].decided_false = false;
-
+void FormulaGraph::backtrack(FormulaID id, bool is_true) {
     for (std::size_t idx = 0; idx < db.size(); ++idx) {
         auto& f = db[idx];
         for (auto reason = f.reasons_true.begin(); reason != f.reasons_true.end(); ) {
-            if (reason->find(id) != reason->end()) {
+            if (reason->find(std::make_pair(id, is_true)) != reason->end()) {
                 f.reasons_true.erase(reason);
             } else {
                 reason++;
             }
         }
         for (auto reason = f.reasons_false.begin(); reason != f.reasons_false.end(); ) {
-            if (reason->find(id) != reason->end()) {
+            if (reason->find(std::make_pair(id, is_true)) != reason->end()) {
                 f.reasons_false.erase(reason);
             } else {
                 reason++;
@@ -680,6 +673,7 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
         SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Evaluate constraint " << constr);
         auto res = carl::evaluate(constr, ass);
         if (!boost::indeterminate(res)) {
+            m_decisions.emplace(id, (bool)res);
             SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
             true_graph.propagate_decision(id, (bool)res);
             SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update false_graph");
@@ -700,8 +694,9 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
     if (atomset == vartof.end()) return;
 
     for (const auto id : atomset->second) {
-        true_graph.backtrack(id);
-        false_graph.backtrack(id);
+        true_graph.backtrack(id, m_decisions[id]);
+        false_graph.backtrack(id, m_decisions[id]);
+        m_decisions.erase(id);
     }
 }
 
@@ -737,11 +732,10 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
     for (const auto& r : reasons) {
         implicants.emplace_back();
         for (const auto& c : r) {
-            if (graph.db[c].decided_true) {
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint);
+            if (c.second) {
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c.first].content).constraint);
             } else {
-                assert(graph.db[c].decided_false);
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c].content).constraint.negation());
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(graph.db[c.first].content).constraint.negation());
             }
         }
     }
