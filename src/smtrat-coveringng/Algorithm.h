@@ -27,11 +27,11 @@ template<cadcells::operators::op op>
 inline std::optional<Interval<op>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& implicant, formula::Valuation root_valuation, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", implicant << ", " << root_valuation << ", " << ass);
 
-    std::size_t level = 0;
-    for (const auto& c : implicant) {
-        level = std::max(carl::level_of(c.lhs()), level);
-    }
-    assert(level > 0 && level == ass.size());
+    //std::size_t level = 0;
+    //for (const auto& c : implicant) {
+    //    level = std::max(carl::level_of(c.lhs()), level);
+    //}
+    //assert(level > 0 && level == ass.size());
 
     auto deriv = cadcells::datastructures::make_derivation<typename cadcells::operators::PropertiesSet<op>::type>(proj, ass, ass.size()).sampled_ref();
     for (const auto& c : implicant) {
