@@ -652,10 +652,11 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     false_graph.propagate_root(false_graph.root, false);
 }
 
-formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph, const formula_ds::VariableToFormula& vartof) {
+formula_ds::Formula::Reasons GraphEvaluation::explore(formula_ds::FormulaGraph& graph) {
     // this is a quick and dirty implementation of a SAT solver
     std::optional<formula_ds::FormulaID> next_dec_id;
     for (const auto& [k,vs] : vartof) {
+        if (m_boolean_check_only_bool && k.type() != carl::VariableType::VT_BOOL) continue;
         for (const auto& v : vs) {
             if (graph.db[v].reasons_true.empty() && graph.db[v].reasons_false.empty()) {
                 next_dec_id = v;
@@ -669,7 +670,7 @@ formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph, const form
     graph.propagate_decision(*next_dec_id, true);
     auto true_conflicts = graph.conflict_reasons();
     if (true_conflicts.empty()) {
-        true_conflicts = explore(graph, vartof);
+        true_conflicts = explore(graph);
     }
     graph.backtrack(*next_dec_id, true);
     if (true_conflicts.empty()) {
@@ -679,7 +680,7 @@ formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph, const form
     graph.propagate_decision(*next_dec_id, false);
     auto false_conflicts = graph.conflict_reasons();
     if (false_conflicts.empty()) {
-        false_conflicts = explore(graph, vartof);
+        false_conflicts = explore(graph);
     }
     graph.backtrack(*next_dec_id, false);
     if (false_conflicts.empty()) {
@@ -737,12 +738,12 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
         m_false_conflict_reasons = false_graph.conflict_reasons();
     }
 
-    if (m_full_boolean_check) {
+    if (m_boolean_check) {
         if (m_true_conflict_reasons.empty()) {
-            m_true_conflict_reasons = explore(true_graph, vartof);
+            m_true_conflict_reasons = explore(true_graph);
         }
         if (m_false_conflict_reasons.empty()) {
-            m_false_conflict_reasons = explore(false_graph, vartof);
+            m_false_conflict_reasons = explore(false_graph);
         }
         assert(m_true_conflict_reasons.empty() || m_false_conflict_reasons.empty());
     }

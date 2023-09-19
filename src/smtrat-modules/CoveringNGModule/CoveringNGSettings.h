@@ -130,7 +130,7 @@ struct CoveringNGSettingsGraphSingleChoiceFullBoolean : CoveringNGSettingsDefaul
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections&) {
-            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true, false, true);
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true, false, true, true);
         }
     };
 };

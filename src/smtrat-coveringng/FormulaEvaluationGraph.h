@@ -88,10 +88,13 @@ private:
     bool m_stop_evaluation_on_conflict;
     bool m_preprocess;
     bool m_postprocess;
-    bool m_full_boolean_check;
+    bool m_boolean_check;
+    bool m_boolean_check_only_bool;
+
+    formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph); 
 
 public:
-    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, bool full_boolean_check) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_full_boolean_check(full_boolean_check) {}
+    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, bool boolean_check, bool boolean_check_only_bool = false) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_boolean_check(boolean_check), m_boolean_check_only_bool(boolean_check_only_bool) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);
