@@ -51,6 +51,10 @@ class Projections {
         assert(p.id < m_poly_cache[p.level-1].size());
         return m_poly_cache[p.level-1][p.id];
     }
+    bool has_cache(PolyRef p) const {
+        assert(p.level > 0);
+        return (p.level-1 < m_poly_cache.size()) && (p.id < m_poly_cache[p.level-1].size());
+    }
 
     size_t level_of(const Assignment& a) const {
         return a.size();
@@ -139,7 +143,16 @@ public:
     }
 
     bool know_disc(PolyRef p) const {
+        if (!has_cache(p)) return false;
         return (bool) cache(p).disc;
+    }
+
+    bool know_res(PolyRef p, PolyRef q) const {
+        assert(p.level == q.level && p.id != q.id);
+        if (p.id > q.id) return know_res(q,p);
+        assert(p.id < q.id);
+        if (!has_cache(p)) return false;
+        return cache(p).res.find(q) != cache(p).res.end();
     }
 
     bool known(const Polynomial& p) const {

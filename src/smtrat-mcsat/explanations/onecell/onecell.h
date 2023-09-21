@@ -25,7 +25,7 @@ struct LDBSettings : Base {
     // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
     // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
     constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
+    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING;
     // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
     //constexpr static auto op = cadcells::operators::op::mccallum;
     constexpr static auto op = cadcells::operators::op::mccallum;

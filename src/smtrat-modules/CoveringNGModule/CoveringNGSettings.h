@@ -123,6 +123,17 @@ struct CoveringNGSettingsGraphSingleChoice : CoveringNGSettingsDefault  {// curr
     };
 };
 
+struct CoveringNGSettingsGraphSingleChoiceLDB : CoveringNGSettingsDefault  {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoiceLDB>";
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::LDB_COVERING;
+    struct formula_evaluation {
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create(cadcells::datastructures::Projections&) {
+            return Type(covering_ng::formula::complexity::min_max_tdeg_min_size, 1, covering_ng::formula::complexity::min_tdeg, false, true, false, false);
+        }
+    };
+};
+
 struct CoveringNGSettingsGraphSingleChoiceFullBoolean : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphSingleChoiceFullBoolean>";
     static constexpr bool transform_boolean_variables_to_reals = false;

@@ -156,12 +156,33 @@ inline datastructures::IndexedRootOrdering simplest_chain_ordering(datastructure
     return ordering;
 }
 
-inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set<datastructures::PolyRef>> simplest_ldb_ordering(datastructures::Projections& proj, datastructures::Delineation& delin, datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, bool enable_weak = false) {
+using ResultantsCache = boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>>;
+
+inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set<datastructures::PolyRef>> simplest_ldb_ordering(datastructures::Projections& proj, datastructures::Delineation& delin, datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, bool enable_weak, ResultantsCache& resultants_cache) {
     // assumes that interval is the simplest cell
 
     datastructures::IndexedRootOrdering ordering;
     boost::container::flat_set<datastructures::PolyRef> equational;
-    
+
+    auto flag_resultant = [&proj,&resultants_cache](datastructures::PolyRef p, datastructures::PolyRef q) {
+        assert(p.level == q.level && p.id != q.id);
+        if (proj.know_res(p,q)) return;
+        if (p.id < q.id) {
+            resultants_cache.try_emplace(p).first->second.insert(q);
+        } else {
+            resultants_cache.try_emplace(q).first->second.insert(p);
+        }
+    };
+    auto has_resultant = [&proj,&resultants_cache](datastructures::PolyRef p, datastructures::PolyRef q) -> bool {
+        assert(p.level == q.level && p.id != q.id);
+        if (proj.know_res(p,q)) return true;
+        if (p.id < q.id) {
+            return resultants_cache.try_emplace(p).first->second.contains(q);
+        } else {
+            return resultants_cache.try_emplace(q).first->second.contains(p);
+        }
+    };
+
     const bool section = delin_interval.is_section();
     while(section) {
         auto old_size = equational.size();
@@ -196,11 +217,12 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
         }
     }
 
-    boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> resultants;
     if (!delin_interval.lower_unbounded()) {
+        std::vector<datastructures::RootFunction> reached;
         auto it = delin_interval.lower();
         auto barrier = interval.lower().value();
         bool barrier_incl = interval.lower().is_weak();
+        reached.push_back(barrier);
         while(true) {
             auto old_barrier = barrier;
             bool old_barrier_incl = barrier_incl;
@@ -215,28 +237,54 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
             }
             assert(it != delin_interval.lower() || barrier == interval.lower().value());
             if (barrier != old_barrier) {
-                if (enable_weak && (interval.lower().is_strict() || barrier_incl || !old_barrier_incl)) {
-                    ordering.add_leq(barrier, old_barrier);
-                } else {
-                    ordering.add_less(barrier, old_barrier);
+                bool rchd = false;
+                for (const auto& r : reached) {
+                    if(barrier.is_root() && r.is_root() && has_resultant(barrier.root().poly,r.root().poly)) {
+                        if (enable_weak && interval.upper().is_strict()) {
+                            ordering.add_leq(barrier, r);
+                        } else {
+                            ordering.add_less(barrier, r);
+                        }
+                        rchd = true;
+                    }
                 }
-                if (barrier.is_root() && old_barrier.is_root()) {
-                    resultants.try_emplace(barrier.root().poly).first->second.insert(old_barrier.root().poly);
-                    resultants.try_emplace(old_barrier.root().poly).first->second.insert(barrier.root().poly);
+                if (!rchd) {
+                    if (enable_weak && (interval.lower().is_strict() || barrier_incl || !old_barrier_incl)) {
+                        ordering.add_leq(barrier, old_barrier);
+                    } else {
+                        ordering.add_less(barrier, old_barrier);
+                    }
+                    if (barrier.is_root() && old_barrier.is_root()) {
+                        flag_resultant(barrier.root().poly, old_barrier.root().poly);
+                    }
                 }
+                reached.push_back(barrier);
             }
             for (const auto& ir : it->second) {
                 if (section && equational.contains(ir.root.poly)) continue;
                 if (ir.root != barrier) {
-                    if (enable_weak && (interval.lower().is_strict() || ir.is_inclusive || !barrier_incl)) {
-                        ordering.add_leq(ir.root, barrier);
-                    } else {
-                        ordering.add_less(ir.root, barrier);
+                    bool rchd = false;
+                    for (const auto& r : reached) {
+                        if(r.is_root() && has_resultant(ir.root.poly,r.root().poly)) {
+                            if (enable_weak && interval.upper().is_strict()) {
+                                ordering.add_leq(ir.root, r);
+                            } else {
+                                ordering.add_less(ir.root, r);
+                            }
+                            rchd = true;
+                        }
                     }
-                    if (barrier.is_root()) {
-                        resultants.try_emplace(ir.root.poly).first->second.insert(barrier.root().poly);
-                        resultants.try_emplace(barrier.root().poly).first->second.insert(ir.root.poly);
+                    if (!rchd) {
+                        if (enable_weak && (interval.lower().is_strict() || ir.is_inclusive || !barrier_incl)) {
+                            ordering.add_leq(ir.root, barrier);
+                        } else {
+                            ordering.add_less(ir.root, barrier);
+                        }
+                        if (barrier.is_root()) {
+                            flag_resultant(barrier.root().poly, ir.root.poly);
+                        }
                     }
+                    reached.push_back(ir.root);
                 } 
             }
             if (it != delin.roots().begin()) it--;
@@ -244,8 +292,8 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
         }
     }
 
-    std::vector<datastructures::RootFunction> reached;
     if (!delin_interval.upper_unbounded()) {
+        std::vector<datastructures::RootFunction> reached;
         auto it = delin_interval.upper();
         auto barrier = interval.upper().value();
         bool barrier_incl = interval.upper().is_weak();
@@ -266,7 +314,7 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
             if (barrier != old_barrier) {
                 bool rchd = false;
                 for (const auto& r : reached) {
-                    if(barrier.is_root() && r.is_root() && resultants.try_emplace(barrier.root().poly).first->second.contains(r.root().poly)) {
+                    if(barrier.is_root() && r.is_root() && has_resultant(barrier.root().poly,r.root().poly)) {
                         if (enable_weak && interval.upper().is_strict()) {
                             ordering.add_leq(r, barrier);
                         } else {
@@ -281,6 +329,9 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
                     } else {
                         ordering.add_less(old_barrier, barrier);
                     }
+                    if (barrier.is_root() && old_barrier.is_root()) {
+                        flag_resultant(barrier.root().poly, old_barrier.root().poly);
+                    }
                 }
                 reached.push_back(barrier);
             }
@@ -289,7 +340,7 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
                 if (ir.root != barrier) {
                     bool rchd = false;
                     for (const auto& r : reached) {
-                        if(r.is_root() && resultants.try_emplace(ir.root.poly).first->second.contains(r.root().poly)) {
+                        if(r.is_root() && has_resultant(ir.root.poly,r.root().poly)) {
                             if (enable_weak && interval.upper().is_strict()) {
                                 ordering.add_leq(r, ir.root);
                             } else {
@@ -303,6 +354,9 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
                             ordering.add_leq(barrier, ir.root);
                         } else {
                             ordering.add_less(barrier, ir.root);
+                        }
+                        if (barrier.is_root()) {
+                            flag_resultant(barrier.root().poly, ir.root.poly);
                         }
                     }
                     reached.push_back(ir.root);
