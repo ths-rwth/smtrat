@@ -7,9 +7,9 @@
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
-class CoveringNG_PPGraphSingleChoiceGB: public Manager {
+class CoveringNG_PPGBGraphSingleChoice: public Manager {
 public:
-	CoveringNG_PPGraphSingleChoiceGB() : Manager() {
+	CoveringNG_PPGBGraphSingleChoice() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
 				addBackend<NewGBPPModule<NewGBPPSettings1>>({
