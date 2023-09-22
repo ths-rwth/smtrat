@@ -9,6 +9,8 @@ namespace smtrat {
 FormulaT replace_groebner(const FormulaT& f) {
 	SMTRAT_LOG_FUNC("smtrat.newgbpp", f);
 
+	// TODO reduce other subformulas using Groebner basis? 
+
 	if (!f.is_nary()) return f;
 
 	FormulasT result;
@@ -65,6 +67,7 @@ NewGBPPModule<Settings>::~NewGBPPModule() {}
 
 template<class Settings>
 Answer NewGBPPModule<Settings>::checkCore() {
+	// TODO adapt for incrementality + backtracking + infeasible subsets to allow for inprocessing
 	FormulaT formula = replace_groebner((FormulaT)rReceivedFormula());
 	Answer ans = SAT;
 	if (formula.is_false()) {
