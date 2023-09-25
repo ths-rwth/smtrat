@@ -100,13 +100,27 @@ inline auto projection_root(const datastructures::DelineatedDerivation<P>& deriv
     return ass;
 }
 
+inline bool has_intersection(const RAN& root1, const RAN& root2) {
+    root1.refine_using(root2.interval().lower());
+    root1.refine_using(root2.interval().upper());
+    root2.refine_using(root1.interval().lower());
+    root2.refine_using(root1.interval().upper());
+
+    auto interval1 = root1.interval();
+    auto interval2 = root2.interval();
+
+    if (interval1.is_point_interval() != interval2.is_point_interval()) return false;
+    else if (interval1.is_point_interval()) return interval1 == interval2;
+    else return carl::set_have_intersection(interval1, interval2);
+}
+
 inline bool has_common_real_root(datastructures::Projections& proj, Assignment ass, const datastructures::PolyRef& poly1, const datastructures::PolyRef& poly2) {
     if (proj.is_nullified(ass,poly1) || proj.is_nullified(ass,poly2)) return true;
     auto roots1 = proj.real_roots(ass,poly1);
     auto roots2 = proj.real_roots(ass,poly2);
-    auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
+    // auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find(roots2.begin(), roots2.end(), root1) != roots2.end(); });
+    auto common_zero = std::find_if(roots1.begin(), roots1.end(), [&roots2](const auto& root1) { return std::find_if(roots2.begin(), roots2.end(), [&root1](const auto& root2) { return has_intersection(root1, root2); } ) != roots2.end(); });
     return common_zero != roots1.end();
 }
-
 
 }

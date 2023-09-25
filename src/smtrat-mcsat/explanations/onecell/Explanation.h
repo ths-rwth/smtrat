@@ -44,7 +44,7 @@ struct LDBpdelSettings : BaseSettings {
 struct LDBFilteredAllSelectiveSettings : BaseSettings {
     constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EW;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
+    constexpr static auto op = cadcells::operators::op::mccallum_filtered_selective;
 };
 
 struct BCSettings : BaseSettings {
@@ -63,22 +63,6 @@ struct BCFilteredSettings : BaseSettings {
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_EW;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
     constexpr static auto op = cadcells::operators::op::mccallum_filtered;
-};
-
-struct BCFilteredAllSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all;
-};
-
-struct BCFilteredBoundsSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_bounds;
-};
-
-struct BCFilteredSamplesSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_samples;
-};
-
-struct BCFilteredAllSelectiveSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
 };
 
 struct BCApproximationSettings : BCSettings {

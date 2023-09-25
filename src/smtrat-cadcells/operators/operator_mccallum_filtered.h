@@ -150,43 +150,53 @@ inline void delineate_properties<op::mccallum_filtered>(datastructures::SampledD
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_all, true)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all, false)
 template <>
 inline void delineate_properties<op::mccallum_filtered_all>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     mccallum_filtered_impl::delineate_properties_common(deriv);
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        rules::delineate_all(deriv, prop);
+        rules::delineate_all(deriv, prop, false);
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_bounds, true)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_ew, true)
 template <>
-inline void delineate_properties<op::mccallum_filtered_bounds>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_bounds>::type>& deriv) {
+inline void delineate_properties<op::mccallum_filtered_all_ew>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_ew>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     mccallum_filtered_impl::delineate_properties_common(deriv);
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        rules::delineate_bounds(deriv, prop);
+        rules::delineate_all(deriv, prop, true);
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_samples, false)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_bounds_only, true)
 template <>
-inline void delineate_properties<op::mccallum_filtered_samples>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_samples>::type>& deriv) {
+inline void delineate_properties<op::mccallum_filtered_bounds_only>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_bounds_only>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     mccallum_filtered_impl::delineate_properties_common(deriv);
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        rules::delineate_samples(deriv, prop);
+        rules::delineate_bounds_only(deriv, prop);
     }
 }
 
-MCALLUMFILTEREDVARIANT(mccallum_filtered_all_selective, true)
+MCALLUMFILTEREDVARIANT(mccallum_filtered_selective, false)
 template <>
-inline void delineate_properties<op::mccallum_filtered_all_selective>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_selective>::type>& deriv) {
+inline void delineate_properties<op::mccallum_filtered_selective>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_selective>::type>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     mccallum_filtered_impl::delineate_properties_common(deriv);
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        rules::delineate_all_selective(deriv, prop);
+        rules::delineate_selective(deriv, prop, false);
+    }
+}
+
+MCALLUMFILTEREDVARIANT(mccallum_filtered_selective_ew, true)
+template <>
+inline void delineate_properties<op::mccallum_filtered_selective_ew>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_selective_ew>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    mccallum_filtered_impl::delineate_properties_common(deriv);
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate_selective(deriv, prop, true);
     }
 }
 
