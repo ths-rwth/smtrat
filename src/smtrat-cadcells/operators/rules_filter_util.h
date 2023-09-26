@@ -107,9 +107,11 @@ inline bool has_intersection(const RAN& root1, const RAN& root2) {
     auto intersection = carl::set_intersection(root1.interval(), root2.interval());
     if (intersection.is_empty()) return false;
     if (root1 < intersection.lower() || root1 > intersection.upper()) return false;
+    if (root1.is_numeric() && root1 == root2) return true;
     intersection = carl::set_intersection(root1.interval(), root2.interval());
     if (intersection.is_empty()) return false;
     if (root2 < intersection.lower() || root2 > intersection.upper()) return false;
+    if (root1.is_numeric() && root1 == root2) return true;
     intersection = carl::set_intersection(root1.interval(), root2.interval());
     if (intersection.is_empty()) return false;
     return true;
