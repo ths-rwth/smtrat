@@ -565,14 +565,18 @@ void poly_semi_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructur
         std::optional<datastructures::PolyRef> lowest_zero_factor;
         for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
             if (deriv.proj().is_zero(deriv.sample(), factor)) {
-                if (lowest_zero_factor == std::nullopt || factor.level < lowest_zero_factor->level || (factor.level == lowest_zero_factor->level && deriv.proj().total_degree(factor) < deriv.proj().total_degree(*lowest_zero_factor))) {
+                if (lowest_zero_factor == std::nullopt ||
+                    factor.level < lowest_zero_factor->level ||
+                    (factor.level == lowest_zero_factor->level && (factor.level == poly.level && deriv.proj().is_nullified(deriv.underlying_sample(), factor) && !deriv.proj().is_nullified(deriv.underlying_sample(), *lowest_zero_factor))) ||
+                    (factor.level == lowest_zero_factor->level && (factor.level != poly.level || (deriv.proj().is_nullified(deriv.underlying_sample(), factor) && deriv.proj().is_nullified(deriv.underlying_sample(), *lowest_zero_factor))) && deriv.proj().total_degree(factor) < deriv.proj().total_degree(*lowest_zero_factor))
+                    ) {
                     lowest_zero_factor = factor;
                 }
             }
         }
 
         if (lowest_zero_factor) {
-            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= sgn_inv(" << *lowest_zero_factor << ") && "<< *lowest_zero_factor <<"("<< deriv.underlying_sample() <<")=0");
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= sgn_inv(" << *lowest_zero_factor << ") && "<< *lowest_zero_factor <<"("<< deriv.sample() <<")=0");
             deriv.insert(properties::poly_irreducible_sgn_inv{ *lowest_zero_factor });
         } else {
             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> semi_sgn_inv(" << poly << ") <= semi_sgn_inv(factors(" << poly << ")) <=> semi_sgn_inv(" << deriv.proj().factors_nonconst(poly) << ")");

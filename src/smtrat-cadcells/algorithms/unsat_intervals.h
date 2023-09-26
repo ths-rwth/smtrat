@@ -21,7 +21,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     for (const auto& factor : proj.factors_nonconst(poly_ref)) {
         if (factor.level == poly_ref.level && !proj.is_nullified(sample, factor)) {
             roots.insert(proj.real_roots(sample, factor).begin(), proj.real_roots(sample, factor).end());
-        } else if (factor.level < poly_ref.level && proj.is_zero(sample, factor)) {
+        } else if ((factor.level < poly_ref.level && proj.is_zero(sample, factor)) || (factor.level == poly_ref.level && proj.is_nullified(sample, factor))) {
             roots.clear();
             break;
         }
@@ -33,11 +33,11 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     auto add_deriv_from = [&](const RAN& sample) {
         results.emplace_back(datastructures::make_sampled_derivation<typename operators::PropertiesSet<op>::type>(underlying_deriv, sample));
         if (carl::is_strict(c.relation())) {
-            results.back()->insert(operators::properties::poly_semi_sgn_inv{ proj.polys()(c.lhs()) });
+            results.back()->insert(operators::properties::poly_semi_sgn_inv{ poly_ref });
         } else {
-            results.back()->insert(operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
+            results.back()->insert(operators::properties::poly_sgn_inv{ poly_ref });
         }
-        if (!operators::project_basic_properties<op>(*results.back())) assert(false); // return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
+        if (!operators::project_basic_properties<op>(*results.back())) assert(false);
         operators::delineate_properties<op>(*results.back());
         results.back()->delineate_cell();
 
