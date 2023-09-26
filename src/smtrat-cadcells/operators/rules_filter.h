@@ -464,9 +464,10 @@ void delineate_noop(datastructures::SampledDerivation<P>& deriv, const propertie
 }
 
 template<typename P>
-inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const boost::container::flat_set<datastructures::PolyRef>& considered_polys) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "poly_loc_del(" << poly << ") wrt " << considered_polys);
+inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const datastructures::IndexedRootOrdering& underlying_ordering) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "poly_loc_del(" << poly << ", " << underlying_ordering << ")");
     if (deriv.proj().is_const(poly)) return;
+    auto considered_polys = underlying_ordering.polys();
     for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
         deriv.insert(properties::poly_ord_inv_base{ factor });
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv_base(" << factor << ") ");
@@ -523,7 +524,7 @@ bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv,
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         assert(deriv.contains(properties::poly_del{ poly1 }));
         assert(deriv.contains(properties::poly_del{ poly2 }));
-        poly_loc_del(deriv, deriv.proj().res(poly1, poly2), underlying_ordering.polys());
+        poly_loc_del(deriv, deriv.proj().res(poly1, poly2), underlying_ordering);
     }
     return true;
 }

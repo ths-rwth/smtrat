@@ -448,7 +448,7 @@ inline void add_biggest_cell_ordering(datastructures::IndexedRootOrdering& out, 
     }
 }
 
-inline void add_weird_ordering(datastructures::IndexedRootOrdering& out, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
+inline void add_local_del_ordering(datastructures::IndexedRootOrdering& out, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval) {
     assert(!delin_interval.is_section());
     auto begin = delin_interval.lower_unbounded() ? delin.roots().begin() : std::next(delin_interval.lower());
     auto end = delin_interval.upper_unbounded() ? delin.roots().end() : delin_interval.upper();
