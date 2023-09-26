@@ -165,7 +165,8 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
     boost::container::flat_set<datastructures::PolyRef> equational;
 
     auto flag_resultant = [&proj,&resultants_cache](datastructures::PolyRef p, datastructures::PolyRef q) {
-        assert(p.level == q.level && p.id != q.id);
+        assert(p.level == q.level);
+        if (p.id == q.id) return;
         if (proj.know_res(p,q)) return;
         if (p.id < q.id) {
             resultants_cache.try_emplace(p).first->second.insert(q);
@@ -174,7 +175,8 @@ inline std::pair<datastructures::IndexedRootOrdering, boost::container::flat_set
         }
     };
     auto has_resultant = [&proj,&resultants_cache](datastructures::PolyRef p, datastructures::PolyRef q) -> bool {
-        assert(p.level == q.level && p.id != q.id);
+        assert(p.level == q.level);
+        if (p.id == q.id) return true;
         if (proj.know_res(p,q)) return true;
         if (p.id < q.id) {
             return resultants_cache.try_emplace(p).first->second.contains(q);
