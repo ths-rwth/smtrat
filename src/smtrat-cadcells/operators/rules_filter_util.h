@@ -101,17 +101,33 @@ inline auto projection_root(const datastructures::DelineatedDerivation<P>& deriv
 }
 
 inline bool has_intersection(const RAN& root1, const RAN& root2) {
-    root1.refine_using(root2.interval().lower());
-    root1.refine_using(root2.interval().upper());
-    root2.refine_using(root1.interval().lower());
-    root2.refine_using(root1.interval().upper());
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators.rules", root1 << ", " << root2);
 
-    auto interval1 = root1.interval();
-    auto interval2 = root2.interval();
+    if (root1.is_numeric() && root1 == root2) return true;
+    auto intersection = carl::set_intersection(root1.interval(), root2.interval());
+    if (intersection.is_empty()) return false;
+    if (root1 < intersection.lower() || root1 > intersection.upper()) return false;
+    intersection = carl::set_intersection(root1.interval(), root2.interval());
+    if (intersection.is_empty()) return false;
+    if (root2 < intersection.lower() || root2 > intersection.upper()) return false;
+    intersection = carl::set_intersection(root1.interval(), root2.interval());
+    if (intersection.is_empty()) return false;
+    return true;
 
-    if (interval1.is_point_interval() != interval2.is_point_interval()) return false;
-    else if (interval1.is_point_interval()) return interval1 == interval2;
-    else return carl::set_have_intersection(interval1, interval2);
+    // We do not have access to libpoly's refine_using:
+
+    // root1.refine_using(root2.interval().lower());
+    // root1.refine_using(root2.interval().upper());
+    // root2.refine_using(root1.interval().lower());
+    // root2.refine_using(root1.interval().upper());
+
+    // auto interval1 = root1.interval();
+    // auto interval2 = root2.interval();
+    // SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "Got intervals " << interval1 << ", " << interval2);
+
+    // if (interval1.is_point_interval() != interval2.is_point_interval()) return false;
+    // else if (interval1.is_point_interval()) return interval1 == interval2;
+    // else return carl::set_have_intersection(interval1, interval2);
 }
 
 inline bool has_common_real_root(datastructures::Projections& proj, Assignment ass, const datastructures::PolyRef& poly1, const datastructures::PolyRef& poly2) {
