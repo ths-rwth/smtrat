@@ -466,7 +466,6 @@ void delineate_noop(datastructures::SampledDerivation<P>& deriv, const propertie
 template<typename P>
 inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const datastructures::PolyRef poly, const boost::container::flat_set<datastructures::PolyRef>& considered_polys) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "poly_loc_del(" << poly << ") wrt " << considered_polys);
-    auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).delineated_ref();
     if (deriv.proj().is_const(poly)) return;
     for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
         deriv.insert(properties::poly_ord_inv_base{ factor });
