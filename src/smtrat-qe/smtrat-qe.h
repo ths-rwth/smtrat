@@ -11,6 +11,17 @@ namespace smtrat {
 namespace qe {
 
 inline FormulaT eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quantifiers) {
+	if (qfree.is_real_constraint_conjunction()) {
+		const FormulasT& subfs = qfree.subformulas();
+		if (std::all_of(
+			subfs.begin(), subfs.end(),
+			[](const auto& c){
+		    	return (c.type() == carl::FormulaType::CONSTRAINT) && 
+					   (c.constraint().lhs().is_linear());
+			}
+		)) return fm::eliminateQuantifiers(qfree, quantifiers);
+	}
+	
 	return cad::eliminateQuantifiers(qfree, quantifiers);
 }
 

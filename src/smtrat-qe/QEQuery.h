@@ -36,5 +36,13 @@ inline std::vector<std::pair<QuantifierType,carl::Variable>> flattenQEQuery(cons
 	return res;
 }
 
+inline QuantifierType type(const std::pair<QuantifierType,std::vector<carl::Variable>>& p) {
+	return p.first;
+}
+
+inline std::vector<carl::Variable> vars(const std::pair<QuantifierType,std::vector<carl::Variable>>& p) {
+	return p.second;
+}
+
 }
 }
