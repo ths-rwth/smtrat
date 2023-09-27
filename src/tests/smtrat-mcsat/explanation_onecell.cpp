@@ -50,8 +50,8 @@ TEST(smtrat_mcsat, onecell)
 }
 
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
-	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL;
-	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING;
+	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_FILTER;
+	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
 	constexpr static auto op = smtrat::cadcells::operators::op::mccallum_filtered_all;
 };
 

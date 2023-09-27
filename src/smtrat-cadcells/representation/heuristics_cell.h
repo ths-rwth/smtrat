@@ -170,7 +170,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
 };
 
 template <>
-struct cell<CellHeuristic::BIGGEST_CELL_EW> {
+struct cell<CellHeuristic::BIGGEST_CELL_FILTER> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
@@ -297,7 +297,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
 };
 
 template <>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EW> {
+struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
