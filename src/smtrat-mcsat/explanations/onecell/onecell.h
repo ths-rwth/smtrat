@@ -84,11 +84,22 @@ std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constrai
         if (!lvl) {
             return std::nullopt;
         }
-        if (constraints_all_strict) {
+        if (Settings::exploit_strict_constraints && constraints_all_strict) {
             lvl->second.set_to_closure();
         }
         auto res = cadcells::helper::to_formula(proj.polys(), lvl->first, lvl->second);
-        // TODO if res contains indexed root expression, then set constraints_all_strict to false 
+        if (constraints_all_strict) {
+            for (const auto& a : res) {
+                for (const auto& b : a) {
+                    if (std::holds_alternative<cadcells::VariableComparison>(b)) {
+                        constraints_all_strict = false;
+                        SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "constraints_all_strict = false due to " << b);
+                        break;
+                    }
+                }
+                if (!constraints_all_strict) break;
+            }
+        }
         description.insert(description.end(), res.begin(), res.end());
         proj.clear_assignment_cache((*derivation)->sample());
         (*derivation) = (*derivation)->underlying().sampled_ref();

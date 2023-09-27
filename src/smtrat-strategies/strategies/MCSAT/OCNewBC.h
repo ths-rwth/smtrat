@@ -11,6 +11,8 @@ namespace smtrat {
 
 namespace internal {
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
+	constexpr static bool exploit_strict_constraints = false;
+
 	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
 	constexpr static auto op = cadcells::operators::op::mccallum;

@@ -22,6 +22,8 @@ struct BaseSettings {
 	static constexpr bool enforce_tarski = false;
 
     constexpr static bool use_approximation = false;
+
+    constexpr static bool exploit_strict_constraints = true;
 };
 
 struct LDBSettings : BaseSettings {
