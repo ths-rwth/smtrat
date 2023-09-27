@@ -32,9 +32,9 @@ foreach(module ${modules})
 		endif()
 
 		add_new_libraries(smtrat-module-${module}-common ${PROJECT_VERSION_LIB} "${sources}" "resources")
-		target_include_dirs_from(smtrat-module-${module}-common-objects "" PUBLIC carl-arith-shared smtrat-common-shared)
-		target_link_libraries(smtrat-module-${module}-common-shared carl-arith-shared smtrat-common-shared)
-		target_link_libraries(smtrat-module-${module}-common-static carl-arith-static smtrat-common-static)
+		target_include_dirs_from(smtrat-module-${module}-common-objects "" PUBLIC carl-arith-shared smtrat-common-shared  smtrat-solver-shared)
+		target_link_libraries(smtrat-module-${module}-common-shared carl-arith-shared smtrat-common-shared smtrat-solver-shared)
+		target_link_libraries(smtrat-module-${module}-common-static carl-arith-static smtrat-common-static smtrat-solver-static)
 		install_libraries(smtrat smtrat-module-${module}-common-shared smtrat-module-${module}-common-static)
 
 		if(DEFINED DEPEND-include)
