@@ -18,6 +18,7 @@ inline std::ostream& operator<<(std::ostream& os, const TaggedIndexedRoot& data)
     os << data.root;
     if (data.is_inclusive) os << "_incl";
     if (data.is_optional) os << "_opt";
+    if (data.origin) os << "_{" << *data.origin << "}";
     return os;
 }
 inline bool operator==(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs) {
@@ -27,8 +28,8 @@ inline bool operator<(const TaggedIndexedRoot& lhs, const TaggedIndexedRoot& rhs
     return lhs.root < rhs.root || (lhs.root == rhs.root && lhs.is_inclusive < rhs.is_inclusive) || (lhs.root == rhs.root && lhs.is_inclusive == rhs.is_inclusive && lhs.is_optional < rhs.is_optional);
 }
 
-using RootMap = std::map<RAN, std::vector<TaggedIndexedRoot>>;
-using RootMapPlain = std::map<RAN, std::vector<IndexedRoot>>;
+using RootMap = boost::container::flat_map<RAN, std::vector<TaggedIndexedRoot>>;
+using RootMapPlain = boost::container::flat_map<RAN, std::vector<IndexedRoot>>;
 
 /**
  * An interval of a delineation.
@@ -125,8 +126,6 @@ class Delineation {
     boost::container::flat_set<PolyRef> m_polys_nonzero;
 
 public: 
-    Delineation() {}
-
     /**
      * Returns the underlying root map, which is a set of real algebraic numbers to indexed root expressions.
      */
@@ -213,10 +212,23 @@ public:
         if (loc == irs->second.end()) {
             irs->second.push_back(std::move(tagged_root));
         } else {
-            // TODO is this the right place for deduplication?
             if (!tagged_root.is_inclusive) loc->is_inclusive = false;
             if (!tagged_root.is_optional) loc->is_optional = false;
         }
+    }
+
+    void remove_root(RAN root, TaggedIndexedRoot tagged_root) {
+        auto irs = m_roots.find(root);
+        if (irs == m_roots.end()) return;
+        std::erase(irs->second, tagged_root);
+    }
+
+    void remove_roots_with_origin(RAN root, PolyRef origin, bool only_optional = false) {
+        auto irs = m_roots.find(root);
+        if (irs == m_roots.end()) return;
+        std::erase_if(irs->second, [&origin, &only_optional](const auto& current) {
+            return current.origin == origin && (!only_optional || current.is_optional);
+        });
     }
 
     void add_poly_nonzero(PolyRef poly) {

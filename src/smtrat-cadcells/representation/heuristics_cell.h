@@ -145,13 +145,13 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
             compute_section_all_equational(der, response);
         } else { // sector
             // response.ordering = simplest_biggest_cell_ordering(der->proj(), der->delin(), der->cell(), response.description);
-            datastructures::Delineation reduced_delineation;
-            util::PolyDelineations poly_delins;
-            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-            response.ordering = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description);
+            util::PolyDelineations poly_delins;
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
+            util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering);
             for (const auto& poly_delin : poly_delins.data) {
-                add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
             }
         }
         maintain_connectedness(der, response);
@@ -178,15 +178,17 @@ struct cell<CellHeuristic::BIGGEST_CELL_FILTER> {
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            datastructures::Delineation reduced_delineation;
-            util::PolyDelineations poly_delins;
-            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-            response.ordering = util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, true);
-            for (const auto& poly_delin : poly_delins.data) {
-                add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
+            for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
+                util::local_del_ordering(der->proj(), poly, der->sample(), reduced_delineation, response.description, response.ordering);
             }
-            util::add_local_del_ordering(response.ordering, der->delin(), der->cell(), response.description);
+            util::PolyDelineations poly_delins;
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
+            util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, true);
+            for (const auto& poly_delin : poly_delins.data) {
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
+            }
         }
         maintain_connectedness(der, response, true);
         return response;
@@ -203,12 +205,13 @@ struct cell<CellHeuristic::CHAIN_EQ> {
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            datastructures::Delineation reduced_delineation;
+            datastructures::Delineation reduced_delineation = der->delin();
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
             util::PolyDelineations poly_delins;
-            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
-            response.ordering = util::simplest_chain_ordering(der->proj(), reduced_delineation);
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
+            util::simplest_chain_ordering(der->proj(), reduced_delineation, response.ordering);
             for (const auto& poly_delin : poly_delins.data) {
-                add_biggest_cell_ordering(response.ordering, poly_delin.first, poly_delin.second);
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
             }
         }
         maintain_connectedness(der, response);
@@ -226,14 +229,14 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
         if (der->cell().is_section()) {
             compute_section_all_equational(der, response);
         } else { // sector
-            datastructures::Delineation reduced_delineation;
-            util::PolyDelineations poly_delins;
-            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            util::PolyDelineations poly_delins;
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
             util::ResultantsCache cache;
-            std::tie(response.ordering, response.equational) = util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, false, cache);
+            util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, false, cache);
             for (const auto& poly_delin : poly_delins.data) {
-                add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
             }
         }
         maintain_connectedness(der, response);
@@ -247,16 +250,15 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
     if (der->cell().is_section()) {
-        datastructures::Delineation reduced_delineation;
-        util::PolyDelineations poly_delins;
-        util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+        datastructures::Delineation reduced_delineation = der->delin();
         auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-        std::tie(response.ordering, response.equational) = util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, false, cache);
+        util::PolyDelineations poly_delins;
+        util::decompose(reduced_delineation, reduced_cell, poly_delins);
+        util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, false, cache);
         for (const auto& poly_delin : poly_delins.data) {
             if (response.equational.contains(poly_delin.first)) continue;
-            add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
+            chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
         }
-
         for (const auto& poly : der->delin().nullified()) {
             response.equational.insert(poly);
         }
@@ -264,13 +266,13 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
             response.equational.insert(poly);
         }
     } else { // sector
-        datastructures::Delineation reduced_delineation;
-        util::PolyDelineations poly_delins;
-        util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+        datastructures::Delineation reduced_delineation = der->delin();
         auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-        std::tie(response.ordering, response.equational) = util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, false, cache);
+        util::PolyDelineations poly_delins;
+        util::decompose(reduced_delineation, reduced_cell, poly_delins);
+        util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, false, cache);
         for (const auto& poly_delin : poly_delins.data) {
-            add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
+            chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
         }
     }
     maintain_connectedness(der, response);
@@ -304,17 +306,19 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER> {
         response.description = util::compute_simplest_cell(der->proj(), der->cell(), true);
 
         if (der->cell().is_section()) {
-            datastructures::Delineation reduced_delineation;
-            util::PolyDelineations poly_delins;
-            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            datastructures::Delineation reduced_delineation(der->delin());
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
+                util::simplify(poly, reduced_delineation);
+            }
+            util::PolyDelineations poly_delins;
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
             util::ResultantsCache cache;
-            std::tie(response.ordering, response.equational) = util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, true, cache);
+            util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, true, cache);
             for (const auto& poly_delin : poly_delins.data) {
                 if (response.equational.contains(poly_delin.first)) continue;
-                add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
             }
-
             for (const auto& poly : der->delin().nullified()) {
                 response.equational.insert(poly);
             }
@@ -322,16 +326,18 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER> {
                 response.equational.insert(poly);
             }
         } else { // sector
-            datastructures::Delineation reduced_delineation;
-            util::PolyDelineations poly_delins;
-            util::decompose(der->delin(), der->cell(), reduced_delineation, poly_delins);
+            datastructures::Delineation reduced_delineation(der->delin());
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-            util::ResultantsCache cache;
-            std::tie(response.ordering, response.equational) = util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, true, cache);
-            for (const auto& poly_delin : poly_delins.data) {
-                add_chain_ordering(response.ordering, poly_delin.first, poly_delin.second);
+            for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
+                util::local_del_ordering(der->proj(), poly, der->sample(), reduced_delineation, response.description, response.ordering);
             }
-            util::add_local_del_ordering(response.ordering, der->delin(), der->cell(), response.description);
+            util::PolyDelineations poly_delins;
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
+            util::ResultantsCache cache;
+            util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, true, cache);
+            for (const auto& poly_delin : poly_delins.data) {
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
+            }
         }
         maintain_connectedness(der, response);
         return response;

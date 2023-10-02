@@ -54,71 +54,6 @@ namespace ordering_util {
     }
 }
 
-namespace compound_util {
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_min(datastructures::Projections& proj, const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
-        std::vector<datastructures::IndexedRoot> irs;
-        RAN value;
-        for (const auto& root : roots) {
-            auto v = proj.evaluate(ass, root);
-            if (irs.empty() || v < value) {
-                irs.clear();
-                irs.push_back(root);
-                value = v;
-            } else if (v == value) {
-                irs.push_back(root);
-            }
-        }
-        return std::make_pair(value, irs);
-    }
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_max(datastructures::Projections& proj, const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
-        std::vector<datastructures::IndexedRoot> irs;
-        RAN value;
-        for (const auto& root : roots) {
-            auto v = proj.evaluate(ass, root);
-            if (irs.empty() || v > value) {
-                irs.clear();
-                irs.push_back(root);
-                value = v;
-            } else if (v == value) {
-                irs.push_back(root);
-            }
-        }
-        return std::make_pair(value, irs);
-    }
-
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(datastructures::Projections& proj, const Assignment& ass, const datastructures::CompoundMinMax& bound) {
-        std::vector<datastructures::IndexedRoot> irs;
-        RAN value;
-        for (const auto& roots : bound.roots) {
-            auto v = evaluate_max(proj, ass, roots);
-            if (irs.empty() || v.first < value) {
-                irs.clear();
-                irs.insert(irs.end(), v.second.begin(), v.second.end());
-                value = v.first;
-            } else if (v.first == value) {
-                irs.insert(irs.end(), v.second.begin(), v.second.end());
-            }
-        }
-        return std::make_pair(value, irs);
-    }
-
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(datastructures::Projections& proj, const Assignment& ass, const datastructures::CompoundMaxMin& bound) {
-        std::vector<datastructures::IndexedRoot> irs;
-        RAN value;
-        for (const auto& roots : bound.roots) {
-            auto v = evaluate_min(proj, ass, roots);
-            if (irs.empty() || v.first > value) {
-                irs.clear();
-                irs.insert(irs.end(), v.second.begin(), v.second.end());
-                value = v.first;
-            } else if (v.first == value) {
-                irs.insert(irs.end(), v.second.begin(), v.second.end());
-            }
-        }
-        return std::make_pair(value, irs);
-    }
-}
-
 template<typename P>
 void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true, bool enable_regular = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ", " << enable_weak << ")");
@@ -145,7 +80,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                     else return filter_util::result::NORMAL;
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
-                    if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                    if (enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                     else return filter_util::result::NORMAL_OPTIONAL;
                 }
             } else {
@@ -179,7 +114,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), pair.second.polys());
                         assert(delineable_interval_cb);
                         if (delineable_interval_cb->contains(ran)) {
-                            auto res = pair.second.is_cminmax() ? compound_util::evaluate(deriv.proj(), ass, pair.second.cminmax()) : compound_util::evaluate(deriv.proj(), ass, pair.second.cmaxmin());
+                            auto res = pair.second.is_cminmax() ? deriv.proj().evaluate(ass, pair.second.cminmax()) : deriv.proj().evaluate(ass, pair.second.cmaxmin());
                             relevant = false;
                             if (res.first == roots_first[index_first-1]) {
                                 relevant = std::find_if(res.second.begin(), res.second.end(), [&](const auto& ir) { return ir.poly == poly_second; }) != res.second.end();
@@ -201,7 +136,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), pair.first.polys());
                         assert(delineable_interval_cb);
                         if (delineable_interval_cb->contains(ran)) {
-                            auto res = pair.first.is_cminmax() ? compound_util::evaluate(deriv.proj(), ass, pair.first.cminmax()) : compound_util::evaluate(deriv.proj(), ass, pair.first.cmaxmin());
+                            auto res = pair.first.is_cminmax() ? deriv.proj().evaluate(ass, pair.first.cminmax()) : deriv.proj().evaluate(ass, pair.first.cmaxmin());
                             relevant = false;
                             if (res.first == roots_second[index_second-1]) {
                                 relevant = std::find_if(res.second.begin(), res.second.end(), [&](const auto& ir) { return ir.poly == poly_first; }) != res.second.end();
@@ -224,8 +159,8 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         auto delineable_interval_cb = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), cb_polys);
                         assert(delineable_interval_cb);
                         if (delineable_interval_cb->contains(ran)) {
-                            auto res1 = compound_util::evaluate(deriv.proj(), ass, pair.first.cmaxmin());
-                            auto res2 = compound_util::evaluate(deriv.proj(), ass, pair.second.cminmax());
+                            auto res1 = deriv.proj().evaluate(ass, pair.first.cmaxmin());
+                            auto res2 = deriv.proj().evaluate(ass, pair.second.cminmax());
                             relevant = false;
                             if (res1.first == res2.first) {
                                 relevant = std::find_if(res1.second.begin(), res1.second.end(), [&](const auto& ir) { return ir.poly == poly_first; }) != res1.second.end() && std::find_if(res2.second.begin(), res2.second.end(), [&](const auto& ir) { return ir.poly == poly_second; }) != res2.second.end();
@@ -239,7 +174,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                     }
                 }
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
-                if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                if (enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                 else return filter_util::result::NORMAL_OPTIONAL;
             }
         });
@@ -301,7 +236,7 @@ void delineate_all_compound_piecewiselinear(datastructures::SampledDerivation<P>
                     }
                 }
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
-                if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                if (enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                 else return filter_util::result::NORMAL_OPTIONAL;
             }
         });
@@ -331,7 +266,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                     else return filter_util::result::NORMAL;
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
-                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                    if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                     else return filter_util::result::NORMAL_OPTIONAL;
                 }
             } else {
@@ -356,7 +291,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                     }
                 }
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
-                if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                 else return filter_util::result::NORMAL_OPTIONAL;
             }
         });
@@ -399,7 +334,7 @@ void delineate_selective(datastructures::SampledDerivation<P>& deriv, const prop
                 } else {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
                     // return filter_util::result::NORMAL_OPTIONAL;
-                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                    if (enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                     else return filter_util::result::NORMAL_OPTIONAL;
                 }
             } else {
@@ -424,7 +359,7 @@ void delineate_selective(datastructures::SampledDerivation<P>& deriv, const prop
                 }
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
                 // return filter_util::result::NORMAL_OPTIONAL;
-                if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
+                if (enable_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                 else return filter_util::result::NORMAL_OPTIONAL;
             }
         });

@@ -234,6 +234,77 @@ public:
         return roots[r.index-1];
     }
 
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_min(const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& root : roots) {
+            auto v = evaluate(ass, root);
+            if (irs.empty() || v < value) {
+                irs.clear();
+                irs.push_back(root);
+                value = v;
+            } else if (v == value) {
+                irs.push_back(root);
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_max(const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& root : roots) {
+            auto v = evaluate(ass, root);
+            if (irs.empty() || v > value) {
+                irs.clear();
+                irs.push_back(root);
+                value = v;
+            } else if (v == value) {
+                irs.push_back(root);
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::CompoundMinMax& bound) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& roots : bound.roots) {
+            auto v = evaluate_max(ass, roots);
+            if (irs.empty() || v.first < value) {
+                irs.clear();
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+                value = v.first;
+            } else if (v.first == value) {
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::CompoundMaxMin& bound) {
+        std::vector<datastructures::IndexedRoot> irs;
+        RAN value;
+        for (const auto& roots : bound.roots) {
+            auto v = evaluate_min(ass, roots);
+            if (irs.empty() || v.first > value) {
+                irs.clear();
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+                value = v.first;
+            } else if (v.first == value) {
+                irs.insert(irs.end(), v.second.begin(), v.second.end());
+            }
+        }
+        return std::make_pair(value, irs);
+    }
+
+    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::RootFunction& f) {
+        if (f.is_root()) return std::make_pair(evaluate(ass, f.root()), std::vector<datastructures::IndexedRoot>({ f.root() }));
+        else if (f.is_cminmax()) return evaluate(ass, f.cminmax());
+        else if (f.is_cmaxmin()) return evaluate(ass, f.cmaxmin());
+        else assert(false);
+    }
+
     bool is_nullified(const Assignment& sample, PolyRef p) {
         assert(p.level == level_of(sample)+1);
         auto poly = m_pool(p);
