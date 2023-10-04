@@ -25,7 +25,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
             datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
             for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
-                util::local_del_ordering(der->proj(), poly, der->sample(), reduced_delineation, response.description, response.ordering);
+                util::local_del_ordering(der->proj(), poly, der->underlying_sample(), der->main_var_sample(), reduced_delineation, response.description, response.ordering);
             }
             util::PolyDelineations poly_delins;
             util::decompose(reduced_delineation, reduced_cell, poly_delins);

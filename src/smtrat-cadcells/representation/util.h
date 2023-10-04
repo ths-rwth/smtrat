@@ -428,19 +428,18 @@ inline auto get_local_del_polys(const datastructures::Delineation& delin) {
     return polys;
 }
 
-inline void local_del_ordering(datastructures::Projections& proj, const datastructures::PolyRef poly, const cadcells::Assignment& ass, datastructures::Delineation& delin, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering) {
+inline void local_del_ordering(datastructures::Projections& proj, const datastructures::PolyRef poly, const cadcells::Assignment& ass, const cadcells::RAN& sample, datastructures::Delineation& delin, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering) {
     assert(!interval.is_section());
-
-    auto sample = ass.at(proj.polys().var_order().at(ass.size()-1));
     
     // Choose l and l' - the range of optional roots that may be inside the cell.
     // We choose it as large as possible.
     std::optional<datastructures::RootMap::const_iterator> ri_begin;
     std::optional<datastructures::RootMap::const_iterator> ri_end;
+    std::cout << delin << std::endl;
     for (auto it = delin.roots().begin(); it != delin.roots().end(); it++) {
         bool only_optional_roots = true;
         bool has_root = false;
-        for (const auto t_root : it->second) {
+        for (const auto& t_root : it->second) {
             if (t_root.origin && *t_root.origin == poly) {
                 has_root = true;
                 if (!t_root.is_optional) {
@@ -452,7 +451,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
         if (has_root) {
             if (only_optional_roots) {
                 if (!ri_begin) ri_begin = it;
-                ri_end = it++;
+                ri_end = std::next(it);
             } else if (it->first > sample) {
                 break;
             } else {
@@ -468,7 +467,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
     datastructures::IndexedRoot ri_first;
     datastructures::IndexedRoot ri_last;
     if (ri_begin && ri_end) {
-        assert((*ri_begin)->first <= sample && sample < (*ri_end)->first);
+        assert((*ri_begin)->first <= sample && ((*ri_end) == delin.roots().end() || sample < (*ri_end)->first));
         datastructures::IndexedRoot prev;
         for (auto it = *ri_begin; it != *ri_end; it++) {
             auto simplest = simplest_bound(proj, it->second, poly);
@@ -523,15 +522,17 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
             }
         }
         if (!use_interval_bound) { // Connect ri_first with all roots below
-            auto it = std::prev(*ri_begin);
-            while (true) {
-                for (const auto t_root : it->second) {
-                    if (*t_root.origin == poly) {
-                        ordering.add_less(t_root.root, ri_first);
+            if (*ri_begin != delin.roots().begin()) {
+                auto it = std::prev(*ri_begin);
+                while (true) {
+                    for (const auto t_root : it->second) {
+                        if (*t_root.origin == poly) {
+                            ordering.add_less(t_root.root, ri_first);
+                        }
                     }
+                    if (it == delin.roots().begin()) break;
+                    it--;
                 }
-                if (it == delin.roots().begin()) break;
-                it--;
             }
         } else { // Connect ri_first with interval.lower().value()
             if ((*ri_begin)->first == proj.evaluate(ass, interval.lower().value()).first) {
