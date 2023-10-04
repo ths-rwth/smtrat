@@ -435,7 +435,6 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
     // We choose it as large as possible.
     std::optional<datastructures::RootMap::const_iterator> ri_begin;
     std::optional<datastructures::RootMap::const_iterator> ri_end;
-    std::cout << delin << std::endl;
     for (auto it = delin.roots().begin(); it != delin.roots().end(); it++) {
         bool only_optional_roots = true;
         bool has_root = false;
