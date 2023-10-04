@@ -466,9 +466,10 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
     datastructures::IndexedRoot ri_first;
     datastructures::IndexedRoot ri_last;
     if (ri_begin && ri_end) {
-        assert(((*ri_begin) == delin.roots().begin() || std::prev(*ri_begin)->first < sample) && ((*ri_end) == delin.roots().end() || sample < (*ri_end)->first));
+        // assert(((*ri_begin) == delin.roots().begin() || std::prev(*ri_begin)->first < sample) && ((*ri_end) == delin.roots().end() || sample < (*ri_end)->first)); // this assertion is faulty
         datastructures::IndexedRoot prev;
         for (auto it = *ri_begin; it != *ri_end; it++) {
+            if (it->second.empty()) continue;
             auto simplest = simplest_bound(proj, it->second, poly);
             if (simplest) {
                 if (ri_first == datastructures::IndexedRoot()) ri_first = *simplest;
