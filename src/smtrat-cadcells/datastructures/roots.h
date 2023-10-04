@@ -405,8 +405,14 @@ class IndexedRootOrdering {
     
     std::vector<IndexedRootRelation> m_data;
 
-    boost::container::flat_set<PolyRef> m_non_projective;
+    boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> m_poly_pairs;
+
     bool m_is_projective = false;
+
+    void add_poly_pair(PolyRef p1, PolyRef p2) {
+        m_poly_pairs.try_emplace(p1).first->second.insert(p2);
+        m_poly_pairs.try_emplace(p2).first->second.insert(p1);
+    }
 
 public:
     void add_leq(RootFunction first, RootFunction second) {
@@ -417,6 +423,10 @@ public:
             m_leq[first].insert(second);
             if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<RootFunction>());
             m_geq[second].insert(first);
+
+            if (first.is_root() && second.is_root()) {
+                add_poly_pair(first.root().poly, second.root().poly);
+            }
         }
     }
 
@@ -428,6 +438,10 @@ public:
         m_less[first].insert(second);
         if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<RootFunction>());
         m_greater[second].insert(first);
+
+        if (first.is_root() && second.is_root()) {
+            add_poly_pair(first.root().poly, second.root().poly);
+        }
     }
 
     void add_eq(RootFunction first, RootFunction second) {
@@ -555,20 +569,22 @@ public:
         return result;
     }
 
+    const boost::container::flat_set<PolyRef>& polys(const PolyRef p) const {
+        return m_poly_pairs.at(p);
+    }
+
+    bool has_pair(const PolyRef p1, const PolyRef p2) const {
+        auto it = m_poly_pairs.find(p1);
+        if (it == m_poly_pairs.end()) return false;
+        return it->second.find(p2) != it->second.end();
+    }
+
     void set_projective() {
         m_is_projective = true;
     }
 
     bool is_projective() const {
         return m_is_projective;
-    }
-
-    void set_non_projective(PolyRef poly) {
-        m_non_projective.insert(poly);
-    }
-
-    const auto& non_projective_polys() const {
-        return m_non_projective;
     }
 };
 inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {

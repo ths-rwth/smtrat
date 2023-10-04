@@ -156,32 +156,14 @@ inline void simplest_chain_ordering(datastructures::Projections& proj, const dat
     }
 }
 
-using ResultantsCache = boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>>;
-
-inline void simplest_ldb_ordering(datastructures::Projections& proj, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering, boost::container::flat_set<datastructures::PolyRef>& equational, bool enable_weak, ResultantsCache& resultants_cache) {
+inline void simplest_ldb_ordering(datastructures::Projections& proj, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering, boost::container::flat_set<datastructures::PolyRef>& equational, bool enable_weak, bool use_global_cache) {
     // assumes that interval is the simplest cell
 
-    // TODO init resultants_cache with ordering? - maybe only use ordering instead of ResultantsCache?
-    // TODO allow to configure cache - disable know_res cache
-    auto flag_resultant = [&proj,&resultants_cache](datastructures::PolyRef p, datastructures::PolyRef q) {
-        assert(p.level == q.level);
-        if (p.id == q.id) return;
-        if (proj.know_res(p,q)) return;
-        if (p.id < q.id) {
-            resultants_cache.try_emplace(p).first->second.insert(q);
-        } else {
-            resultants_cache.try_emplace(q).first->second.insert(p);
-        }
-    };
-    auto has_resultant = [&proj,&resultants_cache](datastructures::PolyRef p, datastructures::PolyRef q) -> bool {
+    auto has_resultant = [&proj,&ordering,&use_global_cache](datastructures::PolyRef p, datastructures::PolyRef q) -> bool {
         assert(p.level == q.level);
         if (p.id == q.id) return true;
-        if (proj.know_res(p,q)) return true;
-        if (p.id < q.id) {
-            return resultants_cache.try_emplace(p).first->second.contains(q);
-        } else {
-            return resultants_cache.try_emplace(q).first->second.contains(p);
-        }
+        if (use_global_cache && proj.know_res(p,q)) return true;
+        return ordering.has_pair(p,q);
     };
 
     const bool section = delin_interval.is_section();
@@ -255,9 +237,6 @@ inline void simplest_ldb_ordering(datastructures::Projections& proj, const datas
                     } else {
                         ordering.add_less(barrier, old_barrier);
                     }
-                    if (barrier.is_root() && old_barrier.is_root()) {
-                        flag_resultant(barrier.root().poly, old_barrier.root().poly);
-                    }
                 }
                 reached.push_back(barrier);
             }
@@ -280,9 +259,6 @@ inline void simplest_ldb_ordering(datastructures::Projections& proj, const datas
                             ordering.add_leq(ir.root, barrier);
                         } else {
                             ordering.add_less(ir.root, barrier);
-                        }
-                        if (barrier.is_root()) {
-                            flag_resultant(barrier.root().poly, ir.root.poly);
                         }
                     }
                     reached.push_back(ir.root);
@@ -330,9 +306,6 @@ inline void simplest_ldb_ordering(datastructures::Projections& proj, const datas
                     } else {
                         ordering.add_less(old_barrier, barrier);
                     }
-                    if (barrier.is_root() && old_barrier.is_root()) {
-                        flag_resultant(barrier.root().poly, old_barrier.root().poly);
-                    }
                 }
                 reached.push_back(barrier);
             }
@@ -355,9 +328,6 @@ inline void simplest_ldb_ordering(datastructures::Projections& proj, const datas
                             ordering.add_leq(barrier, ir.root);
                         } else {
                             ordering.add_less(barrier, ir.root);
-                        }
-                        if (barrier.is_root()) {
-                            flag_resultant(barrier.root().poly, ir.root.poly);
                         }
                     }
                     reached.push_back(ir.root);
@@ -457,23 +427,6 @@ inline auto get_local_del_polys(const datastructures::Delineation& delin) {
     }
     return polys;
 }
-
-/*
-inline std::pair<datastructures::RootMap::const_iterator, datastructures::RootMap::const_iterator> iterators_around(const datastructures::Delineation& delin, const cadcells::RAN& sample) {
-    datastructures::RootMap::const_iterator leq;
-    datastructures::RootMap::const_iterator geq;
-    for (auto it = delin.begin(); it != delin.end(); it++) {
-        if (it->first <= sample) {
-            leq = it;
-        }
-        if (it->first >= sample) {
-            geq = it;
-            break;
-        }
-    }
-    return std::make_pair(leq,geq);
-}
-*/
 
 inline void local_del_ordering(datastructures::Projections& proj, const datastructures::PolyRef poly, const cadcells::Assignment& ass, datastructures::Delineation& delin, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering) {
     assert(!interval.is_section());

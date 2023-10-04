@@ -13,6 +13,10 @@ template<typename P>
 struct CellRepresentation {
     /// Description of a cell.
     SymbolicInterval description;
+    /// Polys considered in the indexed root ordering.
+    boost::container::flat_set<PolyRef> ordering_polys;
+    /// Polys that are considered "non-projectively" in the ordering.
+    boost::container::flat_set<PolyRef> ordering_non_projective_polys;
     /// An ordering on the roots that protects the cell.
     IndexedRootOrdering ordering;
     /// Polynomials that should be projected using the equational constraints projection.

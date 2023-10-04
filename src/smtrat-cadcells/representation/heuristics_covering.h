@@ -61,12 +61,28 @@ namespace smtrat::cadcells::representation {
         static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
-            util::ResultantsCache cache;
-            for (auto& iter : min_derivs) {
-                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, cache);
-                result.cells.emplace_back(cell_result);
-            }
             result.ordering = compute_default_ordering(result.cells);
+            for (auto& iter : min_derivs) {
+                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, false, result.ordering);
+                result.cells.emplace_back(cell_result);
+                result.ordering = cell_result.ordering;
+            }
+            return result;
+        }
+    };
+
+    template <>
+    struct covering<CoveringHeuristic::LDB_COVERING_CACHE> {
+        template<typename T>
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+            datastructures::CoveringRepresentation<T> result;
+            auto min_derivs = compute_min_derivs(derivs);
+            result.ordering = compute_default_ordering(result.cells);
+            for (auto& iter : min_derivs) {
+                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, true, result.ordering);
+                result.cells.emplace_back(cell_result);
+                result.ordering = cell_result.ordering;
+            }
             return result;
         }
     };
@@ -200,16 +216,18 @@ namespace smtrat::cadcells::representation {
                     delineation.add_root((iter)->cell().lower()->first,datastructures::TaggedIndexedRoot {cell_result.description.section_defining() });
                 } else {
                     ord_idx.push_back(result.cells.size()-1);
-                    util::decompose((iter)->delin(), (iter)->cell(), delineation, poly_delins);
+                    datastructures::Delineation subdelin = (iter)->delin();
+                    auto subdelin_int = subdelin.delineate_cell((iter)->main_var_sample());
+                    util::decompose(subdelin, subdelin_int, poly_delins);
+                    delineation.merge_with(subdelin);
                 }
             }
 
             assert (ord_idx.size() > 0); 
             auto& proj = (*min_derivs.begin())->proj();
-            auto res = util::simplest_chain_ordering(proj, delineation);
-            result.ordering = *res;
+            util::simplest_chain_ordering(proj, delineation, result.ordering);
             for (const auto& poly_delin : poly_delins.data) {
-                add_chain_ordering(result.ordering, poly_delin.first, poly_delin.second);
+                chain_ordering(poly_delin.first, poly_delin.second, result.ordering);
             }
             for (std::size_t idx : ord_idx) {
                 result.cells[idx].ordering = result.ordering;

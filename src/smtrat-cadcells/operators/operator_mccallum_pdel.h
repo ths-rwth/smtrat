@@ -79,7 +79,7 @@ inline bool project_cell_properties<op::mccallum_pdel>(datastructures::CellRepre
         } else if (deriv.delin().nullified().find(prop.poly) != deriv.delin().nullified().end()) {
             rules::poly_irreducible_null_sgn_inv(deriv, prop.poly);
         } else {
-            rules::poly_irreducible_sgn_inv_pdel(deriv, repr.description, repr.ordering, prop.poly);
+            rules::poly_irreducible_sgn_inv_pdel(deriv, repr.description, repr.ordering, repr.ordering_non_projective_polys, prop.poly);
         }
     }
     return true;
