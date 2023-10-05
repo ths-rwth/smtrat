@@ -92,7 +92,7 @@ struct CoveringRepresentation {
 
 template<typename P>
 std::ostream& operator<<(std::ostream& os, const CoveringRepresentation<P>& data) {
-    os << data.cells;
+    os << "(cells: " << data.cells << ", ordering: " << data.ordering << ")";
     return os;
 }
 
