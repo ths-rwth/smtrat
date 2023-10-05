@@ -109,3 +109,78 @@ TEST(smtrat_mcsat, onecell_filter_bug)
 	auto res_filtered = smtrat::mcsat::onecell::onecell<OCSettings>(constrs, ctx, ass);
 	std::cout << res_filtered << std::endl;
 }
+
+TEST(smtrat_mcsat, onecell_filter_bug_2)
+{
+	if (!carl::logging::logger().has("stdout")) {
+		carl::logging::logger().configure("stdout", std::cout);
+	}
+	carl::logging::logger().filter("stdout")
+	 	("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
+	 	("smtrat.mcsat.onecell", carl::logging::LogLevel::LVL_TRACE)
+	;
+
+	using P = smtrat::cadcells::Polynomial;
+
+	// explanation: (g__AT0 <= 0 or (b.delta__AT0 < rootExpr(-2*b.y__AT0 + 2*b.y__AT2 + b.delta__AT0^2*g__AT0, 2, b.delta__AT0)) or b.y__AT0 + -1*b.y__AT2 <= 0 or (b.delta__AT0 > rootExpr(b.speed_y__AT2 + b.delta__AT0*g__AT0, 1, b.delta__AT0)))
+	// unsat cell [2: [1: (b.y__AT0 > rootExpr(1*b.y__AT0 + (-1*b.y__AT2), 1, b.y__AT0))], [1: (g__AT0 > rootExpr(1*g__AT0, 1, g__AT0))]]
+	// of constraints [2: (b.delta__AT0 ! < rootExpr((1*g__AT0)*b.delta__AT0^2 + (-2*b.y__AT0 + (2*b.y__AT2)), 2, b.delta__AT0)), (b.delta__AT0 ! > rootExpr((1*g__AT0)*b.delta__AT0 + (1*b.speed_y__AT2), 1, b.delta__AT0))]
+	// assignment {b.y__AT3 : 1, b.y__AT0 : 10, b.speed_y__AT3 : 0, b.delta__AT2 : 1/2, b.y__AT2 : 0, b.speed_y__AT2 : 4, g__AT0 : 8}
+ 	// varorder [8: b.y__AT2, g__AT0, b.y__AT3, b.speed_y__AT2, b.delta__AT2, b.speed_y__AT3, b.y__AT0, b.delta__AT0]
+
+
+	// x  b.y__AT2        0
+	// y  g__AT0          8
+	// z  b.speed_y__AT2  4
+	// v  b.y__AT0        10
+	// w  b.delta__AT0    unassigned
+	auto x = carl::fresh_real_variable("x");
+	auto y = carl::fresh_real_variable("y");
+	auto z = carl::fresh_real_variable("z");
+	auto v = carl::fresh_real_variable("v");
+	auto w = carl::fresh_real_variable("w");
+
+	smtrat::cadcells::VariableOrdering vrs({ x,y,z,v,w });
+	smtrat::cadcells::Polynomial::ContextType ctx(vrs);
+
+	smtrat::cadcells::Assignment ass;
+	ass.emplace(x,0);
+	ass.emplace(y,8);
+	ass.emplace(z,4);
+	ass.emplace(v,10);
+
+	// (b.delta__AT0 ! < rootExpr((1*g__AT0)*b.delta__AT0^2 + (-2*b.y__AT0 + (2*b.y__AT2)), 2, b.delta__AT0))
+	// (w ! < rootExpr((1*y)*w^2 + (-2*v + (2*x)), 2, w))
+	auto poly_p = P(ctx, y) * P(ctx, w) * P(ctx, w) - 2*P(ctx, v) + 2*P(ctx, x);
+	auto mv_p = smtrat::cadcells::MultivariateRoot(poly_p, 2, w);
+	// auto varcomp_p = smtrat::cadcells::VariableComparison(w, mv_p, carl::Relation::LESS, true);
+	auto varcomp_p = smtrat::cadcells::VariableComparison(w, mv_p, carl::Relation::GEQ, false);
+
+	// (b.delta__AT0 ! > rootExpr((1*g__AT0)*b.delta__AT0 + (1*b.speed_y__AT2), 1, b.delta__AT0))
+	// (w ! > rootExpr((1*y)*w + (1*z), 1, w))
+	auto poly_q = P(ctx, y) * P(ctx, w) + P(ctx, z);
+	auto mv_q = smtrat::cadcells::MultivariateRoot(poly_q, 1, w);
+	// auto varcomp_q = smtrat::cadcells::VariableComparison(w, mv_q, carl::Relation::GREATER, true);
+	auto varcomp_q = smtrat::cadcells::VariableComparison(w, mv_q, carl::Relation::LEQ, false);
+
+	std::vector<smtrat::cadcells::Atom> constrs({varcomp_p, varcomp_q});
+
+	auto res_filtered = smtrat::mcsat::onecell::onecell<OCSettings>(constrs, ctx, ass);
+	std::cout << res_filtered << std::endl;
+	// wrong answer was: [2: [1: (v > rootExpr(1*v + (-1*x), 1, v))], [1: (y > rootExpr(1*y, 1, y))]]
+
+
+	// x  0
+	// y  1
+	// z  -1
+	// v  1/2
+	// w  1
+	smtrat::cadcells::Assignment ass2;
+	ass2.emplace(x,0);
+	ass2.emplace(y,1);
+	ass2.emplace(z,-1);
+	ass2.emplace(v,mpq_class(1)/2);
+	//ass2.emplace(w,1);
+	std::cout << carl::evaluate(mv_p, ass2) << std::endl;
+	std::cout << carl::evaluate(mv_q, ass2) << std::endl;
+}
