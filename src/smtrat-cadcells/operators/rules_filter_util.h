@@ -7,7 +7,6 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
     auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
     for (const auto& poly : polys) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable(" << poly << ") <= del(" << poly << ")");
         subderiv->insert(properties::poly_del{ poly });
         assert(properties::poly_del{ poly }.level() == subderiv->level());
     }
@@ -30,6 +29,42 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
         return carl::Interval<RAN>(subderiv->cell().lower()->first);
     } else {
         return carl::Interval<RAN>(subderiv->cell().lower_unbounded() ? RAN(0) : subderiv->cell().lower()->first, subderiv->cell().lower_unbounded() ? carl::BoundType::INFTY : carl::BoundType::STRICT, subderiv->cell().upper_unbounded() ? RAN(0) : subderiv->cell().upper()->first, subderiv->cell().upper_unbounded() ? carl::BoundType::INFTY : carl::BoundType::STRICT);
+    }
+}
+
+template<typename P>
+inline void delineable_interval_roots(datastructures::SampledDerivation<P>& deriv, const boost::container::flat_set<datastructures::PolyRef>& polys, const datastructures::PolyRef resultant) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval_roots start");
+    auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).sampled_ref();
+    for (const auto& poly : polys) {
+        subderiv->insert(properties::poly_del{ poly });
+        assert(properties::poly_del{ poly }.level() == subderiv->level());
+    }
+    for(const auto& prop : subderiv->template properties<properties::poly_del>()) {
+        if (!rules::poly_del(*subderiv, prop.poly)) {
+            assert(false);
+            return;
+        }
+    }
+    for(const auto& prop : subderiv->template properties<properties::poly_ord_inv>()) {
+        rules::poly_ord_inv(*subderiv, prop.poly);
+    }
+    for(const auto& prop : subderiv->template properties<properties::poly_sgn_inv>()) {
+        rules::poly_sgn_inv(*subderiv, prop.poly);
+    }
+    for(const auto& prop : subderiv->template properties<properties::poly_irreducible_sgn_inv>()) {
+        rules::delineate(*subderiv->delineated(), prop);
+    }
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval_roots end; got " << subderiv->delin());
+
+    for (const auto& [k,v] : subderiv->delin().roots()) {
+        for (auto ir : v) {
+            assert(!ir.is_optional);
+            assert(!ir.is_inclusive);
+            assert(!ir.origin);
+            ir.origin = resultant;
+            deriv.delin().add_root(k, ir);
+        }
     }
 }
 

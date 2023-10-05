@@ -68,6 +68,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
         auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
         bool only_regular = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair) { return !(pair.first.is_root() && pair.second.is_root()); }) == d.second.end();
+        filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             if (!enable_regular && only_regular) return filter_util::result::NORMAL;
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
@@ -194,6 +195,7 @@ void delineate_all_compound_piecewiselinear(datastructures::SampledDerivation<P>
         boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
         auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
+        filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
@@ -256,6 +258,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
         boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
         auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
+        filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
@@ -321,6 +324,7 @@ void delineate_selective(datastructures::SampledDerivation<P>& deriv, const prop
             if (!delineable_interval) {
                 boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
                 delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
+                filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
                 assert(delineable_interval);
             }
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
@@ -416,6 +420,8 @@ inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const data
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
                 } else {
                     if (ordering_polys.contains(factor)) {
+                        deriv.insert(properties::poly_del{ factor });
+                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add del(" << factor << ") ");
                     } else {
                         assert(underlying_cell.is_section());
                         deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
