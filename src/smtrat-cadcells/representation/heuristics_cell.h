@@ -250,7 +250,6 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     response.ordering = global_ordering;
 
     if (der->cell().is_section()) {
-        init_ordering(der, response);
         datastructures::Delineation reduced_delineation = der->delin();
         auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
         util::PolyDelineations poly_delins;
@@ -285,7 +284,7 @@ template <>
 struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-        return compute_cell_lowest_degree_barriers(der);
+        return compute_cell_lowest_degree_barriers(der, false);
     }
 };
 
