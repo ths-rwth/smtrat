@@ -449,6 +449,8 @@ void poly_ord_inv_base(datastructures::SampledDerivation<P>& deriv, const datast
 template<typename P>
 bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& underlying_cell, const datastructures::IndexedRootOrdering& underlying_ordering, const boost::container::flat_set<datastructures::PolyRef>& ordering_polys, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "using underlying_cell=" << underlying_cell << ", underlying_ordering=" << underlying_ordering << ", ordering_polys=" << ordering_polys);
+
     deriv.insert(properties::cell_connected{ deriv.level() });
     assert(deriv.contains(properties::root_ordering_holds{ underlying_ordering, deriv.level()-1 }));
 
