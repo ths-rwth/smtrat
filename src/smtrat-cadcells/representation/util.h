@@ -572,7 +572,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
             }
         }
         if (!use_interval_bound) { // Connect ri_last with all roots above
-            for (auto it = *ri_end; it != delin.roots().end() && use_interval_bound; it++) {
+            for (auto it = *ri_end; it != delin.roots().end(); it++) {
                 for (const auto t_root : it->second) {
                     if (*t_root.origin == poly) {
                         ordering.add_less(ri_last, t_root.root);
