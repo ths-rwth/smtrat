@@ -184,3 +184,70 @@ TEST(smtrat_mcsat, onecell_filter_bug_2)
 	std::cout << carl::evaluate(mv_p, ass2) << std::endl;
 	std::cout << carl::evaluate(mv_q, ass2) << std::endl;
 }
+
+TEST(smtrat_mcsat, onecell_filter_bug_3)
+{
+	if (!carl::logging::logger().has("stdout")) {
+		carl::logging::logger().configure("stdout", std::cout);
+	}
+	carl::logging::logger().filter("stdout")
+	 	("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
+	 	("smtrat.mcsat.onecell", carl::logging::LogLevel::LVL_TRACE)
+	;
+
+	using P = smtrat::cadcells::Polynomial;
+
+	// explanation: (g__AT0 <= 0 or (b.delta__AT2 < rootExpr(2*b.y__AT3 + -2*b.y__AT2 + -2*b.delta__AT2*b.speed_y__AT0 + b.delta__AT2^2*g__AT0 + 2*b.delta__AT2*b.delta__AT0*g__AT0, 2, b.delta__AT2)) or (b.delta__AT2 > rootExpr(b.speed_y__AT4 + -1*b.speed_y__AT0 + b.delta__AT2*g__AT0 + b.delta__AT0*g__AT0, 1, b.delta__AT2)) or (b.y__AT3 ! < rootExpr(2*g__AT0*b.y__AT3 + -2*g__AT0*b.y__AT2 + -1*b.speed_y__AT0^2 + 2*b.delta__AT0*g__AT0*b.speed_y__AT0 + -1*b.delta__AT0^2*g__AT0^2, 1, b.y__AT3)))
+	// unsat cell [2: [1: (b.y__AT3 < rootExpr((2*g__AT0)*b.y__AT3 + ((-2*g__AT0)*b.y__AT2 + (-1*b.speed_y__AT0^2 + ((2*g__AT0)*b.delta__AT0)*b.speed_y__AT0 + ((-1*g__AT0^2)*b.delta__AT0^2))), 1, b.y__AT3))], [1: (g__AT0 > rootExpr(1*g__AT0, 1, g__AT0))]] 
+	// constraints: [2: (b.delta__AT2 ! < rootExpr((1*g__AT0)*b.delta__AT2^2 + (-2*b.speed_y__AT0 + ((2*g__AT0)*b.delta__AT0))*b.delta__AT2 + (2*b.y__AT3 + (-2*b.y__AT2)), 2, b.delta__AT2)), (b.delta__AT2 ! > rootExpr((1*g__AT0)*b.delta__AT2 + (-1*b.speed_y__AT0 + (1*b.speed_y__AT4 + ((1*g__AT0)*b.delta__AT0))), 1, b.delta__AT2))]
+	// varorder [11: g__AT0, b.delta__AT0, b.y__AT0, b.y__AT4, b.speed_y__AT4, b.delta__AT4, b.y__AT6, b.speed_y__AT0, b.y__AT2, b.y__AT3, b.delta__AT2] 
+	// assignment: {b.speed_y__AT4 : 11, b.delta__AT4 : 1, b.delta__AT0 : 1, b.y__AT6 : 7, g__AT0 : 8, b.y__AT3 : 0, b.y__AT2 : 6, b.y__AT0 : 10, b.y__AT4 : 0, b.speed_y__AT0 : 0}
+
+
+	// t  g__AT0      			8
+	// u  b.delta__AT0          1
+	// v  b.speed_y__AT4		11
+	// w  b.speed_y__AT0		0
+	// x  b.y__AT2				6
+	// y  b.y__AT3				0
+	// z  b.delta__AT2
+	
+	auto t = carl::fresh_real_variable("t");
+	auto u = carl::fresh_real_variable("u");
+	auto v = carl::fresh_real_variable("v");
+	auto w = carl::fresh_real_variable("w");
+	auto x = carl::fresh_real_variable("x");
+	auto y = carl::fresh_real_variable("y");
+	auto z = carl::fresh_real_variable("z");
+
+	smtrat::cadcells::VariableOrdering vrs({ t,u,v,w,x,y,z });
+	smtrat::cadcells::Polynomial::ContextType ctx(vrs);
+
+	smtrat::cadcells::Assignment ass;
+	ass.emplace(t,8);
+	ass.emplace(u,1);
+	ass.emplace(v,11);
+	ass.emplace(w,0);
+	ass.emplace(x,6);
+	ass.emplace(y,0);
+	
+	// (b.delta__AT2 ! < rootExpr((1*g__AT0)*b.delta__AT2^2 + (-2*b.speed_y__AT0 + ((2*g__AT0)*b.delta__AT0))*b.delta__AT2 + (2*b.y__AT3 + (-2*b.y__AT2)), 2, b.delta__AT2))
+	// (z ! < rootExpr((1*t)*z^2 + (-2*w + ((2*t)*u))*z + (2*y + (-2*x)), 2, z))
+	auto poly_p = P(ctx, t) * P(ctx, z) * P(ctx, z) - 2 * P(ctx, w) + 2*P(ctx, t)*P(ctx, u)*P(ctx, z) + 2*P(ctx, y) - 2*P(ctx, x);
+	auto mv_p = smtrat::cadcells::MultivariateRoot(poly_p, 2, z);
+	auto varcomp_p = smtrat::cadcells::VariableComparison(z, mv_p, carl::Relation::LESS, true);
+
+	// (b.delta__AT2 ! > rootExpr((1*g__AT0)*b.delta__AT2 + (-1*b.speed_y__AT0 + (1*b.speed_y__AT4 + ((1*g__AT0)*b.delta__AT0))), 1, b.delta__AT2))
+	// (z ! > rootExpr((1*t)*z + (-1*w + (1*v + ((1*t)*u))), 1, z))
+	auto poly_q = P(ctx, t)*P(ctx, z) - P(ctx, w) + P(ctx, v) + P(ctx, t) * P(ctx, u);
+	auto mv_q = smtrat::cadcells::MultivariateRoot(poly_q, 1, z);
+	auto varcomp_q = smtrat::cadcells::VariableComparison(z, mv_q, carl::Relation::GREATER, true);
+
+	std::vector<smtrat::cadcells::Atom> constrs({varcomp_p, varcomp_q});
+
+	auto res_filtered = smtrat::mcsat::onecell::onecell<OCSettings>(constrs, ctx, ass);
+	std::cout << res_filtered << std::endl;
+	// wrong answer was: [2: [1: (y < rootExpr((2*t)*y + ((-2*t)*x + (-1*w^2 + ((2*t)*u)*w + ((-1*t^2)*u^2))), 1, y))], [1: (t > rootExpr(1*t, 1, t))]]
+	// thsi returns: [2: [1: (y < rootExpr(2*y + (-2*x + (-2*w + ((-1*t)*u^2))), 1, y))], [1: (t > rootExpr(1*t, 1, t))]]
+
+}

@@ -8,7 +8,7 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
     auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
     for (const auto& poly : polys) {
         subderiv->insert(properties::poly_del{ poly });
-        assert(properties::poly_del{ poly }.level() == subderiv->level());
+        assert(properties::poly_del{ poly }.level() <= subderiv->level());
     }
     for(const auto& prop : subderiv->template properties<properties::poly_del>()) {
         if (!rules::poly_del(*subderiv, prop.poly)) return std::nullopt;
@@ -38,7 +38,7 @@ inline void delineable_interval_roots(datastructures::SampledDerivation<P>& deri
     auto subderiv = datastructures::make_derivation<P>(deriv.proj(), deriv.sample(), deriv.level()).sampled_ref();
     for (const auto& poly : polys) {
         subderiv->insert(properties::poly_del{ poly });
-        assert(properties::poly_del{ poly }.level() == subderiv->level());
+        assert(properties::poly_del{ poly }.level() <= subderiv->level());
     }
     for(const auto& prop : subderiv->template properties<properties::poly_del>()) {
         if (!rules::poly_del(*subderiv, prop.poly)) {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "properties.h"
+#include "properties_util.h"
 #include "../datastructures/derivation.h"
 
 /**
@@ -41,10 +42,10 @@ bool poly_non_null(datastructures::SampledDerivation<P>& deriv, datastructures::
 template<typename P>
 bool poly_del(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "del(" << poly << ")");
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly << ") [" << deriv.proj().disc(poly) << "]) && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "]) && cell_connected(" << (poly.level-1) << ")");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly << ") [" << deriv.proj().disc(poly) << "]) && sgn_inv(ldcf(" << poly << ") [" << deriv.proj().ldcf(poly) << "]) && cell_connected(" << (poly.base_level) << ")");
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
     deriv.insert(properties::poly_sgn_inv{ deriv.proj().ldcf(poly) });
-    deriv.insert(properties::cell_connected{ poly.level-1 });
+    deriv.insert(properties::cell_connected{ poly.base_level });
     if (!poly_non_null(deriv, poly)) return false;
     return true;
 }
@@ -174,7 +175,7 @@ void poly_irreducible_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, co
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), using EC");
     assert(cell.is_section());
     assert(deriv.contains(properties::poly_del{ cell.section_defining().poly }));
-    deriv.insert(properties::cell_connected{ poly.level-1 });
+    deriv.insert(properties::cell_connected{ poly.base_level });
     if (cell.section_defining().poly != poly) {
         deriv.insert(properties::poly_ord_inv{ deriv.proj().res(cell.section_defining().poly, poly) });
     }

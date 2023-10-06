@@ -21,9 +21,9 @@ bool poly_del_pdel(datastructures::SampledDerivation<P>& deriv, datastructures::
 template<typename P>
 bool poly_proj_del(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "proj_del(" << poly << ")");
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly << ") [" << deriv.proj().disc(poly) << "]) && cell_connected(" << (poly.level-1) << ")");
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> proj_del(" << poly << ") <= non_null(" << poly << ") && ord_inv(disc(" << poly << ") [" << deriv.proj().disc(poly) << "]) && cell_connected(" << (poly.base_level) << ")");
     deriv.insert(properties::poly_ord_inv{ deriv.proj().disc(poly) });
-    deriv.insert(properties::cell_connected{ poly.level-1 });
+    deriv.insert(properties::cell_connected{ poly.base_level });
     if (!poly_non_null(deriv, poly)) return false;
     return true;
 }

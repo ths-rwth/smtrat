@@ -14,7 +14,9 @@ struct PolyRef {
     /// The level of the polynomial.
     size_t level;
     /// The id of the polynomial with respect to its level.
-    size_t id;    
+    size_t id;
+    /// The base level of the polynomial.
+    size_t base_level;
 };
 inline bool operator<(const PolyRef& lhs, const PolyRef& rhs) {
     return lhs.level < rhs.level  || (lhs.level == rhs.level && lhs.id < rhs.id);
@@ -29,6 +31,15 @@ inline bool operator!=(const PolyRef& lhs, const PolyRef& rhs) {
 inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
     os << "(" << data.level << " " << data.id << ")";
     return os;
+}
+
+auto base_level(Polynomial poly) {
+    std::size_t lvl = 0;
+    for (std::size_t i = 0; i < poly.context().variable_ordering().size(); i++) {
+        if (poly.context().variable_ordering()[i] == poly.main_var()) break;
+        if (poly.has(poly.context().variable_ordering()[i])) lvl = i+1;
+    }
+    return lvl;
 }
 
 /**
@@ -62,9 +73,9 @@ class PolyPool {
     std::vector<std::vector<std::unique_ptr<Element>>> m_polys;
     std::vector<ElementSet> m_poly_ids;
 
-    inline PolyRef negative_poly_ref() const { return PolyRef {0, 0}; }
-    inline PolyRef zero_poly_ref() const { return PolyRef {0, 1}; }
-    inline PolyRef positive_poly_ref() const { return PolyRef {0, 2}; }
+    inline PolyRef negative_poly_ref() const { return PolyRef {0, 0, 0}; }
+    inline PolyRef zero_poly_ref() const { return PolyRef {0, 1, 0}; }
+    inline PolyRef positive_poly_ref() const { return PolyRef {0, 2, 0}; }
     Polynomial negative_poly;
     Polynomial zero_poly;
     Polynomial positive_poly;
@@ -94,6 +105,7 @@ public:
             else if (carl::is_negative(poly.constant_part())) return negative_poly_ref();
             else return positive_poly_ref();
         }
+        ref.base_level = base_level(npoly);
         assert(ref.level <= m_polys.size() && ref.level > 0);
         typename ElementSet::insert_commit_data insert_data;
         auto res = m_poly_ids[ref.level-1].insert_check(npoly, element_less(), insert_data);

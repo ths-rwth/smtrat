@@ -119,7 +119,7 @@ struct poly_del {
     static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
-        return poly.level-1;
+        return poly.base_level;
     }
     std::size_t hash_on_level() const {
         return std::hash<std::size_t>()(poly.id);
@@ -140,7 +140,7 @@ struct poly_proj_del {
     static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
-        return poly.level-1;
+        return poly.base_level;
     }
     std::size_t hash_on_level() const {
         return std::hash<std::size_t>()(poly.id);
@@ -180,7 +180,7 @@ inline std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
 
 struct poly_ord_inv_base {
     static constexpr bool is_flag = false; 
-    datastructures::PolyRef poly;   
+    datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
     }

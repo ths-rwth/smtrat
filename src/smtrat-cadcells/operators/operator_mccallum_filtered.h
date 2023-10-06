@@ -63,7 +63,7 @@ inline bool project_cell_properties(datastructures::CellRepresentation<Propertie
     for(const auto& poly : repr.ordering.polys()) {
         deriv.insert(properties::poly_del{ poly });
     }
-    deriv.insert(properties::root_ordering_holds{ repr.ordering, deriv.level()-1 });
+    properties::insert_root_ordering_holds(deriv, repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
         if (!rules::root_ordering_holds_delineated(deriv, repr.description, repr.ordering, repr.ordering_polys, prop.ordering)) return false;
@@ -115,7 +115,7 @@ inline bool project_covering_properties(datastructures::CoveringRepresentation<P
         }
     }
     auto cov = repr.get_covering();
-    repr.cells.front().derivation->underlying().sampled().insert(properties::root_ordering_holds{ repr.ordering, repr.cells.front().derivation->underlying().sampled().level() });
+    properties::insert_root_ordering_holds(repr.cells.front().derivation->underlying().sampled(), repr.ordering);
     rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov, repr.ordering);
     return true;
 }

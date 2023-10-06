@@ -458,7 +458,7 @@ bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv,
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "using underlying_cell=" << underlying_cell << ", underlying_ordering=" << underlying_ordering << ", ordering_polys=" << ordering_polys);
 
     deriv.insert(properties::cell_connected{ deriv.level() });
-    assert(deriv.contains(properties::root_ordering_holds{ underlying_ordering, deriv.level()-1 }));
+    assert(properties::contains_root_ordering_holds(deriv, underlying_ordering));
 
     auto decomposed = ordering_util::decompose(ordering);
     for (const auto& d : decomposed) {
