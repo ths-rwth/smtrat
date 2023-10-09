@@ -415,6 +415,8 @@ class IndexedRootOrdering {
     }
 
 public:
+    std::optional<SymbolicInterval> biggest_cell_wrt; // a hack, stores which cell is described by this ordering
+
     void add_leq(RootFunction first, RootFunction second) {
         //assert(first.poly.level == second.poly.level);
         if (first != second) {

@@ -38,6 +38,7 @@ void insert_root_ordering_holds(P& deriv, const datastructures::IndexedRootOrder
         }
         for (std::size_t i = 0; i < data_by_level.size(); i++) {
             if (!data_by_level[i].data().empty()) {
+                data_by_level[i].biggest_cell_wrt = ordering.biggest_cell_wrt;
                 deriv.insert(properties::root_ordering_holds{ data_by_level[i], i+1 });
             }
         }

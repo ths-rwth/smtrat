@@ -202,6 +202,7 @@ template<typename T>
 inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastructures::SampledDerivationRef<T>& der, LocalDelMode ldel_mode = LocalDelMode::NONE, bool enable_weak = false) {
     datastructures::CellRepresentation<T> response(der);
     response.description = util::compute_simplest_cell(der->proj(), der->cell(), enable_weak);
+    response.ordering.biggest_cell_wrt = response.description;
     if (der->cell().is_section()) {
         datastructures::Delineation reduced_delineation = der->delin();
         auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
@@ -232,14 +233,20 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
 }
 
 template <>
+struct cell<CellHeuristic::BIGGEST_CELL_FILTER> {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_biggest_cell(der, LocalDelMode::ALL, true);
+    }
+};
+
+template <>
 struct cell<CellHeuristic::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_biggest_cell(der, LocalDelMode::ONLY_INDEPENDENT, true);
     }
 };
-
-
 
 template <>
 struct cell<CellHeuristic::CHAIN_EQ> {

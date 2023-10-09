@@ -240,4 +240,14 @@ inline void delineate_properties<op::mccallum_filtered_all_compound_piecewiselin
     }
 }
 
+MCALLUMFILTEREDVARIANT(mccallum_filtered_all_biggest_cell, true)
+template <>
+inline void delineate_properties<op::mccallum_filtered_all_biggest_cell>(datastructures::SampledDerivation<PropertiesSet<op::mccallum_filtered_all_biggest_cell>::type>& deriv) {
+    SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+    mccallum_filtered_impl::delineate_properties_common(deriv);
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        rules::delineate_all_biggest_cell(deriv, prop, true);
+    }
+}
+
 }
