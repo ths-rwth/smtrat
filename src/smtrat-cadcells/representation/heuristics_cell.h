@@ -270,10 +270,8 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
         auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
         util::PolyDelineations poly_delins;
         util::decompose(reduced_delineation, reduced_cell, poly_delins);
-        std::cout << reduced_delineation << std::endl;
         util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, false, use_global_cache);
         for (const auto& poly_delin : poly_delins.data) {
-            std::cout << poly_delin.first << std::endl;
             chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
         }
     }
