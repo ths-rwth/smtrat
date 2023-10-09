@@ -309,7 +309,12 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER> {
             datastructures::Delineation reduced_delineation(der->delin());
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
             for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
-                util::simplify(poly, reduced_delineation); // TODO also apply local delineability here! decide where we apply equational constraints though
+                // TODO setting
+                if (util::local_del_poly_independent(reduced_delineation, poly)) {
+                    util::local_del_ordering(der->proj(), poly, der->underlying_sample(), der->main_var_sample(), reduced_delineation, response.description, response.ordering);
+                } else {
+                    util::simplify(poly, reduced_delineation);
+                }
             }
             util::PolyDelineations poly_delins;
             util::decompose(reduced_delineation, reduced_cell, poly_delins);

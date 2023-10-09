@@ -428,9 +428,20 @@ inline auto get_local_del_polys(const datastructures::Delineation& delin) {
     return polys;
 }
 
-inline void local_del_ordering(datastructures::Projections& proj, const datastructures::PolyRef poly, const cadcells::Assignment& ass, const cadcells::RAN& sample, datastructures::Delineation& delin, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering) {
-    assert(!interval.is_section());
-    
+inline bool local_del_poly_independent(const datastructures::Delineation& delin, const datastructures::PolyRef& poly) {
+    for (auto it = delin.roots().begin(); it != delin.roots().end(); it++) {
+        for (const auto& t_root : it->second) {
+            if (t_root.origin && *t_root.origin == poly) {
+                if (!t_root.is_optional) {
+                    return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
+inline void local_del_ordering(datastructures::Projections& proj, const datastructures::PolyRef poly, const cadcells::Assignment& ass, const cadcells::RAN& sample, datastructures::Delineation& delin, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering) {    
     // Choose l and l' - the range of optional roots that may be inside the cell.
     // We choose it as large as possible.
     std::optional<datastructures::RootMap::const_iterator> ri_begin;
