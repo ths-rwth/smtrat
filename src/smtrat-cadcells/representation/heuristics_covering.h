@@ -79,7 +79,23 @@ namespace smtrat::cadcells::representation {
             auto min_derivs = compute_min_derivs(derivs);
             result.ordering = compute_default_ordering(result.cells);
             for (auto& iter : min_derivs) {
-                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, true, result.ordering);
+                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, LocalDelMode::NONE, false, false, result.ordering);
+                result.cells.emplace_back(cell_result);
+                result.ordering = cell_result.ordering;
+            }
+            return result;
+        }
+    };
+
+    template <>
+    struct covering<CoveringHeuristic::LDB_COVERING_CACHE_GLOBAL> {
+        template<typename T>
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+            datastructures::CoveringRepresentation<T> result;
+            auto min_derivs = compute_min_derivs(derivs);
+            result.ordering = compute_default_ordering(result.cells);
+            for (auto& iter : min_derivs) {
+                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, LocalDelMode::NONE, false, true, result.ordering);
                 result.cells.emplace_back(cell_result);
                 result.ordering = cell_result.ordering;
             }
@@ -111,6 +127,21 @@ namespace smtrat::cadcells::representation {
             auto min_derivs = compute_min_derivs(derivs);
             for (auto& iter : min_derivs) {
                 datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL_FILTER>::compute(iter);
+                result.cells.emplace_back(cell_result);
+            }
+            result.ordering = compute_default_ordering(result.cells, true);
+            return result;
+        }
+    };
+
+    template <>
+    struct covering<CoveringHeuristic::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT> {
+        template<typename T>
+        static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+            datastructures::CoveringRepresentation<T> result;
+            auto min_derivs = compute_min_derivs(derivs);
+            for (auto& iter : min_derivs) {
+                datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL_FILTER_ONLY_INDEPENDENT>::compute(iter);
                 result.cells.emplace_back(cell_result);
             }
             result.ordering = compute_default_ordering(result.cells, true);
@@ -212,7 +243,7 @@ namespace smtrat::cadcells::representation {
                 cell_result.description = util::compute_simplest_cell((iter)->proj(), (iter)->cell());
 
                 if ((iter)->cell().is_section()) {
-                    compute_section_all_equational(iter, cell_result);
+                    handle_section_all_equational(iter, cell_result);
                     delineation.add_root((iter)->cell().lower()->first,datastructures::TaggedIndexedRoot {cell_result.description.section_defining() });
                 } else {
                     ord_idx.push_back(result.cells.size()-1);

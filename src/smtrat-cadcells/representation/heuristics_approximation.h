@@ -20,7 +20,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
         response.description = apx.compute_cell();
 
         if (der->cell().is_section()) {
-            compute_section_all_equational(der, response);
+            handle_section_all_equational(der, response);
         } else { // sector
             datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
@@ -34,7 +34,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
                 chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
             }
         }
-        maintain_connectedness(der, response, enable_weak);
+        handle_connectedness(der, response, enable_weak);
         return response;
     }
 };
