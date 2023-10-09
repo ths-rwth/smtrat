@@ -617,7 +617,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
 inline void simplify(const datastructures::PolyRef poly, datastructures::Delineation& delin) {
     for (auto it = delin.roots().begin(); it != delin.roots().end(); it++) {
         for (auto t_root : it->second) {
-            assert(!t_root.origin || !t_root.is_optional);
+            assert(t_root.origin || !t_root.is_optional);
             if (t_root.origin && *t_root.origin == poly) {
                 t_root.origin = std::nullopt;
                 t_root.is_optional = false;
