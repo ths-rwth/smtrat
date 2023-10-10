@@ -207,7 +207,7 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
     response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
     response.ordering.biggest_cell_wrt = response.description;
     if (der->cell().is_section()) {
-        datastructures::Delineation reduced_delineation = der->delin();
+        handle_local_del_simplify_non_independent(der, reduced_delineation, response);
         handle_local_del(der, reduced_delineation, response);
         handle_section_all_equational(reduced_delineation, response);
     } else { // sector
@@ -292,6 +292,7 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     response.ordering = global_ordering;
 
     if (der->cell().is_section()) {
+        handle_local_del_simplify_non_independent(der, reduced_delineation, response);
         handle_local_del(der, reduced_delineation, response);
         util::PolyDelineations poly_delins;
         util::decompose(reduced_delineation, reduced_cell, poly_delins);
