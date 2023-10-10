@@ -18,7 +18,7 @@ struct IndexedRoot {
     /// The index, must be > 0.
     size_t index;
     IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { /*assert(i>0);*/ }
-    IndexedRoot() : IndexedRoot( PolyRef{0,0}, 0) {}
+    IndexedRoot() : IndexedRoot( PolyRef{0,0,0}, 0) {}
 };
 inline bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;

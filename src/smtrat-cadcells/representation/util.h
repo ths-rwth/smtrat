@@ -419,7 +419,7 @@ inline void biggest_cell_ordering(const datastructures::PolyRef poly, const Poly
 inline auto get_local_del_polys(const datastructures::Delineation& delin) {
     boost::container::flat_set<datastructures::PolyRef> polys;
     for (auto it = delin.roots().begin(); it != delin.roots().end(); it++) {
-        for (const auto t_root : it->second) {
+        for (const auto& t_root : it->second) {
             if (t_root.origin) {
                 polys.insert(*t_root.origin);
             }
@@ -485,7 +485,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
             if (simplest) {
                 if (ri_first == datastructures::IndexedRoot()) ri_first = *simplest;
                 ri_last = *simplest;
-                for (const auto t_root : it->second) {
+                for (const auto& t_root : it->second) {
                     assert(!(t_root.origin && *t_root.origin == poly) || t_root.is_optional);
                     if (*t_root.origin == poly && t_root.root != *simplest) {
                         ordering.add_eq(*simplest, t_root.root);
@@ -515,7 +515,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
                     if (*ri_begin != delin.roots().begin()) {
                         auto it = std::prev(*ri_begin);
                         while (!use_interval_bound) {
-                            for (const auto t_root : it->second) {
+                            for (const auto& t_root : it->second) {
                                 if (*t_root.origin == poly) {
                                     if (proj.total_degree(t_root.root.poly) > bound_deg) {
                                         use_interval_bound = true;
@@ -536,7 +536,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
             if (*ri_begin != delin.roots().begin()) {
                 auto it = std::prev(*ri_begin);
                 while (true) {
-                    for (const auto t_root : it->second) {
+                    for (const auto& t_root : it->second) {
                         if (*t_root.origin == poly) {
                             ordering.add_less(t_root.root, ri_first);
                         }
@@ -568,7 +568,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
                 } else { // if there is a root with higher degree below, we take the interval bound
                     auto bound_deg = proj.total_degree(interval.upper().value().root().poly);
                     for (auto it = *ri_end; it != delin.roots().end() && use_interval_bound; it++) {
-                        for (const auto t_root : it->second) {
+                        for (const auto& t_root : it->second) {
                             if (*t_root.origin == poly) {
                                 if (proj.total_degree(t_root.root.poly) > bound_deg) {
                                     use_interval_bound = true;
@@ -584,7 +584,7 @@ inline void local_del_ordering(datastructures::Projections& proj, const datastru
         }
         if (!use_interval_bound) { // Connect ri_last with all roots above
             for (auto it = *ri_end; it != delin.roots().end(); it++) {
-                for (const auto t_root : it->second) {
+                for (const auto& t_root : it->second) {
                     if (*t_root.origin == poly) {
                         ordering.add_less(ri_last, t_root.root);
                     }

@@ -191,7 +191,6 @@ void delineate_all_compound_piecewiselinear(datastructures::SampledDerivation<P>
         const auto& poly1 = d.first.first;
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
-        bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
         boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
         auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
