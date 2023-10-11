@@ -32,8 +32,8 @@
  */
 namespace smtrat::cadcells::operators {
 
-enum op { mccallum, mccallum_pdel, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_all_ew, mccallum_filtered_selective, mccallum_filtered_selective_ew, mccallum_filtered_bounds_only, mccallum_filtered_all_compound, mccallum_filtered_all_compound_ew, mccallum_filtered_all_compound_piecewiselinear, mccallum_filtered_all_compound_piecewiselinear_ew, mccallum_filtered_all_biggest_cell };
-static const char * OpStrings[] = { "mccallum", "mccallum_pdel", "mccallum_filtered", "mccallum_filtered_all", "mccallum_filtered_all_ew", "mccallum_filtered_selective", "mccallum_filtered_selective_ew", "mccallum_filtered_bounds_only", "mccallum_filtered_all_compound", "mccallum_filtered_all_compound_ew", "mccallum_filtered_all_compound_piecewiselinear", "mccallum_filtered_all_compound_piecewiselinear_ew", "mccallum_filtered_all_biggest_cell" };
+enum op { mccallum, mccallum_pdel, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_all_ew, mccallum_filtered_bounds_only, mccallum_filtered_all_compound, mccallum_filtered_all_compound_ew, mccallum_filtered_all_compound_piecewiselinear, mccallum_filtered_all_compound_piecewiselinear_ew, mccallum_filtered_all_biggest_cell_ew, mccallum_filtered_onlyrat_ew, mccallum_filtered_onlyrat_onlyirred_ew , mccallum_filtered_onlyirred_ew };
+static const char * OpStrings[] = { "mccallum", "mccallum_pdel", "mccallum_filtered", "mccallum_filtered_all", "mccallum_filtered_all_ew", "mccallum_filtered_bounds_only", "mccallum_filtered_all_compound", "mccallum_filtered_all_compound_ew", "mccallum_filtered_all_compound_piecewiselinear", "mccallum_filtered_all_compound_piecewiselinear_ew", "mccallum_filtered_all_biggest_cell_ew", "mccallum_filtered_onlyrat_ew", "mccallum_filtered_onlyrat_onlyirred_ew" , "mccallum_filtered_onlyirred_ew"  };
 
 inline std::ostream& operator<<(std::ostream& os, op op) {
     return os << OpStrings[op];

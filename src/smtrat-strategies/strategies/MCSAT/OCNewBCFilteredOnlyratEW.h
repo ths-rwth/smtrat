@@ -13,9 +13,9 @@ namespace internal {
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 
-	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
-	constexpr static auto op = cadcells::operators::op::mccallum_filtered_selective_ew;
+	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+	constexpr static auto op = cadcells::operators::op::mccallum_filtered_onlyrat_ew;
 };
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
@@ -26,9 +26,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewBCFilteredSelectiveEWpOI : public Manager {
+class MCSAT_OCNewBCFilteredOnlyratEW : public Manager {
 public:
-	MCSAT_OCNewBCFilteredSelectiveEWpOI()
+	MCSAT_OCNewBCFilteredOnlyratEW()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());

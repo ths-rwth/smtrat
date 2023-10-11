@@ -256,6 +256,23 @@ public:
         return cache(restricted_sample).real_roots.at(p).roots();
     }
 
+    const std::vector<RAN> real_roots_reducible(const Assignment& sample, PolyRef p) {
+        assert(!carl::is_constant(m_pool(p)));
+        auto restricted_sample = restrict_base_assignment(sample, p);
+        assert(level_of(restricted_sample) == p.base_level);
+        std::vector<RAN> roots;       
+        for (const auto& factor : factors_nonconst(p)) {
+            if (factor.level == p.level) {
+                if (!is_nullified(restricted_sample, factor)) {
+                    const auto& r = real_roots(restricted_sample, factor);
+                    roots.insert(roots.end(), r.begin(), r.end());
+                }
+            }
+        }
+        std::sort(roots.begin(), roots.end());
+        return roots;        
+    }
+
     bool is_nullified(const Assignment& sample, PolyRef p) {
         assert(p.level >= level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
