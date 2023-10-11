@@ -222,7 +222,6 @@ public:
 
     bool is_zero(const Assignment& sample, PolyRef p) {
         auto restricted_sample = restrict_assignment(sample, p);
-        std::cout << sample << " " << p << " " << restricted_sample << " " << level_of(restricted_sample) << " "<< m_pool.var_order() << std::endl;
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
