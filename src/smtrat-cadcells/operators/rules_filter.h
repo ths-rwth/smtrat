@@ -336,7 +336,7 @@ void delineate_all_biggest_cell(datastructures::SampledDerivation<P>& deriv, con
                     if (!prop.ordering.biggest_cell_wrt->lower().is_infty() && pair.second == prop.ordering.biggest_cell_wrt->lower().value()) {
                         auto root = deriv.proj().evaluate(ass, pair.second.root());
                         Assignment ass2 = ass;
-                        ass2.emplace(deriv.proj().polys().var_order().at(ass.size()), root);
+                        ass2.emplace(deriv.proj().main_var(pair.first.root().poly), root);
                         if (deriv.proj().is_zero(ass2, pair.first.root().poly)) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                             if (enable_weak && !pair.is_strict) return filter_util::result::INCLUSIVE;
@@ -345,7 +345,7 @@ void delineate_all_biggest_cell(datastructures::SampledDerivation<P>& deriv, con
                     } else if (!prop.ordering.biggest_cell_wrt->upper().is_infty() && pair.first == prop.ordering.biggest_cell_wrt->upper().value()) {
                         auto root = deriv.proj().evaluate(ass, pair.first.root());
                         Assignment ass2 = ass;
-                        ass2.emplace(deriv.proj().polys().var_order().at(ass.size()), root);
+                        ass2.emplace(deriv.proj().main_var(pair.second.root().poly), root);
                         if (deriv.proj().is_zero(ass2, pair.second.root().poly)) {
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                             if (enable_weak && !pair.is_strict) return filter_util::result::INCLUSIVE;

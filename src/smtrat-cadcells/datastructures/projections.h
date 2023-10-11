@@ -57,7 +57,14 @@ class Projections {
     }
 
     size_t level_of(const Assignment& a) const {
-        return a.size();
+        // return a.size();
+        std::size_t level = m_pool.var_order().size();
+        for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
+            if (a.find(*i) != a.end()) return level;
+            assert(level>0);
+            level--;
+        }
+        return level;
     }
 
     auto& cache(const Assignment& a) {
@@ -78,18 +85,24 @@ public:
 private:
     Assignment restrict_assignment(Assignment ass, PolyRef p) {
         auto vars = carl::variables(m_pool(p));
-        for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
-            if (!vars.has(*i)) ass.erase(*i);
-            else return ass;
+        // for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
+        //     if (!vars.has(*i)) ass.erase(*i);
+        //     else return ass;
+        // }
+        for (const auto var : m_pool.var_order()) {
+            if (!vars.has(var)) ass.erase(var);
         }
         return ass;
     }
 
     Assignment restrict_base_assignment(Assignment ass, PolyRef p) {
         auto vars = carl::variables(m_pool(p));
-        for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
-            if (!vars.has(*i) || *i == main_var(p)) ass.erase(*i);
-            else return ass;
+        // for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
+        //     if (!vars.has(*i) || *i == main_var(p)) ass.erase(*i);
+        //     else return ass;
+        // }
+        for (const auto var : m_pool.var_order()) {
+            if (!vars.has(var) || var == main_var(p)) ass.erase(var);
         }
         return ass;
     }
@@ -209,6 +222,7 @@ public:
 
     bool is_zero(const Assignment& sample, PolyRef p) {
         auto restricted_sample = restrict_assignment(sample, p);
+        std::cout << sample << " " << p << " " << restricted_sample << " " << level_of(restricted_sample) << " "<< m_pool.var_order() << std::endl;
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
