@@ -255,7 +255,7 @@ TEST(smtrat_mcsat, onecell_filter_bug_3)
 struct OCSettingsSel : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
 	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
-	constexpr static auto op = smtrat::cadcells::operators::op::mccallum_filtered_selective_ew;
+	constexpr static auto op = smtrat::cadcells::operators::op::mccallum_filtered_onlyrat_ew;
 };
 
 TEST(smtrat_mcsat, onecell_filter_bug_4)
