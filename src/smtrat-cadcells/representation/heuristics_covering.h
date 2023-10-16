@@ -77,12 +77,13 @@ namespace smtrat::cadcells::representation {
         static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
-            result.ordering = compute_default_ordering(result.cells);
+            datastructures::IndexedRootOrdering tmp_ordering;
             for (auto& iter : min_derivs) {
-                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, LocalDelMode::NONE, false, false, result.ordering);
+                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, LocalDelMode::NONE, false, false, tmp_ordering);
                 result.cells.emplace_back(cell_result);
-                result.ordering = cell_result.ordering;
+                tmp_ordering = cell_result.ordering;
             }
+            result.ordering = compute_default_ordering(result.cells);
             return result;
         }
     };
@@ -93,12 +94,13 @@ namespace smtrat::cadcells::representation {
         static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
             datastructures::CoveringRepresentation<T> result;
             auto min_derivs = compute_min_derivs(derivs);
-            result.ordering = compute_default_ordering(result.cells);
+            datastructures::IndexedRootOrdering tmp_ordering;
             for (auto& iter : min_derivs) {
-                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, LocalDelMode::NONE, false, true, result.ordering);
+                datastructures::CellRepresentation<T> cell_result = compute_cell_lowest_degree_barriers(iter, LocalDelMode::NONE, false, true, tmp_ordering);
                 result.cells.emplace_back(cell_result);
-                result.ordering = cell_result.ordering;
+                tmp_ordering = cell_result.ordering;
             }
+            result.ordering = compute_default_ordering(result.cells);
             return result;
         }
     };
