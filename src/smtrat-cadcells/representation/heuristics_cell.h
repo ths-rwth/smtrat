@@ -325,6 +325,14 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
 };
 
 template <>
+struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL> {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_lowest_degree_barriers(der, LocalDelMode::NONE, false, true);
+    }
+};
+
+template <>
 struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
