@@ -26,7 +26,7 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewLDBCoveringCacheGlobal : public Manager {
+class MCSAT_OCNewLDBCoveringCacheGlobal : public Manager { // works better than without (global) cache 
 public:
 	MCSAT_OCNewLDBCoveringCacheGlobal()
 		: Manager() {
