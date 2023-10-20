@@ -12,8 +12,8 @@ void poly_irreducible_ord_inv_nullified(datastructures::SampledDerivation<P>& de
 
     boost::container::flat_set<datastructures::PolyRef> polys({poly});
     boost::container::flat_set<datastructures::PolyRef> poly_derivative;
-    datastructures::PolyRef poly_nonzero_derivative_of_order;
-    std::size_t order = 1;
+    std::optional<datastructures::PolyRef> poly_nonzero_derivative_of_order;
+    //std::size_t order = 1;
 
     while (true) {
         for (const auto& p : polys) {
@@ -27,21 +27,22 @@ void poly_irreducible_ord_inv_nullified(datastructures::SampledDerivation<P>& de
                     poly_derivative.insert(d);
                 }
 
-                if (poly_nonzero_derivative_of_order != datastructures::PolyRef()) break;
+                if (poly_nonzero_derivative_of_order) break;
             }
-            if (poly_nonzero_derivative_of_order != datastructures::PolyRef()) break;
+            if (poly_nonzero_derivative_of_order) break;
         }
-        if (poly_nonzero_derivative_of_order != datastructures::PolyRef()) break;
-        else order++;
+        if (poly_nonzero_derivative_of_order) break;
+        //else order++;
         assert(!poly_derivative.empty()); // because order is finite
         polys = std::move(poly_derivative);
         poly_derivative = boost::container::flat_set<datastructures::PolyRef>();
     }
 
     deriv.insert(properties::cell_connected{ poly.level });
-    deriv.insert(properties::poly_irreducible_sgn_inv{ poly_nonzero_derivative_of_order });
+    assert(*poly_nonzero_derivative_of_order != poly);
+    deriv.insert(properties::poly_sgn_inv{ *poly_nonzero_derivative_of_order });
     for (const auto& p : polys) {
-        deriv.insert(properties::poly_irreducible_sgn_inv{ p });
+        deriv.insert(properties::poly_sgn_inv{ p });
     }
 }
 

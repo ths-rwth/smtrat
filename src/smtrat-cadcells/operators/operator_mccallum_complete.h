@@ -28,7 +28,7 @@ inline bool project_basic_properties<op::mccallum_complete>(datastructures::Samp
         deriv.insert(properties::poly_sgn_inv{prop.poly});
     }
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
-        rules::poly_sgn_inv(deriv, prop.poly);
+        rules::poly_sgn_inv(deriv, prop.poly, false);
     }
     return true;
 }

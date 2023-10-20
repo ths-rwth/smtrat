@@ -82,11 +82,11 @@ void poly_ord_inv(datastructures::SampledDerivation<P>& deriv, datastructures::P
 }
 
 template<typename P>
-void poly_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
+void poly_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly, bool skip_if_ord_inv = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << ")");
     if (deriv.proj().is_const(poly)) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= " << poly << " const");
-    } else if (deriv.contains(properties::poly_ord_inv{ poly })) {
+    } else if (skip_if_ord_inv && deriv.contains(properties::poly_ord_inv{ poly })) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= ord_inv(" << poly << ")");
     } else { 
         std::optional<datastructures::PolyRef> lowest_zero_factor;
