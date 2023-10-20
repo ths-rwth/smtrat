@@ -33,7 +33,7 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
     return os;
 }
 
-auto base_level(Polynomial poly) {
+inline auto base_level(Polynomial poly) {
     std::size_t lvl = 0;
     for (std::size_t i = 0; i < poly.context().variable_ordering().size(); i++) {
         if (poly.context().variable_ordering()[i] == poly.main_var()) break;

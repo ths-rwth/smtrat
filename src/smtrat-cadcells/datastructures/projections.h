@@ -10,6 +10,10 @@
 #include <carl-arith/poly/ctxpoly/Functions.h>
 #include <carl-arith/poly/libpoly/Functions.h>
 
+#include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
+#include <carl-arith/poly/umvpoly/functions/Derivative.h>
+#include <carl-arith/poly/Conversion.h>
+
 #include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
@@ -17,10 +21,11 @@ namespace smtrat::cadcells::datastructures {
 namespace detail {
 
 struct PolyProperties {
-    std::map<PolyRef, PolyRef> res;
+    boost::container::flat_map<PolyRef, PolyRef> res;
     std::optional<PolyRef> disc;
     std::optional<PolyRef> ldcf;
     std::vector<PolyRef> factors_nonconst;
+    boost::container::flat_map<carl::Variable, PolyRef> derivatives;
 };
 
 struct AssignmentProperties {
@@ -274,7 +279,7 @@ public:
     }
 
     bool is_nullified(const Assignment& sample, PolyRef p) {
-        assert(p.level >= level_of(sample)+1);
+        //assert(p.level >= level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
@@ -332,6 +337,29 @@ public:
         return m_pool(*result);
     }
 
+    std::vector<carl::Variable> variables(PolyRef p) {
+        return carl::variables(m_pool(p)).as_vector();
+    }
+
+    PolyRef derivative(PolyRef p, carl::Variable var) {
+        if (cache(p).derivatives.find(var) != cache(p).derivatives.end()) {
+            return cache(p).derivatives[var];
+        } else {
+            auto input = m_pool(p);
+            PolyRef result;
+            if (input.main_var() == var) {
+                result = m_pool(carl::derivative(input));
+            } else {
+                assert(input.has(var));
+                result = m_pool(carl::convert<Polynomial>(m_pool.get_context(), carl::derivative(carl::convert<Poly>(input), var)));
+            }
+            // auto result = m_pool(carl::derivative(m_pool(p), var)); // not implemented
+            cache(p).derivatives.emplace(var, result);
+            assert(result.level <= p.level);
+            return result;
+        }
+    }
+
     std::size_t degree(PolyRef p) {
         return m_pool(p).degree();
     }
@@ -349,7 +377,7 @@ public:
     //     return deg;
     // }
 
-        RAN evaluate(const Assignment& sample, IndexedRoot r) {
+    RAN evaluate(const Assignment& sample, IndexedRoot r) {
         auto roots = real_roots(sample, r.poly);
         assert(r.index <= roots.size());
         return roots[r.index-1];

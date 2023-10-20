@@ -7,6 +7,7 @@
 #include <smtrat-cadcells/operators/operator_mccallum.h>
 #include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
 #include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
+#include <smtrat-cadcells/operators/operator_mccallum_complete.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
 #include <smtrat-cadcells/algorithms/level_covering.h>
