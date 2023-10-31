@@ -6,6 +6,7 @@
 
 #include "cad/qe.h"
 #include "fm/qe.h"
+#include "fmplex/qe.h"
 
 namespace smtrat {
 namespace qe {
@@ -16,12 +17,14 @@ inline FormulaT eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quant
 		if (std::all_of(
 			subfs.begin(), subfs.end(),
 			[](const auto& c){
-		    	return (c.type() == carl::FormulaType::CONSTRAINT) && 
-					   (c.constraint().lhs().is_linear());
+		    	return (c.type() == carl::FormulaType::CONSTRAINT) && (c.constraint().lhs().is_linear());
 			}
-		)) return fm::eliminateQuantifiers(qfree, quantifiers);
+		)) {
+			SMTRAT_LOG_DEBUG("smtrat.qe","call fmplex");
+			return fmplex::eliminateQuantifiers(qfree, quantifiers);
+		}
 	}
-	
+	SMTRAT_LOG_DEBUG("smtrat.qe","call cad");
 	return cad::eliminateQuantifiers(qfree, quantifiers);
 }
 
