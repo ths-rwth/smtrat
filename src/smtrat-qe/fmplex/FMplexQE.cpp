@@ -66,7 +66,7 @@ FMplexQE::Matrix FMplexQE::build_initial_matrix(const FormulasT& constraints) {
         Rational constant_part = lhs.constant_part();
         lhs -= constant_part;
 
-        Row entries;
+        Row entries; // TODO: make it so that the contents of the row are actually already in the matrix data
         for (const auto& term : lhs) {
             entries.emplace_back(m_var_idx.index(term.single_variable()), term.coeff());
         }
