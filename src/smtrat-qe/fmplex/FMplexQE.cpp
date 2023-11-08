@@ -100,7 +100,11 @@ Node FMplexQE::build_initial_system() {
 
     // eliminate variables using equalities
     qe::util::EquationSubstitution es(constraints, elim_vars);
-    if (!es.apply()) return Node::conflict();
+    if (!es.apply()) {
+        SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().elim_eq(elim_vars.size()));
+        SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().eq_conflict());
+        return Node::conflict();
+    }
     constraints = es.remaining_constraints();
     elim_vars   = es.remaining_variables();
     SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after es: " << constraints);
