@@ -23,6 +23,8 @@ struct LogicParser: public qi::symbols<char, carl::Logic> {
 		add("QF_PB", carl::Logic::QF_PB);
 		add("QF_RDL", carl::Logic::QF_RDL);
 		add("QF_UF", carl::Logic::QF_UF);
+		add("NRA", carl::Logic::NRA);
+		add("LRA", carl::Logic::LRA);
 	}
 };
 struct ErrorHandler {
@@ -103,6 +105,7 @@ struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 			|	(qi::lit("define-fun") > functionDefinition)
 			//|	(qi::lit("define-sort") > symbol > "(" > (*symbol)[px::bind(&SortParser::setParameters, px::ref(sort), qi::_1)] > ")" > sort > ")")[px::bind(&ScriptParser::defineSort, px::ref(callee), qi::_1, qi::_2, qi::_3)]
 			|	(qi::lit("echo") > string > ")")[px::bind(&Callee::echo, px::ref(callee), qi::_1)]
+			|	(qi::lit("apply qe") >> ")")[px::bind(&Callee::qe, px::ref(callee))]
 			|	(qi::lit("eliminate-quantifiers") > qeQuery > ")")[px::bind(&Callee::eliminateQuantifiers, px::ref(callee), qi::_1)]
 			|	(qi::lit("exit") > ")")[px::bind(&Callee::exit, px::ref(callee))]
 			|	(qi::lit("get-all-models") > ")")[px::bind(&Callee::getAllModels, px::ref(callee))]

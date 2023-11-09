@@ -146,6 +146,7 @@ public:
 	virtual void echo(const std::string& s) {
 		regular() << s << std::endl;
 	}
+	virtual void qe() = 0;
 	virtual void eliminateQuantifiers(const qe::QEQuery& q) = 0;
 	virtual void exit() = 0;
 	virtual void getAllModels() = 0;
