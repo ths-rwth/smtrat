@@ -21,6 +21,11 @@ struct Base {
 	static constexpr bool early_evaluation = false;
 };
 
+struct MCSATSettingsDefault : Base  {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,icp::Explanation,vs::Explanation,onecell::Explanation<onecell::DefaultSettings>>;
+};
+
 struct MCSATSettingsNL : Base {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;

@@ -72,7 +72,12 @@ struct BCApproximationSettings : BCSettings {
     constexpr static auto cell_apx_heuristic = cadcells::representation::BIGGEST_CELL_APPROXIMATION;
 };
 
-struct DefaultSettings : LDBSettings { // current default
+struct DefaultSettings : BaseSettings { // current default
+    constexpr static bool exploit_strict_constraints = true;
+
+    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
+    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING_CACHE_GLOBAL;
+    constexpr static auto op = cadcells::operators::op::mccallum_complete;
 };
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
