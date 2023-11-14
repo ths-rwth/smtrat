@@ -28,8 +28,8 @@ private:
     std::string mOperatorType = "";
     std::string mSamplingAlgorithm = "";
     std::string mIsSampleOutsideAlgorithm = "";
-    carl::statistics::timer mTimerComputeCovering;
-    carl::statistics::timer mTimerConstructDerivation;
+    carl::statistics::Timer mTimerComputeCovering;
+    carl::statistics::Timer mTimerConstructDerivation;
 
 public:
     void collect() {

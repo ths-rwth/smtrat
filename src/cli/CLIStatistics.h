@@ -9,7 +9,7 @@ namespace cli {
  
 class CLIStatistics : public Statistics {
 public:
-    carl::statistics::timer parsing;
+    carl::statistics::Timer parsing;
     void collect() {
         Statistics::addKeyValuePair("parsing", parsing);
     }

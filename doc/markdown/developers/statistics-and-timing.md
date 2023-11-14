@@ -55,6 +55,14 @@ and statistics can be collected by calling the user defined operations (e.g. `my
 
 All statistics-related code should be encapsulated by the `SMTRAT_DEVOPTION_Statistics` flag. Alternatively, code can be encapsulated in `SMTRAT_STATISTICS_CALL()`.
 
+### Series, Dynamic Counters, Serialization
+
+You can pass the following data types to `addKeyValuePair`:
+* `Series`: You can add values to the series. During collection, the average, the min, the max and the number of values is computed. The values are not stored.
+* `MultiCounter`: You can increase a counter by some value w.r.t. some key. Different keys refer to different counters. During collection, a list of all counter values by key is stored.
+
+Further, some default data types can safely passed as value to `addKeyValuePair`. As of writing, this is `std::pair`, however, this will be extended in future.
+
 ### Timing
 
 The statistics framework has the ability to easily collect timings.
@@ -63,7 +71,7 @@ The following code will measure the total running time of the code block as well
 
     class MyStatistics : public Statistics {
     private:
-        carl::statistics::timer mTimer;
+        carl::statistics::Timer mTimer;
 
     public:
         void collect() {

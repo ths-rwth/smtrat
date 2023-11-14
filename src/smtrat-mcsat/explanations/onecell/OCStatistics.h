@@ -12,7 +12,7 @@ class OCStatistics : public Statistics {
 private:
 	std::size_t mExplanationCalled = 0;
 	std::size_t mExplanationSuccess = 0;
-	carl::statistics::timer mOneCellTimer;
+	carl::statistics::Timer mOneCellTimer;
 
 public:
 	bool enabled() const {
