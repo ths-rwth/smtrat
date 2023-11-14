@@ -52,11 +52,23 @@ namespace ordering_util {
         }
         return result;
     }
+
+    template<typename P>
+    auto has_intersection(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
+        for (const auto& rel : ordering.data()) {
+            if (deriv.proj().evaluate(deriv.sample(), rel.first).first == deriv.proj().evaluate(deriv.sample(), rel.second).first) {
+                return true;
+            }
+        }
+        return false;
+    }
 }
 
 template<typename P>
 void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true, bool enable_regular = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ", " << enable_weak << ")");
+
+    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
 
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {
@@ -191,6 +203,8 @@ template<typename P>
 void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, DelineateSettings settings, bool enable_weak = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
+    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
+
     bool underlying_sample_algebraic = std::find_if(deriv.underlying_sample().begin(), deriv.underlying_sample().end(), [](const auto& m) { return !m.second.is_numeric(); }) != deriv.underlying_sample().end();
 
     auto decomposed = ordering_util::decompose(prop.ordering);
@@ -277,6 +291,8 @@ template<typename P>
 void delineate_bounds_only(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
+    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
+
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {
         const auto& poly1 = d.first.first;
@@ -294,6 +310,8 @@ template<typename P>
 void delineate_noop(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
+    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
+
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {
         const auto& poly1 = d.first.first;
@@ -309,6 +327,8 @@ template<typename P>
 void delineate_all_biggest_cell(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
     // only correct with biggest cell heuristics
+
+    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
 
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {
@@ -373,6 +393,8 @@ void delineate_all_biggest_cell(datastructures::SampledDerivation<P>& deriv, con
 template<typename P>
 void delineate_compound_piecewiselinear(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ", " << enable_weak << ")");
+
+    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
 
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {

@@ -180,6 +180,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
         return response;
     }
 };
@@ -217,6 +218,7 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
     return response;
 }
 
@@ -253,6 +255,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
         return response;
     }
 };
@@ -274,6 +277,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
         return response;
     }
 };
@@ -313,6 +317,7 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
     return response;
 }
 

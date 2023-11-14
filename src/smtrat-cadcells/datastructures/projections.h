@@ -15,6 +15,7 @@
 #include <carl-arith/poly/Conversion.h>
 
 #include "../OCApproximationStatistics.h"
+#include "../CADCellsStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -167,6 +168,7 @@ public:
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
+            SMTRAT_STATISTICS_CALL(statistics().resultant(total_degree(result), degree(result), result.level));
             return result;
         }
     }
@@ -198,6 +200,7 @@ public:
             auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
             cache(p).disc = result;
+            SMTRAT_STATISTICS_CALL(statistics().discriminant(total_degree(result), degree(result), result.level));
             return result;
         }
     }
@@ -212,6 +215,7 @@ public:
             auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
             cache(p).ldcf = result;
+            SMTRAT_STATISTICS_CALL(statistics().leading_coefficient(total_degree(result), degree(result), result.level));
             return result;
         }
     }
@@ -220,6 +224,7 @@ public:
         if (cache(p).factors_nonconst.empty()) {
             for (const auto& factor : carl::irreducible_factors(m_pool(p), false)) {
                 cache(p).factors_nonconst.emplace_back(m_pool(factor));
+                SMTRAT_STATISTICS_CALL(statistics().factor(total_degree(m_pool(factor)), degree(m_pool(factor)), m_pool(factor).level));
             }
         }
         return cache(p).factors_nonconst;
@@ -244,6 +249,7 @@ public:
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
         assert(cache(restricted_sample).real_roots.at(p).is_univariate());
         return cache(restricted_sample).real_roots.at(p).roots().size();
@@ -256,6 +262,7 @@ public:
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
         assert(cache(restricted_sample).real_roots.at(p).is_univariate());
         return cache(restricted_sample).real_roots.at(p).roots();
@@ -287,6 +294,7 @@ public:
 		if (carl::is_linear(poly)) return false;
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
 		return cache(restricted_sample).real_roots.at(p).is_nullified();
     }
@@ -311,6 +319,7 @@ public:
         std::vector<PolyRef> result;
         for (const auto& coeff :  m_pool(p).coefficients()) {
             result.emplace_back(m_pool(coeff));
+            SMTRAT_STATISTICS_CALL(statistics().coefficient(total_degree(m_pool(coeff)), degree(m_pool(coeff)), m_pool(coeff).level));
         }
         return result;
     }
@@ -334,6 +343,7 @@ public:
             }
         }
         assert(result);
+        SMTRAT_STATISTICS_CALL(statistics().coefficient(total_degree(m_pool(*result)), degree(m_pool(*result)), m_pool(*result).level));
         return m_pool(*result);
     }
 
@@ -356,15 +366,16 @@ public:
             // auto result = m_pool(carl::derivative(m_pool(p), var)); // not implemented
             cache(p).derivatives.emplace(var, result);
             assert(result.level <= p.level);
+            SMTRAT_STATISTICS_CALL(statistics().derivative(total_degree(result), degree(result), result.level));
             return result;
         }
     }
 
-    std::size_t degree(PolyRef p) {
+    std::size_t degree(PolyRef p) const {
         return m_pool(p).degree();
     }
 
-    std::size_t total_degree(PolyRef p) {
+    std::size_t total_degree(PolyRef p) const {
         return m_pool(p).total_degree();
     }
 

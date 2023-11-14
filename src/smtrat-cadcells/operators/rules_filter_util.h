@@ -96,27 +96,33 @@ inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const d
             }
         }
     }
+    SMTRAT_STATISTICS_CALL(statistics().filter_roots_start(poly.level, deriv.proj().factors_nonconst(poly).size(), root_map.size(), deriv.underlying_sample()));
     for (const auto& entry : root_map) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "considering root " << entry);
+        SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_start(entry.first));
         switch (filter_condition(entry.first)) {
         case result::NORMAL:
             for (const auto& ir : entry.second) {
                 deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, false, false, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal(entry.first));
             }
             break;
         case result::INCLUSIVE:
             for (const auto& ir : entry.second) {
                 deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true, false, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_inclusive(entry.first));
             }
             break;
         case result::NORMAL_OPTIONAL:
             for (const auto& ir : entry.second) {
                 deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, false, true, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional(entry.first));
             }
             break;
         case result::INCLUSIVE_OPTIONAL:
             for (const auto& ir : entry.second) {
                 deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true, true, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_inclusive_optional(entry.first));
             }
             break;
         case result::OMIT:
@@ -124,7 +130,9 @@ inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const d
         default:
             assert(false);
         }
+        SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_end());
     }
+    SMTRAT_STATISTICS_CALL(statistics().filter_roots_end());
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_roots end");
 }
 

@@ -103,6 +103,9 @@ struct Explanation {
             }
         }
 
+        SMTRAT_STATISTICS_CALL(mStatistics.assignment(ass));
+        SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(ass.size()+1));
+
         carl::carlVariables reason_vars;
         for (const auto& r : reason) carl::variables(r,reason_vars);
         for (const auto v : reason_vars) {
