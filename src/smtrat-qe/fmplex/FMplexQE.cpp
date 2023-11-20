@@ -1,3 +1,6 @@
+#include <iostream>
+#include <fstream>
+
 #include "FMplexQE.h"
 
 namespace smtrat::qe::fmplex {
@@ -6,6 +9,7 @@ FormulaT FMplexQE::eliminate_quantifiers() {
     SMTRAT_LOG_DEBUG("smtrat.qe","input: " << m_query << ", " << m_formula);
 
     m_nodes.push_back(build_initial_system());
+    return FormulaT();
 
     while (!m_nodes.empty()) {
         Node& n = m_nodes.back();
@@ -17,9 +21,14 @@ FormulaT FMplexQE::eliminate_quantifiers() {
     }
 
     SMTRAT_LOG_DEBUG("smtrat.qe","after loop");
-    if (m_found_conjuncts.empty()) return FormulaT(carl::FormulaType::TRUE);
-    return FormulaT(carl::FormulaType::AND, m_found_conjuncts);
+    if (m_found_rows.empty()) return FormulaT(carl::FormulaType::TRUE);
+    FormulasT conjuncts;
+    conjuncts.reserve(m_found_rows.size() + m_found_conjuncts.size());
+    for (const auto& r : m_found_rows) conjuncts.push_back(constraint_from_row(r));
+    for (const auto& c : m_found_conjuncts) conjuncts.push_back(c); // TODO: deduplication between the two sets?
+    return FormulaT(carl::FormulaType::AND, conjuncts);
 }
+
 
 std::vector<carl::Variable> FMplexQE::gather_elimination_variables() const {
     std::vector<carl::Variable> elimination_vars;
@@ -177,7 +186,7 @@ Node FMplexQE::unbounded_elimination(Node& parent) {
 }
 
 
-bool FMplexQE::is_positive_combination(const FMplexQE::Row& row) {
+bool FMplexQE::is_positive_combination(const Row& row) {
     assert(!is_trivial(row));
     // don't need to check for it == end because the constraint cannot be trivial here
     for (auto it = row.rbegin(); it->col_index > delta_column(); ++it) {
@@ -211,17 +220,26 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     std::set<RowIndex> ignore;
     auto ignore_it = parent.ignored.begin();
 
+    bool local_conflict = false; // TODO: make more elegant
+
     auto process_row = [&](RowIndex r) {
         Rational scale_elim = (-1)*elim_sgn*col_it->value;
         Rational scale_r = carl::abs(elim_coeff);
         auto combined_row = parent.matrix.combine(eliminator, scale_elim, r, scale_r);
-        if (is_trivial(combined_row)) return !is_global_conflict(combined_row);
+        qe::util::gcd_normalize(combined_row);
+        if (is_trivial(combined_row)) {
+            if (is_global_conflict(combined_row)) return false;
+            if (combined_row.begin()->col_index <= delta_column() && combined_row.begin()->value > 0) {
+                local_conflict = true;
+            }
+            return true;
+        }
 
         // are all wanted variables eliminated in this row?
         if (combined_row.front().col_index >= m_first_parameter_col) {
             // if it's a positive linear combination, add it to the result
             if (is_positive_combination(combined_row)) {
-                m_found_conjuncts.insert(constraint_from_row(combined_row));
+                m_found_rows.insert(combined_row);
             }
         } else {
             new_matr.append_row(combined_row.begin(), combined_row.end());
@@ -258,6 +276,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     parent.ignored.insert(eliminator);
     
     SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().node(new_matr.n_rows()));
+    if (local_conflict) return Node::leaf();
     return Node(new_matr, new_cols, ignore);
 }
 
@@ -280,10 +299,11 @@ Node FMplexQE::fm_elimination(Node& parent) {
         for (const RowIndex u : ubs) {
             Rational coeff_u = parent.matrix.coeff(u, parent.chosen_col);
             auto combined_row = parent.matrix.combine(l, coeff_u, u, coeff_l);
+            qe::util::gcd_normalize(combined_row);
             if (is_trivial(combined_row)) {
                 if (is_global_conflict(combined_row)) return Node::conflict();
             } else if (is_positive_combination(combined_row)) {
-                m_found_conjuncts.insert(constraint_from_row(combined_row));
+                m_found_rows.insert(combined_row);
             }
         }
     }
@@ -301,4 +321,76 @@ Node FMplexQE::compute_next_child(Node& parent) {
     }
     return Node::leaf(); // unreachable
 }
+
+
+void FMplexQE::write_matrix_to_ine(const FMplexQE::Matrix& m, const std::string& filename) const {
+    std::ofstream file;
+    file.open(filename); // "/home/vp/Code/smtrat/build/out.ine"
+    file << "H-representation\n";
+    file << "begin\n";
+    file << m.n_rows() << "  " << m_var_idx.size() + 1 << "  real\n";
+    for (RowIndex i = 0; i < m.n_rows(); ++i) {
+        Rational lcm = 1;
+        Rational constant = 0;
+        for (const auto& e : m.row_entries(i)) {
+            lcm = carl::lcm(lcm.get_num(), e.value.get_den());
+            if (e.col_index == constant_column()) constant = e.value;
+        }
+        file << "  " << constant*(-lcm); // first column contains the constants
+        auto it = m.row_begin(i);
+        auto row_end = m.row_end(i);
+        for (ColIndex j = 0; j < m_var_idx.size(); ++j) {
+            if ((it != row_end) && (it->col_index == j)) {
+                file << "  " << (it->value)*(-lcm); // - because cdd uses >= instead of <=
+                ++it;
+            } else {
+                file << "  0";
+            }
+        }
+        file << "\n";
+    }
+    file << "end\n";
+    file << "project " << m_first_parameter_col;
+    for (std::size_t i = 1; i <= m_first_parameter_col; ++i) {
+        file << " " << i;
+    }
+    file << "\n";
+    file.close();
+}
+
+void FMplexQE::write_matrix_to_redlog(const Matrix& m, const std::string& filename) const {
+    std::ofstream file;
+    file.open(filename); //"/home/vp/Code/smtrat/build/out.red"
+    file << "load_package \"redlog\"$\n";
+    file << "rlset r$\n";
+    file << "rlqe(ex({x1";
+    for (std::size_t i = 2; i <= m_first_parameter_col; ++i) {
+        file << ", x" << i;
+    }
+    file << "}, ";
+
+    auto write_row = [&](RowIndex i){
+        bool first = true;
+        for (const auto& e : m.row_entries(i)) {
+            if (e.col_index > constant_column()) break;
+            file << " ";
+            if (first) first = false;
+            else if (e.value > 0) file << "+ ";
+            file << e.value;
+            if (e.col_index < constant_column()) file << "x" << (e.col_index + 1);
+        }
+        file << " <= 0";
+    };
+
+    write_row(0);
+    for (RowIndex i = 1; i < m.n_rows(); ++i) {
+        file << " and ";
+        write_row(i);
+    }
+
+    file << "));\n";
+    file << "bye;";
+    file.close();
+}
+
 } // namespace smtrat::qe::fmplex

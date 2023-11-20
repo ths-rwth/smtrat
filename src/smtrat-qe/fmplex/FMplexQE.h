@@ -17,6 +17,22 @@ public: // type definitions
     using RowIndex = Matrix::RowIndex;
     using ColIndex = Matrix::ColIndex;
     using Row = std::vector<Matrix::RowEntry>;
+
+    struct cmp_row {
+        bool operator()(const Row& a, const Row& b) const {
+            auto it_a = a.begin(), it_b = b.begin();
+            auto end_a = a.end(), end_b = b.end();
+            while (it_a != end_a && it_b != end_b) {
+                if (it_a->col_index != it_b->col_index) 
+                    return it_a->col_index < it_b->col_index;
+                if (it_a->value != it_b->value)
+                    return it_a->value < it_b->value;
+                ++it_a;
+                ++it_b;
+            }
+            return (it_b != end_b); // at this point: a < b only if a is at end and b is not
+        }
+    };
    
 private: // members
     QEQuery                 m_query;
@@ -25,6 +41,7 @@ private: // members
     FormulaSetT             m_found_conjuncts;
     qe::util::VariableIndex m_var_idx;
     ColIndex                m_first_parameter_col;
+    std::set<Row, cmp_row>  m_found_rows;
 
 
 public:
@@ -82,11 +99,11 @@ private:
     /**
      * Constructs a matrix from the given constraints.
      * Each row of the matrix has the form [a_1 ... a_n | a'_1 ... a'_k| b | d | 0 ... 1 ... 0] where
-     * The corresponding constraint is equivalent to 
+     * - The corresponding constraint is equivalent to 
      *     (a_1 x_1 + ... + a_n x_n) + (a'_1 y_1 + ... a'_k y_k) + (b + delta*d) <= 0,
-     * x_1,...x_n are the quantified variables, y_1,...,y_k are the parameter variables,
-     * d is 0 if the constraint is weak and 1 if it is strict,
-     * the 0 ... 1 ... 0 part has one entry for each constraint, where the 1 indidicates at which
+     * - x_1,...x_n are the quantified variables, y_1,...,y_k are the parameter variables,
+     * - d is 0 if the constraint is weak and 1 if it is strict,
+     * - the 0 ... 1 ... 0 part has one entry for each constraint, where the 1 indidicates at which
      *     index in the input constraints the corresponding constraint is.
     */
     Matrix build_initial_matrix(const FormulasT& constraints);
@@ -114,6 +131,13 @@ private:
      * Computes the next child using different elimination methods depending on the type of parent.
     */
     Node compute_next_child(Node& parent);
+
+
+    /**
+     * writes the given qe problem as a .ine file as used in CDD lib.
+    */
+    void write_matrix_to_ine(const Matrix& m, const std::string& filename) const;
+    void write_matrix_to_redlog(const Matrix& m, const std::string& filename) const;
 };
 
 } // namespace smtrat::qe::fmplex
