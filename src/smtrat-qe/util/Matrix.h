@@ -200,4 +200,19 @@ public:
     col_view col_entries(const ColIndex ci) const { return col_view(*this, ci); }
 };
 
+
+inline void gcd_normalize(std::vector<Matrix::RowEntry>& row) {
+    Rational gcd = row.front().value.get_num();
+    Rational lcm = row.front().value.get_den();
+    for (const auto& e : row) {
+        gcd = carl::gcd(gcd, e.value.get_num());
+        lcm = carl::lcm(lcm, e.value.get_den());
+    }
+    Rational scale = lcm/gcd;
+    if (!carl::is_one(scale)) {
+        for (auto& e : row) e.value *= scale;
+    }
+}
+
+
 }
