@@ -9,7 +9,6 @@ FormulaT FMplexQE::eliminate_quantifiers() {
     SMTRAT_LOG_DEBUG("smtrat.qe","input: " << m_query << ", " << m_formula);
 
     m_nodes.push_back(build_initial_system());
-    return FormulaT();
 
     while (!m_nodes.empty()) {
         Node& n = m_nodes.back();
