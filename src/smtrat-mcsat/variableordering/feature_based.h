@@ -149,6 +149,7 @@ double avg_avg_degree(const Constraints& constraints, carl::Variable v) {
 				if (t.monomial() == nullptr) continue;
 				std::size_t c = t.monomial()->exponent_of_variable(v);
 				sum += c;
+				count++;
 			}
 			return static_cast<double>(sum)/static_cast<double>(count);
 		}

@@ -27,6 +27,9 @@ struct PolyProperties {
     std::optional<PolyRef> ldcf;
     std::vector<PolyRef> factors_nonconst;
     boost::container::flat_map<carl::Variable, PolyRef> derivatives;
+    std::size_t total_degree = 0;
+    std::vector<std::size_t> monomial_total_degrees;
+    std::vector<std::size_t> monomial_degrees;
 };
 
 struct AssignmentProperties {
@@ -315,7 +318,7 @@ public:
         return carl::is_zero(m_pool(p));
     }
 
-    std::vector<PolyRef> coeffs(PolyRef p) const {
+    std::vector<PolyRef> coeffs(PolyRef p) {
         std::vector<PolyRef> result;
         for (const auto& coeff :  m_pool(p).coefficients()) {
             result.emplace_back(m_pool(coeff));
@@ -331,7 +334,7 @@ public:
         return false;
     }
 
-    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) const {
+    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) {
         std::optional<Polynomial> result;
         for (const auto& coeff : m_pool(p).coefficients()) {
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);
@@ -375,18 +378,26 @@ public:
         return m_pool(p).degree();
     }
 
-    std::size_t total_degree(PolyRef p) const {
-        return m_pool(p).total_degree();
+    std::size_t total_degree(PolyRef p) {
+        if (cache(p).total_degree == 0) {
+            cache(p).total_degree = m_pool(p).total_degree();
+        }
+        return cache(p).total_degree;
     }
 
-    // std::size_t max_degree(PolyRef p) {
-    //     const auto& poly = m_pool(p);
-    //     size_t deg = 0;
-    //     for (const auto var : carl::variables(poly)) {
-    //         deg = std::max(deg, poly.degree(var));
-    //     }
-    //     return deg;
-    // }
+    const std::vector<std::size_t>& monomial_total_degrees(PolyRef p) {
+        if (cache(p).monomial_total_degrees.empty()) {
+            cache(p).monomial_total_degrees = m_pool(p).monomial_total_degrees();
+        }
+        return cache(p).monomial_total_degrees;
+    }
+
+    const std::vector<std::size_t>& monomial_degrees(PolyRef p) {
+        if (cache(p).monomial_degrees.empty()) {
+            cache(p).monomial_degrees = m_pool(p).monomial_degrees(main_var(p));
+        }
+        return cache(p).monomial_degrees;
+    }
 
     RAN evaluate(const Assignment& sample, IndexedRoot r) {
         auto roots = real_roots(sample, r.poly);
