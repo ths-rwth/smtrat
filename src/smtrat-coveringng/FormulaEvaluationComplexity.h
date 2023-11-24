@@ -13,22 +13,22 @@ inline auto size_fact(cadcells::datastructures::Projections& proj, const boost::
     return a_size;
 }
 
-inline auto max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
-    std::size_t a_max_total_degree = 0;
+inline auto max_max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+    std::size_t a_max_max_total_degree = 0;
     for (const auto& el : a) {
-        a_max_total_degree = std::max(a_max_total_degree, proj.total_degree(proj.polys()(el.lhs())));
+        a_max_max_total_degree = std::max(a_max_max_total_degree, proj.total_degree(proj.polys()(el.lhs())));
     }
-    return a_max_total_degree;
+    return a_max_max_total_degree;
 }
 
-inline auto max_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
-    std::size_t a_max_total_degree = 0;
+inline auto max_max_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+    std::size_t a_max_max_total_degree = 0;
     for (const auto& el : a) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
-            a_max_total_degree = std::max(a_max_total_degree, proj.total_degree(f));
+            a_max_max_total_degree = std::max(a_max_max_total_degree, proj.total_degree(f));
         }
     }
-    return a_max_total_degree;
+    return a_max_max_total_degree;
 }
 
 inline auto sum_max_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
@@ -97,6 +97,26 @@ inline auto sum_sum_degree_fact(cadcells::datastructures::Projections& proj, con
     return sum;
 }
 
+inline auto sum_max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+    std::size_t a_sum_max_total_degree = 0;
+    for (const auto& el : a) {
+        a_sum_max_total_degree += proj.total_degree(proj.polys()(el.lhs()));
+    }
+    return a_sum_max_total_degree;
+}
+
+inline auto avg_avg_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+    std::size_t sum = 0;
+    std::size_t count = 0;
+    for (const auto& el : a) {
+        for (auto d : proj.monomial_total_degrees(proj.polys()(el.lhs()))) {
+            sum += d;
+            count++;
+        }
+    }
+    return static_cast<double>(sum)/static_cast<double>(count);
+}
+
 inline auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
@@ -140,6 +160,7 @@ inline bool pickering(cadcells::datastructures::Projections& proj, const boost::
     }
 }
 
+// factorization seems to be too expensive:
 inline bool pickering_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     auto a_sum_max_degree = features::sum_max_degree_fact(proj, a);
     auto b_sum_max_degree = features::sum_max_degree_fact(proj, b);
@@ -156,6 +177,22 @@ inline bool pickering_fact(cadcells::datastructures::Projections& proj, const bo
     }
 }
 
+inline bool pickering_total(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    auto a_sum_max_degree = features::sum_max_total_degree(proj, a);
+    auto b_sum_max_degree = features::sum_max_total_degree(proj, b);
+    if (a_sum_max_degree != b_sum_max_degree) return a_sum_max_degree < b_sum_max_degree;
+    else {
+        auto a_avg_avg_degree = features::avg_avg_total_degree(proj, a);
+        auto b_avg_avg_degree = features::avg_avg_total_degree(proj, b);
+        if (a_avg_avg_degree != b_avg_avg_degree) return a_avg_avg_degree < b_avg_avg_degree;
+        else {
+            auto a_sum_sum_degree = features::sum_sum_total_degree(proj, a);
+            auto b_sum_sum_degree = features::sum_sum_total_degree(proj, b);
+            return a_sum_sum_degree < b_sum_sum_degree;
+        }
+    }
+}
+
 /**
  * Dolzmann et al 2004
  */
@@ -165,6 +202,7 @@ inline bool sotd(cadcells::datastructures::Projections& proj, const boost::conta
     return a_sum_sum_total_degree < b_sum_sum_total_degree || (a_sum_sum_total_degree == b_sum_sum_total_degree && a.size() < b.size());
 }
 
+// factorization is too expensive
 inline bool sotd_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     auto a_sum_sum_total_degree = features::sum_sum_total_degree_fact(proj, a);
     auto b_sum_sum_total_degree = features::sum_sum_total_degree_fact(proj, b);
@@ -175,17 +213,17 @@ inline bool sotd_fact(cadcells::datastructures::Projections& proj, const boost::
 
 
 inline bool min_max_tdeg_min_size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
-    auto a_max_total_degree = features::max_total_degree_fact(proj, a);
-    auto b_max_total_degree = features::max_total_degree_fact(proj, b);
+    auto a_max_max_total_degree = features::max_max_total_degree_fact(proj, a);
+    auto b_max_max_total_degree = features::max_max_total_degree_fact(proj, b);
     auto a_size = features::size_fact(proj, a);
     auto b_size = features::size_fact(proj, b);
-    return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a_size < b_size);
+    return a_max_max_total_degree < b_max_max_total_degree || (a_max_max_total_degree == b_max_max_total_degree && a_size < b_size);
 }
 
 inline bool min_max_tdeg_min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
-    auto a_max_total_degree = features::max_total_degree(proj, a);
-    auto b_max_total_degree = features::max_total_degree(proj, b);
-    return a_max_total_degree < b_max_total_degree || (a_max_total_degree == b_max_total_degree && a.size() < b.size());
+    auto a_max_max_total_degree = features::max_max_total_degree(proj, a);
+    auto b_max_max_total_degree = features::max_max_total_degree(proj, b);
+    return a_max_max_total_degree < b_max_max_total_degree || (a_max_max_total_degree == b_max_max_total_degree && a.size() < b.size());
 }
 
 inline bool min_size_min_tdeg(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
@@ -204,9 +242,9 @@ inline bool min_size_min_tdeg(cadcells::datastructures::Projections& proj, const
     else if (a.size() < b.size()) return true;
     else if (a.size() > b.size()) return false;
     else {
-        auto a_max_total_degree = features::max_total_degree(proj, a);
-        auto b_max_total_degree = features::max_total_degree(proj, b);
-        return a_max_total_degree < b_max_total_degree ;
+        auto a_max_max_total_degree = features::max_max_total_degree(proj, a);
+        auto b_max_max_total_degree = features::max_max_total_degree(proj, b);
+        return a_max_max_total_degree < b_max_max_total_degree ;
     }
 }
 
