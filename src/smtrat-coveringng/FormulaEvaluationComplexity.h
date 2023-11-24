@@ -5,7 +5,7 @@ namespace smtrat::covering_ng::formula::complexity {
 
 namespace features {
 
-auto size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t a_size = 0;
     for (const auto& el : a) {
         a_size += proj.factors_nonconst(proj.polys()(el.lhs())).size();
@@ -13,7 +13,7 @@ auto size_fact(cadcells::datastructures::Projections& proj, const boost::contain
     return a_size;
 }
 
-auto max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t a_max_total_degree = 0;
     for (const auto& el : a) {
         a_max_total_degree = std::max(a_max_total_degree, proj.total_degree(proj.polys()(el.lhs())));
@@ -21,7 +21,7 @@ auto max_total_degree(cadcells::datastructures::Projections& proj, const boost::
     return a_max_total_degree;
 }
 
-auto max_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto max_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t a_max_total_degree = 0;
     for (const auto& el : a) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
@@ -31,7 +31,7 @@ auto max_total_degree_fact(cadcells::datastructures::Projections& proj, const bo
     return a_max_total_degree;
 }
 
-auto sum_max_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto sum_max_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t result = 0;
     for (const auto& el : a) {
         result += proj.degree(proj.polys()(el.lhs()));
@@ -39,7 +39,7 @@ auto sum_max_degree(cadcells::datastructures::Projections& proj, const boost::co
     return result;
 }
 
-auto sum_max_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto sum_max_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t result = 0;
     for (const auto& el : a) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
@@ -49,7 +49,7 @@ auto sum_max_degree_fact(cadcells::datastructures::Projections& proj, const boos
     return result;
 }
 
-auto avg_avg_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto avg_avg_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     std::size_t count = 0;
     for (const auto& el : a) {
@@ -61,7 +61,7 @@ auto avg_avg_degree(cadcells::datastructures::Projections& proj, const boost::co
     return static_cast<double>(sum)/static_cast<double>(count);
 }
 
-auto avg_avg_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto avg_avg_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     std::size_t count = 0;
     for (const auto& el : a) {
@@ -75,7 +75,7 @@ auto avg_avg_degree_fact(cadcells::datastructures::Projections& proj, const boos
     return static_cast<double>(sum)/static_cast<double>(count);
 }
 
-auto sum_sum_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto sum_sum_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
         for (auto d : proj.monomial_degrees(proj.polys()(el.lhs()))) {
@@ -85,7 +85,7 @@ auto sum_sum_degree(cadcells::datastructures::Projections& proj, const boost::co
     return sum;
 }
 
-auto sum_sum_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto sum_sum_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
@@ -97,7 +97,7 @@ auto sum_sum_degree_fact(cadcells::datastructures::Projections& proj, const boos
     return sum;
 }
 
-auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
         for (auto d : proj.monomial_total_degrees(proj.polys()(el.lhs()))) {
@@ -107,7 +107,7 @@ auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boo
     return sum;
 }
 
-auto sum_sum_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto sum_sum_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
         for (const auto f : proj.factors_nonconst(proj.polys()(el.lhs()))) {
