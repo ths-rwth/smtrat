@@ -7,6 +7,7 @@
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
 #include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/operators/operator_mccallum_complete.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
 namespace smtrat::covering_ng {
