@@ -23,7 +23,7 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 }
 
 /**
- * The most efficient CoverningNG strategy with preprocessing.
+ * The most efficient CoveringNG strategy with preprocessing.
  * 
  */
 class CoveringNG_PPDefault: public Manager {
