@@ -24,7 +24,7 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 }
 
 /**
- * The most efficient CoverningNG strategy with preprocessing and subtropical.
+ * The most efficient CoverningNG strategy with preprocessing and subtropical. Is slightly slower than PPDefault.
  * 
  */
 class CoveringNG_PPSTropDefault: public Manager {
