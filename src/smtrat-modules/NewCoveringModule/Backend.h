@@ -123,7 +123,7 @@ public:
     // Adds a constraint into the right level
     void addConstraint(const ConstraintT& constraint) {
         // We can substract 1 from level because we dont have constant polynomials
-        std::size_t level = helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1;
+        std::size_t level = smtrat::helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1;
         SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraint : " << constraint << " on level " << level);
         auto conv_constraint = carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()) ;
         mUnknownConstraints[level].insert(std::move(conv_constraint));
@@ -133,7 +133,7 @@ public:
     void addConstraint(const size_t level, const std::vector<ConstraintT>&& constraints) {
         SMTRAT_LOG_DEBUG("smtrat.covering", "Adding Constraints : " << constraints << " on level " << level);
         for (const auto& constraint : constraints) {
-            assert((helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1) == level);
+            assert((smtrat::helper::level_of(mContext->variable_ordering(), constraint.lhs()) - 1) == level);
             auto conv_constraint = carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()) ;
             mUnknownConstraints[level].insert(std::move(conv_constraint));
         }
@@ -186,7 +186,7 @@ public:
         // We can substract 1 from level because we dont have constant polynomials
         auto conv_constraint = carl::convert<cadcells::Polynomial>(*mContext, constraint.constr()) ;
 
-        std::size_t level = helper::level_of(mContext->variable_ordering(), conv_constraint.lhs()) - 1;
+        std::size_t level = smtrat::helper::level_of(mContext->variable_ordering(), conv_constraint.lhs()) - 1;
         SMTRAT_LOG_DEBUG("smtrat.covering", "Removing Constraint : " << conv_constraint << " on level " << level);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Known Constraints: " << mKnownConstraints);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Unknown Constraints: " << mUnknownConstraints);
