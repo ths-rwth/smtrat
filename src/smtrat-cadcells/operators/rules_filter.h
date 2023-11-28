@@ -197,6 +197,8 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
 struct DelineateSettings {
     bool only_rational_samples = false;
     bool only_irreducible_resultants = false;
+    bool only_if_no_intersections = false;
+    std::size_t only_if_total_degree_below = 0;
 };
 
 template<typename P>
@@ -225,7 +227,12 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
             }
         }
 
-        if ((!settings.only_rational_samples || !all_roots_algebraic) && (!settings.only_irreducible_resultants || irreducible)) {
+        if (
+            (!settings.only_rational_samples || !all_roots_algebraic) &&
+            (!settings.only_irreducible_resultants || irreducible) &&
+            (!settings.only_if_no_intersections || !ordering_util::has_intersection(deriv, prop.ordering)) &&
+            (settings.only_if_total_degree_below == 0 || deriv.proj().total_degree(deriv.proj().res(poly1, poly2)) < settings.only_if_total_degree_below)
+        ) {
             boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
             auto delineable_interval = filter_util::delineable_interval<P>(deriv.proj(), deriv.sample(), polys);
             assert(delineable_interval);
