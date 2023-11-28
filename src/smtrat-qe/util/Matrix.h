@@ -42,6 +42,10 @@ private:
         return (ri >= (m_row_starts.size() - 1)) ? m_data.size() : m_row_starts[ri+1];
     }
 
+    std::size_t row_size(const RowIndex ri) const {
+        return row_end_idx(ri) - row_start_idx(ri);
+    }
+
 // Public interfaces ///////////////////////////////////////////////////////////////////////////////
 public:
     Matrix() {}
@@ -99,8 +103,9 @@ public:
     std::vector<RowEntry> combine(const RowIndex row_idx_1, const Rational& scale_1,
                                   const RowIndex row_idx_2, const Rational& scale_2) const {
         std::vector<RowEntry> result;
-        DataIndex idx_1 = row_start_idx(row_idx_1);
-        DataIndex idx_2 = row_start_idx(row_idx_2);
+        result.reserve(3*(row_size(row_idx_1) + row_size(row_idx_2))/4); // just an estimation
+        DataIndex idx_1  = row_start_idx(row_idx_1);
+        DataIndex idx_2  = row_start_idx(row_idx_2);
         DataIndex end_1  = row_end_idx(row_idx_1);
         DataIndex end_2  = row_end_idx(row_idx_2);
 
@@ -199,6 +204,11 @@ public:
 
     col_view col_entries(const ColIndex ci) const { return col_view(*this, ci); }
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Matrix::RowEntry& e) {
+    os << "(" << e.col_index << ": " << e.value << ")";
+    return os;
+}
 
 
 inline void gcd_normalize(std::vector<Matrix::RowEntry>& row) {

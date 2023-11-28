@@ -20,9 +20,16 @@ struct Node {
     std::vector<RowIndex> eliminators;
     std::set<RowIndex> ignored;
 
-    static constexpr ColIndex DUMMY_COL = 0;
+    static constexpr ColIndex DUMMY_COL = 0; // TODO: this should be a dummy-row?
 
     void choose_elimination() {
+        ignored.clear();
+
+        if (matrix.n_rows() == 0 || cols_to_elim.empty()) {
+            type = Type::LEAF;
+            return;
+        }
+
         if (cols_to_elim.size() == 1) {
             type = Type::FM;
             chosen_col = cols_to_elim.front();
@@ -99,12 +106,14 @@ struct Node {
     , cols_to_elim(cols)
     { choose_elimination(); }
 
+
+    inline bool is_conflict() const { return type == Node::Type::CONFLICT; }
+    inline bool is_finished() const { return eliminators.empty(); }
+
     static Node conflict() { return Node(false); }
     static Node leaf()     { return Node(true); }
 };
 
-inline bool is_conflict(const Node& n) { return n.type == Node::Type::CONFLICT; }
-inline bool is_finished(const Node& n) { return n.eliminators.empty(); }
 
 template<typename T>
 std::ostream& print_vec(std::ostream& os, const std::vector<T>& vec) {
@@ -115,7 +124,7 @@ std::ostream& print_vec(std::ostream& os, const std::vector<T>& vec) {
 }
 
 inline std::ostream& operator<<(std::ostream& os, const smtrat::qe::fmplex::Node& n) {
-    os << "\n========== NODE ==========\n";
+    os << "\n========== NODE ============\n";
     switch (n.type) {
     using Type = smtrat::qe::fmplex::Node::Type;
     case Type::CONFLICT: os << "CONFLICT\n"; return os;
@@ -130,7 +139,13 @@ inline std::ostream& operator<<(std::ostream& os, const smtrat::qe::fmplex::Node
     os << "\n";
     os << "Total n. rows:" << n.matrix.n_rows() << ", Eliminators: ";
     print_vec(os, n.eliminators);
-    os << "\n";
+    os << "\n\n";
+    for (std::size_t i = 0; i < n.matrix.n_rows(); ++i) {
+        std::vector<qe::util::Matrix::RowEntry> es;
+        for (const auto& e: n.matrix.row_entries(i)) es.push_back(e);
+        print_vec(os, es);
+        os << "\n";
+    }
     os << "============================\n";
 	return os;
 }

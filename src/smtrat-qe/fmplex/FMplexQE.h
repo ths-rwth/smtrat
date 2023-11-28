@@ -83,6 +83,13 @@ private:
         return std::all_of(it, row.end(), [](const auto& e){return e.value > 0;});
     }
 
+    bool is_conflict(const Row& row) const {
+        assert(!row.empty());
+        assert(is_trivial(row));
+        const auto& e = row.front();
+        return ((e.col_index <= delta_column()) && (e.value > 0));
+    }
+
     FormulaT constraint_from_row(const Row& row) const;
     bool is_positive_combination(const Row& row);
 
@@ -124,13 +131,9 @@ private:
     /**
      * Eliminates the chosen column in parent using Fourier-Motzkin, but discards rows with 0 coeff.
      * Should only be called if type of parent is FM, i.e. if only one variable is left to eliminate.
+     * @return false if a global conflict is found and true otherwise.
     */
-    Node fm_elimination(Node& parent);
-
-    /**
-     * Computes the next child using different elimination methods depending on the type of parent.
-    */
-    Node compute_next_child(Node& parent);
+    bool fm_elimination(Node& parent);
 
 
     /**

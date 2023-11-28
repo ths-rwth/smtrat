@@ -14,13 +14,29 @@ FormulaT FMplexQE::eliminate_quantifiers() {
         Node& n = m_nodes.back();
         SMTRAT_LOG_DEBUG("smtrat.qe","Next node:" << n);
 
-        if (is_conflict(n)) return FormulaT(carl::FormulaType::FALSE);
-        if (is_finished(n)) m_nodes.pop_back();
-        else m_nodes.push_back(compute_next_child(n));
+        switch (n.type) {
+        case Node::Type::CONFLICT:
+            return FormulaT(carl::FormulaType::FALSE);
+        case Node::Type::NBS:
+            m_nodes.back() = unbounded_elimination(n);
+            break;
+        case Node::Type::LBS:[[fallthrough]];
+        case Node::Type::UBS:
+            if (n.is_finished()) m_nodes.pop_back();
+            else m_nodes.push_back(bounded_elimination(n));
+            break;
+        case Node::Type::FM:
+            if (!fm_elimination(n)) return FormulaT(carl::FormulaType::FALSE);
+            m_nodes.pop_back();
+            break;
+        case Node::Type::LEAF:
+            m_nodes.pop_back();
+            break;
+        }
     }
 
     SMTRAT_LOG_DEBUG("smtrat.qe","after loop");
-    if (m_found_rows.empty()) return FormulaT(carl::FormulaType::TRUE);
+    if (m_found_rows.empty() && m_found_conjuncts.empty()) return FormulaT(carl::FormulaType::TRUE);
     FormulasT conjuncts;
     conjuncts.reserve(m_found_rows.size() + m_found_conjuncts.size());
     for (const auto& r : m_found_rows) conjuncts.push_back(constraint_from_row(r));
@@ -160,7 +176,6 @@ Node FMplexQE::unbounded_elimination(Node& parent) {
     auto col_it  = parent.eliminators.begin();
     auto col_end = parent.eliminators.end();
 
-    RowIndex result_row = 0;
     std::set<RowIndex> ignore;
     auto ignore_it = parent.ignored.begin();
 
@@ -170,11 +185,10 @@ Node FMplexQE::unbounded_elimination(Node& parent) {
             new_matr.append_row(parent.matrix.row_begin(r), parent.matrix.row_end(r));
             auto it = std::find(ignore_it, parent.ignored.end(), r);
             if (it != parent.ignored.end()) {
-                ignore.insert(result_row);
+                ignore.emplace_hint(ignore.end(), new_matr.n_rows());
                 ignore_it = it;
                 ++ignore_it;
             }
-            ++result_row;
         }
     }
 
@@ -186,8 +200,8 @@ Node FMplexQE::unbounded_elimination(Node& parent) {
 
 
 bool FMplexQE::is_positive_combination(const Row& row) {
-    assert(!is_trivial(row));
-    // don't need to check for it == end because the constraint cannot be trivial here
+    assert(row.front().col_index <= delta_column());
+    // don't need to check for it == end because the constraint cannot be trivially true here
     for (auto it = row.rbegin(); it->col_index > delta_column(); ++it) {
         if (it->value < 0) return false;
     }
@@ -199,7 +213,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     assert(parent.type == Node::Type::LBS || parent.type == Node::Type::UBS);
     assert(!parent.eliminators.empty());
 
-    // remove chosen variable from eliminaion variables
+    // remove chosen variable from elimination variables
     auto new_cols = parent.cols_to_elim;
     new_cols.erase(std::find(new_cols.begin(), new_cols.end(), parent.chosen_col));
 
@@ -210,7 +224,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     // eliminate using eliminator
     RowIndex eliminator = parent.eliminators.back();
     Rational elim_coeff = parent.matrix.coeff(eliminator, parent.chosen_col);
-    Rational elim_sgn = (parent.type == Node::Type::LBS ? Rational(-1) : Rational(1));
+    Rational elim_sgn = (parent.type == Node::Type::LBS ? Rational(1) : Rational(-1));
     parent.eliminators.pop_back();
 
     auto col_it = parent.matrix.col_begin(parent.chosen_col);
@@ -220,29 +234,34 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     auto ignore_it = parent.ignored.begin();
 
     bool local_conflict = false; // TODO: make more elegant
+    bool inserted = false;
 
     auto process_row = [&](RowIndex r) {
-        Rational scale_elim = (-1)*elim_sgn*col_it->value;
+        inserted = false;
+        Rational scale_elim = elim_sgn*col_it->value;
         Rational scale_r = carl::abs(elim_coeff);
         auto combined_row = parent.matrix.combine(eliminator, scale_elim, r, scale_r);
         qe::util::gcd_normalize(combined_row);
-        if (is_trivial(combined_row)) {
-            if (is_global_conflict(combined_row)) return false;
-            if (combined_row.begin()->col_index <= delta_column() && combined_row.begin()->value > 0) {
-                local_conflict = true;
-            }
+
+        if (combined_row.front().col_index < m_first_parameter_col) {
+            // row still contains quantified variables
+            inserted = true;
+            new_matr.append_row(combined_row.begin(), combined_row.end());
             return true;
         }
 
-        // are all wanted variables eliminated in this row?
-        if (combined_row.front().col_index >= m_first_parameter_col) {
-            // if it's a positive linear combination, add it to the result
-            if (is_positive_combination(combined_row)) {
-                m_found_rows.insert(combined_row);
+        // all quantified variables are eliminated in this row
+        // add to overall result or analyze trivial constraint
+        if (is_trivial(combined_row)) {
+            if (is_conflict(combined_row)) {
+                if (is_positive_combination(combined_row)) return false;
+                else local_conflict = true;
             }
-        } else {
-            new_matr.append_row(combined_row.begin(), combined_row.end());
+        } else if (is_positive_combination(combined_row)) {
+            m_found_conjuncts.insert(constraint_from_row(combined_row));
+            m_found_rows.insert(combined_row);
         }
+
         return true;
     };
 
@@ -251,10 +270,11 @@ Node FMplexQE::bounded_elimination(Node& parent) {
             if (!process_row(r)) return Node::conflict();
             ++col_it;
         } else {
+            inserted = true;
             new_matr.append_row(parent.matrix.row_begin(r), parent.matrix.row_end(r));
         }
         if (ignore_it != parent.ignored.end() && r == *ignore_it) {
-            ignore.insert(r); // input row r -> output row r
+            if (inserted) ignore.insert(new_matr.n_rows() - 1);
             ++ignore_it;
         }
     }
@@ -264,10 +284,11 @@ Node FMplexQE::bounded_elimination(Node& parent) {
             if (!process_row(r)) return Node::conflict();
             ++col_it;
         } else {
+            inserted = true;
             new_matr.append_row(parent.matrix.row_begin(r), parent.matrix.row_end(r));
         }
         if (ignore_it != parent.ignored.end() && r == *ignore_it) {
-            ignore.insert(r-1); // -1 here because the eliminator was skipped (so r -> r-1)
+            if (inserted) ignore.insert(new_matr.n_rows() - 1);
             ++ignore_it;
         }
     }
@@ -275,12 +296,12 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     parent.ignored.insert(eliminator);
     
     SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().node(new_matr.n_rows()));
-    if (local_conflict) return Node::leaf();
+    // if (local_conflict) return Node::leaf();
     return Node(new_matr, new_cols, ignore);
 }
 
 
-Node FMplexQE::fm_elimination(Node& parent) {
+bool FMplexQE::fm_elimination(Node& parent) {
     parent.eliminators.clear();
     std::vector<RowIndex> lbs, ubs;
     // we can ignore non-bounds since they would have been added to the result at this point
@@ -300,25 +321,14 @@ Node FMplexQE::fm_elimination(Node& parent) {
             auto combined_row = parent.matrix.combine(l, coeff_u, u, coeff_l);
             qe::util::gcd_normalize(combined_row);
             if (is_trivial(combined_row)) {
-                if (is_global_conflict(combined_row)) return Node::conflict();
+                if (is_global_conflict(combined_row)) return false;
             } else if (is_positive_combination(combined_row)) {
+                m_found_conjuncts.insert(constraint_from_row(combined_row));
                 m_found_rows.insert(combined_row);
             }
         }
     }
-    return Node::leaf();
-}
-
-
-Node FMplexQE::compute_next_child(Node& parent) {
-    switch (parent.type) {
-    case Node::Type::LBS: [[fallthrough]];
-    case Node::Type::UBS: return bounded_elimination(parent);
-    case Node::Type::NBS: return unbounded_elimination(parent);
-    case Node::Type::FM:  return fm_elimination(parent);        
-    default: assert(false);
-    }
-    return Node::leaf(); // unreachable
+    return true;
 }
 
 
