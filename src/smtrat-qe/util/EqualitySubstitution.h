@@ -19,6 +19,18 @@ public:
     bool apply() {
         SMTRAT_LOG_DEBUG("smtrat.qe","begin");
 
+        for (auto it = m_constraints.begin(); it != m_constraints.end(); ++it) {
+            if (it->constraint().relation() != carl::Relation::LEQ) continue;
+            for (auto it_other = std::next(it); it_other != m_constraints.end(); ++it_other) {
+                if (it_other->constraint().relation() != carl::Relation::LEQ) continue;
+                if (it_other->constraint().lhs() + it->constraint().lhs() == Poly(0)) {
+                    *it = FormulaT(it->constraint().lhs(), carl::Relation::EQ);
+                    m_constraints.erase(it_other);
+                    break;
+                }
+            }
+        }
+
         auto first_ineq = std::partition(
             m_constraints.begin(),
             m_constraints.end(),
