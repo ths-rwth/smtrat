@@ -94,14 +94,15 @@ private:
     bool is_positive_combination(const Row& row);
 
     /**
-     * Constructs the starting node from m_query and m_formula as follows:
+     * Constructs the starting nodes from m_query and m_formula as follows:
      * - Collects the variables in m_query and constraints in m_formula
      * - Uses equations in m_formula to eliminate as many variables as possible
      * - Filters finished constraints from the result
-     * - Builds a matrix from the remaining constraints using build_initial_matrix
-     * - The initial node contains that matrix and the remaining variables.
+     * - Splits the variables and constraints into independent blocks
+     * - Builds a matrix for each block using build_initial_matrix
+     * - Adds an according Node for each block to the stack of nodes
     */
-    Node build_initial_system();
+    void build_initial_systems();
 
     /**
      * Constructs a matrix from the given constraints.

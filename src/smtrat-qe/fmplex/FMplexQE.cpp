@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include "../util/quantifier_splitting.h"
 
 #include "FMplexQE.h"
 
@@ -8,7 +9,7 @@ namespace smtrat::qe::fmplex {
 FormulaT FMplexQE::eliminate_quantifiers() {
     SMTRAT_LOG_DEBUG("smtrat.qe","input: " << m_query << ", " << m_formula);
 
-    m_nodes.push_back(build_initial_system());
+    build_initial_systems();
 
     while (!m_nodes.empty()) {
         Node& n = m_nodes.back();
@@ -110,7 +111,7 @@ FMplexQE::Matrix FMplexQE::build_initial_matrix(const FormulasT& constraints) {
 }
 
 
-Node FMplexQE::build_initial_system() {
+void FMplexQE::build_initial_systems() {
     // gather quantified variables
     std::vector<carl::Variable> elim_vars = gather_elimination_variables();
     SMTRAT_LOG_DEBUG("smtrat.qe","elim vars:" << elim_vars);
@@ -127,7 +128,8 @@ Node FMplexQE::build_initial_system() {
     if (!es.apply()) {
         SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().elim_eq(elim_vars.size()));
         SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().eq_conflict());
-        return Node::conflict();
+        m_nodes.push_back(Node::conflict());
+        return;
     }
     constraints = es.remaining_constraints();
     elim_vars   = es.remaining_variables();
@@ -148,7 +150,11 @@ Node FMplexQE::build_initial_system() {
     constraints = filtered;
     SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after filtering: " << constraints);
 
-    if (elim_vars.empty()) return Node::leaf();
+    if (elim_vars.empty()) {
+        m_nodes.push_back(Node::leaf());
+        return;
+    }
+
 
     // map from variables to indices
     m_var_idx = qe::util::VariableIndex(elim_vars);
@@ -156,12 +162,15 @@ Node FMplexQE::build_initial_system() {
     m_first_parameter_col = elim_vars.size();
     SMTRAT_LOG_DEBUG("smtrat.qe","after gather variables");
 
-    // list of columns to eliminate. Initially, this are the first k columns for k = #elim vars
-    std::vector<Matrix::ColIndex> elim_var_indices;
-    for (ColIndex i = 0; i < m_first_parameter_col; ++i) elim_var_indices.push_back(i);
+    auto subqueries = qe::util::split_quantifiers(constraints, elim_vars);
 
-    SMTRAT_LOG_DEBUG("smtrat.qe","before return");
-    return Node(build_initial_matrix(constraints), elim_var_indices);
+    for (const auto& q : subqueries) {
+        // list of columns to eliminate. Initially, this are the first k columns for k = #elim vars
+        std::vector<Matrix::ColIndex> elim_var_indices;
+        for (const auto v : q.elimination_vars) elim_var_indices.push_back(m_var_idx.index(v));
+        SMTRAT_LOG_DEBUG("smtrat.qe","before return");
+        m_nodes.push_back(Node(build_initial_matrix(q.constraints), elim_var_indices));
+    }
 }
 
 
