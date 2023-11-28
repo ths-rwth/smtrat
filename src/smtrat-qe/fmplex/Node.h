@@ -23,8 +23,6 @@ struct Node {
     static constexpr ColIndex DUMMY_COL = 0; // TODO: this should be a dummy-row?
 
     void choose_elimination() {
-        ignored.clear();
-
         if (matrix.n_rows() == 0 || cols_to_elim.empty()) {
             type = Type::LEAF;
             return;

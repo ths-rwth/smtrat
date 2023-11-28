@@ -296,7 +296,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
     parent.ignored.insert(eliminator);
     
     SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().node(new_matr.n_rows()));
-    // if (local_conflict) return Node::leaf();
+    if (local_conflict) return Node::leaf();
     return Node(new_matr, new_cols, ignore);
 }
 
