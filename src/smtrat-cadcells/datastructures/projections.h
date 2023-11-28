@@ -379,6 +379,7 @@ public:
     }
 
     std::size_t total_degree(PolyRef p) {
+        if (p.level == 0) return 0;
         if (cache(p).total_degree == 0) {
             cache(p).total_degree = m_pool(p).total_degree();
         }
