@@ -11,6 +11,8 @@ enum class VariableOrdering {
 	FeatureBased,
 	FeatureBasedZ3,
 	FeatureBasedBrown,
+	FeatureBasedTriangular,
+	FeatureBasedLexicographic,
 	FeatureBasedPickering
 };
 
@@ -20,6 +22,8 @@ inline std::string get_name(VariableOrdering ordering) {
 		case VariableOrdering::FeatureBased: return "FeatureBased";
 		case VariableOrdering::FeatureBasedZ3: return "FeatureBasedZ3";
 		case VariableOrdering::FeatureBasedBrown: return "FeatureBasedBrown";
+		case VariableOrdering::FeatureBasedTriangular: return "FeatureBasedTriangular";
+		case VariableOrdering::FeatureBasedLexicographic: return "FeatureBasedLexicographic";
 		case VariableOrdering::FeatureBasedPickering: return "FeatureBasedPickering";
 	}
 }
@@ -38,23 +42,11 @@ std::vector<carl::Variable> calculate_variable_order(const Constraints& c) {
 		constraints.emplace_back(c[i].first->reabstraction.constraint());
 	}
 	
-	switch (vot) {
-		case VariableOrdering::GreedyMaxUnivariate:
-			return variableordering::greedy_max_univariate(constraints);
-		case VariableOrdering::FeatureBased:
-			return variableordering::feature_based(constraints);
-		case VariableOrdering::FeatureBasedZ3:
-			return variableordering::feature_based_z3(constraints);
-		case VariableOrdering::FeatureBasedBrown:
-			return variableordering::feature_based_brown(constraints);
-		case VariableOrdering::FeatureBasedPickering:
-			return variableordering::feature_based_pickering(constraints);
-	}
+	return calculate_variable_order<vot>(constraints);
 }
 
 template<VariableOrdering vot>
 std::vector<carl::Variable> calculate_variable_order(const std::vector<ConstraintT>& constraints){
-
 	switch (vot) {
 		case VariableOrdering::GreedyMaxUnivariate:
 			return variableordering::greedy_max_univariate(constraints);
@@ -64,6 +56,10 @@ std::vector<carl::Variable> calculate_variable_order(const std::vector<Constrain
 			return variableordering::feature_based_z3(constraints);
 		case VariableOrdering::FeatureBasedBrown:
 			return variableordering::feature_based_brown(constraints);
+		case VariableOrdering::FeatureBasedTriangular:
+			return variableordering::feature_based_triangular(constraints);
+		case VariableOrdering::FeatureBasedLexicographic:
+			return variableordering::feature_based_lexicographic(constraints);
 		case VariableOrdering::FeatureBasedPickering:
 			return variableordering::feature_based_pickering(constraints);
 	}
