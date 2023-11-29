@@ -4,6 +4,14 @@
 
 #include "FMplexQE.h"
 
+/*
+ TODO:  the partitioning into independent blocks (like in build_initial_system) can actually
+        be applied in each node! The stack facilitates this and allows to split blocks into 
+        sub-blocks later without changing the general structure of the algorithm.
+        -> am open question here is whether the overhead for searching indep. blocks is worth it.
+        -> also: a more complex scheme where blocks are reunited requires a major restructuring.
+*/
+
 namespace smtrat::qe::fmplex {
 
 FormulaT FMplexQE::eliminate_quantifiers() {
@@ -268,7 +276,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
             }
         } else if (is_positive_combination(combined_row)) {
             m_found_conjuncts.insert(constraint_from_row(combined_row));
-            m_found_rows.insert(combined_row);
+            m_found_rows.insert(combined_row); // TODO: remove one of these lines!
         }
 
         return true;
