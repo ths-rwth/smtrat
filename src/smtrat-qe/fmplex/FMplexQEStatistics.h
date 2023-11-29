@@ -24,7 +24,7 @@ public:
         addKeyValuePair("input-constraints",  m_input_constraints);
         addKeyValuePair("eliminated-vars",    m_eliminated_vars);
         addKeyValuePair("eliminated-by-eq",   m_eliminated_by_eq);
-        addKeyValuePair("output_constraints", m_output_constraints);
+        addKeyValuePair("output-constraints", m_output_constraints);
         addKeyValuePair("total-constraints",  m_total_constraints);
         addKeyValuePair("visited-nodes",      m_visited_nodes);
         addKeyValuePair("qe-called",          m_qe_timer);
