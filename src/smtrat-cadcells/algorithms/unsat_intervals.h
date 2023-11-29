@@ -4,8 +4,8 @@
 
 namespace smtrat::cadcells::algorithms {
 
-template <cadcells::operators::op op>
-std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const Constraint& c, datastructures::Projections& proj, const Assignment& sample) {
+template <typename op>
+std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> get_unsat_intervals(const Constraint& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
     
     auto vars = proj.polys().var_order();
@@ -15,7 +15,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     assert(carl::level_of(c.lhs()) == sample.size()+1);
 
     auto poly_ref = proj.polys()(c.lhs());
-    auto underlying_deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size()).sampled_ref();
+    auto underlying_deriv = datastructures::make_derivation<typename op::PropertiesSet>(proj, sample, sample.size()).sampled_ref();
 
     boost::container::flat_set<RAN> roots;
     for (const auto& factor : proj.factors_nonconst(poly_ref)) {
@@ -28,17 +28,17 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     }
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got roots " << roots);
 
-    std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> results;
+    std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> results;
 
     auto add_deriv_from = [&](const RAN& sample) {
-        results.emplace_back(datastructures::make_sampled_derivation<typename operators::PropertiesSet<op>::type>(underlying_deriv, sample));
+        results.emplace_back(datastructures::make_sampled_derivation<typename op::PropertiesSet>(underlying_deriv, sample));
         if (carl::is_strict(c.relation())) {
             results.back()->insert(operators::properties::poly_semi_sgn_inv{ poly_ref });
         } else {
             results.back()->insert(operators::properties::poly_sgn_inv{ poly_ref });
         }
-        if (!operators::project_basic_properties<op>(*results.back())) assert(false);
-        operators::delineate_properties<op>(*results.back());
+        if (!op::project_basic_properties(*results.back())) assert(false);
+        op::delineate_properties(*results.back());
         results.back()->delineate_cell();
 
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << results.back()->cell() << " wrt " << results.back()->delin());
@@ -97,8 +97,8 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     return results;
 }
 
-template <cadcells::operators::op op>
-std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const VariableComparison& c, datastructures::Projections& proj, const Assignment& sample) {
+template <typename op>
+std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> get_unsat_intervals(const VariableComparison& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
 
     auto vars = proj.polys().var_order();
@@ -108,7 +108,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
     assert(c.var() == current_var);
     assert(std::holds_alternative<RAN>(c.value()) || carl::level_of(std::get<MultivariateRoot>(c.value()).poly()) == sample.size() + 1);
 
-    auto deriv = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size() + 1).delineated_ref();
+    auto deriv = datastructures::make_derivation<typename op::PropertiesSet>(proj, sample, sample.size() + 1).delineated_ref();
 
     auto value_result = [&]() -> std::variant<std::pair<datastructures::IndexedRoot, RAN>, datastructures::PolyRef> {
         if (std::holds_alternative<RAN>(c.value())) {
@@ -134,7 +134,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         }
     }();
 
-    std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> results;
+    std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> results;
 
     if (std::holds_alternative<std::pair<datastructures::IndexedRoot, RAN>>(value_result)) {
         datastructures::IndexedRoot& iroot = std::get<std::pair<datastructures::IndexedRoot, RAN>>(value_result).first;
@@ -146,7 +146,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         bool above = relation == carl::Relation::LESS || relation == carl::Relation::LEQ || relation == carl::Relation::EQ;
 
         deriv->insert(operators::properties::poly_del{ iroot.poly });
-        deriv->delin().add_root(root, datastructures::TaggedIndexedRoot{iroot, (op == cadcells::operators::op::mccallum_filtered) && carl::is_strict(relation)});
+        deriv->delin().add_root(root, datastructures::TaggedIndexedRoot{iroot, (op::filter) && carl::is_strict(relation)});
 
         if (point) {
             results.emplace_back(datastructures::make_sampled_derivation(deriv, root));
@@ -185,8 +185,8 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
  * @param sample A sample point such that the highest variable in @ref c w.r.t. the variable odering in @ref proj is the only unassigned variable.
  * @return A list of sampled derivations with the same delineated derivations. The samples for the unassigned variables are sampled from the respective interval.
  */
-template <cadcells::operators::op op>
-std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_unsat_intervals(const Atom& c, datastructures::Projections& proj, const Assignment& sample) {
+template <typename op>
+std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> get_unsat_intervals(const Atom& c, datastructures::Projections& proj, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", c << ", " << sample);
     if (std::holds_alternative<Constraint>(c)) {
         return get_unsat_intervals<op>(std::get<Constraint>(c), proj, sample);
@@ -194,7 +194,7 @@ std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesS
         return get_unsat_intervals<op>(std::get<VariableComparison>(c), proj, sample);
     } else {
         assert(false);
-        return std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>>();
+        return std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>>();
     }
 }
 

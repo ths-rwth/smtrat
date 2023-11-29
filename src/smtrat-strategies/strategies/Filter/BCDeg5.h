@@ -10,12 +10,17 @@
 namespace smtrat {
 
 namespace internal {
+struct OpSettings : cadcells::operators::MccallumFilteredSettings {
+	static constexpr DelineationFunction delineation_function = ALL;
+	static constexpr std::size_t only_if_total_degree_below = 6;
+};
+
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 
-	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
-	constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_biggest_cell;
+	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+	using op = cadcells::operators::MccallumFiltered<OpSettings>;
 };
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
@@ -26,9 +31,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewBCFilteredAllBiggestCellOI : public Manager {
+class Filter_BCDeg5 : public Manager {
 public:
-	MCSAT_OCNewBCFilteredAllBiggestCellOI()
+	Filter_BCDeg5()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());

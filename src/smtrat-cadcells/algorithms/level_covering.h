@@ -11,10 +11,10 @@ namespace smtrat::cadcells::algorithms {
  * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
  * @return A sampled derivation which contains the information to reproduce the conflict. 
  */
-template<cadcells::operators::op op, representation::CoveringHeuristic covering_heuristic>
-std::optional<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> get_level_covering(datastructures::Projections& proj, const std::vector<Atom>& constraints, const Assignment& sample) {
+template<typename op, representation::CoveringHeuristic covering_heuristic>
+std::optional<datastructures::SampledDerivationRef<typename op::PropertiesSet>> get_level_covering(datastructures::Projections& proj, const std::vector<Atom>& constraints, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << sample);
-    std::vector<datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>> unsat_cells;
+    std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> unsat_cells;
     for (const auto& c : constraints) {
         auto intervals = get_unsat_intervals<op>(c, proj, sample);
         unsat_cells.insert(unsat_cells.end(), intervals.begin(), intervals.end());
@@ -27,7 +27,7 @@ std::optional<datastructures::SampledDerivationRef<typename operators::Propertie
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute covering projection");
     auto cell_derivs = covering_repr.sampled_derivations();
     datastructures::merge_underlying(cell_derivs);
-    if (!operators::project_covering_properties<op>(covering_repr)) return std::nullopt;
+    if (!op::project_covering_properties(covering_repr)) return std::nullopt;
 
     return covering_repr.cells.front().derivation->underlying().sampled_ref();
 }

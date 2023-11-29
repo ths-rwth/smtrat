@@ -12,33 +12,33 @@
 
 namespace smtrat::covering_ng {
 
-template<cadcells::operators::op op>
-using Interval = cadcells::datastructures::SampledDerivationRef<typename cadcells::operators::PropertiesSet<op>::type>;
+template<typename PropertiesSet>
+using Interval = cadcells::datastructures::SampledDerivationRef<PropertiesSet>;
 /**
  * Sorts interval by their lower bounds. 
  */
-template<cadcells::operators::op op>
+template<typename PropertiesSet>
 struct IntervalCompare {
-	inline constexpr bool operator()(const Interval<op>& a, const Interval<op>& b) const {
+	inline constexpr bool operator()(const Interval<PropertiesSet>& a, const Interval<PropertiesSet>& b) const {
 		auto cell_a = a->cell();
 		auto cell_b = b->cell();
 		return cadcells::datastructures::lower_lt_lower(cell_a, cell_b) || (cadcells::datastructures::lower_eq_lower(cell_a, cell_b) && cadcells::datastructures::upper_lt_upper(cell_b, cell_a));
 	}
 };
-template<cadcells::operators::op op>
-using IntervalSet = std::set<Interval<op>, IntervalCompare<op>>;
+template<typename PropertiesSet>
+using IntervalSet = std::set<Interval<PropertiesSet>, IntervalCompare<PropertiesSet>>;
 
-template<cadcells::operators::op op>
+template<typename PropertiesSet>
 struct CoveringResult {
     enum Status { SAT, UNSAT, FAILED_PROJECTION, FAILED };
     struct NONE{};
 
     Status status;
-    std::variant<std::vector<Interval<op>>, cadcells::Assignment, NONE> content;
+    std::variant<std::vector<Interval<PropertiesSet>>, cadcells::Assignment, NONE> content;
     
     CoveringResult() : status(FAILED), content(NONE {}) {}
     CoveringResult(Status s) : status(s), content(NONE {}) {}
-    CoveringResult(std::vector<Interval<op>>& c) : status(UNSAT), content(c) {}
+    CoveringResult(std::vector<Interval<PropertiesSet>>& c) : status(UNSAT), content(c) {}
     CoveringResult(const cadcells::Assignment& c) : status(SAT), content(c) {}
 
     bool is_failed() {
@@ -57,7 +57,7 @@ struct CoveringResult {
         return std::get<cadcells::Assignment>(content);
     }
     const auto& intervals() const {
-        return std::get<std::vector<Interval<op>>>(content);
+        return std::get<std::vector<Interval<PropertiesSet>>>(content);
     }
 };
 

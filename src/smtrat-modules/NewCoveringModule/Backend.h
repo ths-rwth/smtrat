@@ -40,8 +40,8 @@ static size_t level_of(const VariableOrdering& order, const Pol& poly) {
 template<typename Settings>
 class Backend {
 
-    static constexpr cadcells::operators::op op = Settings::op;
-    using PropSet = typename cadcells::operators::PropertiesSet<Settings::op>::type;
+    using op = Settings::op;
+    using PropSet = typename op::PropertiesSet;
 
 private:
     // Context

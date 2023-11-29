@@ -10,12 +10,17 @@
 namespace smtrat {
 
 namespace internal {
+struct OpSettings : cadcells::operators::MccallumFilteredSettings {
+	static constexpr DelineationFunction delineation_function = ALL;
+	static constexpr bool only_if_no_intersections = true;
+};
+
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 
-	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
-	constexpr static auto op = cadcells::operators::op::mccallum_filtered_onlyirred_ew;
+	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+	using op = cadcells::operators::MccallumFiltered<OpSettings>;
 };
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
@@ -26,9 +31,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewBCFilteredOnlyirredEWpOI : public Manager {
+class Filter_BCIntersect : public Manager {
 public:
-	MCSAT_OCNewBCFilteredOnlyirredEWpOI()
+	Filter_BCIntersect()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());

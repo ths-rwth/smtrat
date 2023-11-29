@@ -16,17 +16,17 @@ enum class SamplingAlgorithm {
  */
 template<SamplingAlgorithm S>
 struct sampling {
-    template<typename FE, cadcells::operators::op op>
-    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& derivations, const FE& f);
+    template<typename FE, typename PropertiesSet>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& derivations, const FE& f);
 };
 
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
-    template<typename FE, cadcells::operators::op op>
-    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& intervals, const FE&) {
+    template<typename FE, typename PropertiesSet>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& intervals, const FE&) {
         // remove redundancies of the first kind
         // the derivations are already sorted by lower bound
-        std::vector<Interval<op>> derivs;
+        std::vector<Interval<PropertiesSet>> derivs;
         auto iter = intervals.begin();
         while (iter != intervals.end()) {
             derivs.push_back(*iter);

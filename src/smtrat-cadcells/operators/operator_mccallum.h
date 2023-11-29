@@ -9,13 +9,18 @@
 
 namespace smtrat::cadcells::operators {
 
-template <>
-struct PropertiesSet<op::mccallum> {
-    using type = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::poly_del,properties::cell_connected>;
-};
+struct Mccallum {
 
-template <>
-inline bool project_basic_properties<op::mccallum>(datastructures::SampledDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+static constexpr bool filter = false;
+
+using PropertiesSet = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::poly_del,properties::cell_connected>;
+
+/**
+ * Project basic cell properties.
+ * 
+ * Returns false iff the given operator is incomplete and cannot cover the given case (i.e. on nullification with McCallum).
+ */
+static inline bool project_basic_properties(datastructures::SampledDerivation<PropertiesSet>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_del>()) {
         if (!rules::poly_del(deriv, prop.poly)) return false;
@@ -32,16 +37,20 @@ inline bool project_basic_properties<op::mccallum>(datastructures::SampledDeriva
     return true;
 }
 
-template <>
-inline void delineate_properties<op::mccallum>(datastructures::SampledDerivation<PropertiesSet<op::mccallum>::type>& deriv) {
+/**
+ * Delineate properties.
+ */
+static inline void delineate_properties(datastructures::SampledDerivation<PropertiesSet>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         rules::delineate(*deriv.delineated(), prop);
     }
 }
 
-template <>
-inline bool project_cell_properties<op::mccallum>(datastructures::CellRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+/**
+ * Project cell properties that depend on a delineation.
+ */
+static inline bool project_cell_properties(datastructures::CellRepresentation<PropertiesSet>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     auto& deriv = *repr.derivation;
 
@@ -80,13 +89,13 @@ inline bool project_cell_properties<op::mccallum>(datastructures::CellRepresenta
     return true;
 }
 
-
-
-template <>
-inline bool project_covering_properties<op::mccallum>(datastructures::CoveringRepresentation<PropertiesSet<op::mccallum>::type>& repr) {
+/**
+ * Project covering properties.
+ */
+static inline bool project_covering_properties(datastructures::CoveringRepresentation<PropertiesSet>& repr) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", repr);
     for (auto& cell_repr : repr.cells) {
-        if (!project_cell_properties<op::mccallum>(cell_repr)) {
+        if (!project_cell_properties(cell_repr)) {
             return false;
         }
     }
@@ -95,5 +104,7 @@ inline bool project_covering_properties<op::mccallum>(datastructures::CoveringRe
     rules::covering_holds(repr.cells.front().derivation->underlying().delineated(), cov, repr.ordering);
     return true;
 }
+
+};
 
 }

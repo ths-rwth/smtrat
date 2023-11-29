@@ -32,40 +32,4 @@
  */
 namespace smtrat::cadcells::operators {
 
-enum op { mccallum, mccallum_complete, mccallum_pdel, mccallum_filtered, mccallum_filtered_all, mccallum_filtered_all_ew, mccallum_filtered_bounds_only, mccallum_filtered_all_compound, mccallum_filtered_all_compound_ew, mccallum_filtered_all_compound_piecewiselinear, mccallum_filtered_all_compound_piecewiselinear_ew, mccallum_filtered_all_biggest_cell_ew, mccallum_filtered_onlyrat_ew, mccallum_filtered_onlyrat_onlyirred_ew , mccallum_filtered_onlyirred_ew };
-static const char * OpStrings[] = { "mccallum", "mccallum_complete", "mccallum_pdel", "mccallum_filtered", "mccallum_filtered_all", "mccallum_filtered_all_ew", "mccallum_filtered_bounds_only", "mccallum_filtered_all_compound", "mccallum_filtered_all_compound_ew", "mccallum_filtered_all_compound_piecewiselinear", "mccallum_filtered_all_compound_piecewiselinear_ew", "mccallum_filtered_all_biggest_cell_ew", "mccallum_filtered_onlyrat_ew", "mccallum_filtered_onlyrat_onlyirred_ew" , "mccallum_filtered_onlyirred_ew"  };
-
-inline std::ostream& operator<<(std::ostream& os, op op) {
-    return os << OpStrings[op];
-}
-
-template <op Op>
-struct PropertiesSet;
-
-/**
- * Project basic cell properties.
- * 
- * Returns false iff the given operator is incomplete and cannot cover the given case (i.e. on nullification with McCallum).
- */
-template <op Op>
-inline bool project_basic_properties(datastructures::SampledDerivation<typename PropertiesSet<Op>::type>& deriv);
-
-/**
- * Delineate properties.
- */
-template <op Op>
-inline void delineate_properties(datastructures::SampledDerivation<typename PropertiesSet<Op>::type>& deriv);
-
-/**
- * Project cell properties that depend on a delineation.
- */
-template <op Op>
-inline bool project_cell_properties(datastructures::CellRepresentation<typename PropertiesSet<Op>::type>& deriv);
-
-/**
- * Project covering properties.
- */
-template <op Op>
-inline bool project_covering_properties(datastructures::CoveringRepresentation<typename PropertiesSet<Op>::type>& repr);
-
 } 
