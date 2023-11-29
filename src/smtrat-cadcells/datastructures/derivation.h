@@ -427,7 +427,7 @@ template<typename Properties>
 SampledDerivationRef<Properties> merge(std::vector<SampledDerivationRef<Properties>>& derivations) {
     auto first = *derivations.begin();
     for (auto iter = std::next(derivations.begin()); iter != derivations.end(); iter++) {
-        first.base().merge_with(iter->base());
+        first->base()->merge_with(*((*iter)->base()));
     }
     return first;
 }

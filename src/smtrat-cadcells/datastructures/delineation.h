@@ -301,5 +301,18 @@ inline bool upper_lt_lower(const DelineationInterval& del1, const DelineationInt
     return false;
 }
 
+/**
+ * Compares the upper bounds of two DelineationIntervals. It respects whether the interval is a section or sector.
+ */
+inline bool upper_eq_upper(const DelineationInterval& del1, const DelineationInterval& del2) {
+	if (del1.upper_unbounded() && del2.upper_unbounded())
+		return true;
+	else if (del1.upper_unbounded() != del2.upper_unbounded())
+		return false;
+	else if (del1.upper()->first == del2.upper()->first)
+		return del1.upper_strict() == del2.upper_strict();
+	else
+		return false;
+}
 
 } 
