@@ -96,7 +96,13 @@ struct AbstractTheory {
 		errors.next() << "Functions are not supported.";
 		return false;
 	}
-	
+	/**
+	 * Resolve a quantified term.
+	 */
+	virtual bool declareQuantifiedTerm(const std::vector<std::pair<std::string, carl::Sort>>& , const carl::FormulaType& , const types::TermType& , types::TermType& , TheoryError& errors){
+		errors.next() << "Quantified terms are not supported.";
+		return false;
+	}
 	/**
 	 * Initialize the global symbol table for simple sorts.
 	 */
@@ -105,6 +111,8 @@ struct AbstractTheory {
 	 * Initialize the global symbol table for constants.
 	 */
 	static void addConstants(qi::symbols<char, types::ConstType>&) {}
+
+
 };
 
 }
