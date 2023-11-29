@@ -4,41 +4,54 @@
 
 #include <smtrat-common/smtrat-common.h>
 
-namespace smtrat::qe::fm{
+#include <eigen3/Eigen/Core>
+#include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/StdVector>
 
-/**
- * @brief Provides a simple implementation for Fourier Motzkin variable elimination for linear, existentially quantified constraints.
- *
- */
+#include "../fmplex/FMplexQEStatistics.h"
+#include "../util/VariableIndex.h"
+
+
+namespace smtrat::qe::fm {
+
+using vector_t = Eigen::Matrix<Rational, Eigen::Dynamic, 1>;
+using matrix_t = Eigen::Matrix<Rational, Eigen::Dynamic, Eigen::Dynamic>;
+
+
 class FourierMotzkinQE {
 public:
-    // we use four vectors, one for the discovered lower bounds, one for the upper bounds, one for the equations and one for unrelated constraints.
-    using FormulaPartition = std::vector<std::vector<FormulaT>>;
+    // we use four vectors: lower bounds, upper bounds, equations, unrelated constraints.
+    using FormulaPartition = std::vector<FormulasT>;
 
 private:
-    QEQuery mQuery;
-    FormulaT mFormula;
-public:
+    QEQuery m_query;    /// The quantifiers to eliminate
+    FormulaT m_formula; /// The logical representation of the solution space
+    qe::util::VariableIndex m_var_idx;
+    FormulaSetT m_finished;
 
-    FourierMotzkinQE(const FormulaT& qfree, const QEQuery& quantifiers)
-        : mQuery(quantifiers)
-        , mFormula(qfree)
-    {
-        assert(qfree.type() == carl::FormulaType::CONSTRAINT || qfree.is_real_constraint_conjunction());
+public:
+    FourierMotzkinQE(const FormulaT &qfree, const QEQuery &quantifiers)
+            : m_query(quantifiers), m_formula(qfree) {
+
+        assert(
+            qfree.type() == carl::FormulaType::CONSTRAINT ||
+            qfree.is_real_constraint_conjunction()
+        );
     }
 
     FormulaT eliminateQuantifiers();
 
 private:
-    FormulaPartition findBounds(const carl::Variable& variable);
 
-    FormulasT createNewConstraints(const FormulaPartition& bounds, carl::Variable v);
+    std::pair<matrix_t, vector_t> eliminateCol(const matrix_t& constraints,
+                                               const vector_t& constants,
+                                               std::size_t col,
+                                               bool conservative = true);
 
-    FormulasT substituteEquations(const FormulaPartition& bounds, carl::Variable v);
-
-    bool isLinearLowerBound(const ConstraintT& f, carl::Variable v);
-
-    Poly getRemainder(const ConstraintT& c, carl::Variable v, bool isLowerBnd);
+    std::pair<matrix_t, vector_t> eliminateCols(const matrix_t &constraints,
+                                                const vector_t constants,
+                                                const std::vector<std::size_t> &cols,
+                                                bool conservative = true);
 };
 
 } // smtrat

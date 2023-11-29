@@ -5,13 +5,16 @@
 #include "QEQuery.h"
 
 //#include "cad/qe.h"
-//#include "fm/qe.h"
+#include "fm/qe.h"
 #include "fmplex/qe.h"
 
 namespace smtrat::qe {
 
+// namespace elimination_method = fmplex;
+namespace elimination_method = fm;
+
 inline void qe(const FormulaT& formula, std::ostream& output){
-	auto res = fmplex::qe(formula);
+	auto res = elimination_method::qe(formula);
 	output << "Equivalent Quantifier-Free Formula: " << res << std::endl;
 }
 
@@ -26,13 +29,14 @@ inline void eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quantifie
 			}
 		)) {
 			SMTRAT_LOG_DEBUG("smtrat.qe","call fmplex");
-			FormulaT res = fmplex::eliminateQuantifiers(qfree, quantifiers);
+			FormulaT res = elimination_method::eliminateQuantifiers(qfree, quantifiers);
 			output << "Equivalent Quantifier-Free Formula: " << res << std::endl;
 		}
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.qe","call cad");
+		//return cad::eliminateQuantifiers(qfree, quantifiers);
+		assert(false);
 	}
-	SMTRAT_LOG_DEBUG("smtrat.qe","call cad");
-	//return cad::eliminateQuantifiers(qfree, quantifiers);
-	assert(false);
 }
 
 }
