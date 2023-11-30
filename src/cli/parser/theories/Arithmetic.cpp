@@ -429,11 +429,17 @@ bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vec
 			result = Poly(o, args);
 		}
 	} else if (boost::get<carl::Relation>(&op) != nullptr) {
-		if (args.size() == 2) {
+		if (args.size() < 2) {
+			errors.next() << "Operator \"" << boost::get<carl::Relation>(op) << "\" expects at least two operands.";
+			return false;
+		} else if (args.size() == 2) {
 			result = arithmetic::makeConstraint(*this, args[0], args[1], boost::get<carl::Relation>(op));
 		} else {
-			errors.next() << "Operator \"" << boost::get<carl::Relation>(op) << "\" expects exactly two operands.";
-			return false;
+			FormulasT constr;
+			for (std::size_t i = 0; i < args.size()-1; i++) {
+				constr.emplace_back(arithmetic::makeConstraint(*this, args[i], args[i+1], boost::get<carl::Relation>(op)));
+			}
+			result = FormulaT(carl::FormulaType::AND, std::move(constr));			
 		}
 	} else {
 		errors.next() << "Invalid operator \"" << op << "\".";
