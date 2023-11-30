@@ -2,7 +2,6 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include "../util/Matrix.h"
-#include <carl-common/util/streamingOperators.h>
 
 namespace smtrat::qe::fmplex {
 
