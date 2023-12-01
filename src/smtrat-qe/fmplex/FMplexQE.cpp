@@ -20,22 +20,21 @@ FormulaT FMplexQE::eliminate_quantifiers() {
     build_initial_systems();
 
     while (!m_nodes.empty()) {
-        Node& n = m_nodes.back();
-        SMTRAT_LOG_DEBUG("smtrat.qe","Next node:" << n);
+        SMTRAT_LOG_DEBUG("smtrat.qe","Next node:" << m_nodes.back());
 
-        switch (n.type) {
+        switch (m_nodes.back().type) {
         case Node::Type::CONFLICT:
             return FormulaT(carl::FormulaType::FALSE);
         case Node::Type::NBS:
-            m_nodes.back() = unbounded_elimination(n);
+            m_nodes.back() = unbounded_elimination(m_nodes.back());
             break;
         case Node::Type::LBS:[[fallthrough]];
         case Node::Type::UBS:
-            if (n.is_finished()) m_nodes.pop_back();
-            else m_nodes.push_back(bounded_elimination(n));
+            if (m_nodes.back().is_finished()) m_nodes.pop_back();
+            else m_nodes.push_back(bounded_elimination(m_nodes.back()));
             break;
         case Node::Type::FM:
-            if (!fm_elimination(n)) return FormulaT(carl::FormulaType::FALSE);
+            if (!fm_elimination(m_nodes.back())) return FormulaT(carl::FormulaType::FALSE);
             m_nodes.pop_back();
             break;
         case Node::Type::LEAF:
