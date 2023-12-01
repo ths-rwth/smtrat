@@ -275,7 +275,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
                 else local_conflict = true;
             }
         } else if (is_positive_combination(combined_row)) {
-            m_found_conjuncts.insert(constraint_from_row(combined_row));
+            // m_found_conjuncts.insert(constraint_from_row(combined_row));
             m_found_rows.insert(combined_row); // TODO: remove one of these lines!
         }
 
@@ -340,7 +340,7 @@ bool FMplexQE::fm_elimination(Node& parent) {
             if (is_trivial(combined_row)) {
                 if (is_global_conflict(combined_row)) return false;
             } else if (is_positive_combination(combined_row)) {
-                m_found_conjuncts.insert(constraint_from_row(combined_row));
+                // m_found_conjuncts.insert(constraint_from_row(combined_row));
                 m_found_rows.insert(combined_row);
             }
         }
