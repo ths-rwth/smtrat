@@ -181,13 +181,17 @@ public:
 	}
 
 	void qe(){
+		#ifdef CLI_ENABLE_QUANTIFIER_ELIMINATION
 		FormulaT receivedFormula(this->solver.formula());
 		regular() << "Original Formula: " << receivedFormula << std::endl;
-		// smtrat::qe::qe(receivedFormula, regular());
-	#ifdef SMTRAT_DEVOPTION_Statistics
+		smtrat::qe::qe(receivedFormula, regular());
+		#ifdef SMTRAT_DEVOPTION_Statistics
 		carl::statistics::StatisticsCollector::getInstance().collect();
 		std::cout << carl::statistics::statistics_as_smtlib() << std::endl;
-	#endif
+		#endif
+		#else
+		error() << "SMT-RAT has been built without support for quantifier elimination!";
+		#endif
 	}
 
 	void exit() {

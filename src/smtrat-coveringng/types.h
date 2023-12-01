@@ -10,41 +10,49 @@
 #include <smtrat-cadcells/operators/operator_mccallum_complete.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
+#include <boost/container/flat_map.hpp>
+
 namespace smtrat::covering_ng {
 
 template<typename PropertiesSet>
 using Interval = cadcells::datastructures::SampledDerivationRef<PropertiesSet>;
 /**
- * Sorts interval by their lower bounds. 
+ * Sorts interval by their lower bounds.
  */
 template<typename PropertiesSet>
 struct IntervalCompare {
 	inline constexpr bool operator()(const Interval<PropertiesSet>& a, const Interval<PropertiesSet>& b) const {
-		auto cell_a = a->cell();
-		auto cell_b = b->cell();
+		const auto& cell_a = a->cell();
+		const auto& cell_b = b->cell();
 		return cadcells::datastructures::lower_lt_lower(cell_a, cell_b) || (cadcells::datastructures::lower_eq_lower(cell_a, cell_b) && cadcells::datastructures::upper_lt_upper(cell_b, cell_a));
 	}
 };
 template<typename PropertiesSet>
 using IntervalSet = std::set<Interval<PropertiesSet>, IntervalCompare<PropertiesSet>>;
 
+//TODO extend this s.t. the enclosing interval can be returned in any case
 template<typename PropertiesSet>
 struct CoveringResult {
-    enum Status { SAT, UNSAT, FAILED_PROJECTION, FAILED };
-    struct NONE{};
+    enum Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER};
 
     Status status;
-    std::variant<std::vector<Interval<PropertiesSet>>, cadcells::Assignment, NONE> content;
-    
-    CoveringResult() : status(FAILED), content(NONE {}) {}
-    CoveringResult(Status s) : status(s), content(NONE {}) {}
-    CoveringResult(std::vector<Interval<PropertiesSet>>& c) : status(UNSAT), content(c) {}
-    CoveringResult(const cadcells::Assignment& c) : status(SAT), content(c) {}
+	std::optional<std::vector<Interval<PropertiesSet>>> m_intervals;
+	std::optional<cadcells::Assignment> m_sample;
 
-    bool is_failed() {
+	CoveringResult() : status(FAILED) {}
+	explicit CoveringResult(Status s) : status(s){}
+	explicit CoveringResult(std::vector<Interval<PropertiesSet>>& inter) : status(UNSAT), m_intervals(inter) {}
+	explicit CoveringResult(const cadcells::Assignment& ass) : status(SAT), m_sample(ass) {}
+	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter) {}
+	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>&& inter) : status(s), m_intervals(inter) {}
+	CoveringResult(Status s, const cadcells::Assignment& ass) : status(s), m_sample(ass) {}
+	CoveringResult(Status s, const cadcells::Assignment& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
+
+
+    bool is_failed() const {
         return status == FAILED_PROJECTION || status == FAILED;
     }
-    bool is_failed_projection() {
+    bool is_failed_projection() const {
         return status == FAILED_PROJECTION;
     }
     bool is_sat() const {
@@ -53,12 +61,107 @@ struct CoveringResult {
     bool is_unsat() const {
         return status == UNSAT;
     }
+	bool is_parameter() const {
+		return  status == PARAMETER;
+	}
     const auto& sample() const {
-        return std::get<cadcells::Assignment>(content);
+        assert(m_sample.has_value() && "Sample is not set.");
+		return m_sample.value();
     }
     const auto& intervals() const {
-        return std::get<std::vector<Interval<PropertiesSet>>>(content);
+        assert(m_intervals.has_value() && "Intervals are not set.");
+		return m_intervals.value();
     }
 };
+
+template<typename PropertiesSet>
+std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& result){
+	switch (result.status) {
+	case CoveringResult<PropertiesSet>::SAT:
+		os << "SAT" ;
+		break;
+	case CoveringResult<PropertiesSet>::UNSAT:
+		os << "UNSAT" ;
+		break;
+	case CoveringResult<PropertiesSet>::FAILED:
+		os << "Failed" ;
+		break;
+	case CoveringResult<PropertiesSet>::FAILED_PROJECTION:
+		os << "Failed Projection" ;
+		break;
+	case CoveringResult<PropertiesSet>::PARAMETER:
+		os << "Parameter" ;
+		break;
+	}
+	return os;
+}
+
+
+enum VariableQuantificationType {
+	EXISTS,
+	FORALL,
+	FREE
+};
+
+inline std::ostream& operator<<(std::ostream& os, const VariableQuantificationType& type){
+	switch(type) {
+		case VariableQuantificationType::EXISTS:
+			os << "exists";
+			break;
+		case VariableQuantificationType::FORALL:
+			os << "forall";
+			break;
+		case VariableQuantificationType::FREE:
+			os << "free";
+			break;
+	}
+	return os;
+}
+
+class VariableQuantification {
+private:
+	boost::container::flat_map<carl::Variable, VariableQuantificationType> m_var_types;
+
+public:
+	[[nodiscard]] const auto& var_types() const {
+		return m_var_types;
+	}
+
+	/**
+	 * Returns the type of the given variable.
+	 * @param var The variable.
+	 * @return The type of the variable. Returns EXISTS if the variable is not quantified.
+	 **/
+	[[nodiscard]] VariableQuantificationType var_type(const carl::Variable& var) const{
+		auto it = m_var_types.find(var);
+		if (it == m_var_types.end()) {
+			return VariableQuantificationType::FREE;
+		}
+		return it->second;
+	}
+
+	bool has(const carl::Variable& var) const{
+		return m_var_types.find(var) != m_var_types.end();
+	}
+
+	template<typename C>
+	void set_var_types(const C& vars, const VariableQuantificationType& type){
+		for(const auto& var : vars) {
+			set_var_type(var, type);
+		}
+	}
+
+	void set_var_type(const carl::Variable& var, VariableQuantificationType type){
+		m_var_types[var] = type;
+	}
+
+};
+
+inline std::ostream& operator<<(std::ostream& os, const VariableQuantification& vq) {
+	for (const auto& [var, type] : vq.var_types()) {
+		os << "(" << type << " " << var << ")";
+	}
+	return os;
+}
 
 }

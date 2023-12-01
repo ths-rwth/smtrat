@@ -12,7 +12,7 @@ namespace internal {
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
-    static constexpr cadcells::operators::op op = cadcells::operators::op::mccallum_complete;
+    using op = cadcells::operators::Mccallum_complete;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {

@@ -101,6 +101,10 @@ public:
     void revert_valuation(const cadcells::Assignment& ass);
     std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants() const;
     Valuation root_valuation() const;
+
+    GraphEvaluation clone() const { // temporary solution
+        return GraphEvaluation(m_implicant_complexity_ordering, m_results, m_constraint_complexity_ordering, m_stop_evaluation_on_conflict, m_preprocess, m_postprocess, m_boolean_check, m_boolean_check_only_bool);
+    }
 };
 
 }

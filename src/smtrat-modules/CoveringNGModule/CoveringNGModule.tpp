@@ -74,7 +74,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
         return Answer::SAT;
     }
 
-    auto res = covering_ng::exists<typename Settings::formula_evaluation::Type,typename Settings::op, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
+    auto res = covering_ng::exists<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
 
     if (res.is_failed()) {
         assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());

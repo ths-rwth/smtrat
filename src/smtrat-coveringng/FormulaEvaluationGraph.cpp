@@ -700,6 +700,7 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
     auto var = new_var(assignment, ass);
     assignment = ass; 
     if (var == carl::Variable::NO_VARIABLE) return;
+	if(root_valuation() != Valuation::MULTIVARIATE) return;
     auto atomset = vartof.find(var);
     if (atomset == vartof.end()) return;
 
