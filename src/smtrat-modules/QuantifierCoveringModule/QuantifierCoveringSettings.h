@@ -10,6 +10,7 @@
 
 #include "smtrat-cadcells/representation/heuristics.h"
 #include <smtrat-coveringng/FormulaEvaluationComplexity.h>
+#include "smtrat-coveringng/VariableOrdering.h"
 
 namespace smtrat
 {

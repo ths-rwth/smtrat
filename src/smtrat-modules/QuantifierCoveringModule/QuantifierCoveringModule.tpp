@@ -7,7 +7,7 @@
  */
 
 #include "QuantifierCoveringModule.h"
-#include "smtrat-coveringng/VariableOrdering.h"
+#include <carl-formula/formula/functions/PNF.h>
 
 namespace smtrat {
 template<class Settings>
@@ -59,34 +59,21 @@ Answer QuantifierCoveringModule<Settings>::checkCore() {
 		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Formula after replacing Boolean variables: " << input)
 	}
 
-	auto [quantifiers, matrix] = covering_ng::util::PrenexNormalFormConverter(input).getResult();
+	auto [prefix, matrix] = carl::to_pnf(input);
 
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Original formula: " << input)
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Quantifiers: " << quantifiers)
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Matrix: " << matrix)
+	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Original formula: " << input);
+	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Prefix: " << prefix);
+	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Matrix: " << matrix);
+	#ifdef SMTRAT_DEVOPTION_Validation
+	SMTRAT_VALIDATION_ADD("smtrat.covering_ng", "pnf", FormulaT(carl::FormulaType::IFF, input, carl::to_formula(prefix, matrix)).negated(), false)
+	#endif
+	//assert(!prefix.empty() || input == matrix);
 
-	for (const auto& q : quantifiers) {
-		for (const auto& v : q.getVariables()) {
-			assert(mQuantifiedVariables.find(v) == mQuantifiedVariables.end() && "Variable is quantified twice!");
-			mQuantifiedVariables.emplace(v);
-		}
+	for (const auto& q : prefix) {
+		mVariableQuantification.set_var_type(q.second, q.first);
 	}
 
-	for (const auto& q : quantifiers) {
-		mVariableQuantification.set_var_types(q.getVariables(), q.getType());
-	}
-
-	covering_ng::variables::QuantifierBlock free_variable_block(covering_ng::VariableQuantificationType::FREE);
-	for (const auto& v : matrix.variables()) {
-		if (mVariableQuantification.var_type(v) == covering_ng::VariableQuantificationType::FREE) {
-			free_variable_block.addVariable(v);
-		}
-	}
-	if (!free_variable_block.getVariables().empty()) {
-		quantifiers.insert(quantifiers.begin(), free_variable_block);
-	}
-
-	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(quantifiers, matrix);
+	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
 	cadcells::Polynomial::ContextType context(var_order);
 	cadcells::datastructures::PolyPool pool(context);
@@ -110,18 +97,6 @@ Answer QuantifierCoveringModule<Settings>::checkCore() {
 		mModel.clear();
 		return Answer::SAT;
 	}
-
-#ifdef SMTRAT_DEVOPTION_Validation
-	FormulaT prenexed = matrix;
-	for(const covering_ng::variables::QuantifierBlock& q : quantifiers) {
-		if(q.getType() == covering_ng::VariableQuantificationType::FREE) {
-			continue;
-		}
-		const std::vector<carl::Variable> vars(q.getVariables().begin(), q.getVariables().end());
-		prenexed = FormulaT(q.getType() == covering_ng::VariableQuantificationType::EXISTS ? carl::FormulaType::EXISTS : carl::FormulaType::FORALL, vars, prenexed);
-	}
-	SMTRAT_VALIDATION_ADD("smtrat.covering_ng", "input", prenexed, true)
-#endif
 
 	auto res = covering_ng::recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, mVariableQuantification);
 

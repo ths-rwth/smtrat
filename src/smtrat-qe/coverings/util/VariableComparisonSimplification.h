@@ -2,22 +2,22 @@
 
 #include "FormulaDAG.h"
 
-namespace smtrat::covering_ng::util {
+namespace smtrat::qe::coverings::util {
 
 inline std::optional<VariableComparisonT> convertToVarCompareIfPossible(const FormulaT& formula) {
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Trying to convert Formula: " << formula)
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Trying to convert Formula: " << formula)
 	if (formula.type() != carl::FormulaType::CONSTRAINT) {
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Formula is not a constraint.")
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Formula is not a constraint.")
 		return std::nullopt;
 	}
 	auto& constraint = formula.constraint();
 	auto vars = carl::variables(constraint.lhs());
 	if (vars.size() != 1) {
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Constraint is not univariate.")
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Constraint is not univariate.")
 		return std::nullopt;
 	}
 	if (constraint.lhs().degree(*vars.begin()) > 1) {
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Constraint is not linear.")
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Constraint is not linear.")
 		return std::nullopt;
 	}
 
@@ -69,7 +69,7 @@ inline std::optional<FormulaT> simplifyRelationVariableComparison(const carl::Fo
 	auto& lhs_value = lhs.value();
 	auto& rhs_value = rhs.value();
 	auto comparison_result = compare(lhs_value, rhs_value);
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Checking if " << lhs << " and " << rhs << " are comparable.")
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Checking if " << lhs << " and " << rhs << " are comparable.")
 	if (!comparison_result) {
 		// lhs_value and rhs_value are not comparable
 		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Not comparable")
@@ -543,7 +543,7 @@ inline std::optional<FormulaT> simplifyVariableComparison(const FormulaT& lhs_fo
 		if (!lhs) {
 			return std::nullopt;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Converted: " << lhs_formula << " to " << lhs.value())
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Converted: " << lhs_formula << " to " << lhs.value())
 	}
 	if (rhs_formula.type() == carl::FormulaType::VARCOMPARE) {
 		rhs = rhs_formula.variable_comparison();
@@ -552,12 +552,12 @@ inline std::optional<FormulaT> simplifyVariableComparison(const FormulaT& lhs_fo
 		if (!rhs) {
 			return std::nullopt;
 		}
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Converted: " << rhs_formula << " to " << rhs.value())
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Converted: " << rhs_formula << " to " << rhs.value())
 	}
 
 	if (lhs.value().var() != lhs.value().var()) {
 		// different variables -> no simplification possible
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Not comparable")
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Not comparable")
 		return std::nullopt;
 	}
 	// compared variables are equal, values are equal -> simplifications based on relations
@@ -568,11 +568,11 @@ class VariableComparisonSimplification : public FormulaTransformer<std::pair<For
 
 	std::pair<FormulaT, bool> handle_and_or(const FormulaNode& node) {
 		assert(node.getChildren().size() >= 2);
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Handling AND/OR: " << node)
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Handling AND/OR: " << node)
 		auto formula_type = node.getType();
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Formula Type: " << formula_type)
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Formula Type: " << formula_type)
 		for (const auto& child : node.getChildren()) {
-			SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Child Results: " << child.hash() << " -> " << getResult(child))
+			SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Child Results: " << child.hash() << " -> " << getResult(child))
 		}
 		// Iterate over the variable comparisons and simplify
 		std::set<FormulaT> resulting_simplifications;
@@ -591,15 +591,15 @@ class VariableComparisonSimplification : public FormulaTransformer<std::pair<For
 				change = change || outer_change || inner_change;
 				auto current_simplification = simplifyVariableComparison(outer_formula, inner_formula, formula_type);
 				if (current_simplification.has_value()) {
-					SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Simplification: " << current_simplification.value());
+					SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Simplification: " << current_simplification.value());
 					resulting_simplifications.insert(current_simplification.value());
 					used_in_simplifications.insert(outer);
 					used_in_simplifications.insert(inner);
-					SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Used in simplifications: " << outer_formula << " and " << inner_formula)
+					SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Used in simplifications: " << outer_formula << " and " << inner_formula)
 					change = true; // simplification was possible
 					break;
 				} else {
-					SMTRAT_LOG_DEBUG("smtrat.covering_ng", "No simplification possible");
+					SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "No simplification possible");
 				}
 			}
 		}
@@ -609,28 +609,28 @@ class VariableComparisonSimplification : public FormulaTransformer<std::pair<For
 		for (const auto& child : node.getChildren()) {
 			if (used_in_simplifications.find(child) == used_in_simplifications.end()) {
 				auto& [child_formula, child_change] = getResult(child);
-				SMTRAT_LOG_DEBUG("smtrat.covering_ng", "" << child_formula << " not used in any simplifications")
+				SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "" << child_formula << " not used in any simplifications")
 				subformulas.push_back(child_formula);
 				change = change || child_change;
 			}
 		}
 		for (const auto& child : resulting_simplifications) {
-			SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Adding simplification " << child)
+			SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Adding simplification " << child)
 			subformulas.push_back(child);
 		}
 		if (subformulas.size() == 1) {
 			return std::make_pair(subformulas[0], true);
 		}
 		FormulaT result = FormulaT(formula_type, subformulas);
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Resulting Subformulas: " << subformulas);
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Result: " << result);
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Resulting Subformulas: " << subformulas);
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Result: " << result);
 		return std::make_pair(result, change);
 	}
 
 public:
 	explicit VariableComparisonSimplification(const FormulaT& formula)
 		: FormulaTransformer(formula) {
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "VariableComparisonSimplification: " << formula);
+		SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "VariableComparisonSimplification: " << formula);
 		registerHandler({carl::FormulaType::FALSE, carl::FormulaType::TRUE, carl::FormulaType::CONSTRAINT, carl::FormulaType::VARCOMPARE}, [](const auto& node) { return std::make_pair(node.getFormula(), false); });
 		registerHandler({carl::FormulaType::AND, carl::FormulaType::OR}, [this](const auto& node) { return handle_and_or(node); });
 	}

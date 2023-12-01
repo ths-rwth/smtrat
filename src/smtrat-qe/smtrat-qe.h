@@ -10,15 +10,9 @@
 
 namespace smtrat::qe {
 
-inline void qe(const FormulaT& formula, std::ostream& output){
-	auto res = coverings::qe(formula);
-	output << "Equivalent Quantifier-Free Formula: " << res << std::endl;
+inline std::optional<FormulaT> qe(const FormulaT& formula){
+	return coverings::qe(formula);
 }
 
-inline void eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quantifiers, std::ostream& output) {
-	auto res = coverings::eliminateQuantifiers(qfree, quantifiers);
-	output << "Equivalent Quantifier-Free Formula: " << res << std::endl;
-
-}
 
 } // namespace smtrat::qe

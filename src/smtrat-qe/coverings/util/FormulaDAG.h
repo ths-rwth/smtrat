@@ -3,16 +3,14 @@
 #include "smtrat-common/types.h"
 #include <carl-arith/constraint/BasicConstraint.h>
 #include <carl-formula/formula/Formula.h>
-#include <carl-formula/formula/FormulaContent.h>
 #include <functional>
 #include <initializer_list>
 #include <optional>
 #include <stack>
 #include <type_traits>
 #include <vector>
-#include "../VariableOrdering.h"
 
-namespace smtrat::covering_ng::util {
+namespace smtrat::qe::coverings::util {
 
 /**
  * @brief Class to represent a node in the Formula-DAG
@@ -31,7 +29,6 @@ private:
 	mutable carl::FormulaType m_type;
 	std::vector<FormulaNode> m_children;
 	const FormulaT& m_currentFormula;
-	variables::QuantifierBlock m_quantifiedVariables;
 
 public:
 	explicit FormulaNode(const FormulaT& formula) : m_type(formula.type()), m_currentFormula(formula) {
@@ -39,7 +36,6 @@ public:
 			return;
 		}
 		if (formula.type() == carl::FormulaType::FORALL || formula.type() == carl::FormulaType::EXISTS) {
-			m_quantifiedVariables = variables::QuantifierBlock(formula.quantified_variables(), formula.type());
 			m_children.emplace_back(formula.quantified_formula());
 			return;
 		}
@@ -82,10 +78,6 @@ public:
 		return m_currentFormula;
 	}
 
-	[[nodiscard]] const variables::QuantifierBlock& getQuantifiedVariables() const {
-		return m_quantifiedVariables;
-	}
-
 	/**
 	 * @brief Computes the hash for the node
 	 * @return Hash for the node
@@ -97,10 +89,6 @@ public:
 		}
 
 		boost::hash_combine(m_hash, m_type);
-		if (m_type == carl::FormulaType::FORALL || m_type == carl::FormulaType::EXISTS) {
-			boost::hash_combine(m_hash, m_quantifiedVariables.hash());
-		}
-
 		boost::hash_combine(m_hash, getFormula().hash());
 		boost::hash_combine(m_hash, getFormula().id());
 
@@ -111,19 +99,19 @@ public:
 	}
 };
 
-} // namespace smtrat::covering_ng::util
+} // namespace smtrat::qe::coverings::util
 
 namespace std {
 template<>
-struct hash<smtrat::covering_ng::util::FormulaNode> {
-	std::size_t operator()(const smtrat::covering_ng::util::FormulaNode& node) const {
+struct hash<smtrat::qe::coverings::util::FormulaNode> {
+	std::size_t operator()(const smtrat::qe::coverings::util::FormulaNode& node) const {
 		return node.hash();
 	}
 };
 
 } // namespace std
 
-namespace smtrat::covering_ng::util {
+namespace smtrat::qe::coverings::util {
 
 inline bool operator==(const FormulaNode& lhs, const FormulaNode& rhs) {
 	return std::hash<FormulaNode>()(lhs) == std::hash<FormulaNode>()(rhs);
@@ -232,7 +220,7 @@ public:
 	 */
 	OutputType& getResult() {
 		if (!m_node_results.contains(m_root)) {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Computing results for " << m_root)
+			SMTRAT_LOG_TRACE("smtrat.qe.coverings", "Computing results for " << m_root)
 			// The root has not been processed yet
 			// Starts the walk through the DAG
 			m_stack.emplace(&m_root, false);
@@ -243,7 +231,7 @@ public:
 
 	std::unordered_map<FormulaNode, OutputType>& getResults() {
 		if (!m_node_results.contains(m_root)) {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Computing results for " << m_root)
+			SMTRAT_LOG_TRACE("smtrat.qe.coverings", "Computing results for " << m_root)
 			// The root has not been processed yet
 			// Starts the walk through the DAG
 			m_stack.emplace(&m_root, false);
@@ -326,16 +314,16 @@ private:
 	void compute_node_result(FormulaNode& node) {
 		// Based on the current type of the node -> transform the formula and store it in the node
 		// This function assumes that the children of the node have already been processed
-		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Computing result for node " << node << " of type " << node.getType());
+		SMTRAT_LOG_TRACE("smtrat.qe.coverings", "Computing result for node " << node << " of type " << node.getType());
 
 		if (m_node_results.find(node) != m_node_results.end()) {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Node " << node << " has already been processed");
+			SMTRAT_LOG_TRACE("smtrat.qe.coverings", "Node " << node << " has already been processed");
 			return;
 		}
 
 		assert(m_node_handlers.find(node.getType()) != m_node_handlers.end() && "No handler for this type registered:");
 		m_node_results[node] = m_node_handlers[node.getType()](node);
-		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Result for node " << node << " is " << m_node_results[node]);
+		SMTRAT_LOG_TRACE("smtrat.qe.coverings", "Result for node " << node << " is " << m_node_results[node]);
 	}
 
 	/**
@@ -363,4 +351,4 @@ inline std::ostream& operator<<(std::ostream& os, const FormulaTransformer<Outpu
 	return os;
 }
 
-} // namespace smtrat::covering_ng
+} // namespace smtrat::qe::coverings::util

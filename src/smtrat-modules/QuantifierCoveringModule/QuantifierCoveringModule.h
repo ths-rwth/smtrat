@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include <smtrat-coveringng/util/PrenexNormalForm.h>
 #include <carl-arith/ran/Conversion.h>
 #include <carl-formula/formula/functions/Substitution.h>
 #include <smtrat-common/types.h>
 #include <smtrat-coveringng/Algorithm.h>
+#include "smtrat-coveringng/VariableOrdering.h"
 #include <smtrat-modules/QuantifierCoveringModule/QuantifierCoveringSettings.h>
 #include <smtrat-solver/Module.h>
 #include "smtrat-coveringng/FormulaEvaluation.h"
@@ -22,15 +22,13 @@
 #include <carl-formula/formula/FormulaContent.h>
 #include <queue>
 
+
 namespace smtrat
 {
 	template<typename Settings>
 	class QuantifierCoveringModule : public Module
 	{
 		private:
-
-			carl::Variables  mQuantifiedVariables ; //All variables that are quantified in some way
-
 			covering_ng::VariableQuantification mVariableQuantification;
 			
 		public:

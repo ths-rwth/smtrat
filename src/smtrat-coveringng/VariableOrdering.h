@@ -11,127 +11,6 @@
 
 namespace smtrat::covering_ng::variables {
 
-inline VariableQuantificationType convert_type(const carl::FormulaType& type) {
-	switch (type) {
-	case carl::FormulaType::EXISTS:
-		return VariableQuantificationType::EXISTS;
-	case carl::FormulaType::FORALL:
-		return VariableQuantificationType::FORALL;
-	default:
-		assert(false && "Invalid quantifier type!");
-		return VariableQuantificationType::FREE;
-	}
-}
-
-struct QuantifierBlock {
-	carl::Variables mVariables;
-	VariableQuantificationType mType;
-	mutable size_t mHash = 0;
-	QuantifierBlock()
-		: mType(VariableQuantificationType::FREE) {}
-	QuantifierBlock(const VariableQuantificationType& type)
-		: mType(type) {}
-	QuantifierBlock(carl::Variables vars, const carl::FormulaType& type)
-		: mVariables(std::move(vars)), mType(convert_type(type)) {}
-	QuantifierBlock(carl::Variables&& vars, const carl::FormulaType& type)
-		: mVariables(std::move(vars)), mType(convert_type(type)) {}
-	QuantifierBlock(const std::vector<carl::Variable>& vars, const carl::FormulaType& type)
-		: mVariables(vars.begin(), vars.end()), mType(convert_type(type)) {}
-	QuantifierBlock(carl::Variables vars, const VariableQuantificationType& type)
-		: mVariables(std::move(vars)), mType(type) {}
-	QuantifierBlock(carl::Variables&& vars, const VariableQuantificationType& type)
-		: mVariables(std::move(vars)), mType(type) {}
-	QuantifierBlock(const std::vector<carl::Variable>& vars, const VariableQuantificationType& type)
-		: mVariables(vars.begin(), vars.end()), mType(type) {}
-
-	friend std::ostream& operator<<(std::ostream& os, const QuantifierBlock& qv) {
-		os << "(" << qv.mType << " " << qv.mVariables << ")";
-		return os;
-	}
-
-	void invertQuantifier() {
-		assert(mType != VariableQuantificationType::FREE);
-		if (mType == VariableQuantificationType::EXISTS) {
-			mType = VariableQuantificationType::FORALL;
-		} else if (mType == VariableQuantificationType::FORALL) {
-			mType = VariableQuantificationType::EXISTS;
-		}
-	}
-
-	void addVariable(const carl::Variable& var) {
-		mVariables.insert(var);
-	}
-
-	[[nodiscard]] size_t size() const {
-		return mVariables.size();
-	}
-
-	[[nodiscard]] const carl::Variables& getVariables() const {
-		return mVariables;
-	}
-
-	[[nodiscard]] const VariableQuantificationType& getType() const {
-		return mType;
-	};
-
-	void renameVariable(const carl::Variable& old_variable, const carl::Variable& replacement) {
-		mVariables.erase(old_variable);
-		mVariables.insert(replacement);
-	}
-
-	void renameVariables(const std::map<carl::Variable, carl::Variable>& oldToNew) {
-		for (const auto& [oldVar, newVar] : oldToNew) {
-			if (mVariables.find(oldVar) != mVariables.end()) {
-				renameVariable(oldVar, newVar);
-			}
-		}
-	}
-
-	[[nodiscard]] size_t hash() const {
-		if (mHash != 0) {
-			return mHash;
-		}
-		boost::hash_combine(mHash, mType);
-		// carl::hash_add(mHash, mVariables);
-		for (const auto& var : mVariables) {
-			boost::hash_combine(mHash, var.id());
-		}
-		return mHash;
-	}
-};
-
-inline void unifyQuantifierBlocks(std::vector<QuantifierBlock>& blocks) {
-	if (blocks.empty()) {
-		return; // Nothing to unify in an empty vector.
-	}
-
-	size_t resultIndex = 0;
-	for (size_t i = 1; i < blocks.size(); i++) {
-		if (blocks[i].getType() == blocks[resultIndex].getType()) {
-			for (const auto& var : blocks[i].getVariables()) {
-				blocks[resultIndex].addVariable(var);
-			}
-		} else {
-			resultIndex++;
-			if (i != resultIndex) {
-				blocks[resultIndex] = blocks[i];
-			}
-		}
-	}
-
-	// Resize the vector to remove excess elements.
-	blocks.resize(resultIndex + 1);
-}
-
-inline std::ostream& operator<<(std::ostream& os, const std::vector<QuantifierBlock>& qvs) {
-	os << "[";
-	for (const auto& qv : qvs) {
-		os << qv << ", ";
-	}
-	os << "]";
-	return os;
-}
-
 /**
  * @brief Possible heuristics for variable ordering.
  */
@@ -182,7 +61,23 @@ using carl::operator<<;
  * 3. Return the resulting vector.
  */
 template<mcsat::VariableOrdering vo>
-inline std::vector<carl::Variable> variable_ordering(const std::vector<QuantifierBlock>& quantifiers, const FormulaT& formula) {
+inline std::vector<carl::Variable> variable_ordering(const carl::QuantifierPrefix& quantifiers, const FormulaT& formula) {
+	boost::container::flat_map<carl::Variable, size_t> quantifier_block_index;
+	for (auto v : formula.variables()) {
+		if (std::find_if(quantifiers.begin(), quantifiers.end(), [v](const auto& e) { return e.second == v; }) == quantifiers.end()) {
+			quantifier_block_index[v] = 0;
+		}
+	}
+	std::size_t i = 0;
+	if (!quantifier_block_index.empty()) i++;
+	carl::Quantifier last = carl::Quantifier::FREE;
+	for (const auto& e : quantifiers) {
+		assert(e.first != carl::Quantifier::FREE);
+		if (last != e.first && last != carl::Quantifier::FREE) i++;
+		quantifier_block_index[e.second] = i;
+	}
+
+
 	//1. Calculate the unblocked variable ordering
 	std::vector<ConstraintT> constraints;
 	carl::arithmetic_constraints(formula, constraints);
@@ -190,12 +85,6 @@ inline std::vector<carl::Variable> variable_ordering(const std::vector<Quantifie
 	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Unblocked variable order: " << result);
 
 	//2. Sort the variables in the unblocked variable ordering by the quantifier block they are in.
-	std::map<carl::Variable, size_t> quantifier_block_index;
-	for (size_t i = 0; i < quantifiers.size(); i++) {
-		for (const auto& var : quantifiers[i].getVariables()) {
-			quantifier_block_index[var] = i;
-		}
-	}
 	std::stable_sort(result.begin(), result.end(), [&quantifier_block_index](const auto& lhs, const auto& rhs) {
 		return quantifier_block_index.at(lhs) < quantifier_block_index.at(rhs);
 	});
@@ -216,8 +105,7 @@ inline std::vector<carl::Variable> variable_ordering(const std::vector<Quantifie
  * If the heuristic is inconclusive, sort the remaining variables of this block by some other variable ordering
  * 4. Return the resulting vector.
  */
-inline std::vector<carl::Variable> sort_earliest_splitting(const std::vector<QuantifierBlock>& quantifiers, const FormulaT& base_formula) {
-
+inline std::vector<carl::Variable> sort_earliest_splitting(const carl::QuantifierPrefix& prefix, const FormulaT& base_formula) {
 	//Check if the formula can be split at all ->  if not return some other variable ordering
 	//subformulas will otherwise contain the subformulas of tge formula the first time it can potentially be split
 	std::vector<FormulaT> subformulas;
@@ -225,7 +113,7 @@ inline std::vector<carl::Variable> sort_earliest_splitting(const std::vector<Qua
 	while (subformulas.empty()) {
 		if (formula.is_atom()) {
 			// No splitting possible at all -> return some other variable ordering
-			return impl::variable_ordering<mcsat::VariableOrdering::FeatureBasedBrown>(quantifiers, base_formula);
+			return impl::variable_ordering<mcsat::VariableOrdering::FeatureBasedBrown>(prefix, base_formula);
 		}
 		if (formula.type() == carl::FormulaType::NOT) {
 			formula = formula.subformula();
@@ -233,6 +121,21 @@ inline std::vector<carl::Variable> sort_earliest_splitting(const std::vector<Qua
 			assert(formula.is_nary());
 			subformulas = formula.subformulas();
 		}
+	}
+
+	std::vector<boost::container::flat_set<carl::Variable>> quantifiers;
+	quantifiers.emplace_back();
+	for (auto v : base_formula.variables()) {
+		if (std::find_if(prefix.begin(), prefix.end(), [v](const auto& e) { return e.second == v; }) == prefix.end()) {
+			quantifiers.back().insert(v);
+		}
+	}
+	if (quantifiers.back().empty()) quantifiers.pop_back();
+	carl::Quantifier last = carl::Quantifier::FREE;
+	for (const auto& e : prefix) {
+		assert(e.first != carl::Quantifier::FREE);
+		if (last != e.first && last != carl::Quantifier::FREE) quantifiers.emplace_back();
+		quantifiers.back().insert(e.second);
 	}
 
 	//For each pairwise combination of subformulas, calculate the set of shared variables
@@ -278,7 +181,7 @@ inline std::vector<carl::Variable> sort_earliest_splitting(const std::vector<Qua
 	auto unblocked_sorting = mcsat::variableordering::feature_based_brown(constraints);
 
 	for (const auto& block : quantifiers) {
-		auto block_variables = block.getVariables();
+		auto block_variables = block;
 		while(!block_variables.empty()) {
 			std::map<carl::Variable, std::pair<size_t, size_t>> variables_by_info;
 			for (const auto& var : block_variables) {
@@ -331,7 +234,7 @@ inline std::vector<carl::Variable> sort_earliest_splitting(const std::vector<Qua
 } // namespace impl
 
 template<VariableOrderingHeuristics vo>
-inline std::vector<carl::Variable> get_variable_ordering(const std::vector<QuantifierBlock>& quantifiers, const FormulaT& formula) {
+inline std::vector<carl::Variable> get_variable_ordering(const carl::QuantifierPrefix& quantifiers, const FormulaT& formula) {
 	switch (vo) {
 	case GreedyMaxUnivariate:
 		return impl::variable_ordering<mcsat::VariableOrdering::GreedyMaxUnivariate>(quantifiers, formula);

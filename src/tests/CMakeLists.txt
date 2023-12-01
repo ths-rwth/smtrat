@@ -31,4 +31,3 @@ add_dependencies(TestCommon resources GTESTCORE_STATIC GTESTMAIN_STATIC)
 
 add_subdirectory(smtrat-cadcells)
 add_subdirectory(smtrat-mcsat)
-add_subdirectory(quantifier-covering)

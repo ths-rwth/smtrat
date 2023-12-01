@@ -176,10 +176,10 @@ inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructur
 	const auto variable = first_unassigned_var(ass, proj.polys().var_order());
 	const auto quantificationType = quantification.var_type(variable);
 
-	if (quantificationType == VariableQuantificationType::EXISTS || quantificationType == VariableQuantificationType::FREE) {
+	if (quantificationType == carl::Quantifier::EXISTS || quantificationType == carl::Quantifier::FREE) {
 		return exists_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
 	} else {
-		assert(quantificationType == VariableQuantificationType::FORALL);
+		assert(quantificationType == carl::Quantifier::FORALL);
 		return forall_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
 	}
 }
@@ -344,7 +344,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 				res = CoveringResult<typename op::PropertiesSet>(CoveringResult<typename op::PropertiesSet>::FAILED_PROJECTION);
 			}
 			// Check if next variable is free or quantified -> Call parameter or recurse
-		} else if (quantification.var_type(first_unassigned_var(ass, proj.polys().var_order())) == VariableQuantificationType::FREE) {
+		} else if (quantification.var_type(first_unassigned_var(ass, proj.polys().var_order())) == carl::Quantifier::FREE) {
 			assert(f.root_valuation() == formula::Valuation::MULTIVARIATE);
 			assert(!is_full_sample(ass, proj.polys().var_order()));
 			std::tie(res, higher_dimension_formula) = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);

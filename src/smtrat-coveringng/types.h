@@ -9,6 +9,7 @@
 #include <smtrat-cadcells/operators/operator_mccallum.h>
 #include <smtrat-cadcells/operators/operator_mccallum_complete.h>
 #include <smtrat-cadcells/representation/heuristics.h>
+#include <carl-formula/formula/functions/PNF.h>
 
 #include <boost/container/flat_map.hpp>
 
@@ -96,31 +97,9 @@ std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& 
 	return os;
 }
 
-
-enum VariableQuantificationType {
-	EXISTS,
-	FORALL,
-	FREE
-};
-
-inline std::ostream& operator<<(std::ostream& os, const VariableQuantificationType& type){
-	switch(type) {
-		case VariableQuantificationType::EXISTS:
-			os << "exists";
-			break;
-		case VariableQuantificationType::FORALL:
-			os << "forall";
-			break;
-		case VariableQuantificationType::FREE:
-			os << "free";
-			break;
-	}
-	return os;
-}
-
 class VariableQuantification {
 private:
-	boost::container::flat_map<carl::Variable, VariableQuantificationType> m_var_types;
+	boost::container::flat_map<carl::Variable, carl::Quantifier> m_var_types;
 
 public:
 	[[nodiscard]] const auto& var_types() const {
@@ -132,10 +111,10 @@ public:
 	 * @param var The variable.
 	 * @return The type of the variable. Returns EXISTS if the variable is not quantified.
 	 **/
-	[[nodiscard]] VariableQuantificationType var_type(const carl::Variable& var) const{
+	[[nodiscard]] carl::Quantifier var_type(const carl::Variable& var) const{
 		auto it = m_var_types.find(var);
 		if (it == m_var_types.end()) {
-			return VariableQuantificationType::FREE;
+			return carl::Quantifier::FREE;
 		}
 		return it->second;
 	}
@@ -144,14 +123,7 @@ public:
 		return m_var_types.find(var) != m_var_types.end();
 	}
 
-	template<typename C>
-	void set_var_types(const C& vars, const VariableQuantificationType& type){
-		for(const auto& var : vars) {
-			set_var_type(var, type);
-		}
-	}
-
-	void set_var_type(const carl::Variable& var, VariableQuantificationType type){
+	void set_var_type(const carl::Variable& var, carl::Quantifier type){
 		m_var_types[var] = type;
 	}
 

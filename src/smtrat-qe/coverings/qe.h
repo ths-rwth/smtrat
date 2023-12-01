@@ -11,17 +11,13 @@
 #include <smtrat-cadcells/operators/operator.h>
 #include <smtrat-coveringng/Algorithm.h>
 
-#include "../QEQuery.h"
 #include "Settings.h"
-#include "smtrat-coveringng/util/VariableComparisonSimplification.h"
 #include "smtrat-cadcells/datastructures/roots.h"
 #include "smtrat-coveringng/VariableOrdering.h"
 
 namespace smtrat::qe::coverings {
 
 using Settings = DefaultSettings;
-
-std::optional<FormulaT> eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quantifiers);
 
 std::optional<FormulaT> qe(const FormulaT& formula);
 
