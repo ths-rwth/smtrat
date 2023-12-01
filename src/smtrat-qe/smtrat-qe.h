@@ -10,8 +10,8 @@
 
 namespace smtrat::qe {
 
-// namespace elimination_method = fmplex;
-namespace elimination_method = fm;
+// namespace elimination_method = fm;
+namespace elimination_method = fmplex;
 
 inline void qe(const FormulaT& formula, std::ostream& output){
 	auto res = elimination_method::qe(formula);
