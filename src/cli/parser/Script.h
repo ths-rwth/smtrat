@@ -43,13 +43,6 @@ struct ErrorHandler {
 	}
 };
 
-struct QuantifierParser: public qi::symbols<char, qe::QuantifierType> {
-	QuantifierParser() {
-		add("exists", qe::QuantifierType::EXISTS);
-		add("forall", qe::QuantifierType::FORALL);
-	}
-};
-
 template<typename Callee>
 struct ScriptParser: public qi::grammar<Iterator, Skipper> {
 	ScriptParser(InstructionHandler& h, Theories& theories, Callee& callee):
