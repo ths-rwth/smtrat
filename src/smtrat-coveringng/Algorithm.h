@@ -83,6 +83,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
     SMTRAT_LOG_FUNC("smtrat.covering_ng", intervals);
     std::vector<Interval<typename op::PropertiesSet>> derivations(intervals.begin(), intervals.end());
     auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
     auto cell_derivs = representation.sampled_derivations();
     cadcells::datastructures::merge_underlying(cell_derivs);
     if (!op::project_covering_properties(representation)) return std::nullopt;
@@ -90,6 +91,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
     if (!op::project_basic_properties(*new_deriv)) return std::nullopt;
     op::delineate_properties(*new_deriv);
     new_deriv->delineate_cell();
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
     return new_deriv;
 }
@@ -97,13 +99,16 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
 template<typename op, cadcells::representation::CellHeuristic cell_heuristic>
 inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval(Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", interval->cell());
+	interval->insert(cadcells::operators::properties::cell_connected{ interval->level() }); // TODO is this the proper way?
 	auto representation = cadcells::representation::cell<cell_heuristic>::compute(interval);
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
 	assert((interval->level() > 1));
 	if (!op::project_cell_properties(representation)) return std::nullopt;
 	Interval<typename op::PropertiesSet> new_deriv = interval->underlying().sampled_ref();
 	if (!op::project_basic_properties(*new_deriv)) return std::nullopt;
 	op::delineate_properties(*new_deriv);
 	new_deriv->delineate_cell();
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
 	return new_deriv;
 }
