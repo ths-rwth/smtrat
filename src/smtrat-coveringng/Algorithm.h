@@ -90,6 +90,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
     if (!op::project_basic_properties(*new_deriv)) return std::nullopt;
     op::delineate_properties(*new_deriv);
     new_deriv->delineate_cell();
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
     return new_deriv;
 }
 
@@ -103,6 +104,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval
 	if (!op::project_basic_properties(*new_deriv)) return std::nullopt;
 	op::delineate_properties(*new_deriv);
 	new_deriv->delineate_cell();
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
 	return new_deriv;
 }
 
