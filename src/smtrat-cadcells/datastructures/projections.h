@@ -50,8 +50,12 @@ class Projections {
 
     auto& cache(PolyRef p) {
         assert(p.level > 0);
-        m_poly_cache.resize(p.level);
-        m_poly_cache[p.level-1].resize(p.id+1);
+        if (p.level-1 >= m_poly_cache.size()) {
+            m_poly_cache.resize(p.level);
+        }
+        if (p.id >= m_poly_cache[p.level-1].size()) {
+            m_poly_cache[p.level-1].resize(p.id+1);
+        }
         return m_poly_cache[p.level-1][p.id];
     }
     const auto& cache(PolyRef p) const {
