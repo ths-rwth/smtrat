@@ -101,21 +101,24 @@ Answer QuantifierCoveringModule<Settings>::checkCore() {
 	auto res = covering_ng::recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, mVariableQuantification);
 
 	if (res.is_failed()) {
+		assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());
 		mModel.clear();
 		return Answer::UNKNOWN;
 	}
 	if (res.is_sat()) {
 		mModel.clear();
-		for (const auto& a : res.sample()) {
-			if constexpr (Settings::transform_boolean_variables_to_reals) {
-				auto var_mapping_it = var_mapping.find(a.first);
-				if (var_mapping_it != var_mapping.end()) {
-					mModel.emplace(var_mapping_it->second, a.second > 0);
+		if (res.sample()) {
+			for (const auto& a : *res.sample()) {
+				if constexpr (Settings::transform_boolean_variables_to_reals) {
+					auto var_mapping_it = var_mapping.find(a.first);
+					if (var_mapping_it != var_mapping.end()) {
+						mModel.emplace(var_mapping_it->second, a.second > 0);
+					} else {
+						mModel.emplace(a.first, carl::convert<smtrat::RAN>(a.second));
+					}
 				} else {
 					mModel.emplace(a.first, carl::convert<smtrat::RAN>(a.second));
 				}
-			} else {
-				mModel.emplace(a.first, carl::convert<smtrat::RAN>(a.second));
 			}
 		}
 		return Answer::SAT;

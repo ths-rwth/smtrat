@@ -31,66 +31,65 @@ struct IntervalCompare {
 template<typename PropertiesSet>
 using IntervalSet = std::set<Interval<PropertiesSet>, IntervalCompare<PropertiesSet>>;
 
-//TODO extend this s.t. the enclosing interval can be returned in any case
+enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER };
+
 template<typename PropertiesSet>
 struct CoveringResult {
-    enum Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER};
-
     Status status;
 	std::optional<std::vector<Interval<PropertiesSet>>> m_intervals;
 	std::optional<cadcells::Assignment> m_sample;
 
-	CoveringResult() : status(FAILED) {}
+	CoveringResult() : status(Status::FAILED) {}
 	explicit CoveringResult(Status s) : status(s){}
-	explicit CoveringResult(std::vector<Interval<PropertiesSet>>& inter) : status(UNSAT), m_intervals(inter) {}
-	explicit CoveringResult(const cadcells::Assignment& ass) : status(SAT), m_sample(ass) {}
+	// explicit CoveringResult(std::vector<Interval<PropertiesSet>>& inter) : status(UNSAT), m_intervals(inter) {}
+	// explicit CoveringResult(const cadcells::Assignment& ass) : status(SAT), m_sample(ass) {}
 	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter) {}
 	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>&& inter) : status(s), m_intervals(inter) {}
 	CoveringResult(Status s, const cadcells::Assignment& ass) : status(s), m_sample(ass) {}
+	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass) : status(s), m_sample(ass) {}
 	CoveringResult(Status s, const cadcells::Assignment& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
-
+	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
 
     bool is_failed() const {
-        return status == FAILED_PROJECTION || status == FAILED;
+        return status == Status::FAILED_PROJECTION || status == Status::FAILED;
     }
-    bool is_failed_projection() const {
-        return status == FAILED_PROJECTION;
+	bool is_failed_projection() const {
+        return status == Status::FAILED_PROJECTION;
     }
     bool is_sat() const {
-        return status == SAT;
+        return status == Status::SAT;
     }
     bool is_unsat() const {
-        return status == UNSAT;
+        return status == Status::UNSAT;
     }
 	bool is_parameter() const {
-		return  status == PARAMETER;
+		return  status == Status::PARAMETER;
 	}
     const auto& sample() const {
-        assert(m_sample.has_value() && "Sample is not set.");
-		return m_sample.value();
+		return m_sample;
     }
     const auto& intervals() const {
-        assert(m_intervals.has_value() && "Intervals are not set.");
-		return m_intervals.value();
+        assert(m_intervals);
+		return *m_intervals;
     }
 };
 
 template<typename PropertiesSet>
 std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& result){
 	switch (result.status) {
-	case CoveringResult<PropertiesSet>::SAT:
+	case Status::SAT:
 		os << "SAT" ;
 		break;
-	case CoveringResult<PropertiesSet>::UNSAT:
+	case Status::UNSAT:
 		os << "UNSAT" ;
 		break;
-	case CoveringResult<PropertiesSet>::FAILED:
+	case Status::FAILED:
 		os << "Failed" ;
 		break;
-	case CoveringResult<PropertiesSet>::FAILED_PROJECTION:
+	case Status::FAILED_PROJECTION:
 		os << "Failed Projection" ;
 		break;
-	case CoveringResult<PropertiesSet>::PARAMETER:
+	case Status::PARAMETER:
 		os << "Parameter" ;
 		break;
 	}
