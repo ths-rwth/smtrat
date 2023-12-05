@@ -1,5 +1,7 @@
 #pragma once
 
+#include <smtrat-cadcells/datastructures/projections.h>
+
 namespace smtrat::covering_ng::formula::complexity {
 
 

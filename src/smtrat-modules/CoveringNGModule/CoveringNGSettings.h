@@ -1,6 +1,13 @@
 #pragma once
 
+#include <smtrat-coveringng/FormulaEvaluation.h>
+#include <smtrat-coveringng/FormulaEvaluationGraph.h>
+#include <smtrat-coveringng/FormulaEvaluationNode.h>
 #include <smtrat-coveringng/FormulaEvaluationComplexity.h>
+#include <smtrat-coveringng/VariableOrdering.h>
+#include <smtrat-coveringng/Sampling.h>
+#include <smtrat-cadcells/operators/operator.h>
+#include <smtrat-cadcells/representation/heuristics.h>
 
 namespace smtrat {
 
@@ -11,18 +18,19 @@ struct CoveringNGSettingsDefault {
     static constexpr bool transform_boolean_variables_to_reals = true;
 
     // Variable ordering
-    static constexpr mcsat::VariableOrdering variable_ordering = mcsat::VariableOrdering::GreedyMaxUnivariate;
+    static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
 
     // Projection operator
-    using op = cadcells::operators::Mccallum;
-    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
+    using op = cadcells::operators::MccallumComplete;
+    static constexpr cadcells::representation::CellHeuristic cell_heuristic = cadcells::representation::BIGGEST_CELL;
+    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
     static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
 
     // Implicant computation
     struct formula_evaluation {
-        using Type = covering_ng::formula::Minimal;
-        static auto create(cadcells::datastructures::Projections&) {
-            return Type(covering_ng::formula::node_ds::complexity::min_tdeg_ordering);
+        using Type = covering_ng::formula::GraphEvaluation;
+        static auto create(cadcells::datastructures::Projections& proj) {
+            return Type(std::bind_front(covering_ng::formula::complexity::sotd, proj), 1, covering_ng::formula::complexity::min_tdeg, false, true, false, false);
         }
     };
 };
@@ -158,11 +166,11 @@ struct CoveringNGSettingsGraphSingleChoicePostprocess : CoveringNGSettingsDefaul
 };
 
 struct CoveringNGSettingsGraphSingleChoicePickering : CoveringNGSettingsGraphSingleChoice {
-    static constexpr mcsat::VariableOrdering variable_ordering = mcsat::VariableOrdering::FeatureBasedPickering;
+    static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
 };
 
 struct CoveringNGSettingsGraphSingleChoiceBrown : CoveringNGSettingsGraphSingleChoice {
-    static constexpr mcsat::VariableOrdering variable_ordering = mcsat::VariableOrdering::FeatureBasedBrown;
+    static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedBrown;
 };
 
 struct CoveringNGSettingsGraphSingleChoiceFact : CoveringNGSettingsDefault  {

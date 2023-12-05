@@ -1,10 +1,6 @@
 #pragma once
 
 #include <smtrat-solver/Module.h>
-
-#include <smtrat-coveringng/Algorithm.h>
-#include <smtrat-mcsat/variableordering/VariableOrdering.h>
-
 #include "CoveringNGSettings.h"
 
 namespace smtrat {

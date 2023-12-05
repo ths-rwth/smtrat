@@ -21,6 +21,7 @@ enum VariableOrderingHeuristics {
 	FeatureBasedBrown,
 	FeatureBasedTriangular,
 	FeatureBasedLexicographic,
+	FeatureBasedPickering,
 	EarliestSplitting,
 };
 
@@ -38,6 +39,8 @@ inline std::string get_name(VariableOrderingHeuristics ordering) {
 		return "FeatureBasedTriangular";
 	case FeatureBasedLexicographic:
 		return "FeatureBasedLexicographic";
+	case FeatureBasedPickering:
+		return "FeatureBasedPickering";
 	case EarliestSplitting:
 		return "EarliestSplitting";
 	default:
@@ -248,6 +251,8 @@ inline std::vector<carl::Variable> get_variable_ordering(const carl::QuantifierP
 		return impl::variable_ordering<mcsat::VariableOrdering::FeatureBasedTriangular>(quantifiers, formula);
 	case FeatureBasedLexicographic:
 		return impl::variable_ordering<mcsat::VariableOrdering::FeatureBasedLexicographic>(quantifiers, formula);
+	case FeatureBasedPickering:
+		return impl::variable_ordering<mcsat::VariableOrdering::FeatureBasedPickering>(quantifiers, formula);
 	case EarliestSplitting:
 		return impl::sort_earliest_splitting(quantifiers, formula);
 	}

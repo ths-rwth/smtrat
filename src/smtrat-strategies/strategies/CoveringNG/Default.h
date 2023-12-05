@@ -1,7 +1,6 @@
 #pragma once
 
 #include <smtrat-modules/CoveringNGModule/CoveringNGModule.h>
-#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
@@ -10,13 +9,11 @@ namespace smtrat {
  * The most efficient CoveringNG strategy with preprocessing.
  * 
  */
-class CoveringNG_PPDefault: public Manager {
+class CoveringNG_Default: public Manager {
 public:
-	CoveringNG_PPDefault() : Manager() {
+	CoveringNG_Default() : Manager() {
 		setStrategy(
-			addBackend<FPPModule<FPPSettings1>>({
-                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
-            })
+            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
         );
 	}
 };
