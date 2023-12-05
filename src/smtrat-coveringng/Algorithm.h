@@ -91,7 +91,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
     if (!op::project_basic_properties(*new_deriv)) return std::nullopt;
     op::delineate_properties(*new_deriv);
     new_deriv->delineate_cell();
-	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got " << new_deriv->cell());
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got interval " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
     return new_deriv;
 }
@@ -108,7 +108,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval
 	if (!op::project_basic_properties(*new_deriv)) return std::nullopt;
 	op::delineate_properties(*new_deriv);
 	new_deriv->delineate_cell();
-	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got " << new_deriv->cell());
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got interval " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
 	return new_deriv;
 }
@@ -353,14 +353,18 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 			intervals.insert(res.intervals().begin(), res.intervals().end());
 		}
 	} // end while
-
-	auto new_interval = characterize_covering<op, covering_heuristic>(intervals);
-	if (new_interval) {
-		std::vector<Interval<typename op::PropertiesSet>> new_intervals({*new_interval});
-		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER, new_intervals), current_result);
+	if (ass.empty()) {
+		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
+		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER), current_result);
 	} else {
-		SMTRAT_LOG_INFO("smtrat.covering_ng", "Failed due to incomplete projection");
-		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), FormulaT());
+		auto new_interval = characterize_covering<op, covering_heuristic>(intervals);
+		if (new_interval) {
+			std::vector<Interval<typename op::PropertiesSet>> new_intervals({*new_interval});
+			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER, new_intervals), current_result);
+		} else {
+			SMTRAT_LOG_INFO("smtrat.covering_ng", "Failed due to incomplete projection");
+			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), FormulaT());
+		}
 	}
 }
 
