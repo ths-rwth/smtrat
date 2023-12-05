@@ -128,7 +128,7 @@ inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructure
         ass.emplace(variable, *sample);
         f.extend_valuation(ass);
         if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
             return CoveringResult<typename op::PropertiesSet>();
         }
         CoveringResult<typename op::PropertiesSet> res;
@@ -164,42 +164,40 @@ inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructure
             return CoveringResult<typename op::PropertiesSet>(new_intervals);
         }
         else {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incompleteness");
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
             return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
         }
     }
 }
 
 template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification);
+inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
 template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification);
+inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment& ass, const VariableQuantification& quantification) {
+inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment& ass, const VariableQuantification& quantification, bool characterize_sat = false, bool characterize_unsat = false) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 
 	const auto variable = first_unassigned_var(ass, proj.polys().var_order());
 	const auto quantificationType = quantification.var_type(variable);
 
 	if (quantificationType == carl::Quantifier::EXISTS || quantificationType == carl::Quantifier::FREE) {
-		return exists_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+		return exists_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, characterize_unsat);
 	} else {
 		assert(quantificationType == carl::Quantifier::FORALL);
-		return forall_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+		return forall_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, characterize_unsat);
 	}
 }
 
-// TODO detect when we do not need to compute SAT intervals (but only samples); same for forall case
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
+inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	//assert(f.root_valuation() != formula::Valuation::FALSE);
 	IntervalSet<typename op::PropertiesSet> unsat_intervals;
 	auto variable = first_unassigned_var(ass, proj.polys().var_order());
 	std::optional<cadcells::RAN> sample;
-	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Current Assignment: " << ass);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Current Var: " << variable << " of level: " << ass.size() << "/" << proj.polys().var_order().size());
 	while (sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(unsat_intervals, f), sample != std::nullopt) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
@@ -207,7 +205,7 @@ inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastru
 		f.extend_valuation(ass);
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
             return CoveringResult<typename op::PropertiesSet>();
         }
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got evaluation: " << f.root_valuation());
@@ -217,12 +215,13 @@ inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastru
 			if (new_intervals.size() > 0) {
 				res = CoveringResult<typename op::PropertiesSet>(f.root_valuation() == formula::Valuation::TRUE ? Status::SAT : Status::UNSAT, new_intervals);
 			} else {
+				SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
 				res = CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 			}
 		} else {
 			assert(f.root_valuation() == formula::Valuation::MULTIVARIATE);
 			assert(!is_full_sample(ass, proj.polys().var_order()));
-			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, true);
 		}
 		std::optional<cadcells::Assignment> sat_sample;
 		if (quantification.var_type(variable) == carl::Quantifier::FREE && res.is_sat()) {
@@ -237,41 +236,44 @@ inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastru
 		if (res.is_failed()) {
 			return CoveringResult<typename op::PropertiesSet>(res.status);
 		} else if (res.is_sat()) {
-			if (ass.empty()) {
-				SMTRAT_LOG_TRACE("smtrat.covering_ng", "Found SAT in lowest level in exists");
+			if (ass.empty() || !characterize_sat) {
+				SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
 				return CoveringResult<typename op::PropertiesSet>(Status::SAT, sat_sample);
 			}
 			std::vector<Interval<typename op::PropertiesSet>> new_intervals;
+			assert(!res.intervals().empty());
 			for (auto interval : res.intervals()) {
 				auto new_interval = characterize_interval<op, cell_heuristic>(interval);
-				if(new_interval){
+				if (new_interval) {
 					new_intervals.push_back(new_interval.value());
 				} else {
-					SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incompleteness");
+					SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 					return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 				}
 			}
 			return CoveringResult<typename op::PropertiesSet>(Status::SAT, sat_sample, new_intervals);
 		} else {
 			assert(res.is_unsat());
+			assert(!res.intervals().empty());
 			unsat_intervals.insert(res.intervals().begin(), res.intervals().end());
 		}
 	} // end while
-	if (ass.empty()) {
+	if (ass.empty() || !characterize_unsat) {
+		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
 		return CoveringResult<typename op::PropertiesSet>(Status::UNSAT);
 	} else {
 		auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
 		if (new_interval) {
 			return CoveringResult<typename op::PropertiesSet>(Status::UNSAT, ass, std::vector({new_interval.value()}));
 		} else {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incompleteness");
+			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 			return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 		}
 	}
 }
 
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
+inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	//assert(f.root_valuation() != formula::Valuation::FALSE);
 	IntervalSet<typename op::PropertiesSet> sat_intervals;
@@ -285,7 +287,7 @@ inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastru
 		f.extend_valuation(ass);
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
             return CoveringResult<typename op::PropertiesSet>();
         }
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got evaluation: " << f.root_valuation());
@@ -295,46 +297,50 @@ inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastru
 			if (new_intervals.size() > 0) {
 				res = CoveringResult<typename op::PropertiesSet>(f.root_valuation() == formula::Valuation::TRUE ? Status::SAT : Status::UNSAT, new_intervals);
 			} else {
+				SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
 				res = CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 			}
 		} else {
 			assert(f.root_valuation() == formula::Valuation::MULTIVARIATE);
 			assert(!is_full_sample(ass, proj.polys().var_order()));
-			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, true, characterize_unsat);
 		}
 		ass.erase(variable);
 		f.revert_valuation(ass);
 		if (res.is_failed()) {
 			return CoveringResult<typename op::PropertiesSet>(res.status);
 		} else if (res.is_unsat()) {
-			if (ass.empty()) {
-				SMTRAT_LOG_TRACE("smtrat.covering_ng", "Found UNSAT in forall on lowest level");
+			if (ass.empty() || !characterize_unsat) {
+				SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
 				return CoveringResult<typename op::PropertiesSet>(Status::UNSAT);
 			}
-			std::vector<Interval<typename op::PropertiesSet>> new_intervals ;
+			std::vector<Interval<typename op::PropertiesSet>> new_intervals;
+			assert(!res.intervals().empty());
 			for (auto interval : res.intervals()) {
 				auto new_interval = characterize_interval<op, cell_heuristic>(interval) ;
 				if (new_interval) {
 					new_intervals.push_back(new_interval.value());
 				} else {
-					SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incompleteness");
+					SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 					return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 				}
 			}
 			return CoveringResult<typename op::PropertiesSet>(Status::UNSAT, new_intervals);
 		} else {
 			assert(res.is_sat());
+			assert(!res.intervals().empty());
 			sat_intervals.insert(res.intervals().begin(), res.intervals().end());
 		}
 	} // end while
-	if (ass.empty()) {
+	if (ass.empty() ||!characterize_sat) {
+		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
 		return CoveringResult<typename op::PropertiesSet>(Status::SAT);
 	} else {
 		auto new_interval = characterize_covering<op, covering_heuristic>(sat_intervals);
 		if (new_interval) {
 			return CoveringResult<typename op::PropertiesSet>(Status::SAT, {new_interval.value()});
 		} else {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incompleteness");
+			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 			return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 		}
 	}
@@ -354,7 +360,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 		f.extend_valuation(ass);
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got full sample, but formula does not evaluate");
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
             return std::make_pair(CoveringResult<typename op::PropertiesSet>(), FormulaT());
         }
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got evaluation: " << f.root_valuation());
@@ -366,6 +372,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 			if (new_intervals.size() > 0) {
 				res = CoveringResult<typename op::PropertiesSet>(Status::UNSAT, new_intervals);
 			} else {
+				SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
 				res = CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 			}
 		} else if (f.root_valuation() == formula::Valuation::TRUE) {
@@ -374,6 +381,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 			if (new_intervals.size() > 0) {
 				res = CoveringResult<typename op::PropertiesSet>(Status::SAT, new_intervals);
 			} else {
+				SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
 				res = CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 			}
 			// Check if next variable is free or quantified -> Call parameter or recurse
@@ -382,8 +390,8 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 			assert(!is_full_sample(ass, proj.polys().var_order()));
 			std::tie(res, higher_dimension_formula) = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
 		} else {
-			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
-			if(res.is_sat()){
+			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, true, true);
+			if (res.is_sat()) {
 				higher_dimension_formula = FormulaT(carl::FormulaType::TRUE);
 			} else {
 				higher_dimension_formula = FormulaT(carl::FormulaType::FALSE);
@@ -395,6 +403,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 			return std::make_pair(CoveringResult<typename op::PropertiesSet>(res.status), FormulaT());
 		} else {
 			current_result = FormulaT(carl::FormulaType::OR, current_result, FormulaT(carl::FormulaType::AND, util::generateIndexedRootFormula<op>((res)), higher_dimension_formula));
+			assert(!res.intervals().empty());
 			intervals.insert(res.intervals().begin(), res.intervals().end());
 		}
 	} // end while
@@ -404,7 +413,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 		std::vector<Interval<typename op::PropertiesSet>> new_intervals({*new_interval});
 		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER, new_intervals), current_result);
 	} else {
-		SMTRAT_LOG_INFO("smtrat.covering_ng", "Failed due to incompleteness");
+		SMTRAT_LOG_INFO("smtrat.covering_ng", "Failed due to incomplete projection");
 		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), FormulaT());
 	}
 }
