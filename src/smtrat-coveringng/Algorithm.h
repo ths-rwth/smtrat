@@ -116,65 +116,11 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval
 // TODO later: close cell if possible based on flag - implement here or in smtrat-cadcells?
 // TODO later: optionally clear caches
 
-template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm>
-inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass) {
-    SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
-    assert(f.root_valuation() != formula::Valuation::FALSE);
-    IntervalSet<typename op::PropertiesSet> unsat_intervals;
-    carl::Variable variable = first_unassigned_var(ass, proj.polys().var_order());
-    std::optional<cadcells::RAN> sample;
-    while(sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(unsat_intervals, f), sample != std::nullopt) {
-        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
-        ass.emplace(variable, *sample);
-        f.extend_valuation(ass);
-        if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
-            return CoveringResult<typename op::PropertiesSet>();
-        }
-        CoveringResult<typename op::PropertiesSet> res;
-        if (f.root_valuation() == formula::Valuation::FALSE) {
-            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to false");
-            auto new_intervals = get_enclosing_intervals<op, FE>(proj, f, ass);
-            if (new_intervals.size() > 0) res = CoveringResult<typename op::PropertiesSet>(new_intervals);
-            else res = CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
-        } else if (f.root_valuation() == formula::Valuation::TRUE) {
-            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula evaluates to true");
-            res = CoveringResult<typename op::PropertiesSet>(ass);
-        } else {
-            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Formula is multivariate");
-            assert(!is_full_sample(ass, proj.polys().var_order()));
-            res = exists<op, FE, covering_heuristic, sampling_algorithm>(proj, f, ass);
-        }
-        ass.erase(variable);
-        f.revert_valuation(ass);
-        if (res.is_failed()) {
-            return CoveringResult<typename op::PropertiesSet>(res.status);
-        } else if (res.is_sat()) {
-            return res;
-        } else {
-            unsat_intervals.insert(res.intervals().begin(), res.intervals().end());
-        }
-    }
-    if (ass.empty()) {
-        return CoveringResult<typename op::PropertiesSet>(Status::UNSAT);
-    } else {
-        auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
-        if (new_interval) {
-            std::vector<Interval<typename op::PropertiesSet>> new_intervals({*new_interval});
-            return CoveringResult<typename op::PropertiesSet>(new_intervals);
-        }
-        else {
-            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
-            return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
-        }
-    }
-}
+template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
 template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
-
-template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
+inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment& ass, const VariableQuantification& quantification, bool characterize_sat = false, bool characterize_unsat = false) {
@@ -184,15 +130,15 @@ inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructur
 	const auto quantificationType = quantification.var_type(variable);
 
 	if (quantificationType == carl::Quantifier::EXISTS || quantificationType == carl::Quantifier::FREE) {
-		return exists_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, characterize_unsat);
+		return exists<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, characterize_unsat);
 	} else {
 		assert(quantificationType == carl::Quantifier::FORALL);
-		return forall_full<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, characterize_unsat);
+		return forall<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, characterize_sat, characterize_unsat);
 	}
 }
 
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
+inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	//assert(f.root_valuation() != formula::Valuation::FALSE);
 	IntervalSet<typename op::PropertiesSet> unsat_intervals;
@@ -273,7 +219,7 @@ inline CoveringResult<typename op::PropertiesSet> exists_full(cadcells::datastru
 }
 
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline CoveringResult<typename op::PropertiesSet> forall_full(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
+inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	//assert(f.root_valuation() != formula::Valuation::FALSE);
 	IntervalSet<typename op::PropertiesSet> sat_intervals;
