@@ -16,11 +16,14 @@ Answer PNFerModule::checkCore() {
 		auto [prefix, matrix] = carl::to_pnf(input);
 		auto contains_forall = std::find_if(prefix.begin(), prefix.end(), [](const auto& e) { return e.first == carl::Quantifier::FORALL; }) != prefix.end();
 		if (contains_forall) {
+			SMTRAT_LOG_TRACE("smtrat.pnf", "Contains quantifiers after PNFing.");
 			pnf = carl::to_formula(prefix, matrix);
 		} else {
-			pnf = input;
+			SMTRAT_LOG_TRACE("smtrat.pnf", "Simplifying to quantifier-free formula.");
+			pnf = matrix;
 		}
 	} else {
+		SMTRAT_LOG_TRACE("smtrat.pnf", "Already quantifier-free.");
 		pnf = input;
 	}
 
