@@ -2,6 +2,7 @@
 
 #include <carl-arith/poly/umvpoly/functions/Complexity.h>
 #include <carl-arith/poly/umvpoly/functions/Groebner.h>
+#include <carl-formula/formula/functions/PNF.h>
 #include <boost/container/flat_set.hpp>
 
 namespace smtrat {
@@ -68,7 +69,17 @@ NewGBPPModule<Settings>::~NewGBPPModule() {}
 template<class Settings>
 Answer NewGBPPModule<Settings>::checkCore() {
 	// TODO adapt for incrementality + backtracking + infeasible subsets to allow for inprocessing
-	FormulaT formula = replace_groebner((FormulaT)rReceivedFormula());
+
+	FormulaT matrix(rReceivedFormula());
+	carl::QuantifierPrefix prefix;
+	if ((carl::PROP_CONTAINS_QUANTIFIER_EXISTS <= matrix.properties()) || (carl::PROP_CONTAINS_QUANTIFIER_FORALL <= matrix.properties())) {
+		std::tie(prefix, matrix) = carl::to_pnf(matrix);
+	}
+	FormulaT formula = replace_groebner(matrix);
+	if (!prefix.empty()) {
+		formula = carl::to_formula(prefix, formula);
+	}
+
 	Answer ans = SAT;
 	if (formula.is_false()) {
 		ans = UNSAT;
