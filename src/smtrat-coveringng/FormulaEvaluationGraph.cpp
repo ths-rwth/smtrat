@@ -64,7 +64,7 @@ void print(std::ostream& stream, const FormulaDB& db, const FormulaID id, const 
             stream << std::string(level, ' ') << c.variable;
         },
         [&](const CONSTRAINT& c) {
-            stream << std::string(level, ' ') << c.constraint;
+            stream << std::string(level, ' ') << *c.constraint;
         },
     }, db[id].content);
 
@@ -89,12 +89,14 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
         if (cache_it != cache.end()) return cache_it->second;
     }
 
+    assert(db.size() < std::numeric_limits<FormulaID>::max());
+
     if (f.id() > f.negated().id()) {
         auto child = to_formula_db(c,f.negated(),db,vartof, cache);
         db.emplace_back(NOT{ child });
-        db[child].parents.insert(db.size()-1);
-        cache.emplace(f.id(), db.size()-1);
-        return db.size()-1;
+        db[child].parents.insert((FormulaID)(db.size()-1));
+        cache.emplace(f.id(), (FormulaID)(db.size()-1));
+        return (FormulaID)(db.size()-1);
     }
     
     switch(f.type()) {
@@ -105,20 +107,20 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
         }
         case carl::FormulaType::TRUE: {
             db.emplace_back(TRUE{ });
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::FALSE: {
             db.emplace_back(FALSE{ });
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::NOT: {
             auto child = to_formula_db(c,f.subformula(),db,vartof, cache);
             db.emplace_back(NOT{ child });
-            db[child].parents.insert(db.size()-1);
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            db[child].parents.insert((FormulaID)(db.size()-1));
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::IMPLIES: {
             auto id = to_formula_db(c, FormulaT(carl::FormulaType::OR, f.premise().negated(), f.conclusion()), db, vartof, cache);
@@ -132,10 +134,10 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             }
             db.emplace_back(AND{ subformulas });
             for (const auto child : subformulas) {
-                db[child].parents.insert(db.size()-1);
+                db[child].parents.insert((FormulaID)(db.size()-1));
             }
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::OR: {
             std::vector<FormulaID> subformulas;
@@ -144,10 +146,10 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             }
             db.emplace_back(OR{ subformulas });
             for (const auto child : subformulas) {
-                db[child].parents.insert(db.size()-1);
+                db[child].parents.insert((FormulaID)(db.size()-1));
             }
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::XOR: {
             std::vector<FormulaID> subformulas;
@@ -156,10 +158,10 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             }
             db.emplace_back(XOR{ subformulas });
             for (const auto child : subformulas) {
-                db[child].parents.insert(db.size()-1);
+                db[child].parents.insert((FormulaID)(db.size()-1));
             }
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::IFF: {
             std::vector<FormulaID> subformulas;
@@ -168,30 +170,30 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             }
             db.emplace_back(IFF{ subformulas });
             for (const auto child : subformulas) {
-                db[child].parents.insert(db.size()-1);
+                db[child].parents.insert((FormulaID)(db.size()-1));
             }
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::CONSTRAINT: {
             auto bc = carl::convert<cadcells::Polynomial>(c, f.constraint().constr());
-            db.emplace_back(CONSTRAINT{ bc });
+            db.emplace_back(CONSTRAINT{ std::make_shared<carl::BasicConstraint<cadcells::Polynomial>>(bc) });
             auto var = bc.lhs().main_var();
-            vartof.try_emplace(var).first->second.insert(db.size()-1);
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            vartof.try_emplace(var).first->second.insert((FormulaID)(db.size()-1));
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::BOOL: {
             db.emplace_back(BOOL{ f.boolean() });
-            vartof.try_emplace(f.boolean()).first->second.insert(db.size()-1);
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            vartof.try_emplace(f.boolean()).first->second.insert((FormulaID)(db.size()-1));
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
         default: {
             assert(false);
             db.emplace_back(FALSE{});
-            cache.emplace(f.id(), db.size()-1);
-            return db.size()-1;
+            cache.emplace(f.id(), (FormulaID)(db.size()-1));
+            return (FormulaID)(db.size()-1);
         }
     }
 }
@@ -528,7 +530,7 @@ Formula::Reasons FormulaGraph::conflict_reasons() const {
 }
 
 void FormulaGraph::backtrack(FormulaID id, bool is_true) {
-    for (std::size_t idx = 0; idx < db.size(); ++idx) {
+    for (formula_ds::FormulaID idx = 0; idx < db.size(); ++idx) {
         auto& f = db[idx];
         for (auto reason = f.reasons_true.begin(); reason != f.reasons_true.end(); ) {
             if (reason->find(std::make_pair(id, is_true)) != reason->end()) {
@@ -631,7 +633,7 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     log(true_graph.db, true_graph.root);
 
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
-    for (std::size_t i = 0; i < true_graph.db.size(); i++) {
+    for (formula_ds::FormulaID i = 0; i < true_graph.db.size(); i++) {
         if (std::holds_alternative<formula_ds::TRUE>(true_graph.db[i].content)) {
             true_graph.propagate_root(i, true);
         }
@@ -641,7 +643,7 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     }
     true_graph.propagate_root(true_graph.root, true);
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update false_graph");
-    for (std::size_t i = 0; i < false_graph.db.size(); i++) {
+    for (formula_ds::FormulaID i = 0; i < false_graph.db.size(); i++) {
         if (std::holds_alternative<formula_ds::TRUE>(false_graph.db[i].content)) {
             false_graph.propagate_root(i, true);
         }
@@ -706,13 +708,13 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
 
     std::vector<formula_ds::FormulaID> atoms(atomset->second.begin(), atomset->second.end());
     std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) {
-        const auto& constr_a = std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
-        const auto& constr_b = std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
+        const auto& constr_a = *std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
+        const auto& constr_b = *std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
         return m_constraint_complexity_ordering(constr_a, constr_b);
     });
 
     for (const auto id : atoms) {
-        const auto& constr = std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
+        const auto& constr = *std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
         assert (constr.lhs().main_var() == var);
 
         SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Evaluate constraint " << constr);
@@ -815,9 +817,9 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
         implicants.emplace_back();
         for (const auto& c : r) {
             if (c.second) {
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint);
+                implicants.back().insert(*std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint);
             } else {
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint.negation());
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint->negation());
             }
         }
     }
