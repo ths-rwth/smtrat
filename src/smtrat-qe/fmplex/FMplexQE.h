@@ -173,10 +173,10 @@ private:
                     }
                     row_used[it.row()] = true;
                     --n_unused_rows;
-                    result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));
                     if (n.ignored.contains(it.row())) {
                         result.back().ignored.insert(result.back().matrix.n_rows());
                     }
+                    result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));
                 }
             }
             while (i < n.cols_to_elim.size() && col_used[i]) ++i;
