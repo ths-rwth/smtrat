@@ -25,6 +25,12 @@ FormulaT FMplexQE::eliminate_quantifiers() {
         switch (m_nodes.back().type) {
         case Node::Type::CONFLICT:
             return FormulaT(carl::FormulaType::FALSE);
+        case Node::Type::UNDETERMINED: {
+            auto split = split_into_independent_nodes(m_nodes.back());
+            m_nodes.pop_back();
+            m_nodes.insert(m_nodes.end(), split.begin(), split.end());
+            break;
+        }
         case Node::Type::NBS:
             m_nodes.back() = unbounded_elimination(m_nodes.back());
             break;
@@ -169,7 +175,11 @@ void FMplexQE::build_initial_systems() {
     m_first_parameter_col = elim_vars.size();
     SMTRAT_LOG_DEBUG("smtrat.qe","after gather variables");
 
-    auto subqueries = qe::util::split_quantifiers(constraints, elim_vars);
+    std::vector<Matrix::ColIndex> elim_var_indices;
+    for (ColIndex j = 0; j < m_first_parameter_col; ++j) elim_var_indices.push_back(j);
+    m_nodes.push_back(Node(build_initial_matrix(constraints), elim_var_indices));
+
+    /*auto subqueries = qe::util::split_quantifiers(constraints, elim_vars);
 
     for (const auto& q : subqueries) {
         // list of columns to eliminate. Initially, this are the first k columns for k = #elim vars
@@ -177,7 +187,7 @@ void FMplexQE::build_initial_systems() {
         for (const auto v : q.elimination_vars) elim_var_indices.push_back(m_var_idx.index(v));
         SMTRAT_LOG_DEBUG("smtrat.qe","before return");
         m_nodes.push_back(Node(build_initial_matrix(q.constraints), elim_var_indices));
-    }
+    }*/
 }
 
 

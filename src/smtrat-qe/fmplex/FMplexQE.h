@@ -137,6 +137,52 @@ private:
     bool fm_elimination(Node& parent);
 
 
+    std::vector<Node> split_into_independent_nodes(const Node& n) const {
+        const Matrix& m = n.matrix;
+        std::vector<bool> col_used(n.cols_to_elim.size(), false);
+        std::vector<bool> row_used(m.n_rows(), false);
+        std::size_t n_unused_rows = m.n_rows();
+        
+        std::vector<std::size_t> pending;
+        std::vector<Node> result;
+
+        for (std::size_t i = 0; i < n.cols_to_elim.size();) {
+            pending.push_back(i);
+            result.push_back(Node(Matrix(n_unused_rows, m.n_cols()), {}));
+            ++i;
+            while (!pending.empty()) {
+                std::size_t v = pending.back();
+                pending.pop_back();
+                if (col_used[v]) continue;
+                col_used[v] = true;
+                ColIndex actual_col = n.cols_to_elim[v];
+                result.back().cols_to_elim.push_back(actual_col);
+                auto col_end = m.col_end(actual_col);
+                for (auto it = m.col_begin(actual_col); it != col_end; ++it) {
+                    if (row_used[it.row()]) continue;
+                    for (const auto& e : m.row_entries(it.row())) {
+                        if (e.col_index >= m_first_parameter_col) break;
+                        if (e.col_index == actual_col) continue;
+                        for (std::size_t j = 0; ; ++j) {
+                            assert(j < n.cols_to_elim.size());
+                            if (n.cols_to_elim[j] == e.col_index) {
+                                pending.push_back(j);
+                                break;
+                            }
+                        }
+                    }
+                    row_used[it.row()] = true;
+                    --n_unused_rows;
+                    result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));
+                }
+            }
+            while (i < n.cols_to_elim.size() && col_used[i]) ++i;
+        }
+        for (Node& n : result) n.choose_elimination();
+        return result;
+    }
+
+
     /**
      * writes the given qe problem as a .ine file as used in CDD lib.
     */

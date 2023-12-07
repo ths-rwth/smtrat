@@ -10,10 +10,10 @@ struct Node {
     using RowIndex = Matrix::RowIndex;
     using ColIndex = Matrix::ColIndex;
     
-    enum class Type { CONFLICT, LEAF, LBS, UBS, NBS, FM };
+    enum class Type { UNDETERMINED, CONFLICT, LEAF, LBS, UBS, NBS, FM };
 
     Matrix   matrix;
-    Type     type;
+    Type     type = Type::UNDETERMINED;
     ColIndex chosen_col;
     std::vector<ColIndex> cols_to_elim;
     std::vector<RowIndex> eliminators;
@@ -85,23 +85,22 @@ struct Node {
     Node(bool is_sat) {
         type = is_sat ? (Type::LEAF) : (Type::CONFLICT);
         eliminators.clear();
-    } 
+    }
+
+    Node() {}
 
     Node(const Matrix& m, const std::vector<ColIndex>& cols)
     : matrix(m)
-    , cols_to_elim(cols)
-    { choose_elimination(); }
+    , cols_to_elim(cols) {}
 
     Node(const Matrix& m, const std::vector<ColIndex>& cols, const std::set<RowIndex>& ign)
     : matrix(m)
     , cols_to_elim(cols)
-    , ignored(ign)
-    { choose_elimination(); }
+    , ignored(ign) {}
 
     Node(Matrix&& m, const std::vector<ColIndex>& cols)
     : matrix(std::move(m))
-    , cols_to_elim(cols)
-    { choose_elimination(); }
+    , cols_to_elim(cols) {}
 
 
     inline bool is_conflict() const { return type == Node::Type::CONFLICT; }
@@ -130,6 +129,7 @@ inline std::ostream& operator<<(std::ostream& os, const smtrat::qe::fmplex::Node
     case Type::UBS: os << "UBS"; break;
     case Type::NBS: os << "NBS"; break;
     case Type::FM:  os << "FM";  break;
+    case Type::UNDETERMINED: os << "Undet."; break;
     }
     os << "| Chose col " << n.chosen_col << " out of ";
     print_vec(os, n.cols_to_elim);
