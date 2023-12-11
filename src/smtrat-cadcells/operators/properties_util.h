@@ -3,7 +3,7 @@
 namespace smtrat::cadcells::operators::properties {
 
 inline auto get_level(const datastructures::IndexedRootOrdering& ordering) {
-    std::size_t level = 0;
+    datastructures::level_t level = 0;
     for (const auto& p : ordering.polys()) {
         level = std::max(level, p.base_level);
     }
@@ -11,7 +11,7 @@ inline auto get_level(const datastructures::IndexedRootOrdering& ordering) {
 }
 
 inline auto get_level(const datastructures::RootFunction& function) {
-    std::size_t level = 0;
+    datastructures::level_t level = 0;
     for (const auto& p : function.polys()) {
         level = std::max(level, p.base_level);
     }

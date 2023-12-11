@@ -126,8 +126,10 @@ public:
     auto& polys() { return m_pool; }
     const auto& polys() const { return m_pool; }
 
+    // Clearing caches disabled as higher-level polynomials might still be needed (mainly in filtering):
+
     /// Clears all polynomials of the specified level and higher in the polynomial cache as well as their projection results.
-    void clear_cache(size_t level) {
+    void clear_cache(size_t /*level*/) {
         return;
         // assert(level > 0);
         // m_pool.clear_levels(level);
@@ -140,7 +142,7 @@ public:
     }
 
     /// Clears all projections cached with respect to this assignment.
-    void clear_assignment_cache(const Assignment& assignment) {
+    void clear_assignment_cache(const Assignment& /*assignment*/) {
         return;
         // for (auto lvl = level_of(assignment); lvl < m_assignment_cache.size(); lvl++) {
         //     for (auto it = m_assignment_cache[lvl].begin(); it != m_assignment_cache[lvl].end(); ) {

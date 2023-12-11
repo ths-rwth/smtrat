@@ -7,16 +7,19 @@
 
 namespace smtrat::cadcells::datastructures {
 
+using level_t = unsigned;
+using id_t = unsigned;
+
 /**
  * Refers to a polynomial. 
  */
 struct PolyRef {
     /// The level of the polynomial.
-    size_t level;
+    level_t level;
     /// The id of the polynomial with respect to its level.
-    size_t id;
+    id_t id;
     /// The base level of the polynomial.
-    size_t base_level;
+    level_t base_level;
 };
 inline bool operator<(const PolyRef& lhs, const PolyRef& rhs) {
     return lhs.level < rhs.level  || (lhs.level == rhs.level && lhs.id < rhs.id);
@@ -34,8 +37,8 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
 }
 
 inline auto base_level(Polynomial poly) {
-    std::size_t lvl = 0;
-    for (std::size_t i = 0; i < poly.context().variable_ordering().size(); i++) {
+    level_t lvl = 0;
+    for (level_t i = 0; i < poly.context().variable_ordering().size(); i++) {
         if (poly.context().variable_ordering()[i] == poly.main_var()) break;
         if (poly.has(poly.context().variable_ordering()[i])) lvl = i+1;
     }
@@ -50,8 +53,8 @@ inline auto base_level(Polynomial poly) {
 class PolyPool {
     struct Element : public boost::intrusive::set_base_hook<> {
         Polynomial poly;
-        size_t id;
-        Element(Polynomial&& p, size_t i) : poly(p), id(i) {}
+        id_t id;
+        Element(Polynomial&& p, id_t i) : poly(p), id(i) {}
         friend bool operator<(const Element& e1, const Element& e2) {
             return e1.poly < e2.poly;
         }
@@ -98,7 +101,8 @@ public:
     PolyRef insert(const Polynomial& poly) {
         auto npoly = poly.normalized();
         PolyRef ref;
-        ref.level = carl::level_of(npoly);
+        assert(carl::level_of(npoly) <= std::numeric_limits<level_t>::max());
+        ref.level = (level_t)carl::level_of(npoly);
         if (ref.level == 0) {
             assert(carl::is_constant(poly));
             if (carl::is_zero(poly)) return zero_poly_ref();
@@ -112,7 +116,8 @@ public:
         if (!res.second) {
             ref.id = res.first->id;
         } else {
-            ref.id = m_polys[ref.level-1].size();
+            assert(m_polys[ref.level-1].size() <= std::numeric_limits<id_t>::max());
+            ref.id = (id_t)m_polys[ref.level-1].size();
             m_polys[ref.level-1].push_back(std::make_unique<Element>(std::move(npoly), ref.id));
             m_poly_ids[ref.level-1].insert_commit(*m_polys[ref.level-1].back(), insert_data);
             #ifdef SMTRAT_DEVOPTION_Statistics
