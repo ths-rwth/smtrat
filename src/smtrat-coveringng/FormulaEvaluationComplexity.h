@@ -15,9 +15,9 @@ inline auto size_fact(cadcells::datastructures::Projections& proj, const boost::
     return a_size;
 }
 
-inline auto num_vars(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
-    return carl::variables(a).size();
-}
+// inline auto num_vars(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+//     return carl::variables(a).size();
+// }
 
 inline auto max_max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t a_max_max_total_degree = 0;
