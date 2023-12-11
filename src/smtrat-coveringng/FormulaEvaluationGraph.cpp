@@ -282,10 +282,12 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             else if (sub_val == Valuation::FALSE) add_reasons_true(id, db[c.subformula].reasons_false);
 
             // downwards propagation
-            if (val == Valuation::TRUE && sub_val == Valuation::MULTIVARIATE) { // sub_val == Valuation::MULTIVARIATE to avoid redundancies // TODO geht hierdurch was verloren?
-                add_reasons_false(c.subformula, db[id].reasons_true);
-            } else if (val == Valuation::FALSE && sub_val == Valuation::MULTIVARIATE) {
-                add_reasons_true(c.subformula, db[id].reasons_false);
+            if (downwards_propagation) {
+                if (val == Valuation::TRUE && sub_val == Valuation::MULTIVARIATE) { // sub_val == Valuation::MULTIVARIATE to avoid redundancies // TODO geht hierdurch was verloren?
+                    add_reasons_false(c.subformula, db[id].reasons_true);
+                } else if (val == Valuation::FALSE && sub_val == Valuation::MULTIVARIATE) {
+                    add_reasons_true(c.subformula, db[id].reasons_false);
+                }
             }
         },
         [&](AND& c) {
@@ -309,17 +311,19 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             }
 
             // downwards propagation
-            if (val == Valuation::TRUE) {
-                for (const auto subformula : subs.multi) { // avoids redundancy
-                    add_reasons_true(subformula, db[id].reasons_true);
-                }
-            } else if (val == Valuation::FALSE) {
-                if (subs.multi.size() == 1 && subs.confl.empty() && subs.fals.empty()) {
-                    Formula::Reasons reasons = db[id].reasons_false;
-                    for (const auto& subformula : subs.tru) {
-                        reasons = combine_reasons(reasons, db[subformula].reasons_true);
+            if (downwards_propagation) {
+                if (val == Valuation::TRUE) {
+                    for (const auto subformula : subs.multi) { // avoids redundancy
+                        add_reasons_true(subformula, db[id].reasons_true);
                     }
-                    add_reasons_false(*subs.multi.begin(), reasons);
+                } else if (val == Valuation::FALSE) {
+                    if (subs.multi.size() == 1 && subs.confl.empty() && subs.fals.empty()) {
+                        Formula::Reasons reasons = db[id].reasons_false;
+                        for (const auto& subformula : subs.tru) {
+                            reasons = combine_reasons(reasons, db[subformula].reasons_true);
+                        }
+                        add_reasons_false(*subs.multi.begin(), reasons);
+                    }
                 }
             }
         },
@@ -344,17 +348,19 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             } 
             
             // downwards propagation
-            if (val == Valuation::TRUE) {
-                if (subs.multi.size() == 1 && subs.confl.empty() && subs.tru.empty()) {
-                    Formula::Reasons reasons = db[id].reasons_true;
-                    for (const auto& subformula : subs.fals) {
-                        reasons = combine_reasons(reasons, db[subformula].reasons_false);
+            if (downwards_propagation) {
+                if (val == Valuation::TRUE) {
+                    if (subs.multi.size() == 1 && subs.confl.empty() && subs.tru.empty()) {
+                        Formula::Reasons reasons = db[id].reasons_true;
+                        for (const auto& subformula : subs.fals) {
+                            reasons = combine_reasons(reasons, db[subformula].reasons_false);
+                        }
+                        add_reasons_true(*subs.multi.begin(), reasons);
                     }
-                    add_reasons_true(*subs.multi.begin(), reasons);
-                }
-            } else if (val == Valuation::FALSE) {
-                for (const auto subformula : subs.multi) { // avoids redundancy
-                    add_reasons_false(subformula, db[id].reasons_false);
+                } else if (val == Valuation::FALSE) {
+                    for (const auto subformula : subs.multi) { // avoids redundancy
+                        add_reasons_false(subformula, db[id].reasons_false);
+                    }
                 }
             }
         },
@@ -391,38 +397,40 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
             }
             
             // downwards propagation
-            if (val == Valuation::TRUE) {
-                for (const auto t : subs.tru) {
-                    for (const auto sub : c.subformulas) {
-                        auto sub_val = db[sub].valuation();
-                        if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
-                            add_reasons_true(sub, combine_reasons(db[id].reasons_true, db[t].reasons_true));
+            if (downwards_propagation) {
+                if (val == Valuation::TRUE) {
+                    for (const auto t : subs.tru) {
+                        for (const auto sub : c.subformulas) {
+                            auto sub_val = db[sub].valuation();
+                            if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
+                                add_reasons_true(sub, combine_reasons(db[id].reasons_true, db[t].reasons_true));
+                            }
                         }
                     }
-                }
-                for (const auto f : subs.fals) {
-                    for (const auto sub : c.subformulas) {
-                        auto sub_val = db[sub].valuation();
-                        if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
-                            add_reasons_false(sub, combine_reasons(db[id].reasons_true, db[f].reasons_false));
+                    for (const auto f : subs.fals) {
+                        for (const auto sub : c.subformulas) {
+                            auto sub_val = db[sub].valuation();
+                            if (sub_val == Valuation::MULTIVARIATE) { // avoids redundancy
+                                add_reasons_false(sub, combine_reasons(db[id].reasons_true, db[f].reasons_false));
+                            }
                         }
                     }
-                }
-            } else if (val == Valuation::FALSE) {
-                if (subs.multi.size() == 1 && (subs.tru.empty() || subs.fals.empty())) {
-                    if (subs.tru.empty()) {
-                        Formula::Reasons reasons = db[id].reasons_false;
-                        for (const auto f : subs.fals) {
-                            reasons = combine_reasons(reasons, db[f].reasons_false);
+                } else if (val == Valuation::FALSE) {
+                    if (subs.multi.size() == 1 && (subs.tru.empty() || subs.fals.empty())) {
+                        if (subs.tru.empty()) {
+                            Formula::Reasons reasons = db[id].reasons_false;
+                            for (const auto f : subs.fals) {
+                                reasons = combine_reasons(reasons, db[f].reasons_false);
+                            }
+                            add_reasons_true(*subs.multi.begin(), reasons);
+                        } else {
+                            assert(subs.fals.empty());
+                            Formula::Reasons reasons = db[id].reasons_false;
+                            for (const auto t : subs.tru) {
+                                reasons = combine_reasons(reasons, db[t].reasons_true);
+                            }
+                            add_reasons_false(*subs.multi.begin(), reasons);
                         }
-                        add_reasons_true(*subs.multi.begin(), reasons);
-                    } else {
-                        assert(subs.fals.empty());
-                        Formula::Reasons reasons = db[id].reasons_false;
-                        for (const auto t : subs.tru) {
-                            reasons = combine_reasons(reasons, db[t].reasons_true);
-                        }
-                        add_reasons_false(*subs.multi.begin(), reasons);
                     }
                 }
             }
@@ -451,19 +459,21 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                 }
 
                 // downwards propagation
-                if (subs.multi.size() == 1 && subs.confl.empty()) {
-                    bool value = (subs.tru.size() % 2 != 0);
-                    if (val == Valuation::TRUE) {
-                        reasons = combine_reasons(reasons, db[id].reasons_true);
-                        value = !value;
-                    } else if (val == Valuation::FALSE) {
-                        reasons = combine_reasons(reasons, db[id].reasons_false);
-                    }
+                if (downwards_propagation) {
+                    if (subs.multi.size() == 1 && subs.confl.empty()) {
+                        bool value = (subs.tru.size() % 2 != 0);
+                        if (val == Valuation::TRUE) {
+                            reasons = combine_reasons(reasons, db[id].reasons_true);
+                            value = !value;
+                        } else if (val == Valuation::FALSE) {
+                            reasons = combine_reasons(reasons, db[id].reasons_false);
+                        }
 
-                    if (value) {
-                        add_reasons_true(*subs.multi.begin(), reasons);
-                    } else {
-                        add_reasons_false(*subs.multi.begin(), reasons);
+                        if (value) {
+                            add_reasons_true(*subs.multi.begin(), reasons);
+                        } else {
+                            add_reasons_false(*subs.multi.begin(), reasons);
+                        }
                     }
                 }
             }
@@ -627,6 +637,7 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     
     std::map<std::size_t,formula_ds::FormulaID> cache;
     true_graph.root = to_formula_db(c, input, true_graph.db, vartof, cache);
+    true_graph.downwards_propagation = m_boolean_exploration != OFF;
     false_graph = true_graph;
 
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Initial formula:");
@@ -658,7 +669,7 @@ formula_ds::Formula::Reasons GraphEvaluation::explore(formula_ds::FormulaGraph& 
     // this is a quick and dirty implementation of a SAT solver
     std::optional<formula_ds::FormulaID> next_dec_id;
     for (const auto& [k,vs] : vartof) {
-        if (m_boolean_check_only_bool && k.type() != carl::VariableType::VT_BOOL) continue;
+        if (m_boolean_exploration == EXPLORATION_ONLY_BOOL && k.type() != carl::VariableType::VT_BOOL) continue;
         for (const auto& v : vs) {
             if (graph.db[v].reasons_true.empty() && graph.db[v].reasons_false.empty()) {
                 next_dec_id = v;
@@ -741,7 +752,7 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
         m_false_conflict_reasons = false_graph.conflict_reasons();
     }
 
-    if (m_boolean_check) {
+    if (m_boolean_exploration == EXPLORATION || m_boolean_exploration == EXPLORATION_ONLY_BOOL) {
         if (m_true_conflict_reasons.empty()) {
             m_true_conflict_reasons = explore(true_graph);
         }

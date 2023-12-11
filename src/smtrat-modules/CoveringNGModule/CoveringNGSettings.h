@@ -30,7 +30,14 @@ struct CoveringNGSettingsDefault {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {
-            return Type(std::bind_front(covering_ng::formula::complexity::sotd, proj), 1, covering_ng::formula::complexity::min_tdeg, false, true, false, false);
+            auto fe_implicant_ordering = covering_ng::formula::complexity::sotd;
+            std::size_t fe_results = 1;
+            auto fe_constraint_ordering = covering_ng::formula::complexity::min_tdeg;
+            bool fe_stop_evaluation_on_conflict = false;
+            bool fe_preprocess = true;
+            bool fe_postprocess = false;
+            auto fe_boolean_exploration = covering_ng::formula::GraphEvaluation::PROPAGATION;
+            return Type(std::bind_front(fe_implicant_ordering, proj), fe_results, fe_constraint_ordering, fe_stop_evaluation_on_conflict, fe_preprocess, fe_postprocess, fe_boolean_exploration);
         }
     };
 };
@@ -87,6 +94,8 @@ struct CoveringNGSettingsExImplicantsPruning : CoveringNGSettingsDefault  {
     };
 };
 
+
+/*
 struct CoveringNGSettingsGraphMulti : CoveringNGSettingsDefault  {
     static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsGraphMulti>";
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
@@ -183,5 +192,7 @@ struct CoveringNGSettingsGraphSingleChoiceFact : CoveringNGSettingsDefault  {
         }
     };
 };
+
+*/
 
 } // namespace smtrat

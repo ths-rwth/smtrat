@@ -60,6 +60,7 @@ struct FormulaGraph {
     FormulaDB db;
     FormulaID root;
     boost::container::flat_set<FormulaID> conflicts;
+    bool downwards_propagation;
 
     void propagate_consistency(FormulaID id);
     void propagate_root(FormulaID id, bool is_true);
@@ -73,6 +74,9 @@ struct FormulaGraph {
 }
 
 class GraphEvaluation {
+
+public:
+    enum BooleanExploration { OFF, PROPAGATION, EXPLORATION, EXPLORATION_ONLY_BOOL };
 
 private:
     formula_ds::FormulaGraph true_graph;
@@ -89,13 +93,12 @@ private:
     bool m_stop_evaluation_on_conflict;
     bool m_preprocess;
     bool m_postprocess;
-    bool m_boolean_check;
-    bool m_boolean_check_only_bool;
+    BooleanExploration m_boolean_exploration;
 
     formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph); 
 
 public:
-    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, bool boolean_check, bool boolean_check_only_bool = false) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_boolean_check(boolean_check), m_boolean_check_only_bool(boolean_check_only_bool) {}
+    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, BooleanExploration boolean_exploration) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_boolean_exploration(boolean_exploration) {}
 
     void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);
