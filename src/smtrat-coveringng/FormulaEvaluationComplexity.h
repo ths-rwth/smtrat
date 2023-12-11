@@ -15,6 +15,10 @@ inline auto size_fact(cadcells::datastructures::Projections& proj, const boost::
     return a_size;
 }
 
+inline auto num_vars(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+    return carl::variables(a).size();
+}
+
 inline auto max_max_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t a_max_max_total_degree = 0;
     for (const auto& el : a) {
@@ -117,6 +121,14 @@ inline auto avg_avg_total_degree(cadcells::datastructures::Projections& proj, co
         }
     }
     return static_cast<double>(sum)/static_cast<double>(count);
+}
+
+inline auto sum_total_degree(cadcells::datastructures::Projections& proj, const cadcells::Constraint& a) {
+    std::size_t sum = 0;
+    for (auto d : proj.monomial_total_degrees(proj.polys()(a.lhs()))) {
+        sum += d;
+    }
+    return sum;
 }
 
 inline auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
@@ -253,6 +265,11 @@ inline bool min_size_min_tdeg(cadcells::datastructures::Projections& proj, const
 inline bool min_tdeg(const cadcells::Constraint& a, const cadcells::Constraint& b) {
     assert(a.lhs().main_var() == b.lhs().main_var());
     return a.lhs().total_degree() < b.lhs().total_degree(); 
+}
+
+inline bool min_sotd(const cadcells::Constraint& a, const cadcells::Constraint& b) {
+    assert(a.lhs().main_var() == b.lhs().main_var());
+    return features::sum_total_degree(proj, a) < features::sum_total_degree(proj, b);
 }
 
 
