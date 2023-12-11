@@ -131,6 +131,14 @@ inline auto sum_total_degree(cadcells::datastructures::Projections& proj, const 
     return sum;
 }
 
+inline auto sum_total_degree(const cadcells::Constraint& a) {
+    std::size_t sum = 0;
+    for (auto d : a.lhs().monomial_total_degrees()) {
+        sum += d;
+    }
+    return sum;
+}
+
 inline auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
@@ -269,7 +277,7 @@ inline bool min_tdeg(const cadcells::Constraint& a, const cadcells::Constraint& 
 
 inline bool min_sotd(const cadcells::Constraint& a, const cadcells::Constraint& b) {
     assert(a.lhs().main_var() == b.lhs().main_var());
-    return features::sum_total_degree(proj, a) < features::sum_total_degree(proj, b);
+    return features::sum_total_degree(a) < features::sum_total_degree(b);
 }
 
 
