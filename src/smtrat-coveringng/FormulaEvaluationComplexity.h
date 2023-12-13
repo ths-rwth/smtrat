@@ -161,12 +161,20 @@ inline auto sum_sum_total_degree_fact(cadcells::datastructures::Projections& pro
     return sum;
 }
 
+inline auto max_level(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+    std::size_t result = 0;
+    for (const auto& el : a) {
+        result = std::max(result, carl::level_of(el.lhs()));
+    }
+    return result;
+}
+
 }
 
 /**
  * Inspired by Pickering, Lynn, Tereso Del Rio Almajano, Matthew England, and Kelly Cohen. ‘Explainable AI Insights for Symbolic Computation: A Case Study on Selecting the Variable Ordering for Cylindrical Algebraic Decomposition’. arXiv, 29 August 2023. http://arxiv.org/abs/2304.12154.
  */
-inline bool pickering(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+inline bool pickering(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) { // TODO does not make sense as the main variables might be different ...
     auto a_sum_max_degree = features::sum_max_degree(proj, a);
     auto b_sum_max_degree = features::sum_max_degree(proj, b);
     if (a_sum_max_degree != b_sum_max_degree) return a_sum_max_degree < b_sum_max_degree;
@@ -177,23 +185,6 @@ inline bool pickering(cadcells::datastructures::Projections& proj, const boost::
         else {
             auto a_sum_sum_degree = features::sum_sum_degree(proj, a);
             auto b_sum_sum_degree = features::sum_sum_degree(proj, b);
-            return a_sum_sum_degree < b_sum_sum_degree;
-        }
-    }
-}
-
-// factorization seems to be too expensive:
-inline bool pickering_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
-    auto a_sum_max_degree = features::sum_max_degree_fact(proj, a);
-    auto b_sum_max_degree = features::sum_max_degree_fact(proj, b);
-    if (a_sum_max_degree != b_sum_max_degree) return a_sum_max_degree < b_sum_max_degree;
-    else {
-        auto a_avg_avg_degree = features::avg_avg_degree_fact(proj, a);
-        auto b_avg_avg_degree = features::avg_avg_degree_fact(proj, b);
-        if (a_avg_avg_degree != b_avg_avg_degree) return a_avg_avg_degree < b_avg_avg_degree;
-        else {
-            auto a_sum_sum_degree = features::sum_sum_degree_fact(proj, a);
-            auto b_sum_sum_degree = features::sum_sum_degree_fact(proj, b);
             return a_sum_sum_degree < b_sum_sum_degree;
         }
     }
@@ -215,6 +206,18 @@ inline bool pickering_total(cadcells::datastructures::Projections& proj, const b
     }
 }
 
+inline bool min_level_min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    auto a_level = features::max_level(proj, a);
+    auto b_level = features::max_level(proj, b);
+
+    if (a_level != b_level) return a_level < b_level;
+    else return a.size() < b.size();
+}
+
+inline bool min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    return a.size() < b.size();
+}
+
 /**
  * Dolzmann et al 2004
  */
@@ -233,6 +236,19 @@ inline bool sotd_fact(cadcells::datastructures::Projections& proj, const boost::
     return a_sum_sum_total_degree < b_sum_sum_total_degree || (a_sum_sum_total_degree == b_sum_sum_total_degree && a_size < b_size);
 }
 
+inline bool min_level_min_sotd(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    auto a_level = features::max_level(proj, a);
+    auto b_level = features::max_level(proj, b);
+
+    if (a_level != b_level) return a_level < b_level;
+    else return sotd(proj, a, b);
+}
+
+inline bool min_max_tdeg_min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    auto a_max_max_total_degree = features::max_max_total_degree(proj, a);
+    auto b_max_max_total_degree = features::max_max_total_degree(proj, b);
+    return a_max_max_total_degree < b_max_max_total_degree || (a_max_max_total_degree == b_max_max_total_degree && a.size() < b.size());
+}
 
 inline bool min_max_tdeg_min_size_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     auto a_max_max_total_degree = features::max_max_total_degree_fact(proj, a);
@@ -242,13 +258,7 @@ inline bool min_max_tdeg_min_size_fact(cadcells::datastructures::Projections& pr
     return a_max_max_total_degree < b_max_max_total_degree || (a_max_max_total_degree == b_max_max_total_degree && a_size < b_size);
 }
 
-inline bool min_max_tdeg_min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
-    auto a_max_max_total_degree = features::max_max_total_degree(proj, a);
-    auto b_max_max_total_degree = features::max_max_total_degree(proj, b);
-    return a_max_max_total_degree < b_max_max_total_degree || (a_max_max_total_degree == b_max_max_total_degree && a.size() < b.size());
-}
-
-inline bool min_size_min_tdeg(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+inline bool min_lvlsize_min_tdeg(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     std::vector<std::size_t> a_levels;
     for (const auto& el : a) a_levels.push_back(carl::level_of(el.lhs()));
     std::vector<std::size_t> b_levels;

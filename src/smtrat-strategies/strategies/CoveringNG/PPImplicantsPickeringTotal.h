@@ -14,7 +14,7 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {
-            auto fe_implicant_ordering = covering_ng::formula::complexity::min_size_min_tdeg;
+            auto fe_implicant_ordering = covering_ng::formula::complexity::pickering_total;
             std::size_t fe_results = 1;
             auto fe_constraint_ordering = covering_ng::formula::complexity::min_tdeg;
             bool fe_stop_evaluation_on_conflict = false;
@@ -28,9 +28,9 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 
 }
 
-class CoveringNG_PPImplicantsSize: public Manager {
+class CoveringNG_PPImplicantsPickeringTotal: public Manager {
 public:
-	CoveringNG_PPImplicantsSize() : Manager() {
+	CoveringNG_PPImplicantsPickeringTotal() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
                 addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
