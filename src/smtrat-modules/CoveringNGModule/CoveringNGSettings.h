@@ -79,7 +79,7 @@ struct CoveringNGSettingsExImplicantsMinSize : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::ExhaustiveImplicants;
         static auto create(cadcells::datastructures::Projections& proj) {
-            return Type(std::bind_front(covering_ng::formula::complexity::min_size_min_tdeg, proj), 1);
+            return Type(std::bind_front(covering_ng::formula::complexity::min_lvlsize_min_tdeg, proj), 1);
         }
     };
 };
