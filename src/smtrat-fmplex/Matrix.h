@@ -91,7 +91,7 @@ public:
         RowIndex r_idx(m_row_starts.size());
         m_row_starts.push_back(m_data.size());
         for (It it = begin; it != end; ++it) {
-            m_cols[it->col_index].push_back(ColEntry {r_idx, m_data.size()});
+            m_cols[it->col_index].push_back(ColEntry {r_idx, static_cast<unsigned>(m_data.size())});
             m_data.push_back(*it);
         }
         return r_idx;
