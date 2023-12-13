@@ -19,8 +19,6 @@ struct Node {
     std::vector<RowIndex> eliminators;
     std::set<RowIndex> ignored;
 
-    static constexpr ColIndex DUMMY_COL = 0; // TODO: this should be a dummy-row?
-
     void choose_elimination() {
         if (matrix.n_rows() == 0 || cols_to_elim.empty()) {
             type = Type::LEAF;
@@ -30,7 +28,6 @@ struct Node {
         if (cols_to_elim.size() == 1) {
             type = Type::FM;
             chosen_col = cols_to_elim.front();
-            eliminators = {DUMMY_COL};
             return;
         }
 
@@ -38,19 +35,28 @@ struct Node {
         std::size_t min_branches = matrix.n_rows();
         for (const auto j : cols_to_elim) {
             std::size_t lbs = 0, ubs = 0;
-            for (const auto& entry : matrix.col_entries(j)) {
-                if (entry.value < 0) ++lbs;
-                else ++ubs;
+            std::size_t ignored_lbs = 0, ignored_ubs = 0;
+            auto col_end = matrix.col_end(j);
+            for (auto col_it = matrix.col_begin(j); col_it != col_end; ++col_it) {
+                if (col_it->value < 0) {
+                    if (ignored.contains(col_it.row())) ++ignored_lbs;
+                    ++lbs;
+                } else {
+                    if (ignored.contains(col_it.row())) ++ignored_ubs;
+                    ++ubs;
+                }
             }
-            std::size_t min_j = std::min(lbs, ubs);
-            if (min_j == 0) {
+            if (lbs == 0 || ubs == 0) {
                 chosen_col = j;
                 type = Type::NBS;
                 break;
-            } else if (min_j < min_branches) {
+            }
+            
+            std::size_t min_j = std::min(lbs-ignored_lbs, ubs-ignored_ubs);
+            if (min_j < min_branches) {
                 min_branches = min_j;
                 chosen_col = j;
-                type = (lbs == min_j) ? Type::LBS : Type::UBS;
+                type = ((lbs-ignored_lbs) == min_j) ? Type::LBS : Type::UBS;
             }
         }
 

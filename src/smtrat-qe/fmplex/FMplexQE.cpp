@@ -8,7 +8,7 @@
  TODO:  the partitioning into independent blocks (like in build_initial_system) can actually
         be applied in each node! The stack facilitates this and allows to split blocks into 
         sub-blocks later without changing the general structure of the algorithm.
-        -> am open question here is whether the overhead for searching indep. blocks is worth it.
+        -> an open question here is whether the overhead for searching indep. blocks is worth it.
         -> also: a more complex scheme where blocks are reunited requires a major restructuring.
 */
 
@@ -26,6 +26,10 @@ FormulaT FMplexQE::eliminate_quantifiers() {
         case Node::Type::CONFLICT:
             return FormulaT(carl::FormulaType::FALSE);
         case Node::Type::UNDETERMINED: {
+            if (m_nodes.back().matrix.n_rows() < 10 || m_nodes.back().cols_to_elim.size() == 1) {
+                m_nodes.back().choose_elimination();
+                break;
+            }
             auto split = split_into_independent_nodes(m_nodes.back());
             m_nodes.pop_back();
             m_nodes.insert(m_nodes.end(), split.begin(), split.end());
@@ -328,7 +332,6 @@ Node FMplexQE::bounded_elimination(Node& parent) {
 
 
 bool FMplexQE::fm_elimination(Node& parent) {
-    parent.eliminators.clear();
     std::vector<RowIndex> lbs, ubs;
     // we can ignore non-bounds since they would have been added to the result at this point
     auto col_it  = parent.matrix.col_begin(parent.chosen_col);
