@@ -161,7 +161,7 @@ inline auto sum_sum_total_degree_fact(cadcells::datastructures::Projections& pro
     return sum;
 }
 
-inline auto max_level(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
+inline auto max_level(cadcells::datastructures::Projections&, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t result = 0;
     for (const auto& el : a) {
         result = std::max(result, carl::level_of(el.lhs()));
@@ -214,7 +214,7 @@ inline bool min_level_min_size(cadcells::datastructures::Projections& proj, cons
     else return a.size() < b.size();
 }
 
-inline bool min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+inline bool min_size(cadcells::datastructures::Projections&, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     return a.size() < b.size();
 }
 

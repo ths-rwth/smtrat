@@ -14,6 +14,7 @@
 
 #include "util/OutputFormula.h"
 
+#include "CoveringNGStatistics.h"
 
 namespace smtrat::covering_ng {
 
@@ -68,13 +69,17 @@ inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interva
 template<typename op, typename FE>
 inline std::vector<Interval<typename op::PropertiesSet>> get_enclosing_intervals(cadcells::datastructures::Projections& proj, const FE& f, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
+	SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
     auto implicants = f.compute_implicants();
+	SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
     SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got implicants " << implicants);
     std::vector<Interval<typename op::PropertiesSet>> results;
     for (const auto& implicant : implicants) {
+		SMTRAT_STATISTICS_CALL(statistics().implicant_used(formula::complexity::features::sum_sum_total_degree(proj, implicant)));
         auto interval = get_enclosing_interval<op>(proj, implicant, f.root_valuation(), ass);
         if (interval) results.emplace_back(*interval);
     }
+	SMTRAT_STATISTICS_CALL(statistics().intervals_found(results.size()));
     return results;
 }
 
@@ -84,6 +89,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
     std::vector<Interval<typename op::PropertiesSet>> derivations(intervals.begin(), intervals.end());
     auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
+	SMTRAT_STATISTICS_CALL(statistics().intervals_used(representation.sampled_derivations().size()));
     auto cell_derivs = representation.sampled_derivations();
     cadcells::datastructures::merge_underlying(cell_derivs);
     if (!op::project_covering_properties(representation)) return std::nullopt;
@@ -93,12 +99,14 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
     new_deriv->delineate_cell();
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got interval " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
+	SMTRAT_STATISTICS_CALL(statistics().intervals_found(1));
     return new_deriv;
 }
 
 template<typename op, cadcells::representation::CellHeuristic cell_heuristic>
 inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval(Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", interval->cell());
+	SMTRAT_STATISTICS_CALL(statistics().intervals_used(1));
 	interval->insert(cadcells::operators::properties::cell_connected{ interval->level() }); // TODO is this the proper way?
 	auto representation = cadcells::representation::cell<cell_heuristic>::compute(interval);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
@@ -110,6 +118,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval
 	new_deriv->delineate_cell();
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got interval " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
+	SMTRAT_STATISTICS_CALL(statistics().intervals_found(1));
 	return new_deriv;
 }
 
@@ -148,7 +157,9 @@ inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructure
 	while (sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(unsat_intervals, f), sample != std::nullopt) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
 		ass.emplace(variable, sample.value());
+		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
 		f.extend_valuation(ass);
+		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
@@ -230,7 +241,9 @@ inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructure
 	while (sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(sat_intervals, f), sample != std::nullopt) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample: " << variable << " = " << sample);
 		ass.emplace(variable, sample.value());
+		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
 		f.extend_valuation(ass);
+		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
@@ -303,7 +316,9 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 	while (sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(intervals, f), sample != std::nullopt) {
 		SMTRAT_LOG_INFO("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
 		ass.emplace(variable, *sample);
+		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
 		f.extend_valuation(ass);
+		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");

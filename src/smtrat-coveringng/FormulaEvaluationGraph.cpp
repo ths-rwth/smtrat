@@ -5,6 +5,8 @@
 
 #include <carl-common/util/streamingOperators.h>
 
+#include "CoveringNGStatistics.h"
+
 namespace smtrat::covering_ng::formula {
 using carl::operator<<;
 
@@ -834,6 +836,8 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
             }
         }
     }
+
+    SMTRAT_STATISTICS_CALL(statistics().implicants_found(implicants.size()));
 
     if (m_results != 0) {
         std::sort(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
