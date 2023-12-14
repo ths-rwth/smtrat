@@ -244,6 +244,12 @@ inline bool min_level_min_sotd(cadcells::datastructures::Projections& proj, cons
     else return sotd(proj, a, b);
 }
 
+inline bool sotd_reverse(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
+    auto a_sum_sum_total_degree = features::sum_sum_total_degree(proj, a);
+    auto b_sum_sum_total_degree = features::sum_sum_total_degree(proj, b);
+    return a_sum_sum_total_degree > b_sum_sum_total_degree || (a_sum_sum_total_degree == b_sum_sum_total_degree && a.size() > b.size());
+}
+
 inline bool min_max_tdeg_min_size(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     auto a_max_max_total_degree = features::max_max_total_degree(proj, a);
     auto b_max_max_total_degree = features::max_max_total_degree(proj, b);
