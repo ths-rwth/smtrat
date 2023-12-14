@@ -4,7 +4,6 @@ namespace smtrat::covering_ng {
 
 
 enum class SamplingAlgorithm {
-    /// First checks lower bound and then upper bound, then checks between the cells if they are covered.
     LOWER_UPPER_BETWEEN_SAMPLING, LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN
 };
 
@@ -20,6 +19,7 @@ struct sampling {
     static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& derivations, const FE& f);
 };
 
+/// First checks lower bound and then upper bound, then checks between the cells if they are covered.
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
     template<typename FE, typename PropertiesSet>
@@ -63,6 +63,7 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
     }
 };
 
+/// First checks lower bound and then upper bound, then checks between the cells if they are covered (defers choosing interval endpoints as much as possible).
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN> {
     template<typename FE, typename PropertiesSet>
