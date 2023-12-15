@@ -102,8 +102,8 @@ public:
 					}
 					res.forget();
 				}
-				mFile << std::endl;
 			}
+			mFile << std::endl;
 		}
 	}
 };
