@@ -39,7 +39,7 @@ Formula eliminate_variables(const Formula& f, const std::vector<carl::Variable>&
     if (f.type() == carl::FormulaType::CONSTRAINT) {
         auto f_vars = f.variables();
         if (std::any_of(
-            vars.begin(), vars.end(), [&f_vars](const auto& v){ return f_vars.contains(v); }
+            vars.begin(), vars.end(), [&f_vars](const auto& v){ return f_vars.count(v) > 0; }
         )) {
             return Formula(carl::FormulaType::TRUE);
         }
@@ -100,15 +100,16 @@ Formula eliminate_variables(const Formula& f, const std::vector<carl::Variable>&
     for (std::size_t i = 0; i < res.n_rows(); ++i) {
         Poly lhs;
         auto it = res.row_begin(i);
-        for (; it->col_index < constant_col; ++it) {
+        auto row_end = res.row_end(i);
+        for (; it !=row_end && it->col_index < constant_col; ++it) {
             lhs += it->value*Poly(var_idx.var(it->col_index));
         }
-        if (it->col_index == constant_col) {
+        if (it != row_end && it->col_index == constant_col) {
             lhs += it->value;
             ++it;
         }
         // This method is only applied to pos.lin. combinations, so the delta coeff will be >=0
-        if (it->col_index == delta_col) conjuncts.emplace_back(lhs, carl::Relation::LESS);
+        if (it != row_end && it->col_index == delta_col) conjuncts.emplace_back(lhs, carl::Relation::LESS);
         else conjuncts.emplace_back(lhs, carl::Relation::LEQ);
     }
 

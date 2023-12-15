@@ -46,7 +46,26 @@ public:
         m_constant_col = n_quantified + n_parameters;
 
         // filter finished rows from m
+        Matrix filtered(m.n_rows(), m.n_cols());
+        for (Matrix::RowIndex i = 0; i < m.n_rows(); ++i) {
+            if (m.row_begin(i)->col_index >= m_first_parameter_col) {
+                Row r;
+                for (const auto& e : m.row_entries(i)) {
+                    if (e.col_index > delta_column()) break;
+                    r.push_back(e);
+                }
+                m_found_rows.insert(r);
+            } else {
+                filtered.append_row(m.row_begin(i), m.row_end(i));
+            }
+        }
+
+        m_total_cols  = m_constant_col + filtered.n_rows();
+
         // store initial Node
+        std::vector<Matrix::ColIndex> cols_to_elim;
+        for (ColIndex j = 0; j < n_quantified; ++j) cols_to_elim.push_back(j);
+        m_nodes.emplace_back(filtered, cols_to_elim);
     }
 
 
@@ -116,6 +135,17 @@ private:
 
     bool is_global_conflict(const Row& row) const {
         return is_trivial(row) && is_conflict(row) && is_positive_combination(row);
+    }
+
+    void collect_constraint(const Row& row) {
+        Row truncated = row;
+        for (std::size_t i = 0; ; ++i) {
+            if (truncated[i].col_index > delta_column()) {
+                truncated.resize(i);
+                break;
+            }
+        }
+        m_found_rows.insert(truncated);
     }
 
     std::vector<Node> split_into_independent_nodes(const Node& n) const;

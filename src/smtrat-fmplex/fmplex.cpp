@@ -84,7 +84,7 @@ Node FMplexElimination::bounded_elimination(Node& parent) {
                 else local_conflict = true;
             }
         } else if (is_positive_combination(combined_row)) {
-            m_found_rows.insert(combined_row);
+            collect_constraint(combined_row);
         }
 
         return true;
@@ -145,7 +145,7 @@ bool FMplexElimination::fm_elimination(Node& parent) {
             if (is_trivial(combined_row)) {
                 if (is_global_conflict(combined_row)) return false;
             } else if (is_positive_combination(combined_row)) {
-                m_found_rows.insert(combined_row);
+                collect_constraint(combined_row);
             }
         }
     }
@@ -191,7 +191,7 @@ std::vector<Node> FMplexElimination::split_into_independent_nodes(const Node& n)
                 }
                 row_used[it.row()] = true;
                 --n_unused_rows;
-                if (n.ignored.contains(it.row())) {
+                if (n.ignored.count(it.row()) > 0) {
                     result.back().ignored.insert(result.back().matrix.n_rows());
                 }
                 result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));

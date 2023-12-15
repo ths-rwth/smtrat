@@ -10,14 +10,15 @@ class Matrix {
 
 // Type definitions ////////////////////////////////////////////////////////////////////////////////
 public:
-    using RowIndex  = unsigned;
-    using ColIndex  = unsigned;
-    using DataIndex = unsigned;
+    using RowIndex  = std::size_t;
+    using ColIndex  = std::size_t;
+    using DataIndex = std::size_t;
 
     struct RowEntry {
         ColIndex col_index;
         Rational value;
         RowEntry(ColIndex col, const Rational& v) : col_index(col), value(v) {}
+        RowEntry() : col_index(0), value(0) {}
     };
 
     struct ColEntry {
