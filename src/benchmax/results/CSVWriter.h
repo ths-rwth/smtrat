@@ -82,7 +82,7 @@ public:
 			mFile << std::endl << second_row.rdbuf() << std::endl;
 		}
 		for (const auto& filename: jobs.files()) {
-			mFile << sanitizeFile(filename);
+			mFile << "\"" << sanitizeFile(filename) << "\"";
 			for (const auto& tool: jobs.tools()) {
 				const auto& result = results.get(tool.get(), filename);
 				if (!result) {
@@ -102,6 +102,7 @@ public:
 					}
 					res.forget();
 				}
+				mFile << std::endl;
 			}
 		}
 	}
