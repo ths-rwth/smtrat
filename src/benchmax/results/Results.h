@@ -18,6 +18,7 @@
 #include "../tools/Tool.h"
 #include "Database.h"
 #include "XMLWriter.h"
+#include "CSVWriter.h"
 #include "BenchmarkResult.h"
 
 namespace benchmax {
@@ -93,6 +94,11 @@ public:
 	/// Store all results to a xml file.
 	void store(XMLWriter& xml, const Jobs& jobs) const {
 		xml.write(jobs, *this);
+	}
+
+	/// Store all results to a csl file.
+	void store(CSVWriter& csv, const Jobs& jobs) const {
+		csv.write(jobs, *this);
 	}
 };
 

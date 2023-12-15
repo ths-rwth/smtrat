@@ -68,9 +68,17 @@ protected:
 		}
 	}
 	void write_results(const Jobs& jobs) const {
-		BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
-		XMLWriter xml(settings_benchmarks().output_file_xml);
-		mResults.store(xml, jobs);
+		if (settings_benchmarks().output_file_xml != "") {
+			BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_xml);
+			XMLWriter xml(settings_benchmarks().output_file_xml);
+			mResults.store(xml, jobs);
+		} else if (settings_benchmarks().output_file_csv != "") {
+			BENCHMAX_LOG_INFO("benchmax", "Writing results to " << settings_benchmarks().output_file_csv);
+			CSVWriter csv(settings_benchmarks().output_file_csv);
+			mResults.store(csv, jobs);
+		} else {
+			BENCHMAX_LOG_WARN("benchmax", "No output file specified, writing no results!");
+		}
 	}
 
 public:

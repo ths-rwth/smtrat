@@ -29,6 +29,8 @@ struct BenchmarkSettings {
 	std::filesystem::path output_dir;
 	/// Filename of xml file.
 	std::filesystem::path output_file_xml;
+	/// Filename of xml file.
+	std::filesystem::path output_file_csv;
 };
 
 /// Registers benchmark settings with the settings parser.
