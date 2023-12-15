@@ -28,8 +28,8 @@ private:
 	}
 	std::string sanitize(const std::string& s, bool eliminateSlashes = false) const {
 		std::string res(s);
-		replace(res, "<", "&lt;");
-		replace(res, ">", "&gt;");
+		//replace(res, "<", "&lt;");
+		//replace(res, ">", "&gt;");
 		if (eliminateSlashes) replace(res, "/", ".");
 		return res;
 	}
