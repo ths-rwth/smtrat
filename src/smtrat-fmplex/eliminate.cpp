@@ -151,7 +151,7 @@ std::pair<EigenMat, EigenVec> eliminate_cols(const EigenMat& constraints,
     for (std::size_t i = 0; i < res.n_rows(); ++i) {
         for (const auto& e : res.row_entries(i)) {
             if (e.col_index == constraints.cols()) {
-                res_const(i) = e.value;
+                res_const(i) = -e.value;
                 break;
             }
             if (e.col_index > constraints.cols()) break;
