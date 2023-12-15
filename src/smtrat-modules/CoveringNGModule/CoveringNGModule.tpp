@@ -35,6 +35,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
     FormulaT input(rReceivedFormula());
 
     std::map<carl::Variable, carl::Variable> var_mapping;
+    // for quantified problems, the following setting is mandatory for correctness:
     if constexpr (Settings::transform_boolean_variables_to_reals) {
         // this is a hack until we have proper Boolean reasoning
         std::map<FormulaT,FormulaT> substitutions;
@@ -70,6 +71,8 @@ Answer CoveringNGModule<Settings>::checkCore() {
 	}
 
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
+
+    SMTRAT_STATISTICS_CALL(covering_ng::statistics().variable_ordering(var_order, var_mapping));
 
     //auto var_order = carl::variables(input).to_vector();
     // std::vector<ConstraintT> constraints;

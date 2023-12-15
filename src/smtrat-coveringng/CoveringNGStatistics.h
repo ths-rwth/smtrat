@@ -2,6 +2,7 @@
 
 
 #include <smtrat-common/statistics/Statistics.h>
+#include "types.h"
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
@@ -15,6 +16,7 @@ class CoveringNGStatistics : public Statistics {
     std::size_t m_num_implicants_found;
     std::size_t m_num_intervals_used;
     std::size_t m_num_intervals_found;
+    std::size_t m_bool_var_not_at_end;
 
 public:
     bool enabled() const {
@@ -28,6 +30,7 @@ public:
         Statistics::addKeyValuePair("implicants.found.num", m_num_implicants_found);
         Statistics::addKeyValuePair("intervals.used.num", m_num_intervals_used);
         Statistics::addKeyValuePair("intervals.found.num", m_num_intervals_found);
+        Statistics::addKeyValuePair("var_order.bool_var_not_at_end.num", m_bool_var_not_at_end);
     }
 
     void implicant_used(std::size_t sotd) {
@@ -49,6 +52,19 @@ public:
     }
     void formula_evaluation_end() {
         m_formula_evaluation.finish();
+    }
+
+    void variable_ordering(const cadcells::VariableOrdering& var_order, const std::map<carl::Variable, carl::Variable>& var_mapping) {
+        bool last_block_bool = true;
+        for (auto it = var_order.rbegin(); it != var_order.rend(); it++) {
+            if (last_block_bool) {
+                // if we are in the last block of booleans and see a non-Boolean variable, then we just left the last block consisting of booleans
+                if (var_mapping.find(*it) == var_mapping.end()) last_block_bool = false;
+            } else {
+                // if we are not in the last block of booleans and we see a Boolean variable, then we increase the counter
+                if (var_mapping.find(*it) != var_mapping.end()) m_bool_var_not_at_end++;
+            }
+        }
     }
    
 };
