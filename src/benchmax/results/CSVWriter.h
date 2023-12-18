@@ -44,11 +44,13 @@ private:
 		std::vector<std::string> res;
 		for (const auto& filename: jobs.files()) { // for (const auto& run: results.data())
 			const auto& run = results.get(tool, filename);
-			run->get().restore();
-			for (const auto& stat: run->get().additional) {
-				res.emplace_back(stat.first);
+			if (run) {
+				run->get().restore();
+				for (const auto& stat: run->get().additional) {
+					res.emplace_back(stat.first);
+				}
+				run->get().store();
 			}
-			run->get().store();
 		}
 		std::sort(res.begin(), res.end());
 		res.erase(
