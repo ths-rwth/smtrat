@@ -1,4 +1,7 @@
 #include "eliminate.h"
+#include <iostream>
+#include <fstream>
+
 
 namespace smtrat::fmplex {
 
@@ -160,6 +163,35 @@ std::pair<EigenMat, EigenVec> eliminate_cols(const EigenMat& constraints,
     }
 
     return {res_mat, res_const};
+}
+
+
+void write_matrix_to_ine(const EigenMat& constraints,
+                         const EigenVec& constants,
+                         const std::vector<std::size_t>& cols,
+                         const std::string& filename) {
+    std::ofstream file;
+    file.open(filename);
+    file << "H-representation\n";
+    file << "begin\n";
+    file << constraints.rows() << "  " << constraints.cols() + 1 << "  rational\n";
+    for (std::size_t i = 0; i < constraints.rows(); ++i) {
+        Rational lcm = constants(i);
+        if (carl::is_zero(lcm)) lcm = 1;
+        for (std::size_t j = 0; j < constraints.cols(); ++j) {
+            lcm = carl::lcm(lcm.get_num(), constraints(i,j).get_den());
+        }
+        file << "  " << constants(i)*lcm; // first column contains the constants
+        for (std::size_t j = 0; j < constraints.cols(); ++j) {
+            file << "  " << constraints(i,j)*(-lcm);
+        }
+        file << "\n";
+    }
+    file << "end\n";
+    file << "project " << cols.size();
+    for (const auto i : cols) file << " " << i+1;
+    file << "\n";
+    file.close();
 }
 
 }

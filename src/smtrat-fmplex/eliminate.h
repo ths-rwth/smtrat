@@ -23,4 +23,7 @@ std::pair<EigenMat, EigenVec> eliminate_cols(const EigenMat& constraints,
                                              const EigenVec& constants,
                                              const std::vector<std::size_t>& cols);
 
+void write_matrix_to_ine(const EigenMat& constraints, const EigenVec& constants,
+                         const std::vector<std::size_t>& cols, const std::string& filename);
+
 }
