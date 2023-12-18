@@ -6,9 +6,9 @@
 
 namespace smtrat {
 
-class MCSAT_PPOCNew : public Manager {
+class MCSAT_PPDefault : public Manager {
 public:
-	MCSAT_PPOCNew()
+	MCSAT_PPDefault()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<SATSettingsMCSATDefault>>());
