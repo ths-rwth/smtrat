@@ -1,7 +1,5 @@
 #pragma once
 
-#include "OCNew.h"
-
 #include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.tpp>
 #include <smtrat-solver/Manager.h>
