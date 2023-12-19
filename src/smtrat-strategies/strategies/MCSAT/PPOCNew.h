@@ -17,10 +17,12 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 
 class MCSAT_PPOCNew : public Manager {
 public:
-	MCSAT_PPOCNew()
-		: Manager() {
+	MCSAT_PPOCNew() : Manager() {
 		setStrategy(
-			addBackend<SATModule<internal::SATSettings>>());
+			addBackend<FPPModule<FPPSettings1>>({
+				addBackend<SATModule<internal::SATSettings>>()
+			})
+		);
 	}
 };
 

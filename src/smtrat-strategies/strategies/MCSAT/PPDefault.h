@@ -8,10 +8,12 @@ namespace smtrat {
 
 class MCSAT_PPDefault : public Manager {
 public:
-	MCSAT_PPDefault()
-		: Manager() {
+	MCSAT_PPDefault() : Manager() {
 		setStrategy(
-			addBackend<SATModule<SATSettingsMCSATDefault>>());
+			addBackend<FPPModule<FPPSettings1>>({
+				addBackend<SATModule<SATSettingsMCSATDefault>>()
+			})
+		);
 	}
 };
 
