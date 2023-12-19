@@ -69,29 +69,38 @@ private:
         return row.begin()->col_index >= constant_column();
     }
 
-
-    bool is_global_conflict(const Row& row) const {
-        assert(!row.empty());
-        assert(is_trivial(row));
-        auto it = row.begin();
-        if (it->col_index > delta_column()) return false;
-        if (it->col_index == constant_column()) {
-            if (it->value < 0) return false;
-            ++it;
-            if (it->col_index == delta_column()) ++it; 
-        }
-        return std::all_of(it, row.end(), [](const auto& e){return e.value > 0;});
-    }
-
     bool is_conflict(const Row& row) const {
-        assert(!row.empty());
         assert(is_trivial(row));
-        const auto& e = row.front();
-        return ((e.col_index <= delta_column()) && (e.value > 0));
+        return ((row.front().col_index <= delta_column()) && (row.front().value > 0));
     }
+
+    bool is_positive_combination(const Row& row);
 
     FormulaT constraint_from_row(const Row& row) const;
-    bool is_positive_combination(const Row& row);
+
+    /**
+     * truncates the given row to not contain any "origin" information
+     * and inserts the result into the set of final projected constraints-
+     * This assumes that the row does contain origins and does not contain elimination variables.
+    */
+    void collect_constraint(const Row& row) {
+        Row truncated = row;
+        for (std::size_t i = 0; ; ++i) {
+            if (truncated[i].col_index > delta_column()) {
+                truncated.resize(i);
+                break;
+            }
+        }
+        m_found_rows.insert(truncated);
+    }
+
+    /**
+     * Splits the given node into multiple nodes that are independent in the following sense:
+     * - they partition the elimination variables and
+     * - the constraints of a node to not contain any of the elimination variables of another node.
+     * Thus, these eliminations can be carried out independently.
+    */
+    std::vector<Node> split_into_independent_nodes(const Node& n) const;
 
     /**
      * Constructs the starting nodes from m_query and m_formula as follows:
@@ -135,68 +144,6 @@ private:
      * @return false if a global conflict is found and true otherwise.
     */
     bool fm_elimination(Node& parent);
-
-
-    std::vector<Node> split_into_independent_nodes(const Node& n) const {
-        const Matrix& m = n.matrix;
-        std::vector<bool> col_used(n.cols_to_elim.size(), false);
-        std::vector<bool> row_used(m.n_rows(), false);
-        std::size_t n_unused_rows = m.n_rows();
-        
-        std::vector<std::size_t> pending;
-        std::vector<Node> result;
-
-        for (std::size_t i = 0; i < n.cols_to_elim.size();) {
-            pending.push_back(i);
-            result.push_back(Node(Matrix(n_unused_rows, m.n_cols()), {}));
-            ++i;
-            while (!pending.empty()) {
-                std::size_t v = pending.back();
-                pending.pop_back();
-                if (col_used[v]) continue;
-                col_used[v] = true;
-                ColIndex actual_col = n.cols_to_elim[v];
-                result.back().cols_to_elim.push_back(actual_col);
-                auto col_end = m.col_end(actual_col);
-                for (auto it = m.col_begin(actual_col); it != col_end; ++it) {
-                    if (row_used[it.row()]) continue;
-                    for (const auto& e : m.row_entries(it.row())) {
-                        if (e.col_index >= m_first_parameter_col) break;
-                        if (e.col_index == actual_col) continue;
-                        for (std::size_t j = 0; ; ++j) {
-                            assert(j < n.cols_to_elim.size());
-                            if (n.cols_to_elim[j] == e.col_index) {
-                                pending.push_back(j);
-                                break;
-                            }
-                        }
-                    }
-                    row_used[it.row()] = true;
-                    --n_unused_rows;
-                    if (n.ignored.contains(it.row())) {
-                        result.back().ignored.insert(result.back().matrix.n_rows());
-                    }
-                    result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));
-                }
-            }
-            while (i < n.cols_to_elim.size() && col_used[i]) ++i;
-        }
-        for (Node& n : result) n.choose_elimination();
-        return result;
-    }
-
-
-    void collect_constraint(const Row& row) {
-        Row truncated = row;
-        for (std::size_t i = 0; ; ++i) {
-            if (truncated[i].col_index > delta_column()) {
-                truncated.resize(i);
-                break;
-            }
-        }
-        m_found_rows.insert(truncated);
-    }
-
 
     /**
      * writes the given qe problem as a .ine file as used in CDD lib.
