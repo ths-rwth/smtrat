@@ -186,6 +186,18 @@ private:
     }
 
 
+    void collect_constraint(const Row& row) {
+        Row truncated = row;
+        for (std::size_t i = 0; ; ++i) {
+            if (truncated[i].col_index > delta_column()) {
+                truncated.resize(i);
+                break;
+            }
+        }
+        m_found_rows.insert(truncated);
+    }
+
+
     /**
      * writes the given qe problem as a .ine file as used in CDD lib.
     */

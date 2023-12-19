@@ -88,6 +88,15 @@ struct Node {
         }
     }
 
+    bool is_suitable_for_splitting() {
+        return (  
+               matrix.n_rows() >= 10
+            && cols_to_elim.size() > 1
+            && matrix.n_rows() > cols_to_elim.size() + 1
+            && (cols_to_elim.size() << (2*cols_to_elim.size())) > 100
+        );
+    }
+
     Node(bool is_sat) {
         type = is_sat ? (Type::LEAF) : (Type::CONFLICT);
         eliminators.clear();

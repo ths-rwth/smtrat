@@ -16,6 +16,7 @@ public:
         ColIndex col_index;
         Rational value;
         RowEntry(ColIndex col, const Rational& v) : col_index(col), value(v) {}
+        RowEntry() : col_index(0), value(0) {}
     };
 
     struct ColEntry {

@@ -26,13 +26,13 @@ FormulaT FMplexQE::eliminate_quantifiers() {
         case Node::Type::CONFLICT:
             return FormulaT(carl::FormulaType::FALSE);
         case Node::Type::UNDETERMINED: {
-            if (m_nodes.back().matrix.n_rows() < 10 || m_nodes.back().cols_to_elim.size() == 1) {
+            if (m_nodes.back().is_suitable_for_splitting()) {
+                auto split = split_into_independent_nodes(m_nodes.back());
+                m_nodes.pop_back();
+                m_nodes.insert(m_nodes.end(), split.begin(), split.end());
+            } else {
                 m_nodes.back().choose_elimination();
-                break;
             }
-            auto split = split_into_independent_nodes(m_nodes.back());
-            m_nodes.pop_back();
-            m_nodes.insert(m_nodes.end(), split.begin(), split.end());
             break;
         }
         case Node::Type::NBS:
@@ -74,17 +74,21 @@ std::vector<carl::Variable> FMplexQE::gather_elimination_variables() const {
 
 
 FormulaT FMplexQE::constraint_from_row(const Row& row) const {
+    assert(!row.empty());
+    assert(row.back().col_index <= delta_column());
     Poly lhs;
     auto it = row.begin();
-    for (; it->col_index < constant_column(); ++it) {
+    for (; it != row.end() && it->col_index < constant_column(); ++it) {
         lhs += it->value*Poly(m_var_idx.var(it->col_index));
     }
-    if (it->col_index == constant_column()) {
+    if (it != row.end() && it->col_index == constant_column()) {
         lhs += it->value;
         ++it;
     }
     // This method is only applied to pos.lin. combinations, so the delta coeff will be >=0
-    if (it->col_index == delta_column()) return FormulaT(lhs, carl::Relation::LESS);
+    if (it != row.end() && it->col_index == delta_column()) {
+        return FormulaT(lhs, carl::Relation::LESS);
+    }
     return FormulaT(lhs, carl::Relation::LEQ);
 }
 
@@ -288,8 +292,7 @@ Node FMplexQE::bounded_elimination(Node& parent) {
                 else local_conflict = true;
             }
         } else if (is_positive_combination(combined_row)) {
-            // m_found_conjuncts.insert(constraint_from_row(combined_row));
-            m_found_rows.insert(combined_row); // TODO: remove one of these lines!
+            collect_constraint(combined_row);
         }
 
         return true;
@@ -352,8 +355,7 @@ bool FMplexQE::fm_elimination(Node& parent) {
             if (is_trivial(combined_row)) {
                 if (is_global_conflict(combined_row)) return false;
             } else if (is_positive_combination(combined_row)) {
-                // m_found_conjuncts.insert(constraint_from_row(combined_row));
-                m_found_rows.insert(combined_row);
+                collect_constraint(combined_row);
             }
         }
     }
