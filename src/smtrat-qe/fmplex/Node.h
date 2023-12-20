@@ -91,9 +91,9 @@ struct Node {
     bool is_suitable_for_splitting() {
         return (  
                matrix.n_rows() >= 10
-            && cols_to_elim.size() > 1
+            && cols_to_elim.size() >= 2
+            && (cols_to_elim.size() >= 5 || matrix.n_rows() >= 20) 
             && matrix.n_rows() > cols_to_elim.size() + 1
-            && (cols_to_elim.size() << (2*cols_to_elim.size())) > 100
         );
     }
 
