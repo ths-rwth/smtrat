@@ -401,9 +401,10 @@ bool FMplexQE::fm_elimination(Node& parent) {
             Rational coeff_u = parent.matrix.coeff(u, parent.chosen_col);
             auto combined_row = parent.matrix.combine(l, coeff_u, u, coeff_l);
             qe::util::gcd_normalize(combined_row);
-            if (is_positive_combination(combined_row)) {
-                if (is_trivial(combined_row) && is_conflict(combined_row)) return false;
-                else collect_constraint(combined_row);
+            if (is_trivial(combined_row)) {
+                if (is_conflict(combined_row) && is_positive_combination(combined_row)) return false;
+            } else if (is_positive_combination(combined_row)) {
+                collect_constraint(combined_row);
             }
         }
     }
