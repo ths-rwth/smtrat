@@ -176,8 +176,7 @@ void write_matrix_to_ine(const EigenMat& constraints,
     file << "begin\n";
     file << constraints.rows() << "  " << constraints.cols() + 1 << "  rational\n";
     for (std::size_t i = 0; i < constraints.rows(); ++i) {
-        Rational lcm = constants(i);
-        if (carl::is_zero(lcm)) lcm = 1;
+        Rational lcm = (carl::is_zero(constants(i)) ? Rational(1) : constants(i).get_den());
         for (std::size_t j = 0; j < constraints.cols(); ++j) {
             lcm = carl::lcm(lcm.get_num(), constraints(i,j).get_den());
         }
