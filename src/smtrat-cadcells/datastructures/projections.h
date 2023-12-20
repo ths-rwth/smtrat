@@ -174,9 +174,11 @@ public:
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCApproximationStatistics::get_instance().resultant();
             #endif
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().resultant(total_degree(result), degree(result), result.level));
             return result;
         }
@@ -206,9 +208,11 @@ public:
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCApproximationStatistics::get_instance().discriminant();
             #endif
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
             cache(p).disc = result;
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().discriminant(total_degree(result), degree(result), result.level));
             return result;
         }
@@ -221,9 +225,11 @@ public:
             #ifdef SMTRAT_DEVOPTION_Statistics
                 OCApproximationStatistics::get_instance().coefficient();
             #endif
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
             cache(p).ldcf = result;
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().leading_coefficient(total_degree(result), degree(result), result.level));
             return result;
         }
@@ -231,10 +237,12 @@ public:
 
     const std::vector<PolyRef>& factors_nonconst(PolyRef p) {
         if (cache(p).factors_nonconst.empty()) {
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             for (const auto& factor : carl::irreducible_factors(m_pool(p), false)) {
                 cache(p).factors_nonconst.emplace_back(m_pool(factor));
                 SMTRAT_STATISTICS_CALL(statistics().factor(total_degree(m_pool(factor)), degree(m_pool(factor)), m_pool(factor).level));
             }
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
         }
         return cache(p).factors_nonconst;
     }
@@ -257,7 +265,9 @@ public:
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
         assert(cache(restricted_sample).real_roots.at(p).is_univariate());
@@ -270,7 +280,9 @@ public:
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
         assert(cache(restricted_sample).real_roots.at(p).is_univariate());
@@ -302,7 +314,9 @@ public:
         auto poly = m_pool(p);
 		if (carl::is_linear(poly)) return false;
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
 		return cache(restricted_sample).real_roots.at(p).is_nullified();
@@ -326,10 +340,12 @@ public:
 
     std::vector<PolyRef> coeffs(PolyRef p) {
         std::vector<PolyRef> result;
+        SMTRAT_STATISTICS_CALL(statistics().projection_start());
         for (const auto& coeff :  m_pool(p).coefficients()) {
             result.emplace_back(m_pool(coeff));
             SMTRAT_STATISTICS_CALL(statistics().coefficient(total_degree(m_pool(coeff)), degree(m_pool(coeff)), m_pool(coeff).level));
         }
+        SMTRAT_STATISTICS_CALL(statistics().projection_end());
         return result;
     }
 
@@ -342,6 +358,7 @@ public:
 
     PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) {
         std::optional<Polynomial> result;
+        SMTRAT_STATISTICS_CALL(statistics().projection_start());
         for (const auto& coeff : m_pool(p).coefficients()) {
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);
             assert(!indeterminate(mv));
@@ -352,6 +369,7 @@ public:
             }
         }
         assert(result);
+        SMTRAT_STATISTICS_CALL(statistics().projection_end());
         SMTRAT_STATISTICS_CALL(statistics().coefficient(total_degree(m_pool(*result)), degree(m_pool(*result)), m_pool(*result).level));
         return m_pool(*result);
     }
@@ -364,6 +382,7 @@ public:
         if (cache(p).derivatives.find(var) != cache(p).derivatives.end()) {
             return cache(p).derivatives[var];
         } else {
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto input = m_pool(p);
             PolyRef result;
             if (input.main_var() == var) {
@@ -375,6 +394,7 @@ public:
             // auto result = m_pool(carl::derivative(m_pool(p), var)); // not implemented
             cache(p).derivatives.emplace(var, result);
             assert(result.level <= p.level);
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().derivative(total_degree(result), degree(result), result.level));
             return result;
         }

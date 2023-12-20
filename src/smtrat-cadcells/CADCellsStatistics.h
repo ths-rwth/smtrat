@@ -46,6 +46,8 @@ private:
 
     carl::statistics::MultiCounter<std::size_t> m_rules_intersection_count_by_depth;
 
+    carl::statistics::Timer m_proj_timer;
+
     boost::container::flat_map<ProjectionType, carl::statistics::Series> m_proj_x_total_degree;
     boost::container::flat_map<ProjectionType, carl::statistics::Series> m_proj_x_degree;
     boost::container::flat_map<ProjectionType, carl::statistics::Series> m_proj_x_level;
@@ -105,6 +107,8 @@ public:
         Statistics::addKeyValuePair("projections.real_roots.num_roots", m_proj_realroots_num_roots);
         Statistics::addKeyValuePair("projections.real_roots.nullified.count", m_proj_realroots_nullified_count);
 
+        Statistics::addKeyValuePair("projections.timer", m_proj_timer);
+
         Statistics::addKeyValuePair("filter.poly_count.by_depth", m_filter_poly_count_by_depth);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_factors", m_filter_poly_count_by_depth_and_num_factors);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_roots", m_filter_poly_count_by_depth_and_num_roots);
@@ -112,7 +116,6 @@ public:
 
         Statistics::addKeyValuePair("filter.timer.filter_roots", m_timer_filter_roots);
         Statistics::addKeyValuePair("filter.timer.filter_roots_callback", m_timer_filter_roots_callback);
-
 
         Statistics::addKeyValuePair("filter.root.by_depth", m_filter_root_by_depth);
         Statistics::addKeyValuePair("filter.root.algebraic.by_depth", m_filter_root_algebraic_by_depth);
@@ -123,6 +126,13 @@ public:
 
 
     // projections
+
+    void projection_start()  {
+        m_proj_timer.start_this();
+    }
+    void projection_end()  {
+        m_proj_timer.finish();
+    }
 
     void projection_poly(const ProjectionType& type, std::size_t total_degree, std::size_t degree, std::size_t level) {
         m_proj_x_total_degree.try_emplace(type).first->second.add(total_degree);
