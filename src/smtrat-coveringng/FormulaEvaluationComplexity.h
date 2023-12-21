@@ -149,6 +149,24 @@ inline auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, co
     return sum;
 }
 
+inline auto sum_sum_total_degree(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& a) {
+    std::size_t sum = 0;
+    for (const auto& el : a) {
+        for (auto d : proj.monomial_total_degrees(el.lhs)) {
+            sum += d;
+        }
+    }
+    return sum;
+}
+
+inline auto sum_total_degree(cadcells::datastructures::Projections& proj, const cadcells::datastructures::PolyConstraint& a) {
+    std::size_t sum = 0;
+    for (auto d : proj.monomial_total_degrees(a.lhs)) {
+        sum += d;
+    }
+    return sum;
+}
+
 inline auto sum_sum_total_degree_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a) {
     std::size_t sum = 0;
     for (const auto& el : a) {
@@ -227,6 +245,12 @@ inline bool sotd(cadcells::datastructures::Projections& proj, const boost::conta
     return a_sum_sum_total_degree < b_sum_sum_total_degree || (a_sum_sum_total_degree == b_sum_sum_total_degree && a.size() < b.size());
 }
 
+inline bool sotd_new(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& a, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& b) {
+    auto a_sum_sum_total_degree = features::sum_sum_total_degree(proj, a);
+    auto b_sum_sum_total_degree = features::sum_sum_total_degree(proj, b);
+    return a_sum_sum_total_degree < b_sum_sum_total_degree || (a_sum_sum_total_degree == b_sum_sum_total_degree && a.size() < b.size());
+}
+
 // factorization is too expensive
 inline bool sotd_fact(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& a, const boost::container::flat_set<cadcells::Constraint>& b) {
     auto a_sum_sum_total_degree = features::sum_sum_total_degree_fact(proj, a);
@@ -296,6 +320,12 @@ inline bool min_sotd(const cadcells::Constraint& a, const cadcells::Constraint& 
     return features::sum_total_degree(a) < features::sum_total_degree(b);
 }
 
+inline bool min_sotd_new(cadcells::datastructures::Projections& proj, const cadcells::datastructures::PolyConstraint& a, const cadcells::datastructures::PolyConstraint& b) {
+    return features::sum_total_degree(proj, a) < features::sum_total_degree(proj, b);
+}
 
+inline bool min_tdeg_new(cadcells::datastructures::Projections& proj, const cadcells::datastructures::PolyConstraint& a, const cadcells::datastructures::PolyConstraint& b) {
+    return proj.total_degree(a.lhs) < proj.total_degree(b.lhs); 
+}
 
 } // namespace smtrat::covering_ng::formula::complexity

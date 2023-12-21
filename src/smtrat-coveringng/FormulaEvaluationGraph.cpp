@@ -66,7 +66,7 @@ void print(std::ostream& stream, const FormulaDB& db, const FormulaID id, const 
             stream << std::string(level, ' ') << c.variable;
         },
         [&](const CONSTRAINT& c) {
-            stream << std::string(level, ' ') << *c.constraint;
+            stream << std::string(level, ' ') << c.constraint;
         },
     }, db[id].content);
 
@@ -85,7 +85,7 @@ void log(const FormulaDB& db, const FormulaID id) {
 }
 
 
-FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const FormulaT& f,  FormulaDB& db, VariableToFormula& vartof, std::map<std::size_t,FormulaID>& cache) {
+FormulaID to_formula_db(cadcells::datastructures::Projections& c, const FormulaT& f,  FormulaDB& db, VariableToFormula& vartof, std::map<std::size_t,FormulaID>& cache) {
     {
         auto cache_it = cache.find(f.id());
         if (cache_it != cache.end()) return cache_it->second;
@@ -178,8 +178,8 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
             return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::CONSTRAINT: {
-            auto bc = carl::convert<cadcells::Polynomial>(c, f.constraint().constr());
-            db.emplace_back(CONSTRAINT{ std::make_shared<carl::BasicConstraint<cadcells::Polynomial>>(bc) });
+            auto bc = carl::convert<cadcells::Polynomial>(c.polys().context(), f.constraint().constr());
+            db.emplace_back(CONSTRAINT{ c.polys()(bc) });
             auto var = bc.lhs().main_var();
             vartof.try_emplace(var).first->second.insert((FormulaID)(db.size()-1));
             cache.emplace(f.id(), (FormulaID)(db.size()-1));
@@ -708,7 +708,7 @@ FormulaT preprocess(const FormulaT& f) {
 }
 
 
-void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f) {
+void GraphEvaluation::set_formula(const FormulaT& f) {
     auto input = f;
     if (m_preprocess) {
         input = pp::preprocess(input);
@@ -716,7 +716,7 @@ void GraphEvaluation::set_formula(typename cadcells::Polynomial::ContextType c, 
     }
     
     std::map<std::size_t,formula_ds::FormulaID> cache;
-    true_graph.root = to_formula_db(c, input, true_graph.db, vartof, cache);
+    true_graph.root = to_formula_db(m_proj, input, true_graph.db, vartof, cache);
     true_graph.downwards_propagation = m_boolean_exploration != OFF;
     false_graph = true_graph;
 
@@ -799,17 +799,17 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
 
     std::vector<formula_ds::FormulaID> atoms(atomset->second.begin(), atomset->second.end());
     std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) {
-        const auto& constr_a = *std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
-        const auto& constr_b = *std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
-        return m_constraint_complexity_ordering(constr_a, constr_b);
+        const auto& constr_a = std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
+        const auto& constr_b = std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
+        return m_constraint_complexity_ordering(m_proj, constr_a, constr_b);
     });
 
     for (const auto id : atoms) {
-        const auto& constr = *std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
-        assert (constr.lhs().main_var() == var);
+        const auto& constr = std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
+        assert (m_proj.main_var(constr.lhs) == var);
 
         SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Evaluate constraint " << constr);
-        auto res = carl::evaluate(constr, ass);
+        auto res = m_proj.evaluate(ass, constr);
         if (!boost::indeterminate(res)) {
             m_decisions.emplace(id, (bool)res);
             SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
@@ -876,9 +876,14 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
     }
 }
 
-void postprocess(boost::container::flat_set<cadcells::Constraint>& implicant) {
+void postprocess(cadcells::datastructures::Projections& proj, boost::container::flat_set<cadcells::datastructures::PolyConstraint>& i) {
     // Replace equations by their Gröbner basis if possible
     // TODO reduce other constraints using the gröbner basis?
+
+    boost::container::flat_set<cadcells::Constraint> implicant;
+    for (const auto& e : i) {
+        implicant.insert(proj.polys()(e));
+    }
     std::vector<cadcells::Polynomial> equations;
     for (const auto& c : implicant) {
         if (c.relation() == carl::Relation::EQ) {
@@ -898,38 +903,42 @@ void postprocess(boost::container::flat_set<cadcells::Constraint>& implicant) {
             implicant.emplace(poly, carl::Relation::EQ);
         }
     }
+    i.clear();
+    for (const auto& e : implicant) {
+        i.insert(proj.polys()(e));
+    }
 }
 
-std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::compute_implicants() const {
+std::vector<boost::container::flat_set<cadcells::datastructures::PolyConstraint>> GraphEvaluation::compute_implicants() {
     auto reasons = (root_valuation() == Valuation::FALSE) ? m_true_conflict_reasons : m_false_conflict_reasons;
 
-    std::vector<boost::container::flat_set<cadcells::Constraint>> implicants;
+    std::vector<boost::container::flat_set<cadcells::datastructures::PolyConstraint>> implicants;
     for (const auto& r : reasons) {
         implicants.emplace_back();
         for (const auto& c : r) {
             if (c.second) {
-                implicants.back().insert(*std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint);
+                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint);
             } else {
-                implicants.back().insert(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint->negation());
+                implicants.back().insert(m_proj.negation(std::get<formula_ds::CONSTRAINT>(true_graph.db[c.first].content).constraint));
             }
         }
     }
 
     SMTRAT_STATISTICS_CALL(statistics().implicants_found(implicants.size()));
 
-    // TODO recalculation of features is expensive (as we need to convert each implicant to a PolyRef) - either pre-compute features and sort then, or use PolyRef in FormulaEvaluation (which makes switching variable orderings harder...)
+    // TODO pre-compute features and sort then?
     if (m_results == 1) {
-        *implicants.begin() = *std::min_element(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
+        *implicants.begin() = *std::min_element(implicants.begin(), implicants.end(), std::bind_front(m_implicant_complexity_ordering, m_proj));
         implicants.erase(implicants.begin() + 1, implicants.end());
     } else if (m_results > 1) {
-        std::sort(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
+        std::sort(implicants.begin(), implicants.end(), std::bind_front(m_implicant_complexity_ordering, m_proj));
         if (m_results < implicants.size())
             implicants.erase(implicants.begin() + m_results, implicants.end());
     }
 
     if (m_postprocess) {
         for (auto& implicant : implicants) {
-            postprocess(implicant);
+            postprocess(m_proj, implicant);
         }
     }
 

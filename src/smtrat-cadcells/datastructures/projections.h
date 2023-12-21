@@ -389,7 +389,7 @@ public:
                 result = m_pool(carl::derivative(input));
             } else {
                 assert(input.has(var));
-                result = m_pool(carl::convert<Polynomial>(m_pool.get_context(), carl::derivative(carl::convert<Poly>(input), var)));
+                result = m_pool(carl::convert<Polynomial>(m_pool.context(), carl::derivative(carl::convert<Poly>(input), var)));
             }
             // auto result = m_pool(carl::derivative(m_pool(p), var)); // not implemented
             cache(p).derivatives.emplace(var, result);
@@ -501,6 +501,14 @@ public:
         else if (f.is_cminmax()) return evaluate(ass, f.cminmax());
         else if (f.is_cmaxmin()) return evaluate(ass, f.cmaxmin());
         else assert(false);
+    }
+
+    PolyConstraint negation(const PolyConstraint& constraint) const {
+        return PolyConstraint{constraint.lhs, carl::inverse(constraint.relation)};
+    }
+
+    auto evaluate(const Assignment& ass, const PolyConstraint& constraint) {
+        return carl::evaluate(polys()(constraint), ass);
     }
 
 };

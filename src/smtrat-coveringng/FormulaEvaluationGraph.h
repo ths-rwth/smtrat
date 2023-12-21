@@ -30,7 +30,7 @@ struct BOOL {
     carl::Variable variable;
 };
 struct CONSTRAINT {
-    std::shared_ptr<carl::BasicConstraint<cadcells::Polynomial>> constraint;
+    cadcells::datastructures::PolyConstraint constraint;
 };
 
 struct Formula {
@@ -79,6 +79,8 @@ public:
     enum BooleanExploration { OFF, PROPAGATION, EXPLORATION, EXPLORATION_ONLY_BOOL };
 
 private:
+    cadcells::datastructures::Projections m_proj;
+
     formula_ds::FormulaGraph true_graph;
     formula_ds::FormulaGraph false_graph;
     formula_ds::VariableToFormula vartof;
@@ -98,12 +100,12 @@ private:
     formula_ds::Formula::Reasons explore(formula_ds::FormulaGraph& graph); 
 
 public:
-    GraphEvaluation(ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, BooleanExploration boolean_exploration) : m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_boolean_exploration(boolean_exploration) {}
+    GraphEvaluation(cadcells::datastructures::Projections proj, ImplicantOrdering implicant_complexity_ordering, std::size_t results, ConstraintOrdering constraint_complexity_ordering, bool stop_evaluation_on_conflict, bool preprocess, bool postprocess, BooleanExploration boolean_exploration) : m_proj(proj), m_implicant_complexity_ordering(implicant_complexity_ordering), m_results(results), m_constraint_complexity_ordering(constraint_complexity_ordering), m_stop_evaluation_on_conflict(stop_evaluation_on_conflict), m_preprocess(preprocess), m_postprocess(postprocess), m_boolean_exploration(boolean_exploration) {}
 
-    void set_formula(typename cadcells::Polynomial::ContextType c, const FormulaT& f);
+    void set_formula(const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);
     void revert_valuation(const cadcells::Assignment& ass);
-    std::vector<boost::container::flat_set<cadcells::Constraint>> compute_implicants() const;
+    std::vector<boost::container::flat_set<cadcells::datastructures::PolyConstraint>> compute_implicants();
     Valuation root_valuation() const;
 };
 

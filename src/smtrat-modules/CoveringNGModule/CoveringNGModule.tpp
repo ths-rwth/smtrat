@@ -85,7 +85,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
 
     cadcells::Assignment ass;
     auto f = Settings::formula_evaluation::create(proj);
-    f.set_formula(context, matrix);
+    f.set_formula(matrix);
     f.extend_valuation(ass);
     if (f.root_valuation() == covering_ng::formula::Valuation::FALSE || matrix.is_false()) {
         mModel.clear();

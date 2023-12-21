@@ -2,7 +2,6 @@
 
 #include "types.h"
 #include "FormulaEvaluation.h"
-#include "FormulaEvaluationNode.h"
 #include "FormulaEvaluationGraph.h"
 #include "Sampling.h"
 #include "smtrat-cadcells/common.h"
@@ -34,7 +33,7 @@ inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::Vari
 }
 
 template<typename op>
-inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::Constraint>& implicant, formula::Valuation root_valuation, const cadcells::Assignment& ass) {
+inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& implicant, formula::Valuation root_valuation, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", implicant << ", " << root_valuation << ", " << ass);
 
     //std::size_t level = 0;
@@ -45,17 +44,17 @@ inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interva
 
     auto deriv = cadcells::datastructures::make_derivation<typename op::PropertiesSet>(proj, ass, ass.size()).sampled_ref();
     for (const auto& c : implicant) {
-        if (carl::is_strict(c.relation())) {
+        if (carl::is_strict(c.relation)) {
             if (root_valuation == formula::Valuation::FALSE) {
-                deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ proj.polys()(c.lhs()) });
+                deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ c.lhs });
             } else {
-                deriv->insert(cadcells::operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
+                deriv->insert(cadcells::operators::properties::poly_sgn_inv{ c.lhs });
             }
         } else {
             if (root_valuation == formula::Valuation::FALSE) {
-                deriv->insert(cadcells::operators::properties::poly_sgn_inv{ proj.polys()(c.lhs()) });
+                deriv->insert(cadcells::operators::properties::poly_sgn_inv{ c.lhs });
             } else {
-                deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ proj.polys()(c.lhs()) });
+                deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ c.lhs });
             }
         }
     }
@@ -67,7 +66,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interva
 }
 
 template<typename op, typename FE>
-inline std::vector<Interval<typename op::PropertiesSet>> get_enclosing_intervals(cadcells::datastructures::Projections& proj, const FE& f, const cadcells::Assignment& ass) {
+inline std::vector<Interval<typename op::PropertiesSet>> get_enclosing_intervals(cadcells::datastructures::Projections& proj, FE& f, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
     auto implicants = f.compute_implicants();

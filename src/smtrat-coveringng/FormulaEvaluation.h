@@ -6,9 +6,9 @@
 
 namespace smtrat::covering_ng::formula {
 
-using ImplicantOrdering = std::function<bool(const boost::container::flat_set<cadcells::Constraint>&, const boost::container::flat_set<cadcells::Constraint>&)>;
+using ImplicantOrdering = std::function<bool(cadcells::datastructures::Projections&, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>&, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>&)>;
 
-using ConstraintOrdering = std::function<bool(const cadcells::Constraint&, const cadcells::Constraint&)>;
+using ConstraintOrdering = std::function<bool(cadcells::datastructures::Projections&, const cadcells::datastructures::PolyConstraint&, const cadcells::datastructures::PolyConstraint&)>;
 
 enum class Valuation {
     TRUE, FALSE, MULTIVARIATE, UNKNOWN 
