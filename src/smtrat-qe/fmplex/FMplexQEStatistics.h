@@ -15,6 +15,8 @@ private:
     std::size_t m_output_constraints = 0;
     std::size_t m_total_constraints  = 0;
     std::size_t m_visited_nodes      = 0;
+    std::size_t m_split_tried        = 0;
+    std::size_t m_split_done         = 0;
     bool        m_eq_conflict        = false;
     carl::statistics::timer m_qe_timer;
 
@@ -29,6 +31,8 @@ public:
         addKeyValuePair("visited-nodes",      m_visited_nodes);
         addKeyValuePair("qe-called",          m_qe_timer);
         addKeyValuePair("eq-conflict",        m_eq_conflict);
+        addKeyValuePair("split-tried",        m_split_tried);
+        addKeyValuePair("split_done",         m_split_done);
     }
 
     auto& timer() { return m_qe_timer; }
@@ -38,6 +42,8 @@ public:
     void elim_eq(std::size_t n) { m_eliminated_by_eq   = m_eliminated_vars - n; }
     void  output(std::size_t n) { m_output_constraints = n; }
     void    node(std::size_t n) { ++m_visited_nodes; m_total_constraints += n; }
+    void split_tried()          { ++m_split_tried; }
+    void split_done()           { ++m_split_done; }
     
     void eq_conflict() { m_eq_conflict = true; }
 

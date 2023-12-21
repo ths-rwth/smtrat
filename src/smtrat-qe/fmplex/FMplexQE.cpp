@@ -27,9 +27,13 @@ FormulaT FMplexQE::eliminate_quantifiers() {
             return FormulaT(carl::FormulaType::FALSE);
         case Node::Type::UNDETERMINED: {
             if (m_nodes.back().is_suitable_for_splitting()) {
+                SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().split_tried());
                 auto split = split_into_independent_nodes(m_nodes.back());
                 m_nodes.pop_back();
                 m_nodes.insert(m_nodes.end(), split.begin(), split.end());
+                SMTRAT_STATISTICS_CALL(
+                    if (split.size() > 1) FMplexQEStatistics::get_instance().split_done();
+                )
             } else {
                 m_nodes.back().choose_elimination();
             }
