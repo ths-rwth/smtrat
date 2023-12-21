@@ -200,39 +200,109 @@ FormulaID to_formula_db(typename cadcells::Polynomial::ContextType c, const Form
     }
 }
 
+enum CompareResult { SUBSET, SUPSET, EQ, NONE };
+
+CompareResult compare(const Formula::Reason& a, const Formula::Reason& b) {
+    if (a.size() == b.size()) {
+        auto it_a = a.begin();
+        auto it_b = b.begin();
+        while (it_a != a.end() && *it_a == *it_b) {
+            assert(it_b != b.end());
+            it_a++;
+            it_b++;
+        }
+        return (it_a == a.end()) ? EQ : NONE;
+    } else if (a.size() < b.size()) {
+        return std::includes(b.begin(), b.end(), a.begin(), a.end()) ? SUBSET : NONE;
+    } else /* a.size() > b.size() */ {
+        return std::includes(a.begin(), a.end(), b.begin(), b.end()) ? SUPSET : NONE;
+    }
+}
+
+bool merge_reason(Formula::Reasons& set, const Formula::Reason& add) {
+    for (auto s = set.begin(); s != set.end(); ) {
+        switch(compare(*s,add)) {
+            case SUBSET:
+            case EQ:
+                return false;
+            case SUPSET:
+                s = set.erase(s);
+                break;
+            case NONE:
+            default:
+                s++;
+        }
+    }
+    set.push_back(add);
+    return true;
+}
+
+bool merge_reasons(Formula::Reasons& set, const Formula::Reasons& adds) {
+    Formula::Reasons to_add;
+    for (const auto& add : adds) {
+        bool redundant = false;
+        for (auto s = set.begin(); s != set.end(); ) {
+            switch(compare(*s,add)) {
+                case SUBSET:
+                case EQ:
+                    s = set.end();
+                    redundant = true;
+                    break;
+                case SUPSET:
+                    s = set.erase(s);
+                    break;
+                case NONE:
+                default:
+                    s++;
+            }
+        }
+        if (!redundant) to_add.push_back(add);
+    }
+    if (to_add.empty()) return false;
+    else {
+        set.insert(set.end(), to_add.begin(), to_add.end());
+        return true;
+    }
+}
+
+Formula::Reason merge(const Formula::Reason& a, const Formula::Reason& b) {
+    Formula::Reason result;
+    result.reserve(a.size()+b.size());
+    auto first1 = a.begin();
+    auto last1 = a.end();
+    auto first2 = b.begin();
+	auto last2 = b.end();
+    auto d_first = std::back_inserter(result);
+	for (; first1 != last1; ++d_first) {
+		if (first2 == last2) {
+            std::copy(first1, last1, d_first);
+            return result;
+        }
+		if (*first2 < *first1) {
+			*d_first = *first2;
+			++first2;
+		} else if (*first2 > *first1) {
+			*d_first = *first1;
+			++first1;
+		} else {
+            *d_first = *first1;
+			++first1;
+            ++first2;
+        }
+	}
+    std::copy(first2, last2, d_first);
+	result.shrink_to_fit();
+    return result;
+}
+
 Formula::Reasons combine_reasons(const Formula::Reasons& a, const Formula::Reasons& b) {
     Formula::Reasons results;
     for (const auto& ar : a) {
         for (const auto& br : b) {
-            auto tmp = ar;
-            tmp.insert(br.begin(),br.end());
-            results.insert(tmp);
+            merge_reason(results, merge(ar, br));
         }
     }
     return results;
-}
-
-bool merge_reasons(Formula::Reasons& set, const Formula::Reasons& add) {
-    bool change = false;
-    for (const auto& a : add) {
-        // if there is a set that is a subset of the set to be added, we can stop
-        if (std::find_if(set.begin(), set.end(), [&](const auto& s) {
-            return std::includes(a.begin(), a.end(), s.begin(), s.end());
-        }) != set.end()) continue;
-
-        // we remove all sets that contain the set to be added
-        for (auto s = set.begin(); s != set.end(); ) {
-            if (std::includes(s->begin(), s->end(), a.begin(), a.end())) {
-                set.erase(s);
-            } else {
-                s++;
-            }
-        }
-
-        set.insert(a); // finally, we add the set
-        change = true;
-    }
-    return change;
 }
 
 struct FormulaClassification {
@@ -304,7 +374,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                     }
                 } else if (subs.confl.empty() && subs.multi.empty() && subs.fals.empty()) {
                     Formula::Reasons reasons;
-                    reasons.emplace();
+                    reasons.emplace_back();
                     for (const auto& subformula : subs.tru) {
                         reasons = combine_reasons(reasons, db[subformula].reasons_true);
                     }
@@ -341,7 +411,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                     }
                 } else if (subs.confl.empty() && subs.multi.empty() && subs.tru.empty()) {
                     Formula::Reasons reasons;
-                    reasons.emplace();
+                    reasons.emplace_back();
                     for (const auto& subformula : subs.fals) {
                         reasons = combine_reasons(reasons, db[subformula].reasons_false);
                     }
@@ -377,20 +447,20 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
                     for (const auto t : subs.tru) {
                         for (const auto f : subs.fals) {
                             auto tmp = combine_reasons(db[t].reasons_true,db[f].reasons_false);
-                            reasons.insert(tmp.begin(), tmp.end());
+                            merge_reasons(reasons, tmp);
                         }
                     }
                     add_reasons_false(id, reasons);
                 } else if (subs.multi.empty() && !subs.tru.empty()) {
                     Formula::Reasons reasons;
-                    reasons.emplace();
+                    reasons.emplace_back();
                     for (const auto t : subs.tru) {
                         reasons = combine_reasons(reasons, db[t].reasons_true);
                     }
                     add_reasons_true(id, reasons);
                 } else if (subs.multi.empty() && !subs.fals.empty()) {
                     Formula::Reasons reasons;
-                    reasons.emplace();
+                    reasons.emplace_back();
                     for (const auto f : subs.fals) {
                         reasons = combine_reasons(reasons, db[f].reasons_false);
                     }
@@ -443,7 +513,7 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
 
             if (subs.confl.empty() && (subs.multi.empty() || subs.multi.size() == 1)) {
                 Formula::Reasons reasons;
-                reasons.emplace();
+                reasons.emplace_back();
                 for (const auto subformula : subs.tru) {
                     reasons = combine_reasons(reasons, db[subformula].reasons_true);
                 }
@@ -488,18 +558,26 @@ void FormulaGraph::propagate_consistency(FormulaID id) {
 
 void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
+    #ifdef SMTRAT_DEVOPTION_Expensive
+    log(db, root);
+    #endif
     if (is_true) {
-        db[id].reasons_true.emplace();
+        assert(db[id].reasons_true.empty());
+        db[id].reasons_true.emplace_back();
     } else {
-        db[id].reasons_false.emplace();
+        assert(db[id].reasons_false.empty());
+        db[id].reasons_false.emplace_back();
     }
     propagate_consistency(id);
 }
 
 void FormulaGraph::propagate_decision(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
+    #ifdef SMTRAT_DEVOPTION_Expensive
+    log(db, root);
+    #endif
     Formula::Reasons reasons;
-    reasons.insert(Formula::Reason({std::make_pair(id, is_true)}));
+    reasons.emplace_back(Formula::Reason({std::make_pair(id, is_true)}));
     if (is_true) {
         add_reasons_true(id, reasons);
     } else {
@@ -536,7 +614,7 @@ void FormulaGraph::add_reasons_false(FormulaID id, const Formula::Reasons& reaso
 Formula::Reasons FormulaGraph::conflict_reasons() const {
     Formula::Reasons reasons;
     for (const auto c : conflicts) {
-        reasons.merge(combine_reasons(db[c].reasons_false, db[c].reasons_true));            
+        merge_reasons(reasons,combine_reasons(db[c].reasons_false, db[c].reasons_true));            
     }
     return reasons;
 }
@@ -545,15 +623,15 @@ void FormulaGraph::backtrack(FormulaID id, bool is_true) {
     for (formula_ds::FormulaID idx = 0; idx < db.size(); ++idx) {
         auto& f = db[idx];
         for (auto reason = f.reasons_true.begin(); reason != f.reasons_true.end(); ) {
-            if (reason->find(std::make_pair(id, is_true)) != reason->end()) {
-                f.reasons_true.erase(reason);
+            if (std::binary_search(reason->begin(), reason->end(), std::make_pair(id, is_true))) {
+                reason = f.reasons_true.erase(reason);
             } else {
                 reason++;
             }
         }
         for (auto reason = f.reasons_false.begin(); reason != f.reasons_false.end(); ) {
-            if (reason->find(std::make_pair(id, is_true)) != reason->end()) {
-                f.reasons_false.erase(reason);
+            if (std::binary_search(reason->begin(), reason->end(), std::make_pair(id, is_true))) {
+                reason = f.reasons_false.erase(reason);
             } else {
                 reason++;
             }
@@ -704,9 +782,9 @@ formula_ds::Formula::Reasons GraphEvaluation::explore(formula_ds::FormulaGraph& 
 
     formula_ds::Formula::Reasons conflicts;
     for (auto conflict : formula_ds::combine_reasons(true_conflicts, false_conflicts)) {
-        conflict.erase(std::make_pair(*next_dec_id, true));
-        conflict.erase(std::make_pair(*next_dec_id, false));
-        conflicts.insert(conflict);
+        std::erase(conflict, std::make_pair(*next_dec_id, true));
+        std::erase(conflict, std::make_pair(*next_dec_id, false));
+        formula_ds::merge_reason(conflicts, conflict);
     }
     return conflicts;
 }
@@ -779,7 +857,7 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
         false_graph.backtrack(id, m_decisions[id]);
 
         for (auto iter = m_true_conflict_reasons.begin(); iter != m_true_conflict_reasons.end(); ) {
-            if (iter->find(std::make_pair(id, m_decisions[id])) != iter->end()) {
+            if (std::binary_search(iter->begin(), iter->end(), std::make_pair(id, m_decisions[id]))) {
                 iter = m_true_conflict_reasons.erase(iter);
             } else {
                 iter++;
@@ -787,7 +865,7 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
         }
 
         for (auto iter = m_false_conflict_reasons.begin(); iter != m_false_conflict_reasons.end(); ) {
-            if (iter->find(std::make_pair(id, m_decisions[id])) != iter->end()) {
+            if (std::binary_search(iter->begin(), iter->end(), std::make_pair(id, m_decisions[id]))) {
                 iter = m_false_conflict_reasons.erase(iter);
             } else {
                 iter++;

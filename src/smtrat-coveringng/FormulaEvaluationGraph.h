@@ -34,8 +34,8 @@ struct CONSTRAINT {
 };
 
 struct Formula {
-    using Reason = boost::container::flat_set<std::pair<FormulaID,bool>>;
-    using Reasons = boost::container::flat_set<Reason>;
+    using Reason = std::vector<std::pair<FormulaID,bool>>;
+    using Reasons = std::vector<Reason>;
 
     std::variant<TRUE,FALSE,NOT,AND,OR,IFF,XOR,BOOL,CONSTRAINT> content;
     boost::container::flat_set<FormulaID> parents;
