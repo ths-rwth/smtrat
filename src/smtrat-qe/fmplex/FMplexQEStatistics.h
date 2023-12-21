@@ -32,7 +32,7 @@ public:
         addKeyValuePair("qe-called",          m_qe_timer);
         addKeyValuePair("eq-conflict",        m_eq_conflict);
         addKeyValuePair("split-tried",        m_split_tried);
-        addKeyValuePair("split_done",         m_split_done);
+        addKeyValuePair("split-done",         m_split_done);
     }
 
     auto& timer() { return m_qe_timer; }
