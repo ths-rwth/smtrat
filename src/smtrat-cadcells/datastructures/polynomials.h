@@ -38,9 +38,10 @@ inline std::ostream& operator<<(std::ostream& os, const PolyRef& data) {
 
 inline auto base_level(Polynomial poly) {
     level_t lvl = 0;
+    auto vars = carl::variables(poly);
     for (level_t i = 0; i < poly.context().variable_ordering().size(); i++) {
         if (poly.context().variable_ordering()[i] == poly.main_var()) break;
-        if (poly.has(poly.context().variable_ordering()[i])) lvl = i+1;
+        if (vars.has(poly.context().variable_ordering()[i])) lvl = i+1;
     }
     return lvl;
 }

@@ -917,7 +917,11 @@ std::vector<boost::container::flat_set<cadcells::Constraint>> GraphEvaluation::c
 
     SMTRAT_STATISTICS_CALL(statistics().implicants_found(implicants.size()));
 
-    if (m_results != 0) {
+    // TODO recalculation of features is expensive (as we need to convert each implicant to a PolyRef) - either pre-compute features and sort then, or use PolyRef in FormulaEvaluation (which makes switching variable orderings harder...)
+    if (m_results == 1) {
+        *implicants.begin() = *std::min_element(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
+        implicants.erase(implicants.begin() + 1, implicants.end());
+    } else if (m_results > 1) {
         std::sort(implicants.begin(), implicants.end(), m_implicant_complexity_ordering);
         if (m_results < implicants.size())
             implicants.erase(implicants.begin() + m_results, implicants.end());
