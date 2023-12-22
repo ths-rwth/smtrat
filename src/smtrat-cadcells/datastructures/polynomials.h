@@ -168,7 +168,7 @@ public:
 
     PolyConstraint insert(const Constraint& constraint) {
         auto [poly,signflip] = insert(constraint.lhs());
-        auto rel = signflip ? carl::inverse(constraint.relation()) : constraint.relation();
+        auto rel = signflip ? carl::turn_around(constraint.relation()) : constraint.relation();
         return PolyConstraint { poly, rel };
     }
 

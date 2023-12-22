@@ -732,6 +732,7 @@ void GraphEvaluation::set_formula(const FormulaT& f) {
 
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Initial formula:");
     log(true_graph.db, true_graph.root);
+    SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Polynomials:" << m_proj.polys());
 
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Update true_graph");
     for (formula_ds::FormulaID i = 0; i < true_graph.db.size(); i++) {
