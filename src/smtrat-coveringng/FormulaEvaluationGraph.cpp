@@ -181,13 +181,13 @@ FormulaID to_formula_db(cadcells::datastructures::Projections& c, const FormulaT
             auto bc = carl::convert<cadcells::Polynomial>(c.polys().context(), f.constraint().constr());
             db.emplace_back(CONSTRAINT{ c.polys()(bc) });
             auto var = bc.lhs().main_var();
-            vartof.try_emplace(var).first->second.insert((FormulaID)(db.size()-1));
+            vartof.try_emplace(var).first->second.push_back((FormulaID)(db.size()-1));
             cache.emplace(f.id(), (FormulaID)(db.size()-1));
             return (FormulaID)(db.size()-1);
         }
         case carl::FormulaType::BOOL: {
             db.emplace_back(BOOL{ f.boolean() });
-            vartof.try_emplace(f.boolean()).first->second.insert((FormulaID)(db.size()-1));
+            vartof.try_emplace(f.boolean()).first->second.push_back((FormulaID)(db.size()-1));
             cache.emplace(f.id(), (FormulaID)(db.size()-1));
             return (FormulaID)(db.size()-1);
         }
@@ -720,6 +720,16 @@ void GraphEvaluation::set_formula(const FormulaT& f) {
     true_graph.downwards_propagation = m_boolean_exploration != OFF;
     false_graph = true_graph;
 
+    for (auto& [var, atoms] : vartof) {
+        if (var.type() == carl::VariableType::VT_REAL) {
+            std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) {
+                const auto& constr_a = std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
+                const auto& constr_b = std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
+                return m_constraint_complexity_ordering(m_proj, constr_a, constr_b);
+            });
+        }
+    }
+
     SMTRAT_LOG_TRACE("smtrat.covering_ng.evaluation", "Initial formula:");
     log(true_graph.db, true_graph.root);
 
@@ -794,17 +804,10 @@ void GraphEvaluation::extend_valuation(const cadcells::Assignment& ass) {
     assignment = ass; 
     if (var == carl::Variable::NO_VARIABLE) return;
 	if(root_valuation() != Valuation::MULTIVARIATE) return;
-    auto atomset = vartof.find(var);
-    if (atomset == vartof.end()) return;
+    auto atoms = vartof.find(var);
+    if (atoms == vartof.end()) return;
 
-    std::vector<formula_ds::FormulaID> atoms(atomset->second.begin(), atomset->second.end());
-    std::sort(atoms.begin(), atoms.end(), [&](const formula_ds::FormulaID a, const formula_ds::FormulaID b) {
-        const auto& constr_a = std::get<formula_ds::CONSTRAINT>(true_graph.db[a].content).constraint;
-        const auto& constr_b = std::get<formula_ds::CONSTRAINT>(true_graph.db[b].content).constraint;
-        return m_constraint_complexity_ordering(m_proj, constr_a, constr_b);
-    });
-
-    for (const auto id : atoms) {
+    for (const auto id : atoms->second) {
         const auto& constr = std::get<formula_ds::CONSTRAINT>(true_graph.db[id].content).constraint;
         assert (m_proj.main_var(constr.lhs) == var);
 

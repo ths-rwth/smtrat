@@ -54,7 +54,7 @@ struct Formula {
 };
 
 using FormulaDB = std::vector<Formula>;
-using VariableToFormula = boost::container::flat_map<carl::Variable, boost::container::flat_set<FormulaID>>;
+using VariableToFormula = boost::container::flat_map<carl::Variable, std::vector<FormulaID>>;
 
 struct FormulaGraph {
     FormulaDB db;
