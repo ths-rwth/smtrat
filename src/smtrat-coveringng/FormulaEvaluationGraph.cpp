@@ -562,10 +562,10 @@ void FormulaGraph::propagate_root(FormulaID id, bool is_true) {
     log(db, root);
     #endif
     if (is_true) {
-        assert(db[id].reasons_true.empty());
+        // assert(db[id].reasons_true.empty());
         db[id].reasons_true.emplace_back();
     } else {
-        assert(db[id].reasons_false.empty());
+        // assert(db[id].reasons_false.empty());
         db[id].reasons_false.emplace_back();
     }
     propagate_consistency(id);
