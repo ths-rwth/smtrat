@@ -98,6 +98,7 @@ void setup_logging() {
 
 void signal_handler(int) {
 	print_statistics();
+	std::quick_exit(143);
 }
 
 int main( int argc, char* argv[] )
