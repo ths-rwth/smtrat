@@ -14,10 +14,10 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {
-            auto fe_implicant_ordering = covering_ng::formula::complexity::sotd;
+            auto fe_implicant_ordering = covering_ng::formula::complexity::min_vars_min_sotd;
             std::size_t fe_results = 1;
             auto fe_constraint_ordering = covering_ng::formula::complexity::min_tdeg;
-            bool fe_stop_evaluation_on_conflict = true;
+            bool fe_stop_evaluation_on_conflict = false;
             bool fe_preprocess = true;
             bool fe_postprocess = false;
             auto fe_boolean_exploration = covering_ng::formula::GraphEvaluation::PROPAGATION;
@@ -28,9 +28,9 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 
 }
 
-class CoveringNG_PPBooleanPartialPropagationTdeg: public Manager {
+class CoveringNG_PPImplicantsVarsVarorderSplitting: public Manager {
 public:
-	CoveringNG_PPBooleanPartialPropagationTdeg() : Manager() {
+	CoveringNG_PPImplicantsVarsVarorderSplitting() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
                 addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
