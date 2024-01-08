@@ -84,7 +84,8 @@ public:
 		if (first_colon == std::string::npos) return false;
 		assert(first_colon>0);
 		first_colon--;
-		simple_parser p(result.stdout.substr(first_colon));
+		auto str = result.stdout.substr(first_colon);
+		simple_parser p(str);
 		p.skip_excluding('(');
 		while (p.expect('(')) {
 			if (!p.expect(':')) return false;
