@@ -186,8 +186,14 @@ public:
 		auto res = smtrat::qe::qe(receivedFormula);
 		if (res) {
 			regular() << res << std::endl;
+			if (res->type() != carl::FormulaType::FALSE) {
+				this->exitCode = SMTRAT_EXIT_SAT;
+			} else {
+				this->exitCode = SMTRAT_EXIT_UNSAT;
+			}
 		} else {
 			regular() << "unknown" << std::endl;
+			this->exitCode = SMTRAT_EXIT_UNKNOWN;
 		}
 		#else
 		error() << "SMT-RAT has been built without support for quantifier elimination!";
