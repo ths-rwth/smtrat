@@ -81,7 +81,7 @@ public:
 
 	bool parse_stats(BenchmarkResult& result) const {
 		auto first_colon = result.stdout.find(':');
-		if (first_colon == std::string::npos) return false;
+		if (first_colon == std::string::npos) return true;
 		assert(first_colon>0);
 		first_colon--;
 		auto str = result.stdout.substr(first_colon);
