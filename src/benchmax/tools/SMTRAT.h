@@ -80,7 +80,11 @@ public:
 	}
 
 	bool parse_stats(BenchmarkResult& result) const {
-		simple_parser p(result.stdout);
+		auto first_colon = result.stdout.find(':');
+		if (first_colon == std::string::npos) return false;
+		assert(first_colon>0);
+		first_colon--;
+		simple_parser p(result.stdout.substr(first_colon));
 		p.skip_excluding('(');
 		while (p.expect('(')) {
 			if (!p.expect(':')) return false;
