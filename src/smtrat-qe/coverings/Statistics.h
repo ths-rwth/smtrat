@@ -31,8 +31,8 @@ public:
 		Statistics::addKeyValuePair("output_amount_and", output_amount_and);
 		Statistics::addKeyValuePair("output_max_var_degree", output_max_var_degree);
 		Statistics::addKeyValuePair("output_amount_ire", output_amount_ire);
-		Statistics::addKeyValuePair("variable_ordering_heuristic", mVariableOrderingHeuristic);
-		Statistics::addKeyValuePair("variable_ordering", mVariableOrdering);
+		// Statistics::addKeyValuePair("variable_ordering_heuristic", mVariableOrderingHeuristic);
+		// Statistics::addKeyValuePair("variable_ordering", mVariableOrdering);
 
 	}
 
