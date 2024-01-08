@@ -60,7 +60,7 @@ public:
             }
         }
 
-        m_total_cols  = m_constant_col + filtered.n_rows();
+        m_total_cols  = m.n_cols(); //m_constant_col + filtered.n_rows();
 
         // store initial Node
         std::vector<Matrix::ColIndex> cols_to_elim;
