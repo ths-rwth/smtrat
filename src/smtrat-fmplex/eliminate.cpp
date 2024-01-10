@@ -137,8 +137,8 @@ std::pair<EigenMat, EigenVec> eliminate_cols(const EigenMat& constraints,
     for (std::size_t i = 0; i < constraints.rows(); ++i) {
         std::vector<Matrix::RowEntry> row;
         for (std::size_t j = 0; j < constraints.cols(); ++j) {
-            if (!carl::is_zero(constraints(i,j))) {
-                row.emplace_back(var_idx.index(j), constraints(i,j));
+            if (!carl::is_zero(constraints(i,var_idx.var(j)))) {
+                row.emplace_back(j, constraints(i,var_idx.var(j)));
             }
         }
         if (!carl::is_zero(constants(i))) row.emplace_back(constraints.cols(), -constants(i));
