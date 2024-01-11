@@ -258,7 +258,8 @@ Node FMplexQE::unbounded_elimination(Node& parent) {
 
     std::size_t n_deleted_rows = parent.eliminators.size();
     Matrix new_matr(parent.matrix.n_rows() - n_deleted_rows, parent.matrix.n_cols());
-    new_matr.reserve(parent.matrix.non_zeros_total() - 3*n_deleted_rows); // rough estimate.
+    
+    new_matr.reserve(parent.matrix.non_zeros_total() - 2*n_deleted_rows); // upper bound
 
     auto col_it  = parent.eliminators.begin();
     auto col_end = parent.eliminators.end();
