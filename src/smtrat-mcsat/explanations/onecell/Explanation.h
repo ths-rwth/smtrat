@@ -80,7 +80,7 @@ struct DefaultSettings : BaseSettings { // current default
 
     constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
     constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING_CACHE_GLOBAL;
-    using op = cadcells::operators::MccallumComplete;
+    using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.

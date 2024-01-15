@@ -34,6 +34,7 @@ std::optional<FormulaT> qe(const FormulaT& input) {
 	QeCoveringsStatistics::get_instance().set_variable_ordering(var_order);
 	QeCoveringsStatistics::get_instance().set_variable_ordering(Settings::variable_ordering_heuristic);
 #endif
+	SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 
 	cadcells::Polynomial::ContextType context(var_order);
 	cadcells::datastructures::PolyPool pool(context);
