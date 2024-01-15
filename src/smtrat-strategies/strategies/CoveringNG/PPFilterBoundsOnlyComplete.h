@@ -16,7 +16,7 @@ struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
-    using op = cadcells::operators::MccallumFiltered<OpSettings>; // TODO complete
+    using op = cadcells::operators::MccallumFiltered<OpSettings>;
     constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
     constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
 };
