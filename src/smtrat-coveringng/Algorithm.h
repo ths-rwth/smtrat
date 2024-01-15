@@ -33,8 +33,8 @@ inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::Vari
 }
 
 template<typename op>
-inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& implicant, formula::Valuation root_valuation, const cadcells::Assignment& ass) {
-    SMTRAT_LOG_FUNC("smtrat.covering_ng", implicant << ", " << root_valuation << ", " << ass);
+inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& implicant, const cadcells::Assignment& ass) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng", implicant << ", " << ass);
 
     //std::size_t level = 0;
     //for (const auto& c : implicant) {
@@ -45,17 +45,9 @@ inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interva
     auto deriv = cadcells::datastructures::make_derivation<typename op::PropertiesSet>(proj, ass, ass.size()).sampled_ref();
     for (const auto& c : implicant) {
         if (carl::is_strict(c.relation)) {
-            if (root_valuation == formula::Valuation::FALSE) {
-                deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ c.lhs });
-            } else {
-                deriv->insert(cadcells::operators::properties::poly_sgn_inv{ c.lhs });
-            }
+            deriv->insert(cadcells::operators::properties::poly_sgn_inv{ c.lhs });
         } else {
-            if (root_valuation == formula::Valuation::FALSE) {
-                deriv->insert(cadcells::operators::properties::poly_sgn_inv{ c.lhs });
-            } else {
-                deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ c.lhs });
-            }
+            deriv->insert(cadcells::operators::properties::poly_semi_sgn_inv{ c.lhs });
         }
     }
     if (!op::project_basic_properties(*deriv)) return std::nullopt;
@@ -75,7 +67,7 @@ inline std::vector<Interval<typename op::PropertiesSet>> get_enclosing_intervals
     std::vector<Interval<typename op::PropertiesSet>> results;
     for (const auto& implicant : implicants) {
 		SMTRAT_STATISTICS_CALL(statistics().implicant_used(formula::complexity::features::sum_sum_total_degree(proj, implicant)));
-        auto interval = get_enclosing_interval<op>(proj, implicant, f.root_valuation(), ass);
+        auto interval = get_enclosing_interval<op>(proj, implicant, ass);
         if (interval) results.emplace_back(*interval);
     }
 	SMTRAT_STATISTICS_CALL(statistics().intervals_found(results.size()));
