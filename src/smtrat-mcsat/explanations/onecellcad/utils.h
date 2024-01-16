@@ -28,6 +28,8 @@ namespace smtrat {
 namespace mcsat {
 namespace onecellcad {
 
+using RAN = smtrat::RAN;
+
 using RANMap = std::map<carl::Variable, RAN>;
 
 #ifdef SMTRAT_DEVOPTION_Statistics
