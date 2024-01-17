@@ -12,9 +12,9 @@ struct NewCoveringSettings : NewCoveringSettings2 {
 };
 } // namespace internal
 
-class NewCovering_PPIncomplete : public Manager {
+class NewCovering_Incomplete : public Manager {
 public:
-	NewCovering_PPIncomplete()
+	NewCovering_Incomplete()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<SATSettings1>>(

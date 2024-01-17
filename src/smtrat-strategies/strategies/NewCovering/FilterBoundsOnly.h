@@ -18,9 +18,9 @@ struct NewCoveringSettings : NewCoveringSettings2 {
 };
 } // namespace internal
 
-class NewCovering_PPFilterBoundsOnly : public Manager {
+class NewCovering_FilterBoundsOnly : public Manager {
 public:
-	NewCovering_PPFilterBoundsOnly()
+	NewCovering_FilterBoundsOnly()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<SATSettings1>>(
