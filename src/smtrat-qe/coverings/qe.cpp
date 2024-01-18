@@ -62,7 +62,8 @@ std::optional<FormulaT> qe(const FormulaT& input) {
 	SMTRAT_LOG_DEBUG("smtrat.qe", "Got tree " << std::endl << tree);
 	covering_ng::simplify(tree);
 	SMTRAT_LOG_DEBUG("smtrat.qe", "Got simplified tree " << std::endl << tree);
-	FormulaT output_formula = util::to_formula(pool, tree);
+	// FormulaT output_formula = util::to_formula_true_only(pool, tree);
+	FormulaT output_formula = util::to_formula_alternate(pool, tree);
 	SMTRAT_LOG_DEBUG("smtrat.qe", "Got formula " << output_formula);
 	SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(output_formula));
 	return output_formula;
