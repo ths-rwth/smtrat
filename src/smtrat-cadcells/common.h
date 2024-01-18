@@ -20,7 +20,7 @@ using MultivariateRoot = carl::MultivariateRoot<Polynomial>;
 using VariableComparison = carl::VariableComparison<Polynomial>;
 using Atom = std::variant<Constraint, VariableComparison>;
 using Disjunction = std::vector<Atom>;
-using CNF = std::vector<Disjunction>;
+using DNF = std::vector<Disjunction>;
 using RAN = Polynomial::RootType;
 using Assignment = carl::Assignment<RAN>;
 

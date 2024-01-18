@@ -16,10 +16,10 @@ inline MultivariateRoot as_multivariate_root(const datastructures::PolyPool& poo
 }
 
 /**
- * Converts a @ref datastructures::SymbolicInterval to a @ref CNF.
+ * Converts a @ref datastructures::SymbolicInterval to a @ref DNF.
  */
-inline CNF to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, const datastructures::SymbolicInterval& c) {
-    CNF cnf;
+inline DNF to_formula(const datastructures::PolyPool& pool, carl::Variable main_var, const datastructures::SymbolicInterval& c) {
+    DNF cnf;
     if (c.is_section()) {
         cnf.emplace_back();
         cnf.back().emplace_back(VariableComparison(main_var, as_multivariate_root(pool,main_var,c.section_defining()), carl::Relation::EQ));

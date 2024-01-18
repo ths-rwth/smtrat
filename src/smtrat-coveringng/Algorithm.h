@@ -11,8 +11,6 @@
 #include <smtrat-cadcells/representation/heuristics.h>
 #include <sstream>
 
-#include "util/OutputFormula.h"
-
 #include "CoveringNGStatistics.h"
 
 namespace smtrat::covering_ng {
@@ -75,7 +73,7 @@ inline std::vector<Interval<typename op::PropertiesSet>> get_enclosing_intervals
 }
 
 template<typename op, cadcells::representation::CoveringHeuristic covering_heuristic>
-inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering(const IntervalSet<typename op::PropertiesSet>& intervals) {
+inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::datastructures::CoveringRepresentation<typename op::PropertiesSet>>> characterize_covering(const IntervalSet<typename op::PropertiesSet>& intervals) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", intervals);
     std::vector<Interval<typename op::PropertiesSet>> derivations(intervals.begin(), intervals.end());
     auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
@@ -91,11 +89,11 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_covering
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got interval " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
 	SMTRAT_STATISTICS_CALL(statistics().intervals_found(1));
-    return new_deriv;
+    return std::make_pair(new_deriv, representation);
 }
 
 template<typename op, cadcells::representation::CellHeuristic cell_heuristic>
-inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval(Interval<typename op::PropertiesSet>& interval) {
+inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::datastructures::CellRepresentation<typename op::PropertiesSet>>> characterize_interval(Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", interval->cell());
 	SMTRAT_STATISTICS_CALL(statistics().intervals_used(1));
 	interval->insert(cadcells::operators::properties::cell_connected{ interval->level() }); // TODO is this the proper way?
@@ -110,7 +108,7 @@ inline std::optional<Interval<typename op::PropertiesSet>> characterize_interval
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got interval " << new_deriv->cell());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Polynomials: " << new_deriv->polys());
 	SMTRAT_STATISTICS_CALL(statistics().intervals_found(1));
-	return new_deriv;
+	return std::make_pair(new_deriv, representation);
 }
 
 // TODO later: close cell if possible based on flag - implement here or in smtrat-cadcells?
@@ -193,7 +191,7 @@ inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructure
 			for (auto interval : res.intervals()) {
 				auto new_interval = characterize_interval<op, cell_heuristic>(interval);
 				if (new_interval) {
-					new_intervals.push_back(new_interval.value());
+					new_intervals.push_back(new_interval->first);
 				} else {
 					SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 					return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -212,7 +210,7 @@ inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructure
 	} else {
 		auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
 		if (new_interval) {
-			return CoveringResult<typename op::PropertiesSet>(Status::UNSAT, ass, std::vector({new_interval.value()}));
+			return CoveringResult<typename op::PropertiesSet>(Status::UNSAT, ass, std::vector({new_interval->first}));
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 			return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -269,7 +267,7 @@ inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructure
 			for (auto interval : res.intervals()) {
 				auto new_interval = characterize_interval<op, cell_heuristic>(interval) ;
 				if (new_interval) {
-					new_intervals.push_back(new_interval.value());
+					new_intervals.push_back(new_interval->first);
 				} else {
 					SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 					return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -288,7 +286,7 @@ inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructure
 	} else {
 		auto new_interval = characterize_covering<op, covering_heuristic>(sat_intervals);
 		if (new_interval) {
-			return CoveringResult<typename op::PropertiesSet>(Status::SAT, {new_interval.value()});
+			return CoveringResult<typename op::PropertiesSet>(Status::SAT, {new_interval->first});
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 			return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -297,15 +295,15 @@ inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructure
 }
 
 template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
-inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
+inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<ParameterTree>> parameter(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	assert(f.root_valuation() != formula::Valuation::FALSE);
 	IntervalSet<typename op::PropertiesSet> intervals;
+	boost::container::flat_map<Interval<typename op::PropertiesSet>, std::vector<ParameterTree>> interval_data;
 	carl::Variable variable = first_unassigned_var(ass, proj.polys().var_order());
 	std::optional<cadcells::RAN> sample;
-	FormulaT current_result(carl::FormulaType::FALSE);
 	while (sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(intervals, f), sample != std::nullopt) {
-		SMTRAT_LOG_INFO("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
+		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
 		ass.emplace(variable, *sample);
 		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
 		f.extend_valuation(ass);
@@ -313,14 +311,15 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
 		if (is_full_sample(ass, proj.polys().var_order()) && f.root_valuation() == formula::Valuation::MULTIVARIATE) {
             SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
-            return std::make_pair(CoveringResult<typename op::PropertiesSet>(), FormulaT());
+            return std::make_pair(CoveringResult<typename op::PropertiesSet>(), std::vector<ParameterTree>());
         }
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got evaluation: " << f.root_valuation());
 		CoveringResult<typename op::PropertiesSet> res;
-		FormulaT higher_dimension_formula;
 		if (f.root_valuation() == formula::Valuation::FALSE) {
 			auto new_intervals = get_enclosing_intervals<op, FE>(proj, f, ass);
-			higher_dimension_formula = FormulaT(carl::FormulaType::FALSE);
+			for (const auto& i : new_intervals) {
+				interval_data.emplace(i, std::vector<ParameterTree>({ParameterTree(false)}));
+			}
 			if (new_intervals.size() > 0) {
 				res = CoveringResult<typename op::PropertiesSet>(Status::UNSAT, new_intervals);
 			} else {
@@ -329,7 +328,9 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 			}
 		} else if (f.root_valuation() == formula::Valuation::TRUE) {
 			auto new_intervals = get_enclosing_intervals<op, FE>(proj, f, ass);
-			higher_dimension_formula = FormulaT(carl::FormulaType::TRUE);
+			for (const auto& i : new_intervals) {
+				interval_data.emplace(i, std::vector<ParameterTree>({ParameterTree(true)}));
+			}
 			if (new_intervals.size() > 0) {
 				res = CoveringResult<typename op::PropertiesSet>(Status::SAT, new_intervals);
 			} else {
@@ -340,36 +341,71 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, FormulaT> parameter
 		} else if (quantification.var_type(first_unassigned_var(ass, proj.polys().var_order())) == carl::Quantifier::FREE) {
 			assert(f.root_valuation() == formula::Valuation::MULTIVARIATE);
 			assert(!is_full_sample(ass, proj.polys().var_order()));
-			std::tie(res, higher_dimension_formula) = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+			std::vector<ParameterTree> higher_tree;
+			std::tie(res, higher_tree) = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+			for (const auto& i : res.intervals()) {
+				interval_data.emplace(i, higher_tree);
+			}
 		} else {
 			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, true, true);
 			if (res.is_sat()) {
-				higher_dimension_formula = FormulaT(carl::FormulaType::TRUE);
+				for (const auto& i : res.intervals()) {
+					interval_data.emplace(i, std::vector<ParameterTree>({ParameterTree(true)}));
+				}
 			} else {
-				higher_dimension_formula = FormulaT(carl::FormulaType::FALSE);
+				for (const auto& i : res.intervals()) {
+					interval_data.emplace(i, std::vector<ParameterTree>({ParameterTree(false)}));
+				}
 			}
 		}
 		ass.erase(variable);
 		f.revert_valuation(ass);
 		if (res.is_failed()) {
-			return std::make_pair(CoveringResult<typename op::PropertiesSet>(res.status), FormulaT());
+			return std::make_pair(CoveringResult<typename op::PropertiesSet>(res.status), std::vector<ParameterTree>());
 		} else {
-			current_result = FormulaT(carl::FormulaType::OR, current_result, FormulaT(carl::FormulaType::AND, util::generateIndexedRootFormula<op>((res)), higher_dimension_formula));
 			assert(!res.intervals().empty());
 			intervals.insert(res.intervals().begin(), res.intervals().end());
 		}
 	} // end while
 	if (ass.empty()) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
-		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER), current_result);
+		std::vector<Interval<typename op::PropertiesSet>> derivations(intervals.begin(), intervals.end());
+    	auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
+		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
+		std::vector<ParameterTree> tree;
+		for (const auto& cell : representation.cells) {
+			tree.emplace_back(variable, cell.description, cell.derivation->sample(), std::move(interval_data[cell.derivation]));
+		}
+		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER), tree);
 	} else {
 		auto new_interval = characterize_covering<op, covering_heuristic>(intervals);
 		if (new_interval) {
-			std::vector<Interval<typename op::PropertiesSet>> new_intervals({*new_interval});
-			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER, new_intervals), current_result);
+			std::vector<ParameterTree> tree;
+			for (const auto& cell : new_interval->second.cells) {
+				tree.emplace_back(variable, cell.description, cell.derivation->sample(), std::move(interval_data[cell.derivation]));
+			}
+			std::vector<Interval<typename op::PropertiesSet>> new_intervals({new_interval->first});
+			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER, new_intervals), tree);
 		} else {
 			SMTRAT_LOG_INFO("smtrat.covering_ng", "Failed due to incomplete projection");
-			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), FormulaT());
+			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), std::vector<ParameterTree>());
+		}
+	}
+}
+
+template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+inline std::pair<CoveringResult<typename op::PropertiesSet>, ParameterTree> recurse_qe(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
+	if (quantification.var_type(proj.polys().var_order().front()) == carl::Quantifier::FREE) {
+		auto [res, tree] = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+		return std::make_pair(res, ParameterTree(std::move(tree)));
+	} else {
+		auto res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+		if (res.is_sat()) {
+			return std::make_pair(res, ParameterTree(true));
+		} else if (res.is_unsat()) {
+			return std::make_pair(res, ParameterTree(false));
+		} else {
+			return std::make_pair(res, ParameterTree());
 		}
 	}
 }

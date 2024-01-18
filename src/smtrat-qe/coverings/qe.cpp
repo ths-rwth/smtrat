@@ -6,7 +6,8 @@
 #include <random>
 #include "Statistics.h"
 #include <carl-formula/formula/functions/PNF.h>
-#include "util/simplify.h"
+#include "util/to_formula.h"
+#include <smtrat-coveringng/Simplification.h>
 
 namespace smtrat::qe::coverings {
 
@@ -45,36 +46,26 @@ std::optional<FormulaT> qe(const FormulaT& input) {
 	f.set_formula(matrix);
 	f.extend_valuation(assignment);
 	if (f.root_valuation() == covering_ng::formula::Valuation::FALSE || matrix.is_false()) {
+		SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(FormulaT(carl::FormulaType::FALSE)));
 		return FormulaT(carl::FormulaType::FALSE);
 	} else if (f.root_valuation() == covering_ng::formula::Valuation::TRUE || matrix.is_true()) {
+		SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(FormulaT(carl::FormulaType::TRUE)));
 		return FormulaT(carl::FormulaType::TRUE);
 	}
 
-	if (variableQuantification.var_type(proj.polys().var_order().front()) == carl::Quantifier::FREE) {
-		auto [res, output_formula] = parameter<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, variableQuantification);
-		if (res.is_failed() || res.is_failed_projection()) {
-			SMTRAT_LOG_FATAL("smtrat.qe", "Coverings Failed")
-			return std::nullopt;
-		}
-#ifdef SMTRAT_DEVOPTION_Statistics
-		QeCoveringsStatistics::get_instance().process_output_formula(output_formula);
-#endif
-
-		auto before_atoms = util::count_atoms(output_formula);
-		auto simplified = util::simplify(output_formula);
-		auto after_atoms = util::count_atoms(simplified);
-		SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Before: " << before_atoms << " After: " << after_atoms)
-		return simplified;
-	} else {
-		auto res = recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, variableQuantification);
-		if (res.is_sat()) {
-			return FormulaT(carl::FormulaType::TRUE);
-		} else if (res.is_unsat()) {
-			return FormulaT(carl::FormulaType::FALSE);
-		}
-		SMTRAT_LOG_FATAL("smtrat.qe", "Unexpected result from coverings")
+	auto [res, tree] = recurse_qe<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, variableQuantification);
+	if (res.is_failed() || res.is_failed_projection()) {
+		SMTRAT_LOG_FATAL("smtrat.qe", "Coverings Failed")
 		return std::nullopt;
 	}
+
+	SMTRAT_LOG_DEBUG("smtrat.qe", "Got tree " << std::endl << tree);
+	covering_ng::simplify(tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe", "Got simplified tree " << std::endl << tree);
+	FormulaT output_formula = util::to_formula(pool, tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe", "Got formula " << output_formula);
+	SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(output_formula));
+	return output_formula;
 }
 
 } // namespace smtrat::qe::coverings
