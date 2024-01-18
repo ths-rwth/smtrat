@@ -115,7 +115,6 @@ struct ParameterTree {
 			}
 		}
 		if (!boost::indeterminate(status)) {
-			std::cout << "gotcha" << std::endl;
 			children.clear();
 		}
 	}
