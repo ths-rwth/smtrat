@@ -185,7 +185,9 @@ public:
 		FormulaT receivedFormula(this->solver.formula());
 		auto res = smtrat::qe::qe(receivedFormula);
 		if (res) {
-			regular() << res << std::endl;
+			carl::io::SMTLIBStream sls;
+			sls << *res;
+			regular() << sls << std::endl;
 			if (res->type() != carl::FormulaType::FALSE) {
 				this->exitCode = SMTRAT_EXIT_SAT;
 			} else {
