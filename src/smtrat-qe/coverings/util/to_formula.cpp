@@ -9,6 +9,7 @@
 #include <smtrat-cadcells/common.h>
 #include <smtrat-coveringng/types.h>
 #include <smtrat-cadcells/helper_formula.h>
+#include <carl-formula/formula/functions/NNF.h>
 
 namespace smtrat::qe::coverings::util {
 
@@ -59,36 +60,34 @@ FormulaT to_formula_true_only(const cadcells::datastructures::PolyPool& pool, co
 	return FormulaT(carl::FormulaType::AND, { interval_formula, children_formula });
 }
 
-template<typename Pol>
-auto count_arithmetic_constraints(const carl::Formula<Pol>& f) {
-	std::size_t counter;
-    carl::visit(f,
-        [&counter](const carl::Formula<Pol>& f) {
-			if (f.type() == carl::FormulaType::CONSTRAINT) counter++;
-        }
-    );
-	return counter;
-}
-
-FormulaT to_formula_alternate_helper(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree, bool inverse) {
-	if ((!inverse && !tree.status) || (inverse && tree.status)) {
-		return FormulaT(carl::FormulaType::FALSE);
-	}
-	assert(((!inverse && tree.status) || (inverse && !tree.status)) || boost::indeterminate(tree.status));
-
+FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree, bool positive) {
 	FormulaT children_formula(carl::FormulaType::TRUE);
 	if (boost::indeterminate(tree.status)) {
-		FormulasT children_formulas;
-		for (const auto& child : tree.children) {
-			auto res_pos = to_formula_alternate_helper(pool, child, inverse);
-			auto res_neg = to_formula_alternate_helper(pool, child, !inverse);
-			if (count_arithmetic_constraints(res_pos) <= count_arithmetic_constraints(res_neg)) {
-				children_formulas.push_back(res_pos);
-			} else {
-				children_formulas.push_back(res_neg.negated());
+		auto num_pos = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return (bool) child.status; });
+		auto num_neg = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return (bool) !child.status; });
+		if (num_pos <= num_neg) {
+			FormulasT children_formulas;
+			for (const auto& child : tree.children) {
+				if (boost::indeterminate(child.status)) {
+					children_formulas.push_back(to_formula_alternate(pool, child, true));
+				} else if (child.status) {
+					children_formulas.push_back(to_formula_alternate(pool, child, true));
+				}
 			}
+			children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
+			if (!positive) children_formula = carl::to_nnf(children_formula.negated());
+		} else {
+			FormulasT children_formulas;
+			for (const auto& child : tree.children) {
+				if (boost::indeterminate(child.status)) {
+					children_formulas.push_back(to_formula_alternate(pool, child, false));
+				} else if (!child.status) {
+					children_formulas.push_back(to_formula_alternate(pool, child, false));
+				}
+			}
+			children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
+			if (positive) children_formula = carl::to_nnf(children_formula.negated());
 		}
-		children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
 	}
 		
 	FormulaT interval_formula(carl::FormulaType::TRUE);
@@ -100,12 +99,12 @@ FormulaT to_formula_alternate_helper(const cadcells::datastructures::PolyPool& p
 }
 
 FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
-	auto res_pos = to_formula_alternate_helper(pool, tree, false);
-	auto res_neg = to_formula_alternate_helper(pool, tree, true);
-	if (count_arithmetic_constraints(res_pos) <= count_arithmetic_constraints(res_neg)) {
-		return res_pos;
+	if (tree.status) {
+		return FormulaT(carl::FormulaType::TRUE);
+	} else if (!tree.status) {
+		return FormulaT(carl::FormulaType::FALSE);
 	} else {
-		return res_neg.negated();
+		return to_formula_alternate(pool, tree, true);
 	}
 }
 

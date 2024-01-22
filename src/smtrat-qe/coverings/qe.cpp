@@ -19,9 +19,9 @@ std::optional<FormulaT> qe(const FormulaT& input) {
 	
 	auto [prefix, matrix] = carl::to_pnf(input);
 
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Original formula: " << input);
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Prefix: " << prefix);
-	SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Matrix: " << matrix);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Original formula: " << input);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Prefix: " << prefix);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Matrix: " << matrix);
 
 	covering_ng::VariableQuantification variableQuantification;
 	for (const auto& q : prefix) {
@@ -55,17 +55,19 @@ std::optional<FormulaT> qe(const FormulaT& input) {
 
 	auto [res, tree] = recurse_qe<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, variableQuantification);
 	if (res.is_failed() || res.is_failed_projection()) {
-		SMTRAT_LOG_FATAL("smtrat.qe", "Coverings Failed")
+		SMTRAT_LOG_FATAL("smtrat.qe.coverings", "Coverings Failed")
 		return std::nullopt;
 	}
 
-	SMTRAT_LOG_DEBUG("smtrat.qe", "Got tree " << std::endl << tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got tree " << std::endl << tree);
 	covering_ng::simplify(tree);
-	SMTRAT_LOG_DEBUG("smtrat.qe", "Got simplified tree " << std::endl << tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got simplified tree " << std::endl << tree);
 	// FormulaT output_formula = util::to_formula_true_only(pool, tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got formula (true_only) " << util::to_formula_true_only(pool, tree));
 	FormulaT output_formula = util::to_formula_alternate(pool, tree);
-	SMTRAT_LOG_DEBUG("smtrat.qe", "Got formula " << output_formula);
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got formula " << output_formula);
 	SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(output_formula));
+	SMTRAT_VALIDATION_ADD("smtrat.qe.coverings", "output_formula", FormulaT(carl::FormulaType::IFF, { util::to_formula_true_only(pool, tree), output_formula }).negated(), false);
 	return output_formula;
 }
 
