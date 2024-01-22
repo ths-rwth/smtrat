@@ -45,7 +45,7 @@ public:
 
 	void process_output_formula(const FormulaT& output_formula) {
 		carl::visit(output_formula, [&](const FormulaT& f){
-			if(f.is_atom()){
+			if(f.is_atom() && f.type() != carl::FormulaType::FALSE && f.type() != carl::FormulaType::TRUE){
 				++output_amount_atoms;
 				if(f.type() == carl::FormulaType::VARCOMPARE && std::holds_alternative<typename VariableComparisonT::MR>(f.variable_comparison().value())){
 					output_amount_ire++;
