@@ -417,7 +417,7 @@ void delineate_compound_piecewiselinear(datastructures::SampledDerivation<P>& de
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
-                if (all_relations_weak) return filter_util::result::INCLUSIVE;
+                if (all_relations_weak && enable_weak) return filter_util::result::INCLUSIVE;
                 else return filter_util::result::NORMAL;
             } else {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
