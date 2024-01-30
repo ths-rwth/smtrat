@@ -11,6 +11,7 @@ namespace smtrat {
 namespace internal {
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
+    static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::EarliestSplitting;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {
