@@ -13,8 +13,8 @@ public:
 						  PARSER = 4 };
 
 private:
-	carl::statistics::timer m_theory_timer;
-	carl::statistics::timer m_transformation_timer;
+	carl::statistics::Timer m_theory_timer;
+	carl::statistics::Timer m_transformation_timer;
 	std::size_t m_answer_by_TRIVIAL_UNSAT = 0;
 	std::size_t m_answer_by_METHOD = 0;
 	std::size_t m_answer_by_BACKEND = 0;

@@ -188,7 +188,6 @@ private:
 					return false;
 				}
 			}
-			remove_job_ids();
 		}
 
 		BENCHMAX_LOG_INFO("benchmax.slurm", "Collecting results.");
@@ -208,6 +207,10 @@ private:
 			});
 		}
 		slurm::remove_log_files(files, !settings_slurm().keep_logs);
+
+		if (check_finished) {
+			remove_job_ids();
+		}
 
 		return true;
 	}

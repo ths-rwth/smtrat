@@ -28,7 +28,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # options
 option( DEVELOPER "Compile with extra warnings" OFF )
 option( LOGGING "Enable logging within the carl library" OFF )
-option( ENABLE_UNSUPPORTED "Enable unsupported features (e.g. features that are not actively maintained anymore)" OFF)
 option( BUILD_SOLVER "Build the SMT-RAT Solver" ON )
 option( FORCE_SHIPPED_RESOURCES "Do not look in system for resources which are included" OFF )
 option( USE_MIMALLOC "Build mimalloc" OFF )
@@ -41,6 +40,8 @@ option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 option(SMTRAT_DEVOPTION_Validation "Output intermediate states in an smt2 file" OFF)
 option(SMTRAT_DEVOPTION_Statistics "Use the Statistics gathering" OFF)
 option(SMTRAT_DEVOPTION_Checkpoints "Enable checkpoints" OFF)
+option(SMTRAT_DEVOPTION_Expensive "Enable expensive logging and assertions" OFF )
+
 
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "DEBUG" "RELEASE" "RELWITHDEBINFO")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

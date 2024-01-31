@@ -21,7 +21,7 @@ struct NewCoveringSettings1 {
     static constexpr char moduleName[] = "NewCoveringModule<NewCovering>";
     static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::GreedyMaxUnivariate;
     static constexpr smtrat::cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
-    static constexpr smtrat::cadcells::operators::op op = cadcells::operators::op::mccallum;
+    using op = cadcells::operators::Mccallum;
     static constexpr smtrat::SamplingAlgorithm sampling_algorithm = smtrat::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
     static constexpr smtrat::IsSampleOutsideAlgorithm is_sample_outside_algorithm = smtrat::IsSampleOutsideAlgorithm::DEFAULT;
     static constexpr bool incremental = true;

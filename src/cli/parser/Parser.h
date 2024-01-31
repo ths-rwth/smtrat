@@ -57,6 +57,7 @@ public:
 	}
 
 	void add(const types::TermType& t, bool isSoftFormula = false, Rational weight = Rational(1), const std::string id = std::string()) {
+		SMTRAT_LOG_DEBUG("smtrat.parser", "Adding " << t << " as " << (isSoftFormula ? "soft" : "hard") << " constraint.");
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(assert " << t << ")");
 		FormulaT f;
 		conversion::VariantConverter<FormulaT> conv;
@@ -109,12 +110,8 @@ public:
 		callHandler(&InstructionHandler::echo, s);
 	}
 	void qe() {
-		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(qe)");
+		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(apply qe)");
 		callHandler(&InstructionHandler::qe);
-	}
-	void eliminateQuantifiers(const qe::QEQuery& q) {
-		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(eliminate-quantifiers \"" << q << "\")");
-		callHandler(&InstructionHandler::eliminateQuantifiers, q);
 	}
 	void exit() {
 		if (handler.printInstruction()) SMTRAT_LOG_INFO("smtrat.parser", "(exit)");

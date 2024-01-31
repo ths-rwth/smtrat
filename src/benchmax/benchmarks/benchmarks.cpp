@@ -41,7 +41,8 @@ void registerBenchmarkSettings(SettingsParser* parser) {
 		("grace-time", po::value<carl::settings::duration>(&s.grace_time)->default_value(std::chrono::seconds(3))->value_name("time"), "grace time")
 		("directory,D", po::value<std::vector<std::filesystem::path>>(&s.input_directories), "path to look for benchmarks")
 		("output-dir", po::value<std::filesystem::path>(&s.output_dir), "output directory")
-		("output-xml,X", po::value<std::filesystem::path>(&s.output_file_xml)->default_value("stats.xml"), "filename for xml output file")
+		("output-xml,X", po::value<std::filesystem::path>(&s.output_file_xml), "filename for xml output file")
+		("output-csv,C", po::value<std::filesystem::path>(&s.output_file_csv), "filename for csv output file")
 	;
 }
 }

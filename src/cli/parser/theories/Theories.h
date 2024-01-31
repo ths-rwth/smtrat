@@ -101,6 +101,7 @@ struct Theories {
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
+		SMTRAT_LOG_DEBUG("smtrat.parser", "Adding global formulas to formula set: " << state->global_formulas);
 		formulas.insert(formulas.end(), state->global_formulas.begin(), state->global_formulas.end());
 		state->global_formulas.clear();
 	}
@@ -171,6 +172,7 @@ struct Theories {
 	}
 
 	types::TermType resolveSymbol(const Identifier& identifier) const {
+		SMTRAT_LOG_DEBUG("smtrat.parser", "Resolving symbol \"" << identifier << "\".");
 		types::TermType result;
 		if (settings_parser().disable_theory) return result;
 		if (identifier.indices == nullptr) {
