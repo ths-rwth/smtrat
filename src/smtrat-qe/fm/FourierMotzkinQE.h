@@ -8,7 +8,7 @@
 #include <eigen3/Eigen/Dense>
 #include <eigen3/Eigen/StdVector>
 
-#include "../fmplex/FMplexQEStatistics.h"
+#include "FMQEStatistics.h"
 #include "../util/VariableIndex.h"
 
 
@@ -19,10 +19,6 @@ using matrix_t = Eigen::Matrix<Rational, Eigen::Dynamic, Eigen::Dynamic>;
 
 
 class FourierMotzkinQE {
-public:
-    // we use four vectors: lower bounds, upper bounds, equations, unrelated constraints.
-    using FormulaPartition = std::vector<FormulasT>;
-
 private:
     QEQuery m_query;    /// The quantifiers to eliminate
     FormulaT m_formula; /// The logical representation of the solution space

@@ -12,13 +12,13 @@ FormulaT FourierMotzkinQE::eliminateQuantifiers() {
         assert(type == QuantifierType::EXISTS); // Only support existential for now
         elimination_vars.insert(elimination_vars.end(), vars.begin(), vars.end());
     }
-    SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().vars(elimination_vars.size()));
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().vars(elimination_vars.size()));
 
     // gather input constraints
     FormulasT constraints;
     if (m_formula.type() == carl::FormulaType::CONSTRAINT) constraints.push_back(m_formula);
     else constraints = m_formula.subformulas();
-    SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().input(constraints.size()));
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().input(constraints.size()));
 
     for (const auto& c : constraints) {
         assert(c.type() == carl::FormulaType::CONSTRAINT);
@@ -32,14 +32,14 @@ FormulaT FourierMotzkinQE::eliminateQuantifiers() {
     // eliminate variables using equalities
     qe::util::EquationSubstitution es(constraints, elimination_vars);
     if (!es.apply()) {
-        SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().elim_eq(elimination_vars.size()));
-        SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().eq_conflict());
+        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elimination_vars.size()));
+        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().eq_conflict());
         return FormulaT(carl::FormulaType::FALSE);
     }
     constraints      = es.remaining_constraints();
     elimination_vars = es.remaining_variables();
     SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after es: " << constraints);
-    SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().elim_eq(elimination_vars.size()));
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elimination_vars.size()));
 
     if (elimination_vars.empty()) {
         return FormulaT(carl::FormulaType::AND, constraints);
