@@ -8,7 +8,6 @@
 #include <smtrat-modules/CNFerModule/CNFerModule.h>
 #include <smtrat-modules/EMModule/EMModule.h>
 #include <smtrat-modules/ESModule/ESModule.h>
-#include <smtrat-modules/FouMoModule/FouMoModule.h>
 #include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/GBModule/GBModule.h>
 #include <smtrat-modules/ICPModule/ICPModule.h>
@@ -35,7 +34,6 @@ namespace smtrat
 					addBackend<CNFerModule>(),
 					addBackend<EMModule<EMSettings1>>(),
 					addBackend<ESModule<ESSettingsDefault>>(),
-					addBackend<FouMoModule<FouMoSettings1>>(),
 					addBackend<FPPModule<FPPSettings1>>(),
 					addBackend<GBModule<GBSettings5>>(),
 					addBackend<ICPModule<ICPSettings1>>(),
