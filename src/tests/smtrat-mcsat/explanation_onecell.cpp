@@ -6,6 +6,18 @@
 #include <smtrat-mcsat/explanations/onecell/onecell.h>
 #include <smtrat-mcsat/explanations/onecell/Explanation.h>
 
+struct McFSettings : smtrat::cadcells::operators::MccallumFilteredSettings {
+	static constexpr auto delineation_function = ALL;
+};
+
+struct FilteredSettings : smtrat::mcsat::onecell::BaseSettings {
+    constexpr static bool exploit_strict_constraints = true;
+
+    constexpr static auto cell_heuristic = smtrat::cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
+    constexpr static auto covering_heuristic = smtrat::cadcells::representation::LDB_COVERING_CACHE_GLOBAL;
+    using op = smtrat::cadcells::operators::MccallumFiltered<McFSettings>;
+};
+
 TEST(smtrat_mcsat, onecell)
 {
 	if (!carl::logging::logger().has("stdout")) {
@@ -40,10 +52,10 @@ TEST(smtrat_mcsat, onecell)
 	constrs.emplace_back(constr_q);
 
 	std::cout << "--- DEFAULT ---" << std::endl;
-	auto res_default = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::LDBSettings>(constrs, ctx, ass);
+	auto res_default = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::DefaultSettings>(constrs, ctx, ass);
 	std::cout << res_default << std::endl;
 	std::cout << "--- FILTERED ---" << std::endl;
-	auto res_filtered = smtrat::mcsat::onecell::onecell<smtrat::mcsat::onecell::LDBFilteredAllSelectiveSettings>(constrs, ctx, ass);
+	auto res_filtered = smtrat::mcsat::onecell::onecell<FilteredSettings>(constrs, ctx, ass);
 	std::cout << res_filtered << std::endl;
 
 	ASSERT_EQ(res_default, res_filtered);
@@ -52,7 +64,7 @@ TEST(smtrat_mcsat, onecell)
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_FILTER;
 	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
-	constexpr static auto op = smtrat::cadcells::operators::op::mccallum_filtered_all;
+	using op = smtrat::cadcells::operators::MccallumFiltered<McFSettings>;
 };
 
 TEST(smtrat_mcsat, onecell_filter_bug)
@@ -252,10 +264,15 @@ TEST(smtrat_mcsat, onecell_filter_bug_3)
 
 }
 
+struct McFSettings2 : smtrat::cadcells::operators::MccallumFilteredSettings {
+	static constexpr auto delineation_function = ALL;
+	static constexpr bool enable_weak = true;
+    static constexpr bool only_rational_samples = true;
+};
 struct OCSettingsSel : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
 	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
-	constexpr static auto op = smtrat::cadcells::operators::op::mccallum_filtered_onlyrat_ew;
+	using op = smtrat::cadcells::operators::MccallumFiltered<McFSettings2>;
 };
 
 TEST(smtrat_mcsat, onecell_filter_bug_4)

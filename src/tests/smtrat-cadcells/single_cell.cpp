@@ -18,17 +18,19 @@
 
 using namespace smtrat::cadcells;
 
-template<operators::op op, representation::CellHeuristic cell_heuristic>
-std::optional<CNF> single_cell(const std::vector<Polynomial>& polys, Polynomial::ContextType context, const Assignment& sample) {
+template<typename op, representation::CellHeuristic cell_heuristic>
+std::optional<DNF> single_cell(const std::vector<Polynomial>& polys, Polynomial::ContextType context, const Assignment& sample) {
 	datastructures::PolyPool pool(context);
     datastructures::Projections proj(pool);
 
-	auto derivation = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size()).sampled_ref();
+	SMTRAT_STATISTICS_CALL(smtrat::cadcells::statistics().set_max_level(sample.size()+1));
+
+	auto derivation = datastructures::make_derivation<typename op::PropertiesSet>(proj, sample, sample.size()).sampled_ref();
 	for (const auto& p : polys) {
 		derivation->insert(operators::properties::poly_sgn_inv{ pool(p) });
 	}
 	
-    CNF description;
+    DNF description;
     while ((derivation)->level() > 0) {
         auto lvl = algorithms::get_interval<op, cell_heuristic>(derivation);
         SMTRAT_LOG_TRACE("smtrat.cadcells", "Polynomials: " << pool);
@@ -44,7 +46,7 @@ std::optional<CNF> single_cell(const std::vector<Polynomial>& polys, Polynomial:
     return description;
 }
 
-auto as_carl(const CNF& cnf) {
+auto as_carl(const DNF& cnf) {
 	std::vector<smtrat::FormulaT> result;
 	for (const auto& dis : cnf) {
 		std::vector<smtrat::FormulaT> subresult;
@@ -65,6 +67,10 @@ auto as_carl(const CNF& cnf) {
 	}
 	return smtrat::FormulaT(carl::FormulaType::AND, std::move(result));
 }
+
+struct McFSettings : operators::MccallumFilteredSettings {
+	static constexpr auto delineation_function = ALL;
+};
 
 TEST(smtrat_cadcells, single_cell) {
 	if (!carl::logging::logger().has("stdout")) {
@@ -92,11 +98,11 @@ TEST(smtrat_cadcells, single_cell) {
 	std::vector<P> polys({ poly_p, poly_q });
 
 	std::cout << "--- DEFAULT ---" << std::endl;
-	auto res_default = single_cell<operators::op::mccallum, representation::LOWEST_DEGREE_BARRIERS>(polys, ctx, ass);
+	auto res_default = single_cell<operators::Mccallum<operators::MccallumSettings>, representation::LOWEST_DEGREE_BARRIERS>(polys, ctx, ass);
 	std::cout << res_default << std::endl;
 	std::cout << as_carl(*res_default) << std::endl;
 	std::cout << "--- FILTERED ---" << std::endl;
-	auto res_filtered = single_cell<operators::op::mccallum_filtered, representation::LOWEST_DEGREE_BARRIERS>(polys, ctx, ass);
+	auto res_filtered = single_cell<operators::MccallumFiltered<McFSettings>, representation::LOWEST_DEGREE_BARRIERS>(polys, ctx, ass);
 	std::cout << res_filtered << std::endl;
 	std::cout << as_carl(*res_filtered) << std::endl;
 

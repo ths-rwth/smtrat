@@ -33,6 +33,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
         cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
         stats.newCell();
     #endif
+    SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(sample.size()+1));
 
     bool consider_approximation = Settings::use_approximation && cadcells::representation::approximation::ApxCriteria::cell(constraints);
     #ifdef SMTRAT_DEVOPTION_Statistics
