@@ -104,15 +104,14 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
         // Search for adjacent disjoint cells and sample between
         for (size_t i = 0; i + 1 < derivationsVector.size(); i++) {
             // We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
-            if (!derivationsVector[i]->cell().upper_unbounded() && !derivationsVector[i + 1]->cell().lower_unbounded() && derivationsVector[i]->cell().upper()->first < derivationsVector[i + 1]->cell().lower()->first) {
-                sample = carl::sample_between(derivationsVector[i]->cell().upper()->first, derivationsVector[i + 1]->cell().lower()->first);
-                return 0;
-
-                // The check above does not care for open bounds
-                // i.e if we have (x, y), (y, z) we can still choose y as a sample point
-            } else if (derivationsVector[i]->cell().is_sector() && derivationsVector[i + 1]->cell().is_sector() && derivationsVector[i]->cell().upper()->first == derivationsVector[i + 1]->cell().lower()->first) {
-                sample = derivationsVector[i]->cell().upper()->first;
-                return 0;
+            if (!derivationsVector[i]->cell().upper_unbounded() && !derivationsVector[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivationsVector[i]->cell(), derivationsVector[i + 1]->cell())) {
+                if (derivationsVector[i]->cell().upper()->first == derivationsVector[i + 1]->cell().lower()->first) {
+                    sample = derivationsVector[i]->cell().upper()->first;
+                    return 0;
+                } else {
+                    sample = carl::sample_between(derivationsVector[i]->cell().upper()->first, derivationsVector[i + 1]->cell().lower()->first);
+                    return 0;
+                }
             }
         }
 

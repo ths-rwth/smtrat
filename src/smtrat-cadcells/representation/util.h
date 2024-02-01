@@ -56,7 +56,7 @@ inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& p
 inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del, bool enable_weak = false) {
     if (del.is_section()) {
         #ifdef SMTRAT_DEVOPTION_Statistics
-        auto max_level = proj.polys().get_context().variable_ordering().size();
+        auto max_level = proj.polys().context().variable_ordering().size();
         auto level = del.lower()->second.at(0).root.poly.level;
         statistics().section_common_zeros(max_level-level, del.lower()->second.size());
         #endif

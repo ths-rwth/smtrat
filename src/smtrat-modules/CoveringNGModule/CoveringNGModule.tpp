@@ -73,6 +73,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
     SMTRAT_STATISTICS_CALL(covering_ng::statistics().variable_ordering(var_order, var_mapping));
+    SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 
     //auto var_order = carl::variables(input).to_vector();
     // std::vector<ConstraintT> constraints;
@@ -85,7 +86,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
 
     cadcells::Assignment ass;
     auto f = Settings::formula_evaluation::create(proj);
-    f.set_formula(context, matrix);
+    f.set_formula(matrix);
     f.extend_valuation(ass);
     if (f.root_valuation() == covering_ng::formula::Valuation::FALSE || matrix.is_false()) {
         mModel.clear();

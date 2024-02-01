@@ -181,7 +181,7 @@ inline std::vector<carl::Variable> sort_earliest_splitting(const carl::Quantifie
 	//Used in case that the heuristic is inconclusive
 	std::vector<ConstraintT> constraints;
 	carl::arithmetic_constraints(formula, constraints);
-	auto unblocked_sorting = mcsat::variableordering::feature_based_brown(constraints);
+	auto unblocked_sorting = mcsat::variableordering::greedy_max_univariate(constraints);
 
 	for (const auto& block : quantifiers) {
 		auto block_variables = block;

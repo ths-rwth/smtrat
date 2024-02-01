@@ -11,6 +11,7 @@ namespace analyzer {
 
 struct AnalysisSettings {
 	bool enabled = false;
+	bool analyze_cnf = false;
 	std::string analyze_projections = "none";
 };
 
@@ -23,6 +24,7 @@ void registerAnalyzerSettings(T& parser) {
 	parser.add("Analysis settings").add_options()
 			("analyze.enabled", po::bool_switch(&s.enabled), "enable formula analyzer")
 			("analyze.projections", po::value<std::string>(&s.analyze_projections)->default_value("none"), "which CAD projections to analyze (all, collins, hong, mccallum, mccallum_partial, lazard, brown, none)")
+			("analyze.cnf", po::bool_switch(&s.analyze_cnf)->default_value(false), "enable CNF analyzer")
 	;
 }
 

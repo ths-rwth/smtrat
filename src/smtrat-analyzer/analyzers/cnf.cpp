@@ -3,10 +3,14 @@
 #include "utils.h"
 #include <carl-formula/formula/functions/CNF.h>
 
+#include "../settings.h"
+
 
 namespace smtrat::analyzer {
 
 void analyze_cnf(const FormulaT& f, AnalyzerStatistics& stats) {
+	if (!settings_analyzer().analyze_cnf) return;
+
 	FormulaT cnf = carl::to_cnf(f, false);
 
 	std::size_t num_clauses = 0;

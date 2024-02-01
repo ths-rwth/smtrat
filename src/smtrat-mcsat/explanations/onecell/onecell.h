@@ -7,7 +7,6 @@
 #include <smtrat-cadcells/operators/operator_mccallum.h>
 #include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
 #include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
-#include <smtrat-cadcells/operators/operator_mccallum_complete.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
 #include <smtrat-cadcells/algorithms/level_covering.h>
@@ -29,7 +28,7 @@ namespace smtrat::mcsat::onecell {
  * @return A set of constraints whose conjunction describes an unsatisfying cell that can be concluded from the input constraints.
  */
 template<typename Settings>
-std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
+std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
     #ifdef SMTRAT_DEVOPTION_Statistics
         cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
         stats.newCell();
@@ -69,7 +68,7 @@ std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constrai
         return std::nullopt;
     }
 
-    cadcells::CNF description;
+    cadcells::DNF description;
     while ((*derivation)->level() > 0) {
         std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
         if constexpr (Settings::use_approximation) {

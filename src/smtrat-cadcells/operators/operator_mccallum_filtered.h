@@ -24,6 +24,8 @@ struct MccallumFilteredSettings {
     static constexpr bool only_irreducible_resultants = false;
     static constexpr bool only_if_no_intersections = false;
     static constexpr std::size_t only_if_total_degree_below = 0;
+
+    static constexpr bool complete = false;
 };
 
 template<typename Settings>
@@ -39,7 +41,11 @@ static inline bool project_basic_properties(datastructures::SampledDerivation<Pr
         if (!rules::poly_del(deriv, prop.poly)) return false;
     }
     for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
-        rules::poly_ord_inv(deriv, prop.poly);
+        if (!Settings::complete) {
+            rules::poly_ord_inv(deriv, prop.poly);
+        } else {
+            rules::poly_ord_inv_maybe_null(deriv, prop.poly);
+        } 
     }
     for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
         if (Settings::enable_weak) {
@@ -49,7 +55,7 @@ static inline bool project_basic_properties(datastructures::SampledDerivation<Pr
         }
     }
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
-        rules::poly_sgn_inv(deriv, prop.poly);
+        rules::poly_sgn_inv(deriv, prop.poly, !Settings::complete);
     }
     return true;
 }

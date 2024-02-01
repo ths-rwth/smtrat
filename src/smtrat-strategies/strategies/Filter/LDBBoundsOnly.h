@@ -12,6 +12,7 @@ namespace smtrat {
 namespace internal {
 struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 	static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+	static constexpr bool enable_weak = true;
 };
 
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {

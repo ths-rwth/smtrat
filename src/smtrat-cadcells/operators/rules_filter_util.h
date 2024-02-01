@@ -2,10 +2,11 @@
 
 namespace smtrat::cadcells::operators::rules::filter_util {
 
-template<typename P>
 inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Projections& proj, const Assignment& sample, const boost::container::flat_set<datastructures::PolyRef>& polys) {
+    using PropertiesSet = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_ord_inv,properties::poly_del,properties::cell_connected>;
+
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval start");
-    auto subderiv = datastructures::make_derivation<P>(proj, sample, sample.size()).sampled_ref();
+    auto subderiv = datastructures::make_derivation<PropertiesSet>(proj, sample, sample.size()).sampled_ref();
     for (const auto& poly : polys) {
         subderiv->insert(properties::poly_del{ poly });
         assert(properties::poly_del{ poly }.level() <= subderiv->level());

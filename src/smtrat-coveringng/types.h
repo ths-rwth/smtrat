@@ -7,7 +7,7 @@
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
 #include <smtrat-cadcells/operators/operator_mccallum.h>
-#include <smtrat-cadcells/operators/operator_mccallum_complete.h>
+#include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 #include <carl-formula/formula/functions/PNF.h>
 
@@ -93,6 +93,58 @@ std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& 
 		os << "Parameter" ;
 		break;
 	}
+	return os;
+}
+
+struct ParameterTree {
+	boost::tribool status;
+	std::optional<carl::Variable> variable;
+	std::optional<cadcells::datastructures::SymbolicInterval> interval;
+	std::optional<cadcells::Assignment> sample;
+	std::vector<ParameterTree> children;
+
+	ParameterTree() : status(boost::indeterminate) {}
+	ParameterTree(bool s) : status(s) {}
+	ParameterTree(const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s, std::vector<ParameterTree>&& c) : status(boost::indeterminate), variable(v), interval(i), sample(s), children(std::move(c)) {
+		assert(!children.empty());
+		status = children.begin()->status;
+		for (const auto& child : children) {
+			if (child.status != status) {
+				status = boost::indeterminate; 
+				break;
+			}
+		}
+		if (!boost::indeterminate(status)) {
+			children.clear();
+		}
+	}
+	ParameterTree(std::vector<ParameterTree>&& c) : status(boost::indeterminate), children(std::move(c)) {
+		assert(!children.empty());
+		status = children.begin()->status;
+		for (const auto& child : children) {
+			if (child.status != status) {
+				status = boost::indeterminate; 
+				break;
+			}
+		}
+		if (!boost::indeterminate(status)) {
+			children.clear();
+		}
+	}
+	ParameterTree(boost::tribool st, const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s) : status(st), variable(v), interval(i), sample(s) {
+		assert(!boost::indeterminate(st));
+	}
+};
+static std::ostream& operator<<(std::ostream& os, const ParameterTree& tree){
+	os << tree.status;
+	if (tree.variable) {
+		os << " " << *tree.variable << " " << *tree.interval << " " << *tree.sample;
+	}
+	os << " (" << std::endl;
+	for (const auto& child : tree.children) {
+		os << child << std::endl;
+	}
+	os << ")";
 	return os;
 }
 
