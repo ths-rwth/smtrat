@@ -40,7 +40,7 @@ static size_t level_of(const VariableOrdering& order, const Pol& poly) {
 template<typename Settings>
 class Backend {
 
-    using op = Settings::op;
+    using op = typename Settings::op;
     using PropSet = typename op::PropertiesSet;
 
 private:

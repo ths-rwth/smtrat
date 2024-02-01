@@ -41,7 +41,7 @@ class LevelWiseInformation {
 
     // get the covering heuristic from the settings
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = Settings::covering_heuristic;
-    using op = Settings::op;
+    using op = typename Settings::op;
     static constexpr SamplingAlgorithm sampling_algorithm = Settings::sampling_algorithm;
     static constexpr IsSampleOutsideAlgorithm is_sample_outside_algorithm = Settings::is_sample_outside_algorithm;
     using PropSet = typename op::PropertiesSet;
