@@ -18,7 +18,7 @@ private:
     std::size_t m_split_tried        = 0;
     std::size_t m_split_done         = 0;
     bool        m_eq_conflict        = false;
-    carl::statistics::timer m_qe_timer;
+    carl::statistics::Timer m_qe_timer;
 
 
 public:

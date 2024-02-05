@@ -16,7 +16,7 @@ public:
 	CoveringNG_PPSATDefault() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
-				addBackend<SATModule<SATModule1>>({
+				addBackend<SATModule<SATSettings1>>({
                 	addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
 				})
             })
