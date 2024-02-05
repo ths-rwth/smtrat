@@ -99,13 +99,13 @@ public:
 			}
 			if (false) {
 				// Note that we can only encode some properties of the indexed root expressions. Thus, some explanation might wrongly be detected as incorrect.
-				carl::Assignment<RAN> ass;
+				carl::Assignment<smtrat::RAN> ass;
 				for (const auto& [key, value] : getTrail().model()) {
 					if (value.isRAN()) {
 						ass.emplace(key.asVariable(), value.asRAN());
 					} else {
 						assert(value.isRational());
-						ass.emplace(key.asVariable(), RAN(value.asRational()));
+						ass.emplace(key.asVariable(), smtrat::RAN(value.asRational()));
 					}
 				}
 				carl::EncodingCache<Poly> cache;
