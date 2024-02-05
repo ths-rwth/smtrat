@@ -15,7 +15,7 @@ private:
     std::size_t m_output_constraints = 0;
     std::size_t m_total_constraints  = 0;
     bool        m_eq_conflict        = false;
-    carl::statistics::timer m_qe_timer;
+    carl::statistics::Timer m_qe_timer;
 
 
 public:
@@ -35,13 +35,13 @@ public:
     void    vars(std::size_t n) { m_eliminated_vars    = n; }
     void elim_eq(std::size_t n) { m_eliminated_by_eq   = m_eliminated_vars - n; }
     void  output(std::size_t n) { m_output_constraints = n; }
-    void    node(std::size_t n) { ++m_visited_nodes; m_total_constraints += n; }
+    void    node(std::size_t n) { m_total_constraints += n; }
     
     void eq_conflict() { m_eq_conflict = true; }
 
 
-    static FMplexQEStatistics& get_instance() {
-        static FMplexQEStatistics & statistics = statistics_get<FMplexQEStatistics>("fm-qe");
+    static FMQEStatistics& get_instance() {
+        static FMQEStatistics & statistics = statistics_get<FMQEStatistics>("fm-qe");
 		return statistics;
     }
 };
