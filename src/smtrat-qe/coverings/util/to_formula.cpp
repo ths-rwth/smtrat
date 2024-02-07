@@ -38,13 +38,13 @@ FormulaT to_formula(const cadcells::datastructures::PolyPool& pool, carl::Variab
 }
 
 FormulaT to_formula_true_only(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
-	if (!tree.status) {
+	if (tree.status == 0) {
 		return FormulaT(carl::FormulaType::FALSE);
 	}
-	assert(tree.status || boost::indeterminate(tree.status));
+	assert(tree.status > 0);
 
 	FormulaT children_formula(carl::FormulaType::TRUE);
-	if (boost::indeterminate(tree.status)) {
+	if (tree.status == 2) {
 		FormulasT children_formulas;
 		for (const auto& child : tree.children) {
 			children_formulas.push_back(to_formula_true_only(pool, child));
@@ -62,15 +62,15 @@ FormulaT to_formula_true_only(const cadcells::datastructures::PolyPool& pool, co
 
 FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree, bool positive) {
 	FormulaT children_formula(carl::FormulaType::TRUE);
-	if (boost::indeterminate(tree.status)) {
-		auto num_pos = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return (bool) child.status; });
-		auto num_neg = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return (bool) !child.status; });
+	if (tree.status == 2) {
+		auto num_pos = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return child.status == 1; });
+		auto num_neg = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return child.status == 0; });
 		if (num_pos <= num_neg) {
 			FormulasT children_formulas;
 			for (const auto& child : tree.children) {
-				if (boost::indeterminate(child.status)) {
+				if (child.status == 2) {
 					children_formulas.push_back(to_formula_alternate(pool, child, true));
-				} else if (child.status) {
+				} else if (child.status == 1) {
 					children_formulas.push_back(to_formula_alternate(pool, child, true));
 				}
 			}
@@ -79,9 +79,9 @@ FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, co
 		} else {
 			FormulasT children_formulas;
 			for (const auto& child : tree.children) {
-				if (boost::indeterminate(child.status)) {
+				if (child.status == 2) {
 					children_formulas.push_back(to_formula_alternate(pool, child, false));
-				} else if (!child.status) {
+				} else if (child.status == 0) {
 					children_formulas.push_back(to_formula_alternate(pool, child, false));
 				}
 			}
@@ -99,9 +99,9 @@ FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, co
 }
 
 FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
-	if (tree.status) {
+	if (tree.status == 1) {
 		return FormulaT(carl::FormulaType::TRUE);
-	} else if (!tree.status) {
+	} else if (tree.status == 0) {
 		return FormulaT(carl::FormulaType::FALSE);
 	} else {
 		return to_formula_alternate(pool, tree, true);

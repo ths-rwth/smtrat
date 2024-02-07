@@ -97,42 +97,42 @@ std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& 
 }
 
 struct ParameterTree {
-	boost::tribool status;
+	unsigned short status; // 0 false 1 true 2 unknown 
 	std::optional<carl::Variable> variable;
 	std::optional<cadcells::datastructures::SymbolicInterval> interval;
 	std::optional<cadcells::Assignment> sample;
 	std::vector<ParameterTree> children;
 
-	ParameterTree() : status(boost::indeterminate) {}
-	ParameterTree(bool s) : status(s) {}
-	ParameterTree(const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s, std::vector<ParameterTree>&& c) : status(boost::indeterminate), variable(v), interval(i), sample(s), children(std::move(c)) {
+	ParameterTree() : status(2) {}
+	ParameterTree(unsigned short s) : status(s) {}
+	ParameterTree(const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s, std::vector<ParameterTree>&& c) : status(2), variable(v), interval(i), sample(s), children(std::move(c)) {
 		assert(!children.empty());
 		status = children.begin()->status;
 		for (const auto& child : children) {
 			if (child.status != status) {
-				status = boost::indeterminate; 
+				status = 2; 
 				break;
 			}
 		}
-		if (!boost::indeterminate(status)) {
+		if (status != 2) {
 			children.clear();
 		}
 	}
-	ParameterTree(std::vector<ParameterTree>&& c) : status(boost::indeterminate), children(std::move(c)) {
+	ParameterTree(std::vector<ParameterTree>&& c) : status(2), children(std::move(c)) {
 		assert(!children.empty());
 		status = children.begin()->status;
 		for (const auto& child : children) {
 			if (child.status != status) {
-				status = boost::indeterminate; 
+				status = 2; 
 				break;
 			}
 		}
-		if (!boost::indeterminate(status)) {
+		if (status != 2) {
 			children.clear();
 		}
 	}
-	ParameterTree(boost::tribool st, const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s) : status(st), variable(v), interval(i), sample(s) {
-		assert(!boost::indeterminate(st));
+	ParameterTree(unsigned short st, const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s) : status(st), variable(v), interval(i), sample(s) {
+		assert(st != 2);
 	}
 };
 static std::ostream& operator<<(std::ostream& os, const ParameterTree& tree){
@@ -145,6 +145,14 @@ static std::ostream& operator<<(std::ostream& os, const ParameterTree& tree){
 		os << child << std::endl;
 	}
 	os << ")";
+	return os;
+}
+inline std::ostream& operator<<(std::ostream& os, const std::vector<ParameterTree>& trees){
+	os << "[";
+	for (const auto& tree : trees) {
+		os << tree.status << ", ";
+	}
+	os << "]";
 	return os;
 }
 

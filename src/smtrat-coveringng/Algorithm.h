@@ -374,7 +374,9 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<Paramet
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
 		std::vector<ParameterTree> tree;
 		for (const auto& cell : representation.cells) {
+			SMTRAT_LOG_TRACE("smtrat.covering_ng", "From " << interval_data[cell.derivation]);
 			tree.emplace_back(variable, cell.description, cell.derivation->sample(), std::move(interval_data[cell.derivation]));
+			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got subtree " << tree.back());
 		}
 		return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER), tree);
 	} else {
@@ -382,7 +384,9 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<Paramet
 		if (new_interval) {
 			std::vector<ParameterTree> tree;
 			for (const auto& cell : new_interval->second.cells) {
+				SMTRAT_LOG_TRACE("smtrat.covering_ng", "From " << interval_data[cell.derivation]);
 				tree.emplace_back(variable, cell.description, cell.derivation->sample(), std::move(interval_data[cell.derivation]));
+				SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got subtree " << tree.back());
 			}
 			std::vector<Interval<typename op::PropertiesSet>> new_intervals({new_interval->first});
 			return std::make_pair(CoveringResult<typename op::PropertiesSet>(Status::PARAMETER, new_intervals), tree);

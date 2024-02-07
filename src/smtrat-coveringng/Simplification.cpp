@@ -3,9 +3,9 @@
 namespace smtrat::covering_ng {
 
 void simplify(ParameterTree& tree) {
-    assert(boost::indeterminate(tree.status) || tree.children.empty());
+    assert(tree.status == 2 || tree.children.empty());
 
-    if (boost::indeterminate(tree.status)) {
+    if (tree.status == 2) {
         for (auto& child : tree.children) {
             simplify(child);
         }
@@ -14,7 +14,7 @@ void simplify(ParameterTree& tree) {
         auto start = tree.children.begin();
         auto end = tree.children.begin();
         while(start != tree.children.end()) {
-            while(boost::indeterminate(start->status) && start != tree.children.end()) {
+            while(start->status == 2 && start != tree.children.end()) {
                 new_children.emplace_back(std::move(*start));
                 start++;
             }
