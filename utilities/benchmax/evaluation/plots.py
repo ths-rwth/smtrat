@@ -3,6 +3,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 import tikzplotlib
+import matplotlib
+
+def setup_accessible_styles():
+    linestyles = ['-','--',':','-.',(5, (10, 3)),(0, (5, 10)),(0, (5, 5)),(0, (5, 1)),(0, (3, 5, 1, 5)),(0, (3, 1, 1, 1)),(0, (3, 5, 1, 5, 1, 5)),(0, (3, 1, 1, 1, 1, 1))]
+    colors_blind = ['#332288', '#117733', '#88CCEE', '#DDCC77', '#CC6677', '#AA4499', '#882255', '#44AA99']
+    colors_rwth = ['#00549F','#E30066', '#57AB27', '#006165', '#CC071E', '#F6A800', '#0098A1', '#A11035', '#57AB27', '#612158' , '#FFED00', '#BDCD00']
+    matplotlib.rcParams["axes.prop_cycle"] = matplotlib.cycler('color', colors_rwth[0:11]) + matplotlib.cycler('linestyle',linestyles[0:11])
 
 def performance_profile(df, solvers, column = 'runtime'):
     ax = plt.gca()
