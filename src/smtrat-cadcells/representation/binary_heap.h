@@ -35,7 +35,7 @@ private:
 	int size;
 };
 
-void BinaryHeap::Insert(double k, int s) {
+inline void BinaryHeap::Insert(double k, int s) {
 	// Ajust the structures to fit new data
 	if (s >= (int)pos.size()) {
 		pos.resize(s + 1, -1);
@@ -58,11 +58,11 @@ void BinaryHeap::Insert(double k, int s) {
 	key[s] = k;
 }
 
-int BinaryHeap::Size() {
+inline int BinaryHeap::Size() {
 	return size;
 }
 
-int BinaryHeap::DeleteMin() {
+inline int BinaryHeap::DeleteMin() {
 	if (size == 0)
 		SMTRAT_LOG_ERROR("smtrat.cadcells.representation", "Error: empty heap");
 
