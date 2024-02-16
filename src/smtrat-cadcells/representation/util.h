@@ -5,7 +5,7 @@
 
 #include <boost/container/flat_map.hpp>
 
-#include "matching.h"
+#include "edge-cover/edge_cover.h"
 #include "../CADCellsStatistics.h"
 
 namespace smtrat::cadcells::representation::util {
@@ -690,21 +690,16 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 				for (auto it2 = it - 1; it2 >= delin.roots().begin(); --it2) {
 					for (const auto& t_root2 : it2->second) {
 						const auto& r2 = t_root2.root;
-						if (r1.poly == r2.poly) { // we must only consider one root for each polynomial
-							ordering.add_less(r2, r1);
-						} else {
-							const auto resultant = std::minmax(r1.poly, r2.poly);
-							if (!cov_below.contains(resultant)) {
-								cov_below[resultant] = std::make_pair(r2, r1);
 
-								// make sure we only assign one index to each root
-								if (!root_to_index.contains(r2)) {
-									root_to_index[r2] = n++;
-								}
+						const auto resultant = std::minmax(r1.poly, r2.poly);
+						cov_below[resultant] = std::make_pair(r2, r1);
 
-								costs[resultant] = calculate_cost<RCM>(proj, r1.poly, r2.poly);
-							}
+						// make sure we only assign one index to each root
+						if (!root_to_index.contains(r2)) {
+							root_to_index[r2] = n++;
 						}
+
+						costs[resultant] = calculate_cost<RCM>(proj, r1.poly, r2.poly);
 					}
 				}
 			}
@@ -718,23 +713,18 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 				for (auto it2 = it + 1; it2 != delin.roots().end(); ++it2) {
 					for (const auto& t_root2 : it2->second) {
 						const auto& r2 = t_root2.root;
-						if (r1.poly == r2.poly) { // we must only consider one root for each polynomial
-							ordering.add_less(r1, r2);
-						} else {
-							const auto resultant = std::minmax(r1.poly, r2.poly);
-							if (!cov_above.contains(resultant)) {
-								cov_above[resultant] = std::make_pair(r1, r2);
 
-								// make sure we only assign one index to each root
-								if (!root_to_index.contains(r2)) {
-									root_to_index[r2] = n++;
-								}
+						const auto resultant = std::minmax(r1.poly, r2.poly);
+						cov_above[resultant] = std::make_pair(r1, r2);
 
-								// check if we already calculated the cost
-								if (!costs.contains(resultant)) {
-									costs[resultant] = calculate_cost<RCM>(proj, r1.poly, r2.poly);
-								}
-							}
+						// make sure we only assign one index to each root
+						if (!root_to_index.contains(r2)) {
+							root_to_index[r2] = n++;
+						}
+
+						// check if we already calculated the cost
+						if (!costs.contains(resultant)) {
+							costs[resultant] = calculate_cost<RCM>(proj, r1.poly, r2.poly);
 						}
 					}
 				}

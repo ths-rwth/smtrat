@@ -405,6 +405,7 @@ inline datastructures::CellRepresentation<T> compute_cell_optimal_edge_cover(dat
 		}
 	} else { // sector
 		handle_local_del(der, reduced_delineation, response);
+		handle_cell_reduction(reduced_delineation, reduced_cell, response);
 		util::optimal_edge_cover_ordering<RCM>(der->proj(),
 											   reduced_delineation,
 											   reduced_cell,
