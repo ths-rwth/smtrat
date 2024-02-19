@@ -13,6 +13,9 @@
 
 namespace smtrat::cadcells::representation::util {
 
+#define EPSILON 0.000001
+#define GREATER(A, B) ((A) - (B) > EPSILON)
+
 class Matching {
 public:
 	// Parametric constructor receives a graph instance

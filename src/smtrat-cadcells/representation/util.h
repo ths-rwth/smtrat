@@ -647,14 +647,16 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 										bool enable_weak,
 										bool use_global_cache) {
 
-	if (delin.roots().empty()) {
+	const auto& roots = delin.roots();
+
+	if (roots.empty()) {
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "No roots in delin");
 		return;
 	}
 
 	if (!delin_interval.upper_unbounded()) {
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "delin_interval.upper(): ");
-		for (auto it = delin.roots().end() - 1; it >= delin_interval.upper(); --it) {
+		for (auto it = roots.end() - 1; it >= delin_interval.upper(); --it) {
 			SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Layer");
 			for (const auto& t_root : it->second) {
 				SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "\t" << t_root);
@@ -663,7 +665,7 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 	}
 	if (!delin_interval.lower_unbounded()) {
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "delin_interval.lower(): ");
-		for (auto it = delin_interval.lower(); it >= delin.roots().begin(); --it) {
+		for (auto it = delin_interval.lower(); it >= roots.begin(); --it) {
 			SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Layer");
 			for (const auto& t_root : it->second) {
 				SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "\t" << t_root);
@@ -684,10 +686,20 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 	size_t n = 2;
 
 	if (!delin_interval.lower_unbounded()) {
-		for (auto it = delin_interval.lower(); it != delin.roots().begin(); --it) {
+		const auto& lower = delin_interval.lower();
+
+		// hack
+		{
+			const auto& t_root = lower->second.at(0);
+			for (auto it = lower->second.begin() + 1; it != lower->second.end(); ++it) {
+				ordering.add_less(t_root.root, it->root);
+			}
+		}
+
+		for (auto it = lower; it != roots.begin(); --it) {
 			for (const auto& t_root : it->second) {
 				const auto& r1 = t_root.root;
-				for (auto it2 = it - 1; it2 >= delin.roots().begin(); --it2) {
+				for (auto it2 = it - 1; it2 >= roots.begin(); --it2) {
 					for (const auto& t_root2 : it2->second) {
 						const auto& r2 = t_root2.root;
 
@@ -707,10 +719,20 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 	}
 
 	if (!delin_interval.upper_unbounded()) {
-		for (auto it = delin_interval.upper(); it != delin.roots().end() - 1; ++it) {
+		const auto upper = delin_interval.upper();
+
+		// hack
+		{
+			const auto& t_root = upper->second.at(0);
+			for (auto it = upper->second.begin() + 1; it != upper->second.end(); ++it) {
+				ordering.add_less(it->root, t_root.root);
+			}
+		}
+
+		for (auto it = upper; it != roots.end() - 1; ++it) {
 			for (const auto& t_root : it->second) {
 				const auto& r1 = t_root.root;
-				for (auto it2 = it + 1; it2 != delin.roots().end(); ++it2) {
+				for (auto it2 = it + 1; it2 != roots.end(); ++it2) {
 					for (const auto& t_root2 : it2->second) {
 						const auto& r2 = t_root2.root;
 
