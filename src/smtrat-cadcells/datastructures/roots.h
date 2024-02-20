@@ -593,5 +593,8 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& dat
     os << data.data();
     return os;
 }
+inline bool operator==(const IndexedRootOrdering& a, const IndexedRootOrdering& b) {
+    return a.data() == b.data();
+}
 
 }
