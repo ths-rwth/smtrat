@@ -313,6 +313,7 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
         }
     } else { // sector
         handle_local_del(der, reduced_delineation, response);
+        handle_cell_reduction(reduced_delineation, reduced_cell, response);
         util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
     }
     handle_connectedness(der, response, enable_weak);
