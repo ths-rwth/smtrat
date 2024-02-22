@@ -1,0 +1,6 @@
+(set-logic NRA)
+(declare-fun p () Real)
+(declare-fun q () Real)
+(declare-fun r () Real)
+(assert (forall ((x Real)) (>=  (+ r (* x (+ q (* x (+ p (* x x)))))) 0)))
+(apply qe)

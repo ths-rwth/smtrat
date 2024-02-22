@@ -1,0 +1,6 @@
+(set-logic NRA)
+(declare-fun x () Real)
+(declare-fun y () Real)
+(declare-fun z () Real)
+(assert (or (=  (+ (* x (- 2)) (* z (+ x y))) 0) (and (=  (+ (* y (- 1)) (* z z)) 0) (< (* (- 1) (+ (+ (* x (* x (- 2))) (* y y)) (* z z))) 0))))
+(apply qe)

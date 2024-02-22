@@ -1,0 +1,5 @@
+(set-logic NRA)
+(declare-fun x () Real)
+(declare-fun y () Real)
+(assert (exists ((a Real)) (exists ((b Real)) (exists ((c Real)) (and (=  (+ (+ (* b (* a (- 1))) c) x) 0) (=  (+ (+ (+ (- 2) (* c (* a (- 1)))) (* x (- 1))) y) 0) (<= (* (- 1) a) 0) (<=  (+ (- 2) a) 0) (<= (* (- 1) (+ (- 2) b)) 0) (<=  (+ (- 4) b) 0) (<= (* (- 1) (+ 1 c)) 0) (<=  (+ (- 1) c) 0) (<= (* (- 1) (+ 1 x)) 0) (<=  (+ (- 9) x) 0) (<= (* (- 1) (+ 6 y)) 0) (<=  (+ (- 6) y) 0))))))
+(apply qe)
