@@ -17,22 +17,6 @@ namespace smtrat::cadcells::representation {
     };
     static const char * CoveringHeuristicStrings[] = { "BIGGEST_CELL_COVERING", "CHAIN_COVERING", "BIGGEST_CELL_COVERING_FILTER", "BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT", "BIGGEST_CELL_COVERING_MIN_TDEG", "BIGGEST_CELL_COVERING_PDEL", "LDB_COVERING", "LDB_COVERING_CACHE", "LDB_COVERING_CACHE_GLOBAL" };
 
-	enum ResultantCostMethod {
-		TOTAL_DEGREE_UPPER_BOUND
-	};
-
-	static const char* ResultantCostMethodStrings[] = {"TOTAL_DEGREE_UPPER_BOUND"};
-
-	template<ResultantCostMethod>
-	int calculate_cost(datastructures::Projections& proj, const datastructures::PolyRef& p1, const datastructures::PolyRef& p2);
-
-	template<>
-	inline int calculate_cost<ResultantCostMethod::TOTAL_DEGREE_UPPER_BOUND>(datastructures::Projections& proj, const datastructures::PolyRef& p1, const datastructures::PolyRef& p2) {
-		size_t cost = proj.total_degree(p1) * proj.total_degree(p2);
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Cost of " << p1 << " and " << p2 << " is " << cost);
-		return cost;
-	}
-
 	/**
      * Note: If connected(i) holds, then the indexed root ordering must contain an ordering between the interval bounds. 
      */
@@ -54,9 +38,6 @@ namespace smtrat::cadcells::representation {
     inline std::ostream& operator<<(std::ostream& os, CoveringHeuristic heuristic){
         return os << CoveringHeuristicStrings[heuristic];
     }
-	inline std::ostream& operator<<(std::ostream& os, ResultantCostMethod method) {
-		return os << ResultantCostMethodStrings[method];
-	}
 }
 
 #include "util.h"

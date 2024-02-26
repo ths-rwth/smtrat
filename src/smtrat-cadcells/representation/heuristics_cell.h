@@ -1,4 +1,5 @@
 #include "../operators/properties.h"
+#include "edge-cover/ordering.h"
 
 #include <carl-common/util/streamingOperators.h>
 
@@ -363,7 +364,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER_ONLY_INDEPENDENT> {
     }
 };
 
-template<typename T, ResultantCostMethod RCM>
+template<typename T, ResultantCostMethod M>
 inline datastructures::CellRepresentation<T> compute_cell_optimal_edge_cover(datastructures::SampledDerivationRef<T>& der,
 																			 LocalDelMode ldel_mode = LocalDelMode::NONE,
 																			 bool enable_weak = false,
@@ -381,6 +382,7 @@ inline datastructures::CellRepresentation<T> compute_cell_optimal_edge_cover(dat
 	response.ordering = global_ordering;
 
 	if (der->cell().is_section()) { // section case is the same as in the lowest degree barriers heuristic
+		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (section case).");
 		handle_local_del_simplify_non_independent(reduced_delineation);
 		handle_local_del(der, reduced_delineation, response);
 		util::PolyDelineations poly_delins;
@@ -404,16 +406,17 @@ inline datastructures::CellRepresentation<T> compute_cell_optimal_edge_cover(dat
 			response.equational.insert(poly);
 		}
 	} else { // sector
+		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (sector case).");
 		handle_local_del(der, reduced_delineation, response);
 		handle_cell_reduction(reduced_delineation, reduced_cell, response);
-		util::optimal_edge_cover_ordering<RCM>(der->proj(),
-											   reduced_delineation,
-											   reduced_cell,
-											   response.description,
-											   response.ordering,
-											   response.equational,
-											   enable_weak,
-											   use_global_cache);
+		optimal_edge_cover_ordering<M>(der->proj(),
+									   reduced_delineation,
+									   reduced_cell,
+									   response.description,
+									   response.ordering,
+									   response.equational,
+									   enable_weak,
+									   use_global_cache);
 	}
 	handle_connectedness(der, response, enable_weak);
 	handle_ordering_polys(der, response);
@@ -425,7 +428,6 @@ template<>
 struct cell<CellHeuristic::OPTIMAL_EDGE_COVER> {
 	template<typename T>
 	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal edge cover ordering.");
 		return compute_cell_optimal_edge_cover<T, ResultantCostMethod::TOTAL_DEGREE_UPPER_BOUND>(der);
 	}
 };

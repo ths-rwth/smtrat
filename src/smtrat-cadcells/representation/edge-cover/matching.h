@@ -6,8 +6,7 @@
 
 #pragma once
 
-#include <list>
-#include <vector>
+#include <smtrat-common/smtrat-common.h>
 
 #include "graph.h"
 
