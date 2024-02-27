@@ -469,7 +469,9 @@ inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const data
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "poly_loc_del(" << poly << ", " << underlying_ordering << ")");
     if (deriv.proj().is_const(poly)) return;
     for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
-        deriv.insert(properties::poly_ord_inv_base{ factor });
+        
+        deriv.insert(properties::poly_ord_inv_base{ factor }); // TODO handle nullification here?
+
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv_base(" << factor << ") ");
         if (factor.level == deriv.level()) {
             if (deriv.proj().is_nullified(deriv.underlying_sample(), factor)) {
