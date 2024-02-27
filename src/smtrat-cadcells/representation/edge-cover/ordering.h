@@ -15,6 +15,8 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 										bool enable_weak,
 										bool use_global_cache) {
 
+	SMTRAT_TIME_START(start);
+
 	const auto& roots = delin.roots();
 
 	if (roots.empty()) {
@@ -173,6 +175,8 @@ inline void optimal_edge_cover_ordering(datastructures::Projections& proj,
 		}
 	}
 
+	SMTRAT_TIME_FINISH(optimal_edge_cover_stats.ordering_timer, start);
+	SMTRAT_STATISTICS_CALL(optimal_edge_cover_stats.ordering_costs.add(cost));
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal edge cover ordering: " << ordering);
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal edge cover cost: " << cost);
 }

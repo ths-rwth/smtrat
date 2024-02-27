@@ -20,7 +20,7 @@ public:
 		Statistics::addKeyValuePair("ordering_costs", ordering_costs);
 		Statistics::addKeyValuePair("ordering_timer", ordering_timer);
 		Statistics::addKeyValuePair("resultant_costs", resultant_costs);
-		Statistics::addKeyValuePair("ordering_timer", resultant_timer);
+		Statistics::addKeyValuePair("resultant_timer", resultant_timer);
 		Statistics::addKeyValuePair("counter", counter);
 	}
 };
