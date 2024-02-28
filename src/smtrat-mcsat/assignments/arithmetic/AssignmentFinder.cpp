@@ -1,7 +1,7 @@
 #include "AssignmentFinder.h"
 
-#include "AssignmentFinder_arithmetic.h"
-//#include "AssignmentFinder_ctx.h"
+//#include "AssignmentFinder_arithmetic.h"
+#include "AssignmentFinder_ctx.h"
 
 namespace smtrat {
 namespace mcsat {
@@ -12,10 +12,10 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 	#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.called();
 	#endif
-	// auto var_order = data.assignedVariables();
-	// var_order.push_back(var);
-	// AssignmentFinder_ctx af(var_order, var, data.model());
-	AssignmentFinder_detail af(var, data.model());
+	auto var_order = data.assignedVariables();
+	var_order.push_back(var);
+	AssignmentFinder_ctx af(var_order, var, data.model());
+	// AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
 		if (!active(data, c)) {

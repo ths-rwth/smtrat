@@ -47,7 +47,7 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 		} else {
 			if (mGetter.isTheoryAbstraction(*vit)) {
 				const auto& f = mGetter.reabstractVariable(*vit);
-				auto evalres = carl::evaluate(f, model());
+				auto evalres = mBackend.getTrail().lp_evaluate(f);
 				if (!evalres.isBool()) {
 					++vit;
 					continue;
@@ -101,7 +101,7 @@ Minisat::lbool MCSATMixin<Settings>::evaluateLiteral(Minisat::Lit lit) const {
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
 	if (!Settings::early_evaluation && computeTheoryLevel(f) > level()) return l_Undef;
 	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Evaluate " << f << " on " << mBackend.getModel());
-	auto res = carl::evaluate(f, mBackend.getModel());
+	auto res = mBackend.getTrail().lp_evaluate(f);
 	if (res.isBool()) {
 		return res.asBool() ? l_True : l_False;
 	}

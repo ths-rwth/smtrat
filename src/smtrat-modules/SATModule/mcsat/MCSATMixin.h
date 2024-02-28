@@ -550,16 +550,15 @@ public:
 				return 0;
 			}
 			
-			Model m = model();
-			if (!carl::evaluate(f, m).isBool()) {
+			if (!mBackend.getTrail().lp_evaluate(f).isBool()) {
 				SMTRAT_LOG_TRACE("smtrat.sat.mcsat", f << " is undecided.");
 				return std::numeric_limits<std::size_t>::max();
 			}
 			for (std::size_t lvl = level(); lvl > 0; lvl--) {
 				if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
-				m.erase(variable(lvl));
 				if (!vars.has(variable(lvl))) continue;
-				if (!carl::evaluate(f, m).isBool()) {
+				vars.erase(variable(lvl));
+				if (!mBackend.getTrail().lp_evaluate(f, vars).isBool()) {
 					return lvl;
 				}
 			}
@@ -602,7 +601,7 @@ public:
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){
-			auto res = carl::evaluate(c, trail.model());
+			auto res = trail.lp_evaluate(c);
 			SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", c << " evaluates to " << res);
 			if (res.isBool()) {
 				if (!res.asBool()) return false;
