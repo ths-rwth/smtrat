@@ -31,10 +31,11 @@ class Bookkeeping {
 	/** Set of theory variables. */
 	carl::Variables mVariables;
 
+	using LPConstraint = carl::BasicConstraint<carl::LPPolynomial>;
+	using LPVarComp = carl::VariableComparison<carl::LPPolynomial>;
+	using LPAtom = std::variant<LPConstraint,LPVarComp>;
 	/// Libpoly integration
-	mutable std::map<FormulaT,carl::BasicConstraint<carl::LPPolynomial>> m_lp_map;
-	/// Libpoly integration
-    std::optional<carl::LPContext> m_lp_context;
+	mutable std::map<FormulaT,LPAtom> m_lp_map;
 	/// Libpoly integration
 	carl::Assignment<carl::LPPolynomial::RootType> m_lp_ass;
 
@@ -61,7 +62,6 @@ public:
 
 	void updateVariables(const carl::Variables& variables) {
 		mVariables = variables;
-		m_lp_context = carl::LPContext(std::vector<carl::Variable>(variables.begin(), variables.end()));
 	}
 	
 	/** Assert a constraint/literal */
@@ -117,7 +117,7 @@ public:
 
 	/// Lipboly integration
 	// The Assignmentfinder does not use this, as the variable ordering changes. For evaluation, this does not matter.
-	const carl::BasicConstraint<carl::LPPolynomial>& lp_get(const FormulaT& p) const;
+	const LPAtom& lp_get(const FormulaT& p) const;
 	/// Lipboly integration
     carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f, const carl::carlVariables& restr) const;
 	/// Lipboly integration
