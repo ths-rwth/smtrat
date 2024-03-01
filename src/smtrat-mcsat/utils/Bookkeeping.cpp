@@ -46,6 +46,7 @@ carl::ModelValue<Rational,Poly> Bookkeeping::lp_evaluate(const FormulaT& f, cons
         }
     } else {
         assert(false);
+        return carl::createSubstitution<Rational,Poly,carl::ModelFormulaSubstitution<Rational,Poly>>(f);
     }
 }
 
@@ -61,7 +62,8 @@ carl::ModelValue<Rational,Poly> Bookkeeping::lp_evaluate(const FormulaT& f) cons
         }
     } else {
         assert(false);
-        return carl::evaluate(f,mModel);
+        // return carl::evaluate(f,mModel);
+        return carl::createSubstitution<Rational,Poly,carl::ModelFormulaSubstitution<Rational,Poly>>(f);
     }
 }
 
