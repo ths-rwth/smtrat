@@ -53,7 +53,7 @@ carl::ModelValue<Rational,Poly> Bookkeeping::lp_evaluate(const FormulaT& f, cons
 carl::ModelValue<Rational,Poly> Bookkeeping::lp_evaluate(const FormulaT& f) const {
     if (f.type() == carl::FormulaType::CONSTRAINT || f.type() == carl::FormulaType::VARCOMPARE) {
         const auto& atom = lp_get(f);
-        auto res = std::holds_alternative<LPConstraint>(atom) ? carl::evaluate(std::get<LPConstraint>(atom), m_lp_ass) : carl::evaluate(std::get<LPVarComp>(atom), m_lp_ass);
+        auto res = std::holds_alternative<LPConstraint>(atom) ? carl::evaluate(std::get<LPConstraint>(atom), m_lp_ass) : carl::evaluate(std::get<LPVarComp>(atom), m_lp_ass, true);
 
         if (!boost::indeterminate(res)) {
             return carl::ModelValue<Rational,Poly>((bool)res);
