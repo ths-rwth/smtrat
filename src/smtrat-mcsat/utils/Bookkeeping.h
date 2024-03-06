@@ -119,8 +119,6 @@ public:
 	// The Assignmentfinder does not use this, as the variable ordering changes. For evaluation, this does not matter.
 	const LPAtom& lp_get(const FormulaT& p) const;
 	/// Lipboly integration
-    carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f, const carl::carlVariables& restr) const;
-	/// Lipboly integration
 	carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f) const;
 };
 

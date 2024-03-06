@@ -531,7 +531,7 @@ public:
 	
 	std::size_t computeTheoryLevel(const FormulaT& f) const {
 		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Computing theory level for " << f);
-		if constexpr(!Settings::early_evaluation) {
+		if constexpr(true || !Settings::early_evaluation) {
 			auto poly_variables = f.variables();
 			if (poly_variables.empty()) {
 				return 0;
@@ -558,7 +558,7 @@ public:
 				if (variable(lvl) == carl::Variable::NO_VARIABLE) continue;
 				if (!vars.has(variable(lvl))) continue;
 				vars.erase(variable(lvl));
-				if (!mBackend.getTrail().lp_evaluate(f, vars).isBool()) {
+				if (!mBackend.getTrail().lp_evaluate(f).isBool()) { // does not work.
 					return lvl;
 				}
 			}
