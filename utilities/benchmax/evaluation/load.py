@@ -86,12 +86,13 @@ def transform_to_seconds(df):
         df[(solver,'runtime')] /= 1000
 
 def rename_solvers(df, name_map):
-    df.columns.set_levels(map(lambda x: name_map[x] if x in name_map else x, df.columns.levels[0]) , level=0, inplace=True)
+    df.columns = df.columns.set_levels(map(lambda x: name_map[x] if x in name_map else x, df.columns.levels[0]) , level=0)
+    return df
 
 def csv_to_pandas(filename, only=None, rename = {}):
     df = pd.read_csv(filename, header=[0,1], index_col=0)
     if only:
         df = df[[c for c in df.columns if c[0] in only]]
-    rename_solvers(df, rename)
+    df = rename_solvers(df, rename)
     transform_to_seconds(df)
     return df

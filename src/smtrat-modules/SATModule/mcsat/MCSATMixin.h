@@ -598,6 +598,7 @@ public:
 	}
 	
 	bool fullConsistencyCheck() const {
+		#ifdef SMTRAT_DEVOPTION_Expensive
 		const auto& trail = mBackend.getTrail();
 		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Checking trail against " << trail.model());
 		auto evaluator = [&trail](const auto& c){
@@ -622,6 +623,7 @@ public:
 			if (!Settings::early_evaluation && computeTheoryLevel(FormulaT(b)) > level()) continue;
 			if (!evaluator(b)) return false;
 		}
+		#endif
 		return true;
 	}
 
