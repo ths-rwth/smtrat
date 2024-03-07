@@ -91,13 +91,19 @@ public:
 		}
 	}
 	
-	bool addConstraint(const FormulaT& f1) {
+	bool addConstraint(const FormulaT& f1, std::map<FormulaT,carl::BasicConstraint<Polynomial>>& cache) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << f1);
 		if (!fits_context(f1)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f1 << " contains too many variables for context " << m_context);
 			return true;
 		}
-		auto f = carl::convert<Polynomial>(m_context, f1.constraint().constr());
+		if (cache.find(f1) == cache.end()) cache.emplace(f1, carl::convert<Polynomial>(m_context, f1.constraint().constr()));
+		auto& f = cache.at(f1);
+		if (f.lhs().context() != m_context) {
+			Polynomial p = f.lhs();
+			p.set_context(m_context);
+			f.set_lhs(std::move(p));
+		}
 		if (f.is_trivial_true() || f.is_trivial_false()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is constant " << f.is_trivial_true());
 			return f.is_trivial_true();
@@ -141,13 +147,17 @@ public:
 		}
 	}
 	
-	bool addMVBound(const FormulaT& f1) {
+	bool addMVBound(const FormulaT& f1, std::map<FormulaT,carl::VariableComparison<Polynomial>>& cache) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << f1);
 		if (!fits_context(f1)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f1 << " contains too many variables for context " << m_context);
 			return true;
 		}
-		auto f = carl::convert<Polynomial>(m_context, f1.variable_comparison());
+		if (cache.find(f1) == cache.end()) cache.emplace(f1, carl::convert<Polynomial>(m_context, f1.variable_comparison()));
+		auto& f = cache.at(f1);
+		if (std::get<carl::MultivariateRoot<Polynomial>>(f.value()).poly().context() != m_context) {
+			std::get<carl::MultivariateRoot<Polynomial>>(f.value()).poly().set_context(m_context);
+		}
 		assert(std::get<carl::MultivariateRoot<Polynomial>>(f.value()).var() == f.var());
 		if (f.var() == m_var) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is univariate under " << m_assignment);
