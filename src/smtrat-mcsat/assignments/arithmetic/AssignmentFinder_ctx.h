@@ -221,9 +221,9 @@ public:
 			}
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", constraint << " vs " << m_ri.sampleFrom(last));
 			if (!satisfies(constraint, m_ri.sampleFrom(last))) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(last) << " which is " << m_ri.sampleFrom(roots.size()*2));
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(last) << " which is " << m_ri.sampleFrom(m_ri.size()*2));
 				// Refutes interval right of largest root
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(roots.size()*2) << " -> " << last << ".." << (m_ri.size()*2));
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(m_ri.size()*2) << " -> " << last << ".." << (m_ri.size()*2));
 				b.set_interval(last, m_ri.size()*2);
 			}
 			if (b.any()) {
