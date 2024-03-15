@@ -36,9 +36,9 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Updating current level " << current().variable);
 	
 	// Check undecided variables whether they became univariate
-	SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
+	SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Undecided Variables: " << mUndecidedVariables);
 	for (auto vit = mUndecidedVariables.begin(); vit != mUndecidedVariables.end();) {
-		SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Looking at " << *vit);
+		SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Looking at " << *vit);
 		if constexpr(!Settings::early_evaluation) {
 			if (computeTheoryLevel(*vit) != level()) {
 				++vit;
@@ -52,7 +52,7 @@ void MCSATMixin<Settings>::updateCurrentLevel() {
 					++vit;
 					continue;
 				} else if (mBackend.isActive(f) && mGetter.getBoolVarValue(*vit) != l_Undef && mGetter.getBoolVarValue(*vit) != Minisat::lbool(evalres.asBool())) {
-					SMTRAT_LOG_DEBUG("smtrat.sat.mcsat", "Found inconsistent variable " << *vit);
+					SMTRAT_LOG_TRACE("smtrat.sat.mcsat", "Found inconsistent variable " << *vit);
 					mInconsistentVariables.push_back(*vit);
 				}
 			}
