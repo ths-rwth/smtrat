@@ -3,7 +3,7 @@
 #include <map>
 #include <sstream>
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <tuple>
 
 #include "../types.h"

@@ -8,7 +8,7 @@
 
 #include <map>
 #include <iomanip>
-#include "assert.h"
+#include <cassert>
 #include <smtrat-solver/Manager.h>
 #include "ICPModule.h"
 
