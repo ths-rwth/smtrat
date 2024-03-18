@@ -21,6 +21,7 @@ namespace arithmetic {
 
 using carl::operator<<;
 
+template<bool early_evaluation>
 class AssignmentFinder_ctx {
 #ifdef USE_LIBPOLY
 using Polynomial = carl::LPPolynomial;
@@ -139,6 +140,7 @@ public:
 			}
 		} else if (m_assignment.find(f.lhs().main_var()) != m_assignment.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " evaluates under " << m_assignment);
+			if (!early_evaluation) return true;
 			auto res = carl::evaluate(f, m_assignment);
 			assert(!indeterminate(res));
 			if (res) {
@@ -184,6 +186,7 @@ public:
 			}
 		} else if (m_assignment.find(f.var()) != m_assignment.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " evaluates under " << m_assignment);
+			if (!early_evaluation) return true;
 			auto res = carl::evaluate(f, m_assignment);
 			if (indeterminate(res)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " is not well-defined.");
