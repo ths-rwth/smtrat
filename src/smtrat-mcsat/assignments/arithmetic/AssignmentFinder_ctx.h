@@ -109,6 +109,14 @@ public:
 			return f.is_trivial_true();
 		} else if (f.lhs().main_var() == m_var) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering univariate constraint " << f << " under " << m_assignment);
+			auto eval_res = carl::evaluate(f, m_assignment);
+			if (!boost::indeterminate(eval_res) && !eval_res) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+				return false;
+			} else if (!boost::indeterminate(eval_res) && eval_res) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " simplified to true.");
+				return true;
+			}
 			std::vector<typename Polynomial::RootType> list;
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << f.lhs() << " in " << m_var << " w.r.t. " << m_assignment);
 			auto roots = carl::real_roots(f.lhs(), m_assignment);

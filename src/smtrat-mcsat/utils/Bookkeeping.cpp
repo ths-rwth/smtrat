@@ -44,4 +44,26 @@ carl::ModelValue<Rational,Poly> Bookkeeping::lp_evaluate(const FormulaT& f) cons
     }
 }
 
+carl::ModelValue<Rational,Poly> Bookkeeping::lp_evaluate(const FormulaT& f, carl::carlVariables& vars) const {
+    carl::Assignment<carl::LPPolynomial::RootType> ass;
+    for (const auto& v : vars) {
+        if (m_lp_ass.find(v) != m_lp_ass.end()) ass.emplace(v, m_lp_ass.at(v));
+    }
+
+    if (f.type() == carl::FormulaType::CONSTRAINT || f.type() == carl::FormulaType::VARCOMPARE) {
+        const auto& atom = lp_get(f);
+        auto res = std::holds_alternative<LPConstraint>(atom) ? carl::evaluate(std::get<LPConstraint>(atom), ass) : carl::evaluate(std::get<LPVarComp>(atom), ass, true);
+
+        if (!boost::indeterminate(res)) {
+            return carl::ModelValue<Rational,Poly>((bool)res);
+		} else {
+            return carl::createSubstitution<Rational,Poly,carl::ModelFormulaSubstitution<Rational,Poly>>(f);
+        }
+    } else {
+        assert(false);
+        // return carl::evaluate(f,mModel);
+        return carl::createSubstitution<Rational,Poly,carl::ModelFormulaSubstitution<Rational,Poly>>(f);
+    }
+}
+
 }

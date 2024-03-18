@@ -120,6 +120,7 @@ public:
 	const LPAtom& lp_get(const FormulaT& p) const;
 	/// Lipboly integration
 	carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f) const;
+	carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f, carl::carlVariables& vars) const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {
