@@ -12,7 +12,7 @@ namespace internal {
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 
-	constexpr static auto cell_heuristic = cadcells::representation::OPTIMAL_EDGE_COVER;
+	constexpr static auto cell_heuristic = cadcells::representation::OPTIMAL_SUM_OVER_TOTAL_DEGREE;
 	constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
 	// constexpr static auto op = cadcells::operators::op::mccallum;
 	using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
@@ -26,9 +26,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewEC : public Manager {
+class MCSAT_OCNewOptimalSOTD : public Manager {
 public:
-	MCSAT_OCNewEC()
+	MCSAT_OCNewOptimalSOTD()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());

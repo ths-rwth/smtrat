@@ -1,7 +1,6 @@
 /**
- *
+ * This file is a modified version taken from the repository
  * https://github.com/dilsonpereira/Minimum-Cost-Perfect-Matching
- *
  */
 
 #pragma once
@@ -205,7 +204,7 @@ inline bool Matching::IsAdjacent(int u, int v) {
 
 inline bool Matching::IsEdgeBlocked(int u, int v) {
 	auto edge = boost::edge(u, v, G).first;
-	return GREATER(slack[boost::get(boost::edge_index, G, edge)], 0);
+	return GREATER(slack[G[edge].index], 0);
 }
 
 inline bool Matching::IsEdgeBlocked(int e) {
@@ -299,7 +298,7 @@ inline void Matching::Expand(int u, bool expandBlocked = false) {
 				continue;
 			}
 
-			int edge_index = boost::get(boost::edge_index, G, edge);
+			int edge_index = G[edge].index;
 			if (IsAdjacent(di, dj) && edge_index < index) {
 				index = edge_index;
 				p = di;
@@ -602,9 +601,9 @@ inline std::pair<std::vector<Graph::edge_descriptor>, double> Matching::SolveMin
 		int v = boost::target(edge, G);
 
 		// get index
-		int idx = boost::get(boost::edge_index, G, edge);
+		int idx = G[edge].index;
 
-		slack[idx] = boost::get(boost::edge_weight, G, edge);
+		slack[idx] = G[edge].weight;
 	}
 
 	PositiveCosts();
@@ -625,7 +624,7 @@ inline std::pair<std::vector<Graph::edge_descriptor>, double> Matching::SolveMin
 
 	double obj = 0;
 	for (auto it = matching.begin(); it != matching.end(); it++) {
-		obj += boost::get(boost::edge_weight, G, *it);
+		obj += G[*it].weight;
 	}
 
 	return std::pair<std::vector<Graph::edge_descriptor>, double>(matching, obj);
