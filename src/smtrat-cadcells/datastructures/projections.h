@@ -252,9 +252,11 @@ public:
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
             assert(!indeterminate(mv));
             cache(restricted_sample).is_zero[p] = (bool) mv;
+            SMTRAT_STATISTICS_CALL(statistics().projection_end());
         }
         return cache(restricted_sample).is_zero[p];
     }
