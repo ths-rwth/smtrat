@@ -54,7 +54,12 @@ private:
     boost::container::flat_map<ProjectionType, carl::statistics::Series> m_proj_x_level;
 
     carl::statistics::Series m_proj_realroots_num_roots;
-    std::size_t m_proj_realroots_nullified_count;
+    std::size_t m_proj_realroots_nullified_count = 0;
+
+    std::size_t m_proj_realroots_count = 0;
+    std::size_t m_proj_realroots_algebraic_count = 0;
+    std::size_t m_proj_evaluate_count = 0;
+    std::size_t m_proj_evaluate_algebraic_count = 0;
 
     carl::statistics::MultiCounter<std::size_t> m_filter_poly_count_by_depth;
     carl::statistics::MultiCounter<std::pair<std::size_t, std::size_t>> m_filter_poly_count_by_depth_and_num_factors;
@@ -108,6 +113,11 @@ public:
 
         Statistics::addKeyValuePair("projections.real_roots.num_roots", m_proj_realroots_num_roots);
         Statistics::addKeyValuePair("projections.real_roots.nullified.count", m_proj_realroots_nullified_count);
+        Statistics::addKeyValuePair("projections.real_roots.count", m_proj_realroots_count);
+        Statistics::addKeyValuePair("projections.real_roots.algebraic.count", m_proj_realroots_algebraic_count);
+
+        Statistics::addKeyValuePair("projections.evaluate.count", m_proj_evaluate_count);
+        Statistics::addKeyValuePair("projections.evaluate.algebraic.count", m_proj_evaluate_algebraic_count);
 
         Statistics::addKeyValuePair("projections.timer", m_proj_timer);
 
@@ -153,6 +163,18 @@ public:
             m_proj_realroots_nullified_count++;
         }
         m_proj_realroots_num_roots.add(result.is_nullified() ? 0 : result.roots().size());
+    }
+
+    void evaluate_call(const cadcells::Assignment& ass) {
+        bool algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
+        m_proj_evaluate_count++;
+        if (algebraic) m_proj_evaluate_algebraic_count++;
+    }
+
+    void real_roots_call(const cadcells::Assignment& ass) {
+        bool algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
+        m_proj_realroots_count++;
+        if (algebraic) m_proj_realroots_algebraic_count++;
     }
 
 

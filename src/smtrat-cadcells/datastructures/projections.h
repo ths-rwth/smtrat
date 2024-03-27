@@ -252,6 +252,7 @@ public:
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().evaluate_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
             assert(!indeterminate(mv));
@@ -267,6 +268,7 @@ public:
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().real_roots_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
@@ -282,6 +284,7 @@ public:
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().real_roots_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
@@ -316,6 +319,7 @@ public:
         auto poly = m_pool(p);
 		if (carl::is_linear(poly)) return false;
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
+            SMTRAT_STATISTICS_CALL(statistics().real_roots_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
