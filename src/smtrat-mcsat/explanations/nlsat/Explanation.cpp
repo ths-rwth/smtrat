@@ -9,9 +9,8 @@ namespace mcsat {
 namespace nlsat {
 
 std::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeeping& data, carl::Variable var, const FormulasT& reason, bool) const {
-#ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationCalled();
-#endif
+	SMTRAT_STATISTICS_CALL(mStatistics.explanationCalled());
+	SMTRAT_STATISTICS_CALL(mStatistics.timer_start());
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Explain conflict " << reason);
 
 	// compute compatible complete variable ordering
@@ -32,9 +31,8 @@ std::optional<mcsat::Explanation> Explanation::operator()(const mcsat::Bookkeepi
 
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.nlsat", "Bookkeep: " << data);
 	ExplanationGenerator eg(reason, orderedVars, var, data.model());
-#ifdef SMTRAT_DEVOPTION_Statistics
-	mStatistics.explanationSuccess();
-#endif
+	SMTRAT_STATISTICS_CALL(mStatistics.timer_finish());
+	SMTRAT_STATISTICS_CALL(mStatistics.explanationSuccess());
 	return eg.getExplanation(FormulaT(carl::FormulaType::FALSE));
 }
 

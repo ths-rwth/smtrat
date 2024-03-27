@@ -34,6 +34,7 @@ public:
 
 private:
     carl::statistics::MultiCounter<std::pair<std::size_t, std::size_t>> m_depth_section_common_zeros_count;
+    std::size_t m_section_count = 0;
 
     carl::statistics::MultiCounter<std::size_t> m_interval_point_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_open_count_by_depth;
@@ -82,6 +83,7 @@ public:
 
     void collect() {
         Statistics::addKeyValuePair("heuristics.section.common_zeros_count.by_depth", m_depth_section_common_zeros_count);
+        Statistics::addKeyValuePair("heuristics.section.count", m_section_count);
 
         Statistics::addKeyValuePair("heuristics.interval.point_count.by_depth", m_interval_point_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.open_count.by_depth", m_interval_open_count_by_depth);
@@ -190,7 +192,7 @@ public:
         m_timer_filter_roots_callback.start_this();
     }
     void filter_roots_filter_end() {
-        m_timer_filter_roots.finish();
+        m_timer_filter_roots_callback.finish();
     }
 
     void filter_roots_got_normal(const cadcells::RAN&) {
@@ -213,6 +215,7 @@ public:
 
     void section_common_zeros(std::size_t depth, std::size_t num_common_eq_constr) {
         m_depth_section_common_zeros_count.inc(std::make_pair(depth,num_common_eq_constr), 1);
+        m_section_count++;
     }
 
     void got_bound(const datastructures::SymbolicInterval& interval) {
