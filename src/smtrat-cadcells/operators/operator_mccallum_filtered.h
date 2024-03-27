@@ -83,7 +83,7 @@ static inline void delineate_properties(datastructures::SampledDerivation<Proper
                 rules::delineate_compound_piecewiselinear(deriv, prop, Settings::enable_weak);
                 break;
             case MccallumFilteredSettings::BC:
-                rules::delineate_all_biggest_cell(deriv, prop, Settings::enable_weak);
+                rules::delineate_all_biggest_cell<Settings>(deriv, prop, Settings::enable_weak);
                 break;
             case MccallumFilteredSettings::NOOP:
             default:
