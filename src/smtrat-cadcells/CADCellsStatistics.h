@@ -7,6 +7,7 @@
 #include "./common.h"
 #include <carl-arith/ran/common/RealRoots.h>
 #include "datastructures/roots.h"
+#include "datastructures/delineation.h"
 
 
 namespace smtrat {
@@ -44,6 +45,7 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_interval_halfunbounded_count_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_representation_equational_count_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_rules_intersection_count_by_depth;
 
@@ -81,6 +83,13 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_filter_root_optional_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_filter_root_inclusive_by_depth;
 
+    std::size_t m_filter_roots_got_optional_outside_delin_inter = 0;
+    std::size_t m_filter_roots_got_normal_outside_delin_inter = 0;
+    std::size_t m_filter_roots_check_inside_delin_inter = 0;
+    std::size_t m_filter_roots_check_outside_delin_inter = 0;
+    std::size_t m_filter_roots_check_pair_with_interval = 0;
+    std::size_t m_filter_roots_check_pair_without_interval = 0;
+
 public:
     bool enabled() const {
         return true;
@@ -98,6 +107,7 @@ public:
         Statistics::addKeyValuePair("heuristics.interval.halfunbounded_count.by_depth", m_interval_halfunbounded_count_by_depth);
 
         Statistics::addKeyValuePair("heuristics.representation.equational_count.by_depth", m_representation_equational_count_by_depth);
+        Statistics::addKeyValuePair("heuristics.representation.roots_inside.by_depth", m_representation_roots_inside_by_depth);
 
         Statistics::addKeyValuePair("heuristics.rules.intersection_count.by_depth", m_rules_intersection_count_by_depth);
 
@@ -134,6 +144,13 @@ public:
         Statistics::addKeyValuePair("filter.root.sample_algebraic.by_depth", m_filter_root_sample_algebraic_by_depth);
         Statistics::addKeyValuePair("filter.root.optional.by_depth", m_filter_root_optional_by_depth);
         Statistics::addKeyValuePair("filter.root.inclusive.by_depth", m_filter_root_inclusive_by_depth);
+
+        Statistics::addKeyValuePair("filter.root.optional_outside_delin_inter", m_filter_roots_got_optional_outside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.normal_outside_delin_inter", m_filter_roots_got_normal_outside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.check_inside_delin_inter", m_filter_roots_check_inside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.check_outside_delin_inter", m_filter_roots_check_outside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.check_pair_with_interval", m_filter_roots_check_pair_with_interval);
+        Statistics::addKeyValuePair("filter.root.check_pair_without_interval", m_filter_roots_check_pair_without_interval);
     }
 
 
@@ -231,8 +248,27 @@ public:
         m_filter_root_optional_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
         m_filter_root_inclusive_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
     }
-    
 
+    void filter_roots_got_optional_outside_delin_inter() {
+        m_filter_roots_got_optional_outside_delin_inter++;
+    }
+    void filter_roots_got_normal_outside_delin_inter() {
+        m_filter_roots_got_normal_outside_delin_inter++;
+    }
+    void filter_roots_check_inside_delin_inter() {
+        m_filter_roots_check_inside_delin_inter++;
+    }
+    void filter_roots_check_outside_delin_inter() {
+        m_filter_roots_check_outside_delin_inter++;
+    }
+
+    void filter_roots_check_pair_with_interval() {
+        m_filter_roots_check_pair_with_interval++;
+    }
+    void filter_roots_check_pair_without_interval() {
+        m_filter_roots_check_pair_without_interval++;
+    }
+ 
     // heuristics
 
     void section_common_zeros(std::size_t depth, std::size_t num_common_eq_constr) {
@@ -262,6 +298,17 @@ public:
         m_representation_equational_count_by_depth.inc(m_current_max_level-m_filter_current_level, num);
     }
 
+    void got_representation_roots_inside(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
+        if (interval.is_section()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, 0);
+        } else if (interval.lower_unbounded()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(delin.roots().begin(), interval.upper()));
+        } else if (interval.upper_unbounded()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), delin.roots().end())-1);
+        } else {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), interval.upper())-1);
+        }
+    }
 
     /// rules
 

@@ -205,6 +205,7 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
         handle_local_del_simplify_all(reduced_delineation);
     }
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(reduced_delineation, reduced_cell));
     response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
     response.ordering.biggest_cell_wrt = response.description;
     if (der->cell().is_section()) {
