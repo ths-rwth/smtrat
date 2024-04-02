@@ -465,6 +465,14 @@ public:
         return m_leq;
     }
 
+    const auto& less() const {
+        return m_less;
+    }
+
+    const auto& greater() const {
+        return m_greater;
+    }
+
     bool holds_transitive(RootFunction first, RootFunction second, bool strict) const {
         boost::container::flat_set<RootFunction> reached({first});
         std::vector<RootFunction> active({first});

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <string>
 #include <vector>
 
@@ -21,10 +22,10 @@ template<ResultantCostMethod M>
 inline auto get_candidate_resultants(auto& proj, const auto& delin,
 									 const auto& delin_interval, auto& ordering) {
 	// create maps that maps each resultant to the roots it protects
-	boost::container::flat_map<PolyPair, util::RootPair> cov_below, cov_above, layer_below, layer_above;
+	std::map<PolyPair, util::RootPair> cov_below, cov_above, layer_below, layer_above;
 
 	// assign costs to resultants
-	boost::container::flat_map<PolyPair, int> costs;
+	std::map<PolyPair, int> costs;
 
 	// count how many vertices we will need in the graph later and assign indices to the roots
 	std::map<datastructures::IndexedRoot, size_t> root_to_index;
@@ -40,16 +41,16 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 						const auto& r2 = it2_layer->root;
 
 						const auto resultant = std::minmax(r1.poly, r2.poly);
-						layer[resultant] = std::make_pair(r1, r2);
+						layer.emplace(resultant, std::make_pair(r1, r2));
 
 						// make sure we only assign one index to each root
 						if (!root_to_index.contains(r2)) {
-							root_to_index[r2] = n++;
+							root_to_index.emplace(r2, n++);
 						}
 
 						// check if we already calculated the cost
 						if (!costs.contains(resultant)) {
-							costs[resultant] = calculate_cost<M>(proj, r1.poly, r2.poly);
+							costs.emplace(resultant, calculate_cost<M>(proj, r1.poly, r2.poly));
 						}
 					}
 				} else {
@@ -64,16 +65,16 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 						const auto& r2 = t_root2.root;
 
 						const auto resultant = std::minmax(r1.poly, r2.poly);
-						cov[resultant] = std::make_pair(r1, r2);
+						cov.emplace(resultant, std::make_pair(r1, r2));
 
 						// make sure we only assign one index to each root
 						if (!root_to_index.contains(r2)) {
-							root_to_index[r2] = n++;
+							root_to_index.emplace(r2, n++);
 						}
 
 						// check if we already calculated the cost
 						if (!costs.contains(resultant)) {
-							costs[resultant] = calculate_cost<M>(proj, r1.poly, r2.poly);
+							costs.emplace(resultant, calculate_cost<M>(proj, r1.poly, r2.poly));
 						}
 					}
 				}
@@ -82,28 +83,19 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 		}
 	};
 
+	const auto& roots = delin.roots();
+	const bool is_section = delin_interval.is_section();
+
 	if (!delin_interval.lower_unbounded()) {
-		test(cov_below, layer_below,
-			 boost::make_reverse_iterator(delin_interval.lower()) - 1,
-			 boost::make_reverse_iterator(delin.roots().begin()));
+		const auto begin = boost::make_reverse_iterator(delin_interval.lower()) - 1;
+		const auto end = boost::make_reverse_iterator(roots.begin());
+		test(cov_below, layer_below, begin, end);
 	}
 
 	if (!delin_interval.upper_unbounded()) {
-		test(cov_above, layer_above, delin_interval.upper(), delin.roots().end());
-	}
-
-	// print layer_below
-	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Layer below:");
-	for (const auto& [res, roots] : layer_below) {
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
-						 roots.first << ", " << roots.second);
-	}
-
-	// print layer_above
-	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Layer above:");
-	for (const auto& [res, roots] : layer_above) {
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
-						 roots.first << ", " << roots.second);
+		const auto begin = delin_interval.upper();
+		const auto end = roots.end();
+		test(cov_above, layer_above, begin, end);
 	}
 
 	return std::make_tuple(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
@@ -111,21 +103,6 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 
 inline auto construct_graph(const auto& cov_below, const auto& cov_above,
 							const auto& costs, const auto& root_to_index) {
-
-	// print cov_below
-	// SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Covering below:");
-	for (const auto& [res, roots] : cov_below) {
-		// SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
-		//  roots.first << ", " << roots.second);
-	}
-
-	// print cov_above
-	// SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Covering above:");
-	for (const auto& [res, roots] : cov_above) {
-		// SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
-		//  roots.first << ", " << roots.second);
-	}
-
 	const auto n = root_to_index.size() + 2;
 	util::Graph graph(n);
 
@@ -182,8 +159,6 @@ inline auto construct_graph(const auto& cov_below, const auto& cov_above,
 		edge_properties.root_pair_above = graph[min_edge].root_pair_above;
 
 		boost::add_edge(u, u + n, edge_properties, modified_graph);
-
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Adding edge from " << u << " to " << u + n << " with weight " << edge_properties.weight);
 	}
 
 	for (const auto& edge : boost::make_iterator_range(boost::edges(graph))) {
@@ -201,13 +176,12 @@ inline std::string tagged_root_to_string(const datastructures::TaggedIndexedRoot
 	return ss.str();
 }
 
-inline std::pair<std::vector<util::Graph::edge_descriptor>, int> brute_force(const boost::container::flat_map<PolyPair, util::RootPair> cov_below,
-																			 const boost::container::flat_map<PolyPair, util::RootPair> cov_above,
-																			 boost::container::flat_map<PolyPair, util::RootPair> layer_below,
-																			 boost::container::flat_map<PolyPair, util::RootPair> layer_above,
-																			 const boost::container::flat_map<PolyPair, int>& costs,
-																			 const std::map<datastructures::IndexedRoot, size_t>& root_to_index,
-																			 util::Graph& graph) {
+inline std::tuple<util::Graph, std::vector<util::Graph::edge_descriptor>, int> brute_force(const std::map<PolyPair, util::RootPair> cov_below,
+																						   const std::map<PolyPair, util::RootPair> cov_above,
+																						   std::map<PolyPair, util::RootPair> layer_below,
+																						   std::map<PolyPair, util::RootPair> layer_above,
+																						   const std::map<PolyPair, int>& costs,
+																						   const std::map<datastructures::IndexedRoot, size_t>& root_to_index) {
 	if (!layer_below.empty()) {
 		// get first root in layer below
 		const auto [res, roots] = *layer_below.begin();
@@ -221,13 +195,13 @@ inline std::pair<std::vector<util::Graph::edge_descriptor>, int> brute_force(con
 		// remove first element from layer below
 		layer_below.erase(layer_below.begin());
 
-		const auto [matching_edges1, cost1] = brute_force(cov_below1, cov_above, layer_below, layer_above, costs, root_to_index, graph);
-		const auto [matching_edges2, cost2] = brute_force(cov_below2, cov_above, layer_below, layer_above, costs, root_to_index, graph);
+		const auto [graph1, matching_edges1, cost1] = brute_force(cov_below1, cov_above, layer_below, layer_above, costs, root_to_index);
+		const auto [graph2, matching_edges2, cost2] = brute_force(cov_below2, cov_above, layer_below, layer_above, costs, root_to_index);
 
 		if (cost1 < cost2) {
-			return std::make_pair(matching_edges1, cost1);
+			return std::make_tuple(graph1, matching_edges1, cost1);
 		} else {
-			return std::make_pair(matching_edges2, cost2);
+			return std::make_tuple(graph2, matching_edges2, cost2);
 		}
 	}
 
@@ -244,27 +218,34 @@ inline std::pair<std::vector<util::Graph::edge_descriptor>, int> brute_force(con
 		// remove first element from layer above
 		layer_above.erase(layer_above.begin());
 
-		const auto [matching_edges1, cost1] = brute_force(cov_below, cov_above1, layer_below, layer_above, costs, root_to_index, graph);
-		const auto [matching_edges2, cost2] = brute_force(cov_below, cov_above2, layer_below, layer_above, costs, root_to_index, graph);
+		const auto [graph1, matching_edges1, cost1] = brute_force(cov_below, cov_above1, layer_below, layer_above, costs, root_to_index);
+		const auto [graph2, matching_edges2, cost2] = brute_force(cov_below, cov_above2, layer_below, layer_above, costs, root_to_index);
 
 		if (cost1 < cost2) {
-			return std::make_pair(matching_edges1, cost1);
+			return std::make_tuple(graph1, matching_edges1, cost1);
 		} else {
-			return std::make_pair(matching_edges2, cost2);
+			return std::make_tuple(graph2, matching_edges2, cost2);
 		}
 	}
 
 	// solve minimum weight perfect matching problem
-	graph = construct_graph(cov_below, cov_above, costs, root_to_index);
+	const auto graph = construct_graph(cov_below, cov_above, costs, root_to_index);
 	util::Matching matching(graph);
 	const auto [matching_edges, cost] = matching.SolveMinimumCostPerfectMatching();
-	return std::make_pair(matching_edges, cost);
+	return std::make_tuple(graph, matching_edges, cost);
 };
 
 template<ResultantCostMethod M>
-inline void compute_optimal_ordering(auto& proj, const auto& delin,
-									 const auto& delin_interval, auto& ordering) {
+inline void compute_optimal_ordering(auto& proj,
+									 const auto& delin,
+									 const auto& delin_interval,
+									 const auto& interval,
+									 auto& ordering,
+									 auto& equational) {
 	SMTRAT_TIME_START(start);
+
+	const auto& roots = delin.roots();
+	const bool is_section = delin_interval.is_section();
 
 	if (delin.roots().empty()) {
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "No roots in delin");
@@ -272,46 +253,45 @@ inline void compute_optimal_ordering(auto& proj, const auto& delin,
 	}
 
 	if (!delin_interval.upper_unbounded()) {
-		for (auto it = delin.roots().end() - 1; it >= delin_interval.upper(); --it) {
-			SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
-							 boost::algorithm::join(it->second | boost::adaptors::transformed(tagged_root_to_string), ", "));
+		const auto end = is_section ? delin_interval.upper() + 1 : delin_interval.upper();
+		for (auto it = delin.roots().end() - 1; it >= end; --it) {
+			if (!it->second.empty()) {
+				SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
+								 boost::algorithm::join(it->second | boost::adaptors::transformed(tagged_root_to_string), ", "));
+			}
 		}
 	}
-	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "--- Sample point ---");
+	if (is_section) {
+		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
+						 "---" << boost::algorithm::join(delin_interval.lower()->second | boost::adaptors::transformed(tagged_root_to_string), ", ") << "---");
+	} else {
+		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "--- Sample point ---");
+	}
 	if (!delin_interval.lower_unbounded()) {
-		for (auto it = delin_interval.lower(); it >= delin.roots().begin(); --it) {
-			SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
-							 boost::algorithm::join(it->second | boost::adaptors::transformed(tagged_root_to_string), ", "));
+		const auto begin = is_section ? delin_interval.lower() - 1 : delin_interval.lower();
+		for (auto it = begin; it >= delin.roots().begin(); --it) {
+			if (!it->second.empty()) {
+				SMTRAT_LOG_DEBUG("smtrat.cadcells.representation",
+								 boost::algorithm::join(it->second | boost::adaptors::transformed(tagged_root_to_string), ", "));
+			}
 		}
 	}
 
 	const auto [cov_below, cov_above, layer_below, layer_above, costs, root_to_index] = get_candidate_resultants<M>(proj, delin, delin_interval, ordering);
-	util::Graph graph;
-	const auto [matching_edges, cost] = brute_force(cov_below, cov_above, layer_below, layer_above, costs, root_to_index, graph);
-
-	// print graph
-	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Graph:");
-	for (const auto& edge : boost::make_iterator_range(boost::edges(graph))) {
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", edge << " with weight " << graph[edge].weight);
-	}
-
-	// print roots_to_index
-	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Roots to index:");
-	for (const auto& [root, index] : root_to_index) {
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", root << " -> " << index);
-	}
+	const auto [graph, matching_edges, cost] = brute_force(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
 
 	// iterate over edges in matching and add the corresponding roots to the ordering
 	for (const auto& edge : matching_edges) {
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", edge << " with weight " << graph[edge].weight);
-		if (graph[edge].root_pair_below) {
-			const auto [r1, r2] = graph[edge].root_pair_below.value();
-			SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "1Adding less " << r2 << " < " << r1);
+		const auto u = boost::source(edge, graph);
+		const auto v = boost::target(edge, graph);
+		const auto edge_desc = boost::edge(u, v, graph).first;
+
+		if (graph[edge_desc].root_pair_below) {
+			const auto [r1, r2] = graph[edge_desc].root_pair_below.value();
 			ordering.add_less(r2, r1);
 		}
-		if (graph[edge].root_pair_above) {
-			const auto [r1, r2] = graph[edge].root_pair_above.value();
-			SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "2Adding less " << r1 << " < " << r2);
+		if (graph[edge_desc].root_pair_above) {
+			const auto [r1, r2] = graph[edge_desc].root_pair_above.value();
 			ordering.add_less(r1, r2);
 		}
 	}
@@ -319,6 +299,51 @@ inline void compute_optimal_ordering(auto& proj, const auto& delin,
 	SMTRAT_TIME_FINISH(ordering_stats.ordering_timer, start);
 	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_costs.add(cost / 2));
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal ordering: " << ordering << " with cost " << cost / 2);
+}
+
+template<ResultantCostMethod M>
+inline void compute_optimal_equational_constraints(auto& proj, const auto& ordering, auto& equational, const auto& section_defining) {
+	const auto& ordering_less = ordering.less();
+	if (ordering_less.contains(section_defining)) {
+		const auto& section_defining_less = ordering_less.at(section_defining);
+		for (const auto& root : section_defining_less) {
+			if (!ordering_less.contains(root)) {
+				for (const auto& poly : root.polys()) {
+					equational.insert(poly);
+				}
+			}
+		}
+	}
+	const auto& ordering_greater = ordering.greater();
+	if (ordering_greater.contains(section_defining)) {
+		const auto& section_defining_greater = ordering_greater.at(section_defining);
+		for (const auto& root : section_defining_greater) {
+			if (!ordering_greater.contains(root)) {
+				for (const auto& poly : root.polys()) {
+					equational.insert(poly);
+				}
+			}
+		}
+	}
+
+	/*
+	#if defined(LOGGING) || defined(SMTRAT_DEVOPTION_Statistics)
+		boost::container::flat_set<datastructures::PolyRef> not_equational;
+		const auto polys = ordering.polys();
+		std::set_difference(polys.begin(), polys.end(),
+							equational.begin(), equational.end(),
+							std::inserter(not_equational, not_equational.begin()));
+
+		int cost = 0;
+		for (const auto poly_ref : not_equational) {
+			const auto main_var = proj.polys()(poly_ref).main_var();
+			const auto derivative = proj.derivative(poly_ref, main_var);
+			cost += calculate_cost<M>(proj, poly_ref, derivative);
+		}
+		SMTRAT_STATISTICS_CALL(ordering_stats.discriminant_costs.add(cost));
+		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal equational constraints: " << equational << " with cost " << cost);
+	#endif
+	*/
 }
 
 template<typename T, ResultantCostMethod M>
@@ -338,40 +363,34 @@ inline datastructures::CellRepresentation<T> compute_cell_optimal_ordering(datas
 	response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
 	response.ordering = global_ordering;
 
-	if (der->cell().is_section()) { // section case is the same as in the lowest degree barriers heuristic
+	if (der->cell().is_section()) { // section case
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (section case).");
 		handle_local_del_simplify_non_independent(reduced_delineation);
 		handle_local_del(der, reduced_delineation, response);
 		util::PolyDelineations poly_delins;
 		util::decompose(reduced_delineation, reduced_cell, poly_delins);
-		util::simplest_ldb_ordering(der->proj(),
+		compute_optimal_ordering<M>(der->proj(),
 									reduced_delineation,
 									reduced_cell,
 									response.description,
 									response.ordering,
-									response.equational,
-									enable_weak,
-									use_global_cache);
-		for (const auto& poly_delin : poly_delins.data) {
-			if (response.equational.contains(poly_delin.first)) continue;
-			chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
-		}
-		for (const auto& poly : der->delin().nullified()) {
-			response.equational.insert(poly);
-		}
-		for (const auto& poly : der->delin().nonzero()) {
-			response.equational.insert(poly);
-		}
-	} else { // sector
+									response.equational);
+		compute_optimal_equational_constraints<M>(der->proj(),
+												  response.ordering,
+												  response.equational,
+												  response.description.section_defining());
+	} else { // sector case
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (sector case).");
 		handle_local_del(der, reduced_delineation, response);
 		handle_cell_reduction(reduced_delineation, reduced_cell, response);
 		compute_optimal_ordering<M>(der->proj(),
 									reduced_delineation,
 									reduced_cell,
-									response.ordering);
+									response.description,
+									response.ordering,
+									response.equational);
+		handle_connectedness(der, response, enable_weak);
 	}
-	handle_connectedness(der, response, enable_weak);
 	handle_ordering_polys(der, response);
 	SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
 	return response;

@@ -10,12 +10,12 @@
 #include <carl-arith/poly/ctxpoly/Functions.h>
 #include <carl-arith/poly/libpoly/Functions.h>
 
+#include <carl-arith/poly/Conversion.h>
 #include <carl-arith/poly/umvpoly/MultivariatePolynomial.h>
 #include <carl-arith/poly/umvpoly/functions/Derivative.h>
-#include <carl-arith/poly/Conversion.h>
 
-#include "../OCApproximationStatistics.h"
 #include "../CADCellsStatistics.h"
+#include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -37,51 +37,51 @@ struct AssignmentProperties {
     std::map<PolyRef, bool> is_zero;
 };
 
-}
+} // namespace detail
 
 /**
- * Encapsulates all computations on polynomials. 
+ * Encapsulates all computations on polynomials.
  * Computations are cached with respect to a PolyPool.
  */
 class Projections {
     PolyPool& m_pool;
     std::vector<std::vector<detail::PolyProperties>> m_poly_cache;
-    std::vector<std::map<Assignment,detail::AssignmentProperties>> m_assignment_cache;
+    std::vector<std::map<Assignment, detail::AssignmentProperties>> m_assignment_cache;
 
     auto& cache(PolyRef p) {
         assert(p.level > 0);
-        if (p.level-1 >= m_poly_cache.size()) {
+        if (p.level - 1 >= m_poly_cache.size()) {
             m_poly_cache.resize(p.level);
         }
-        if (p.id >= m_poly_cache[p.level-1].size()) {
-            m_poly_cache[p.level-1].resize(p.id+1);
+        if (p.id >= m_poly_cache[p.level - 1].size()) {
+            m_poly_cache[p.level - 1].resize(p.id + 1);
         }
-        return m_poly_cache[p.level-1][p.id];
+        return m_poly_cache[p.level - 1][p.id];
     }
     const auto& cache(PolyRef p) const {
         assert(p.level > 0);
-        assert(p.level-1 < m_poly_cache.size());
-        assert(p.id < m_poly_cache[p.level-1].size());
-        return m_poly_cache[p.level-1][p.id];
+        assert(p.level - 1 < m_poly_cache.size());
+        assert(p.id < m_poly_cache[p.level - 1].size());
+        return m_poly_cache[p.level - 1][p.id];
     }
     bool has_cache(PolyRef p) const {
         assert(p.level > 0);
-        return (p.level-1 < m_poly_cache.size()) && (p.id < m_poly_cache[p.level-1].size());
+        return (p.level - 1 < m_poly_cache.size()) && (p.id < m_poly_cache[p.level - 1].size());
     }
 
     size_t level_of(const Assignment& a) const {
         // return a.size();
         std::size_t level = m_pool.var_order().size();
-        for(auto i = m_pool.var_order().rbegin(); i !=  m_pool.var_order().rend(); i++) {
+        for (auto i = m_pool.var_order().rbegin(); i != m_pool.var_order().rend(); i++) {
             if (a.find(*i) != a.end()) return level;
-            assert(level>0);
+            assert(level > 0);
             level--;
         }
         return level;
     }
 
     auto& cache(const Assignment& a) {
-        m_assignment_cache.resize(level_of(a)+1);
+        m_assignment_cache.resize(level_of(a) + 1);
         return m_assignment_cache[level_of(a)][a];
     }
     const auto& cache(const Assignment& a) const {
@@ -92,7 +92,7 @@ class Projections {
 
 public:
     auto main_var(PolyRef p) const {
-        return m_pool.var_order()[p.level-1];
+        return m_pool.var_order()[p.level - 1];
     }
 
 private:
@@ -121,10 +121,15 @@ private:
     }
 
 public:
-    Projections(PolyPool& pool) : m_pool(pool) {}
+    Projections(PolyPool& pool)
+        : m_pool(pool) {}
 
-    auto& polys() { return m_pool; }
-    const auto& polys() const { return m_pool; }
+    auto& polys() {
+        return m_pool;
+    }
+    const auto& polys() const {
+        return m_pool;
+    }
 
     // Clearing caches disabled as higher-level polynomials might still be needed (mainly in filtering):
 
@@ -161,23 +166,29 @@ public:
         //     }
         // }
     }
-    
+
     PolyRef res(PolyRef p, PolyRef q) {
         assert(p.level == q.level && p.id != q.id);
 
-        if (p.id > q.id) return res(q,p);
+        if (p.id > q.id) return res(q, p);
         assert(p.id < q.id);
 
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().resultant();
-            #endif
+#ifdef SMTRAT_DEVOPTION_Statistics
+            OCApproximationStatistics::get_instance().resultant();
+#endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
+            
+            SMTRAT_TIME_START(start);
+            
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
+            
+            SMTRAT_TIME_FINISH(statistics().m_proj_timer_resultant, start);
+            
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().resultant(total_degree(result), degree(result), result.level));
             return result;
@@ -186,12 +197,12 @@ public:
 
     bool know_disc(PolyRef p) const {
         if (!has_cache(p)) return false;
-        return (bool) cache(p).disc;
+        return (bool)cache(p).disc;
     }
 
     bool know_res(PolyRef p, PolyRef q) const {
         assert(p.level == q.level && p.id != q.id);
-        if (p.id > q.id) return know_res(q,p);
+        if (p.id > q.id) return know_res(q, p);
         assert(p.id < q.id);
         if (!has_cache(p)) return false;
         return cache(p).res.find(q) != cache(p).res.end();
@@ -199,19 +210,25 @@ public:
 
     bool known(const Polynomial& p) const {
         return m_pool.known(p);
-    } 
+    }
 
     PolyRef disc(PolyRef p) {
         if (cache(p).disc) {
             return *cache(p).disc;
         } else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().discriminant();
-            #endif
+#ifdef SMTRAT_DEVOPTION_Statistics
+            OCApproximationStatistics::get_instance().discriminant();
+#endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
+            
+            SMTRAT_TIME_START(start);
+            
             auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
             cache(p).disc = result;
+            
+            SMTRAT_TIME_FINISH(statistics().m_proj_timer_discriminant, start);
+            
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().discriminant(total_degree(result), degree(result), result.level));
             return result;
@@ -222,9 +239,9 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().coefficient();
-            #endif
+#ifdef SMTRAT_DEVOPTION_Statistics
+            OCApproximationStatistics::get_instance().coefficient();
+#endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
@@ -254,19 +271,25 @@ public:
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
             assert(!indeterminate(mv));
-            cache(restricted_sample).is_zero[p] = (bool) mv;
+            cache(restricted_sample).is_zero[p] = (bool)mv;
         }
         return cache(restricted_sample).is_zero[p];
     }
 
     size_t num_roots(const Assignment& sample, PolyRef p) {
-        assert(p.level >= level_of(sample)+1);
+        assert(p.level >= level_of(sample) + 1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
+            
+            SMTRAT_TIME_START(start);
+            
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            
+            SMTRAT_TIME_FINISH(statistics().m_proj_num_roots, start);
+            
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
@@ -275,13 +298,19 @@ public:
     }
 
     const std::vector<RAN>& real_roots(const Assignment& sample, PolyRef p) {
-        assert(p.level >= level_of(sample)+1);
+        assert(p.level >= level_of(sample) + 1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
+
+            SMTRAT_TIME_START(start);
+            
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            
+            SMTRAT_TIME_FINISH(statistics().m_proj_real_roots, start);
+            
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
@@ -293,7 +322,7 @@ public:
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
-        std::vector<RAN> roots;       
+        std::vector<RAN> roots;
         for (const auto& factor : factors_nonconst(p)) {
             if (factor.level == p.level) {
                 if (!is_nullified(restricted_sample, factor)) {
@@ -303,23 +332,29 @@ public:
             }
         }
         std::sort(roots.begin(), roots.end());
-        return roots;        
+        return roots;
     }
 
     bool is_nullified(const Assignment& sample, PolyRef p) {
-        //assert(p.level >= level_of(sample)+1);
+        // assert(p.level >= level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
         auto poly = m_pool(p);
-		if (carl::is_linear(poly)) return false;
+        if (carl::is_linear(poly)) return false;
         if (cache(restricted_sample).real_roots.find(p) == cache(restricted_sample).real_roots.end()) {
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
+            
+            SMTRAT_TIME_START(start);
+            
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
+            
+            SMTRAT_TIME_FINISH(statistics().m_proj_is_nullified, start);
+            
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
         }
-		return cache(restricted_sample).real_roots.at(p).is_nullified();
+        return cache(restricted_sample).real_roots.at(p).is_nullified();
     }
 
     bool is_ldcf_zero(const Assignment& sample, PolyRef p) {
@@ -341,7 +376,7 @@ public:
     std::vector<PolyRef> coeffs(PolyRef p) {
         std::vector<PolyRef> result;
         SMTRAT_STATISTICS_CALL(statistics().projection_start());
-        for (const auto& coeff :  m_pool(p).coefficients()) {
+        for (const auto& coeff : m_pool(p).coefficients()) {
             result.emplace_back(m_pool(coeff));
             SMTRAT_STATISTICS_CALL(statistics().coefficient(total_degree(m_pool(coeff)), degree(m_pool(coeff)), m_pool(coeff).level));
         }
@@ -350,20 +385,20 @@ public:
     }
 
     bool has_const_coeff(PolyRef p) const {
-        for (const auto& coeff :  m_pool(p).coefficients()) {
+        for (const auto& coeff : m_pool(p).coefficients()) {
             if (carl::is_constant(coeff) && !carl::is_zero(coeff)) return true;
         }
         return false;
     }
 
-    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&,const Polynomial&)> compare) {
+    PolyRef simplest_nonzero_coeff(const Assignment& sample, PolyRef p, std::function<bool(const Polynomial&, const Polynomial&)> compare) {
         std::optional<Polynomial> result;
         SMTRAT_STATISTICS_CALL(statistics().projection_start());
         for (const auto& coeff : m_pool(p).coefficients()) {
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(coeff, carl::Relation::NEQ), sample);
             assert(!indeterminate(mv));
             if (mv) {
-                if (!result || compare(coeff,*result)) {
+                if (!result || compare(coeff, *result)) {
                     result = coeff;
                 }
             }
@@ -429,10 +464,10 @@ public:
     RAN evaluate(const Assignment& sample, IndexedRoot r) {
         auto roots = real_roots(sample, r.poly);
         assert(r.index <= roots.size());
-        return roots[r.index-1];
+        return roots[r.index - 1];
     }
 
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_min(const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
+    inline std::pair<RAN, std::vector<datastructures::IndexedRoot>> evaluate_min(const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
         std::vector<datastructures::IndexedRoot> irs;
         RAN value;
         for (const auto& root : roots) {
@@ -448,7 +483,7 @@ public:
         return std::make_pair(value, irs);
     }
 
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate_max(const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
+    inline std::pair<RAN, std::vector<datastructures::IndexedRoot>> evaluate_max(const Assignment& ass, const std::vector<datastructures::IndexedRoot>& roots) {
         std::vector<datastructures::IndexedRoot> irs;
         RAN value;
         for (const auto& root : roots) {
@@ -464,7 +499,7 @@ public:
         return std::make_pair(value, irs);
     }
 
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::CompoundMinMax& bound) {
+    inline std::pair<RAN, std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::CompoundMinMax& bound) {
         std::vector<datastructures::IndexedRoot> irs;
         RAN value;
         for (const auto& roots : bound.roots) {
@@ -480,7 +515,7 @@ public:
         return std::make_pair(value, irs);
     }
 
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::CompoundMaxMin& bound) {
+    inline std::pair<RAN, std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::CompoundMaxMin& bound) {
         std::vector<datastructures::IndexedRoot> irs;
         RAN value;
         for (const auto& roots : bound.roots) {
@@ -496,11 +531,15 @@ public:
         return std::make_pair(value, irs);
     }
 
-    inline std::pair<RAN,std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::RootFunction& f) {
-        if (f.is_root()) return std::make_pair(evaluate(ass, f.root()), std::vector<datastructures::IndexedRoot>({ f.root() }));
-        else if (f.is_cminmax()) return evaluate(ass, f.cminmax());
-        else if (f.is_cmaxmin()) return evaluate(ass, f.cmaxmin());
-        else assert(false);
+    inline std::pair<RAN, std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::RootFunction& f) {
+        if (f.is_root())
+            return std::make_pair(evaluate(ass, f.root()), std::vector<datastructures::IndexedRoot>({f.root()}));
+        else if (f.is_cminmax())
+            return evaluate(ass, f.cminmax());
+        else if (f.is_cmaxmin())
+            return evaluate(ass, f.cmaxmin());
+        else
+            assert(false);
     }
 
     PolyConstraint negation(const PolyConstraint& constraint) const {
@@ -510,7 +549,6 @@ public:
     auto evaluate(const Assignment& ass, const PolyConstraint& constraint) {
         return carl::evaluate(polys()(constraint), ass);
     }
-
 };
 
-}
+} // namespace smtrat::cadcells::datastructures

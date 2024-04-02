@@ -5,9 +5,8 @@
 #ifdef SMTRAT_DEVOPTION_Statistics
 
 #include "./common.h"
-#include <carl-arith/ran/common/RealRoots.h>
 #include "datastructures/roots.h"
-
+#include <carl-arith/ran/common/RealRoots.h>
 
 namespace smtrat {
 namespace cadcells {
@@ -18,17 +17,29 @@ class CADCellsStatistics : public Statistics {
 
 public:
     enum class ProjectionType {
-        resultant, discriminant, leading_coefficient, coefficient, derivative, factor
+        resultant,
+        discriminant,
+        leading_coefficient,
+        coefficient,
+        derivative,
+        factor
     };
     static std::string to_string(const ProjectionType& p) {
-        switch(p) {
-            case ProjectionType::resultant: return "resultant";
-            case ProjectionType::discriminant: return "discriminant";
-            case ProjectionType::leading_coefficient: return "leading_coefficient";
-            case ProjectionType::coefficient: return "coefficient";
-            case ProjectionType::derivative: return "derivative";
-            case ProjectionType::factor: return "factor";
-            default: return "x";
+        switch (p) {
+        case ProjectionType::resultant:
+            return "resultant";
+        case ProjectionType::discriminant:
+            return "discriminant";
+        case ProjectionType::leading_coefficient:
+            return "leading_coefficient";
+        case ProjectionType::coefficient:
+            return "coefficient";
+        case ProjectionType::derivative:
+            return "derivative";
+        case ProjectionType::factor:
+            return "factor";
+        default:
+            return "x";
         }
     }
 
@@ -76,6 +87,13 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_filter_root_inclusive_by_depth;
 
 public:
+    carl::statistics::Timer m_proj_is_zero_timer;
+    carl::statistics::Timer m_proj_num_roots;
+    carl::statistics::Timer m_proj_real_roots;
+    carl::statistics::Timer m_proj_is_nullified;
+    carl::statistics::Timer m_proj_timer_resultant;
+    carl::statistics::Timer m_proj_timer_discriminant;
+    
     bool enabled() const {
         return true;
     }
@@ -108,6 +126,12 @@ public:
         Statistics::addKeyValuePair("projections.real_roots.nullified.count", m_proj_realroots_nullified_count);
 
         Statistics::addKeyValuePair("projections.timer", m_proj_timer);
+        Statistics::addKeyValuePair("projections.timer.is_zero", m_proj_is_zero_timer);
+        Statistics::addKeyValuePair("projections.timer.num_roots", m_proj_num_roots);
+        Statistics::addKeyValuePair("projections.timer.real_roots", m_proj_real_roots);
+        Statistics::addKeyValuePair("projections.timer.is_nullified", m_proj_is_nullified);
+        Statistics::addKeyValuePair("projections.timer.resultant", m_proj_timer_resultant);
+        Statistics::addKeyValuePair("projections.timer.discriminant", m_proj_timer_discriminant);
 
         Statistics::addKeyValuePair("filter.poly_count.by_depth", m_filter_poly_count_by_depth);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_factors", m_filter_poly_count_by_depth_and_num_factors);
@@ -124,13 +148,12 @@ public:
         Statistics::addKeyValuePair("filter.root.inclusive.by_depth", m_filter_root_inclusive_by_depth);
     }
 
-
     // projections
 
-    void projection_start()  {
+    void projection_start() {
         m_proj_timer.start_this();
     }
-    void projection_end()  {
+    void projection_end() {
         m_proj_timer.finish();
     }
 
@@ -139,12 +162,24 @@ public:
         m_proj_x_degree.try_emplace(type).first->second.add(degree);
         m_proj_x_level.try_emplace(type).first->second.add(level);
     }
-    void resultant          (std::size_t total_degree, std::size_t degree, std::size_t level) { projection_poly(ProjectionType::resultant          , total_degree, degree, level); }
-    void discriminant       (std::size_t total_degree, std::size_t degree, std::size_t level) { projection_poly(ProjectionType::discriminant       , total_degree, degree, level); }
-    void leading_coefficient(std::size_t total_degree, std::size_t degree, std::size_t level) { projection_poly(ProjectionType::leading_coefficient, total_degree, degree, level); }
-    void coefficient        (std::size_t total_degree, std::size_t degree, std::size_t level) { projection_poly(ProjectionType::coefficient        , total_degree, degree, level); }
-    void derivative         (std::size_t total_degree, std::size_t degree, std::size_t level) { projection_poly(ProjectionType::derivative         , total_degree, degree, level); }
-    void factor             (std::size_t total_degree, std::size_t degree, std::size_t level) { projection_poly(ProjectionType::factor             , total_degree, degree, level); }
+    void resultant(std::size_t total_degree, std::size_t degree, std::size_t level) {
+        projection_poly(ProjectionType::resultant, total_degree, degree, level);
+    }
+    void discriminant(std::size_t total_degree, std::size_t degree, std::size_t level) {
+        projection_poly(ProjectionType::discriminant, total_degree, degree, level);
+    }
+    void leading_coefficient(std::size_t total_degree, std::size_t degree, std::size_t level) {
+        projection_poly(ProjectionType::leading_coefficient, total_degree, degree, level);
+    }
+    void coefficient(std::size_t total_degree, std::size_t degree, std::size_t level) {
+        projection_poly(ProjectionType::coefficient, total_degree, degree, level);
+    }
+    void derivative(std::size_t total_degree, std::size_t degree, std::size_t level) {
+        projection_poly(ProjectionType::derivative, total_degree, degree, level);
+    }
+    void factor(std::size_t total_degree, std::size_t degree, std::size_t level) {
+        projection_poly(ProjectionType::factor, total_degree, degree, level);
+    }
 
     void real_roots_result(const carl::RealRootsResult<RAN>& result) {
         if (result.is_nullified()) {
@@ -153,17 +188,16 @@ public:
         m_proj_realroots_num_roots.add(result.is_nullified() ? 0 : result.roots().size());
     }
 
-
     // filter_roots
 
     void set_max_level(std::size_t level) {
         m_current_max_level = level;
     }
     void filter_roots_start(std::size_t level, std::size_t num_factors, std::size_t num_roots, const cadcells::Assignment& ass) {
-        assert(m_current_max_level>=level);
-        m_filter_poly_count_by_depth.inc(m_current_max_level-level, 1);
-        m_filter_poly_count_by_depth_and_num_factors.inc(std::make_pair((std::size_t)m_current_max_level-level, num_factors), 1);
-        m_filter_poly_count_by_depth_and_num_roots.inc(std::make_pair((std::size_t)m_current_max_level-level, num_roots), 1);
+        assert(m_current_max_level >= level);
+        m_filter_poly_count_by_depth.inc(m_current_max_level - level, 1);
+        m_filter_poly_count_by_depth_and_num_factors.inc(std::make_pair((std::size_t)m_current_max_level - level, num_factors), 1);
+        m_filter_poly_count_by_depth_and_num_roots.inc(std::make_pair((std::size_t)m_current_max_level - level, num_roots), 1);
 
         m_filter_current_level = level;
         m_filter_current_underlying_algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
@@ -173,18 +207,18 @@ public:
     }
     void filter_roots_end() {
         if (m_filter_current_indep) {
-            m_filter_poly_count_independent_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_filter_poly_count_independent_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         }
 
         m_timer_filter_roots.finish();
     }
     void filter_roots_filter_start(const cadcells::RAN& ran) {
-        m_filter_root_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+        m_filter_root_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         if (!ran.is_numeric()) {
-            m_filter_root_algebraic_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_filter_root_algebraic_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         }
         if (m_filter_current_underlying_algebraic || !ran.is_numeric()) {
-            m_filter_root_sample_algebraic_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_filter_root_sample_algebraic_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         }
 
         m_timer_filter_roots_callback.start_this();
@@ -197,57 +231,55 @@ public:
         m_filter_current_indep = false;
     }
     void filter_roots_got_inclusive(const cadcells::RAN&) {
-        m_filter_root_inclusive_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+        m_filter_root_inclusive_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         m_filter_current_indep = false;
     }
     void filter_roots_got_optional(const cadcells::RAN&) {
-        m_filter_root_optional_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+        m_filter_root_optional_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
     }
     void filter_roots_got_inclusive_optional(const cadcells::RAN&) {
-        m_filter_root_optional_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
-        m_filter_root_inclusive_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+        m_filter_root_optional_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+        m_filter_root_inclusive_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
     }
-    
 
     // heuristics
 
     void section_common_zeros(std::size_t depth, std::size_t num_common_eq_constr) {
-        m_depth_section_common_zeros_count.inc(std::make_pair(depth,num_common_eq_constr), 1);
+        m_depth_section_common_zeros_count.inc(std::make_pair(depth, num_common_eq_constr), 1);
     }
 
     void got_bound(const datastructures::SymbolicInterval& interval) {
         if (interval.is_section()) {
-            m_interval_point_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_interval_point_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         }
-        if(interval.lower().is_infty() && interval.upper().is_infty()) {
-            m_interval_unbounded_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+        if (interval.lower().is_infty() && interval.upper().is_infty()) {
+            m_interval_unbounded_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         } else if (interval.lower().is_infty() || interval.upper().is_infty()) {
-            m_interval_halfunbounded_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
-        }        
-        if(interval.lower().is_weak() && interval.upper().is_weak()) {
-            m_interval_closed_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
-        } else if(interval.lower().is_strict() && interval.upper().is_strict()) {
-            m_interval_open_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_interval_halfunbounded_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+        }
+        if (interval.lower().is_weak() && interval.upper().is_weak()) {
+            m_interval_closed_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+        } else if (interval.lower().is_strict() && interval.upper().is_strict()) {
+            m_interval_open_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         } else {
-            m_interval_halfopen_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_interval_halfopen_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
         }
     }
 
     void got_representation_equational(std::size_t num) {
-        m_representation_equational_count_by_depth.inc(m_current_max_level-m_filter_current_level, num);
+        m_representation_equational_count_by_depth.inc(m_current_max_level - m_filter_current_level, num);
     }
-
 
     /// rules
 
     void detect_intersection() {
-        m_rules_intersection_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+        m_rules_intersection_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
     }
 };
 
-CADCellsStatistics &statistics();
+CADCellsStatistics& statistics();
 
-}
-}
+} // namespace cadcells
+} // namespace smtrat
 
 #endif
