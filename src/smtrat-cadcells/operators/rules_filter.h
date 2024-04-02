@@ -252,14 +252,14 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                     SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_outside_delin_inter());
                     if (!Settings::check_roots_outside_delin_int || filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
+                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal_outside_delin_inter());
                         if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                         else return filter_util::result::NORMAL;
-                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal_outside_delin_inter());
                     } else {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
+                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional_outside_delin_inter());
                         if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                         else return filter_util::result::NORMAL_OPTIONAL;
-                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional_outside_delin_inter());
                     }
                 } else {
                     SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_inside_delin_inter());
