@@ -24,6 +24,7 @@ struct MccallumFilteredSettings {
     static constexpr bool only_irreducible_resultants = false;
     static constexpr bool only_if_no_intersections = false;
     static constexpr std::size_t only_if_total_degree_below = 0;
+    static constexpr bool check_roots_outside_delin_int = true;
 
     static constexpr bool complete = false;
 };
