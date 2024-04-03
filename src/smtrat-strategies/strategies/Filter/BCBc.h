@@ -12,7 +12,7 @@ namespace smtrat {
 namespace internal {
 struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 	static constexpr DelineationFunction delineation_function = ALL;
-	static constexpr bool enable_intersections_with_interval = true;
+	static constexpr bool check_only_intersections_with_interval = true;
 };
 
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {

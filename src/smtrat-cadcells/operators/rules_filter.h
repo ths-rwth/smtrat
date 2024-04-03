@@ -201,8 +201,8 @@ struct DelineateSettings {
     static constexpr std::size_t only_if_total_degree_below = 0;
     static constexpr bool check_roots_outside_delin_int = false;
     static constexpr bool check_only_intersections_with_interval = false;
-    static constexpr bool enable_intersections_with_interval = false;
-    static constexpr bool use_sample_to_reduce_checks = false; // TODO strategy!
+    static constexpr bool enable_intersections_with_interval = true;
+    static constexpr bool use_sample_to_reduce_checks = true;
 };
 
 template<typename Settings, typename P>
