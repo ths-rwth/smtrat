@@ -35,6 +35,7 @@ build-gcc12:
 #      - build/
 #      - cmake/
 #      - src/
+#    expire_in: 1 week
 
 .build-gcc11:
   stage: build-gcc
@@ -57,6 +58,7 @@ build-clang14:
 #      - build/
 #      - cmake/
 #      - src/
+#    expire_in: 1 week
 
 .build-clang13:
   stage: build-clang
