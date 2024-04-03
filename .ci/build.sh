@@ -2,18 +2,17 @@
 
 mkdir -p build || return 1
 cd build/ || return 1
+cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} -D SMTRAT_DEVOPTION_Expensive=ON -D SMTRAT_DEVOPTION_Checkpoints=ON -D SMTRAT_DEVOPTION_Statistics=ON -D SMTRAT_DEVOPTION_Validation=ON ../ || return 1
 
 
 if [[ ${TASK} == "dependencies" ]]; then
 	echo "Building dependencies"
-    cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} ../ || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} resources || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} carl-required-version || return 1
 	/usr/bin/time make ${MAKE_PARALLEL} mimalloc-EP || return 1
 	
 elif [[ ${TASK} == "documentation" ]]; then
 	echo "Building Documentation"
-    cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} ../ || return 1
 	
 	# To allow convert for doc/pictures/
 	if ! command -v sudo &> /dev/null
@@ -50,13 +49,11 @@ elif [[ ${TASK} == "documentation" ]]; then
 
 elif [[ ${TASK} == "tidy" ]]; then
 	echo "Tidying"
-    cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} ../ || return 1
 	/usr/bin/time make tidy || return 1
 
-elif [[ ${TASK} == "parallel" ]]; then
+elif [[ ${TASK} == "dev" ]]; then
 	echo "Build parallel with parameter ${MAKE_PARALLEL}"
-    cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} ../ || return 1
-	/usr/bin/time make ${MAKE_PARALLEL} || return 1
+	/usr/bin/time make ${MAKE_PARALLEL} all-tests smtrat || return 1
 
 elif [[ ${TASK} == "getCarl" ]]; then 
 	#check if Carl branch with the same name exists and download the artifacts with the same job name
@@ -77,14 +74,12 @@ elif [[ ${TASK} == "getCarl" ]]; then
 	else 
     echo "Artifact for Carl Branch: ${BRANCH_NAME} and Job: ${JOB_NAME} and for Development Branch does not exist"
 	fi
-	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
+	cmake -D carl_DIR=/builds/ths/smt/carl/build ../ || return 1
 
 else
-	#no task specified... just build with one core
-	echo "No task specified... building with one core"
-	cmake -D DEVELOPER=ON -D USE_COCOA=ON -D SMTRAT_Strategy=${STRATEGY} ../ || return 1
-
-	/usr/bin/time make -j1 || return 1
+	#no task specified... just build everything
+	echo "No task specified..."
+	/usr/bin/time make || return 1
 fi
 
 cd ../
