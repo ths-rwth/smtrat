@@ -13,7 +13,7 @@ namespace smtrat::cadcells::operators {
 
 struct MccallumFilteredSettings {
     enum DelineationFunction {
-        NOOP, ALL, BOUNDS_ONLY, COMPOUND, COMPOUND_PWL, BC
+        NOOP, ALL, BOUNDS_ONLY, COMPOUND, COMPOUND_PWL
     };
     static constexpr DelineationFunction delineation_function = NOOP;
 
@@ -24,7 +24,10 @@ struct MccallumFilteredSettings {
     static constexpr bool only_irreducible_resultants = false;
     static constexpr bool only_if_no_intersections = false;
     static constexpr std::size_t only_if_total_degree_below = 0;
-    static constexpr bool check_roots_outside_delin_int = true;
+    static constexpr bool check_roots_outside_delin_int = false;
+    static constexpr bool check_only_intersections_with_interval = false;
+    static constexpr bool enable_intersections_with_interval = false;
+    static constexpr bool use_sample_to_reduce_checks = false;
 
     static constexpr bool complete = false;
 };
@@ -82,9 +85,6 @@ static inline void delineate_properties(datastructures::SampledDerivation<Proper
                 break;
             case MccallumFilteredSettings::COMPOUND_PWL:
                 rules::delineate_compound_piecewiselinear(deriv, prop, Settings::enable_weak);
-                break;
-            case MccallumFilteredSettings::BC:
-                rules::delineate_all_biggest_cell<Settings>(deriv, prop, Settings::enable_weak);
                 break;
             case MccallumFilteredSettings::NOOP:
             default:

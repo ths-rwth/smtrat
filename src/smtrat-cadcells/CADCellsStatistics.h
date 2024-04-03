@@ -90,6 +90,8 @@ private:
     std::size_t m_filter_roots_check_pair_with_interval = 0;
     std::size_t m_filter_roots_check_pair_without_interval = 0;
 
+    std::size_t m_filter_roots_skipped_using_sample = 0;
+
 public:
     bool enabled() const {
         return true;
@@ -151,6 +153,7 @@ public:
         Statistics::addKeyValuePair("filter.root.check_outside_delin_inter", m_filter_roots_check_outside_delin_inter);
         Statistics::addKeyValuePair("filter.root.check_pair_with_interval", m_filter_roots_check_pair_with_interval);
         Statistics::addKeyValuePair("filter.root.check_pair_without_interval", m_filter_roots_check_pair_without_interval);
+        Statistics::addKeyValuePair("filter.root.skipped_using_sample", m_filter_roots_skipped_using_sample);
     }
 
 
@@ -268,6 +271,10 @@ public:
     void filter_roots_check_pair_without_interval() {
         m_filter_roots_check_pair_without_interval++;
     }
+
+    void filter_roots_skipped_using_sample() {
+        m_filter_roots_skipped_using_sample++;
+    }
  
     // heuristics
 
@@ -301,6 +308,8 @@ public:
     void got_representation_roots_inside(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
         if (interval.is_section()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, 0);
+        } else if (interval.lower_unbounded() && interval.upper_unbounded()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, delin.roots().size());
         } else if (interval.lower_unbounded()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(delin.roots().begin(), interval.upper()));
         } else if (interval.upper_unbounded()) {

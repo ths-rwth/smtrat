@@ -12,7 +12,7 @@ namespace smtrat {
 namespace internal {
 struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 	static constexpr DelineationFunction delineation_function = ALL;
-	static constexpr bool check_roots_outside_delin_int = false;
+	static constexpr bool use_sample_to_reduce_checks = true;
 };
 
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
@@ -31,9 +31,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class Filter_BCAllNoutside : public Manager {
+class Filter_BCAllSkip : public Manager {
 public:
-	Filter_BCAllNoutside()
+	Filter_BCAllSkip()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());

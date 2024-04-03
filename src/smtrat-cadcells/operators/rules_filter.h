@@ -81,7 +81,7 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
         assert(delineable_interval);
         bool only_regular = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair) { return !(pair.first.is_root() && pair.second.is_root()); }) == d.second.end();
         filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
-        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran, bool) {
             if (!enable_regular && only_regular) return filter_util::result::NORMAL;
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
@@ -199,7 +199,10 @@ struct DelineateSettings {
     static constexpr bool only_irreducible_resultants = false;
     static constexpr bool only_if_no_intersections = false;
     static constexpr std::size_t only_if_total_degree_below = 0;
-    static constexpr bool check_roots_outside_delin_int = true;
+    static constexpr bool check_roots_outside_delin_int = false;
+    static constexpr bool check_only_intersections_with_interval = false;
+    static constexpr bool enable_intersections_with_interval = false;
+    static constexpr bool use_sample_to_reduce_checks = false; // TODO strategy!
 };
 
 template<typename Settings, typename P>
@@ -238,10 +241,23 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
             auto delineable_interval = filter_util::delineable_interval(deriv.proj(), deriv.sample(), polys);
             assert(delineable_interval);
             filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
-            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+
+            bool nonoptional_below = false;
+            bool nonoptional_above = false; 
+
+            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran, bool forward) {
+                if (Settings::use_sample_to_reduce_checks && ((!forward && nonoptional_below) || (forward && nonoptional_above))) {
+                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> skip checking (as there was a non-optional sample before) " << ran);
+                    SMTRAT_STATISTICS_CALL(statistics().filter_roots_skipped_using_sample());
+                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
+                    else return filter_util::result::NORMAL;
+                }
+
                 if (Settings::only_rational_samples && !ran.is_numeric()) {
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sample is algebraic, adding " << ran);
                     // return filter_util::result::NORMAL;
+                    if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                    if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
                     if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                     else return filter_util::result::NORMAL;
                 }
@@ -253,30 +269,77 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                     if (!Settings::check_roots_outside_delin_int || filter_util::has_common_real_root(deriv.proj(),ass,poly1,poly2)) {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
                         SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal_outside_delin_inter());
+                        if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                        if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
                         if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                         else return filter_util::result::NORMAL;
                     } else {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
                         SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional_outside_delin_inter());
+                        if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                        if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
                         if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                         else return filter_util::result::NORMAL_OPTIONAL;
                     }
                 } else {
                     SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_inside_delin_inter());
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
-                    assert(!deriv.proj().is_nullified(ass,poly1));
-                    assert(!deriv.proj().is_nullified(ass,poly2));
-                    auto roots1 = deriv.proj().real_roots(ass,poly1);
-                    auto roots2 = deriv.proj().real_roots(ass,poly2);
+                    if (Settings::enable_intersections_with_interval && Settings::check_only_intersections_with_interval && !prop.ordering.biggest_cell_wrt) {
+                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> not biggest_cell_wrt");
+                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
+                        if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                        if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                        if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
+                        return filter_util::result::NORMAL;
+                    }
+                    // assert(!deriv.proj().is_nullified(ass,poly1));
+                    // assert(!deriv.proj().is_nullified(ass,poly2));
+                    // auto roots1 = deriv.proj().real_roots(ass,poly1);
+                    // auto roots2 = deriv.proj().real_roots(ass,poly2);
+
                     for (const auto& pair : d.second) {
-                        if (prop.ordering.biggest_cell_wrt && (!prop.ordering.biggest_cell_wrt->lower().is_infty() && pair.second == prop.ordering.biggest_cell_wrt->lower().value() || !prop.ordering.biggest_cell_wrt->upper().is_infty() && pair.first == prop.ordering.biggest_cell_wrt->upper().value())) {
-                            SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_with_interval());
-                        } else {
-                            SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
+                        assert(pair.first.is_root() && pair.second.is_root());
+
+                        if (Settings::enable_intersections_with_interval && prop.ordering.biggest_cell_wrt) {
+                            if (!prop.ordering.biggest_cell_wrt->lower().is_infty() && pair.second == prop.ordering.biggest_cell_wrt->lower().value()) {
+                                SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_with_interval());
+                                auto root = deriv.proj().evaluate(ass, pair.second.root());
+                                Assignment ass2 = ass;
+                                ass2.emplace(deriv.proj().main_var(pair.first.root().poly), root);
+                                if (deriv.proj().is_zero(ass2, pair.first.root().poly)) {
+                                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                                    if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                                    if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
+                                    else return filter_util::result::NORMAL;
+                                }
+                            } else if (!prop.ordering.biggest_cell_wrt->upper().is_infty() && pair.first == prop.ordering.biggest_cell_wrt->upper().value()) {
+                                SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_with_interval());
+                                auto root = deriv.proj().evaluate(ass, pair.first.root());
+                                Assignment ass2 = ass;
+                                ass2.emplace(deriv.proj().main_var(pair.second.root().poly), root);
+                                if (deriv.proj().is_zero(ass2, pair.second.root().poly)) {
+                                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
+                                    if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                                    if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
+                                    else return filter_util::result::NORMAL;
+                                }
+                            } else if (Settings::check_only_intersections_with_interval) {
+                                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> not an intersection with an interval bound at " << ran);
+                                SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
+                                if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                                if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                                if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
+                                else return filter_util::result::NORMAL;
+                            }
                         }
+                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
                         assert(pair.first.is_root() && pair.second.is_root());
                         auto index1 = pair.first.root().poly == poly1 ? pair.first.root().index : pair.second.root().index;
                         auto index2 = pair.first.root().poly == poly1 ? pair.second.root().index : pair.first.root().index;
+                        auto roots1 = deriv.proj().real_roots(ass,poly1);
+                        auto roots2 = deriv.proj().real_roots(ass,poly2);
                         assert(index1 <= roots1.size());
                         assert(index2 <= roots2.size());
                         // TODO make a setting?
@@ -285,6 +348,8 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                             // if (all_relations_weak) return filter_util::result::INCLUSIVE;
                             // else return filter_util::result::NORMAL;
+                            if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
+                            if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
                             if (enable_weak && !pair.is_strict) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
                         }
@@ -293,9 +358,9 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                     if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                     else return filter_util::result::NORMAL_OPTIONAL;
                 }
-            });
+            }, Settings::use_sample_to_reduce_checks ? std::optional<RAN>(deriv.main_var_sample()) : std::nullopt);
         } else {
-            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran, bool) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> skip filter, adding " << ran);
                 // return filter_util::result::NORMAL;
                 if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
@@ -317,7 +382,7 @@ void delineate_bounds_only(datastructures::SampledDerivation<P>& deriv, const pr
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
-        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&) {
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&, bool) {
             if (all_relations_weak) return filter_util::result::INCLUSIVE;
             else return filter_util::result::NORMAL;
         });
@@ -335,117 +400,9 @@ void delineate_noop(datastructures::SampledDerivation<P>& deriv, const propertie
         const auto& poly1 = d.first.first;
         const auto& poly2 = d.first.second;
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
-        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&) {
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&, bool) {
             return filter_util::result::NORMAL;
         });
-    }
-}
-
-template<typename Settings, typename P>
-void delineate_all_biggest_cell(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop, bool enable_weak = true) {
-    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
-    // only correct with biggest cell heuristics
-
-    SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
-
-    bool underlying_sample_algebraic = std::find_if(deriv.underlying_sample().begin(), deriv.underlying_sample().end(), [](const auto& m) { return !m.second.is_numeric(); }) != deriv.underlying_sample().end();
-
-    auto decomposed = ordering_util::decompose(prop.ordering);
-    for (const auto& d : decomposed) {
-        const auto& poly1 = d.first.first;
-        const auto& poly2 = d.first.second;
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
-        bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
-
-        bool irreducible = deriv.proj().res(poly1, poly2).level == 0 || deriv.proj().factors_nonconst(deriv.proj().res(poly1, poly2)).size() == 1;
-        bool all_roots_algebraic = true;
-        if (!underlying_sample_algebraic) {
-            if (deriv.proj().is_const(deriv.proj().res(poly1, poly2))) {
-                all_roots_algebraic = false;
-            } else {
-                auto roots = deriv.proj().real_roots_reducible(deriv.underlying_sample(), deriv.proj().res(poly1, poly2));
-                all_roots_algebraic = std::find_if(roots.begin(), roots.end(), [](const auto& r) { return !r.is_numeric(); }) != roots.end();
-            }
-        }
-
-        if (
-            (!Settings::only_rational_samples || !all_roots_algebraic) &&
-            (!Settings::only_irreducible_resultants || irreducible) &&
-            (!Settings::only_if_no_intersections || !ordering_util::has_intersection(deriv, prop.ordering)) &&
-            (Settings::only_if_total_degree_below == 0 || deriv.proj().total_degree(deriv.proj().res(poly1, poly2)) < Settings::only_if_total_degree_below)
-        ) {
-            boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
-            auto delineable_interval = filter_util::delineable_interval(deriv.proj(), deriv.sample(), polys);
-            assert(delineable_interval);
-            filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
-            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
-                if (Settings::only_rational_samples && !ran.is_numeric()) {
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sample is algebraic, adding " << ran);
-                    // return filter_util::result::NORMAL;
-                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
-                    else return filter_util::result::NORMAL;
-                }
-
-                Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
-                if (!delineable_interval->contains(ran)) {
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);
-                    SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_outside_delin_inter());
-                    SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal_outside_delin_inter());
-                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
-                    else return filter_util::result::NORMAL;
-                } else {
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " in " << delineable_interval);
-                    SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_inside_delin_inter());
-                    assert(poly1 != poly2);
-                    if (!prop.ordering.biggest_cell_wrt) {
-                        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> not biggest_cell_wrt");
-                        SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
-                        if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
-                        return filter_util::result::NORMAL;
-                    }
-                    for (const auto& pair : d.second) {
-                        assert(pair.first.is_root() && pair.second.is_root());
-                        if (!prop.ordering.biggest_cell_wrt->lower().is_infty() && pair.second == prop.ordering.biggest_cell_wrt->lower().value()) {
-                            SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_with_interval());
-                            auto root = deriv.proj().evaluate(ass, pair.second.root());
-                            Assignment ass2 = ass;
-                            ass2.emplace(deriv.proj().main_var(pair.first.root().poly), root);
-                            if (deriv.proj().is_zero(ass2, pair.first.root().poly)) {
-                                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                                if (enable_weak && !pair.is_strict) return filter_util::result::INCLUSIVE;
-                                else return filter_util::result::NORMAL;
-                            }
-                        } else if (!prop.ordering.biggest_cell_wrt->upper().is_infty() && pair.first == prop.ordering.biggest_cell_wrt->upper().value()) {
-                            SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_with_interval());
-                            auto root = deriv.proj().evaluate(ass, pair.first.root());
-                            Assignment ass2 = ass;
-                            ass2.emplace(deriv.proj().main_var(pair.second.root().poly), root);
-                            if (deriv.proj().is_zero(ass2, pair.second.root().poly)) {
-                                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
-                                if (enable_weak && !pair.is_strict) return filter_util::result::INCLUSIVE;
-                                else return filter_util::result::NORMAL;
-                            }
-                        } else {
-                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> not an intersection with an interval bound at " << ran);
-                            SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
-                            if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
-                            else return filter_util::result::NORMAL;
-                        }
-                    }
-                    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no relevant intersection at " << ran);
-                    if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
-                    else return filter_util::result::NORMAL_OPTIONAL;
-                }
-            });
-
-        } else {
-            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
-                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> skip filter, adding " << ran);
-                // return filter_util::result::NORMAL;
-                if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
-                else return filter_util::result::NORMAL;
-            });
-        }
     }
 }
 
@@ -465,7 +422,7 @@ void delineate_compound_piecewiselinear(datastructures::SampledDerivation<P>& de
         auto delineable_interval = filter_util::delineable_interval(deriv.proj(), deriv.sample(), polys);
         assert(delineable_interval);
         filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
-        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran) {
+        filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran, bool) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);
             if (!delineable_interval->contains(ran)) {
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> resultant's root " << ran << " outside of " << delineable_interval);

@@ -11,7 +11,8 @@ namespace smtrat {
 
 namespace internal {
 struct OpSettings : cadcells::operators::MccallumFilteredSettings {
-	static constexpr DelineationFunction delineation_function = BC;
+	static constexpr DelineationFunction delineation_function = ALL;
+	static constexpr bool enable_intersections_with_interval = true;
 	static constexpr bool only_irreducible_resultants = true;
 	static constexpr bool only_rational_samples = true;
 };

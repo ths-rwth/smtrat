@@ -13,6 +13,7 @@ namespace internal {
 struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 	static constexpr DelineationFunction delineation_function = ALL;
 	static constexpr bool enable_intersections_with_interval = true;
+	static constexpr bool use_sample_to_reduce_checks = true;
 };
 
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
@@ -31,9 +32,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class Filter_BCBc : public Manager {
+class Filter_BCBcSkip : public Manager {
 public:
-	Filter_BCBc()
+	Filter_BCBcSkip()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());
