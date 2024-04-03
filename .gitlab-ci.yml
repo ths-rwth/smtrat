@@ -13,22 +13,23 @@ cache:
 
 variables:
   COMPILE_JOBS: 6
-  SMTRAT_STRATEGY: "Default" #Change to your need!
-
+  SMTRAT_STRATEGY:
+    value: "Default"
+    description: "Enter the strategy with which you want to run the pipeline."
 
 stages:
-  - build-gcc
-  - build-clang
+  - build
   - test 
   - documentation
 
+# development
 
-build-gcc12:
-  stage: build-gcc
+build-gcc12-dev:
+  stage: build
   script:
-     - export CC=/usr/bin/gcc-12 && export CXX=/usr/bin/g++-12
-     - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
-     - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - export CC=/usr/bin/gcc-12 && export CXX=/usr/bin/g++-12
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
   artifacts: 
     name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
     paths: 
@@ -36,22 +37,24 @@ build-gcc12:
       - cmake/
       - src/
     expire_in: 1 week
-
-.build-gcc11:
-  stage: build-gcc
-  script:
-     - export CC=/usr/bin/gcc-11 && export CXX=/usr/bin/g++-11
-     - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
-     - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
   only:
-     - development
+    - development
 
-build-clang14:
-  stage: build-clang
+.build-gcc11-dev:
+  stage: build
   script:
-     - export CC=/usr/bin/clang-14 && export CXX=/usr/bin/clang++-14
-     - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
-     - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - export CC=/usr/bin/gcc-11 && export CXX=/usr/bin/g++-11
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+  only:
+    - development
+
+build-clang14-dev:
+  stage: build
+  script:
+    - export CC=/usr/bin/clang-14 && export CXX=/usr/bin/clang++-14
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
 #  artifacts: 
 #    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
 #    paths: 
@@ -59,27 +62,68 @@ build-clang14:
 #      - cmake/
 #      - src/
 #    expire_in: 1 week
-
-.build-clang13:
-  stage: build-clang
-  script:
-     - export CC=/usr/bin/clang-13 && export CXX=/usr/bin/clang++-13
-     - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
-     - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
   only:
-     - development
+    - development
 
-.test-clang: 
-  dependencies: [build-clang14]
+.build-clang13-dev:
+  stage: build
+  script:
+    - export CC=/usr/bin/clang-13 && export CXX=/usr/bin/clang++-13
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+  only:
+    - development
+
+test-gcc-dev: 
+  dependencies: [build-gcc12-dev]
   stage: test
   script: 
     - cd build && make test
+  only:
+    - development
+
+# master
+
+build-gcc12:
+  stage: build
+  script:
+    - export CC=/usr/bin/gcc-12 && export CXX=/usr/bin/g++-12
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=all MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+  artifacts: 
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths: 
+      - build/
+      - cmake/
+      - src/
+    expire_in: 1 week
+  only:
+    - master
+
+build-clang14:
+  stage: build
+  script:
+    - export CC=/usr/bin/clang-14 && export CXX=/usr/bin/clang++-14
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=all MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+  only:
+    - master
 
 test-gcc: 
   dependencies: [build-gcc12]
   stage: test
   script: 
     - cd build && make test 
+  only:
+    - master
+
+.test-clang: 
+  dependencies: [build-clang14]
+  stage: test
+  script: 
+    - cd build && make test
+  only:
+    - master
 
 docs:
   stage: documentation
@@ -89,3 +133,45 @@ docs:
     - MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} TASK=documentation source .ci/build.sh
   only:
     - master
+
+
+# other branches
+
+build-gcc12-other:
+  stage: build
+  script:
+    - export CC=/usr/bin/gcc-12 && export CXX=/usr/bin/g++-12
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+  artifacts: 
+    name: "$CI_JOB_NAME-$CI_COMMIT_REF_SLUG"
+    paths: 
+      - build/
+      - cmake/
+      - src/
+    expire_in: 1 week
+  except:
+    - development
+    - master
+  when: manual
+
+build-clang14-other:
+  stage: build
+  script:
+    - export CC=/usr/bin/clang-14 && export CXX=/usr/bin/clang++-14
+    - TASK=getCarl BRANCH_NAME=${CI_COMMIT_BRANCH} JOB_NAME=${CI_JOB_NAME} TOKEN=${CARL_READONLY_TOKEN} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+    - TASK=dev MAKE_PARALLEL=-j${COMPILE_JOBS} STRATEGY=${SMTRAT_STRATEGY} source .ci/build.sh
+  except:
+    - development
+    - master
+  when: manual
+
+test-gcc-other: 
+  dependencies: [build-gcc12-other]
+  stage: test
+  script: 
+    - cd build && make test
+  except:
+    - development
+    - master
+  when: manual

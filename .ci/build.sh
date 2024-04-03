@@ -55,6 +55,10 @@ elif [[ ${TASK} == "dev" ]]; then
 	echo "Build parallel with parameter ${MAKE_PARALLEL}"
 	/usr/bin/time make ${MAKE_PARALLEL} all-tests smtrat || return 1
 
+elif [[ ${TASK} == "all" ]]; then
+	echo "Build parallel with parameter ${MAKE_PARALLEL}"
+	/usr/bin/time make ${MAKE_PARALLEL} || return 1
+
 elif [[ ${TASK} == "getCarl" ]]; then 
 	#check if Carl branch with the same name exists and download the artifacts with the same job name
     echo "Trying to download Carl artifacts"
