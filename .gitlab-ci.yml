@@ -36,7 +36,7 @@ build-gcc12:
 #      - cmake/
 #      - src/
 
-build-gcc11:
+.build-gcc11:
   stage: build-gcc
   script:
      - export CC=/usr/bin/gcc-11 && export CXX=/usr/bin/g++-11
@@ -58,7 +58,7 @@ build-clang14:
 #      - cmake/
 #      - src/
 
-build-clang13:
+.build-clang13:
   stage: build-clang
   script:
      - export CC=/usr/bin/clang-13 && export CXX=/usr/bin/clang++-13
@@ -67,17 +67,17 @@ build-clang13:
   only:
      - development
 
-# test-clang: 
-#   dependencies: [build-clang14]
-#   stage: test
-#   script: 
-#     - cd build && make test
+.test-clang: 
+  dependencies: [build-clang14]
+  stage: test
+  script: 
+    - cd build && make test
 
-# test-gcc: 
-#   dependencies: [build-gcc12]
-#   stage: test
-#   script: 
-#     - cd build && make test 
+test-gcc: 
+  dependencies: [build-gcc12]
+  stage: test
+  script: 
+    - cd build && make test 
 
 docs:
   stage: documentation
