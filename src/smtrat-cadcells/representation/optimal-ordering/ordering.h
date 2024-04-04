@@ -281,6 +281,7 @@ inline void compute_optimal_ordering(auto& proj,
 	const auto [graph, matching_edges, cost] = brute_force(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
 
 	// iterate over edges in matching and add the corresponding roots to the ordering
+	auto ord = ordering;
 	for (const auto& edge : matching_edges) {
 		const auto u = boost::source(edge, graph);
 		const auto v = boost::target(edge, graph);
@@ -288,12 +289,30 @@ inline void compute_optimal_ordering(auto& proj,
 
 		if (graph[edge_desc].root_pair_below) {
 			const auto [r1, r2] = graph[edge_desc].root_pair_below.value();
-			ordering.add_less(r2, r1);
+			ord.add_less(r2, r1);
 		}
 		if (graph[edge_desc].root_pair_above) {
 			const auto [r1, r2] = graph[edge_desc].root_pair_above.value();
-			ordering.add_less(r1, r2);
+			ord.add_less(r1, r2);
 		}
+	}
+
+	if (is_section) {
+		compute_optimal_equational_constraints<M>(proj,
+												  ord,
+												  equational,
+												  interval.section_defining());
+		for (const auto& [r1, r2, is_strict] : ord.data()) {
+			for (const auto& poly : r1.polys()) {
+				for (const auto& poly2 : r2.polys()) {
+					if (!equational.contains(poly) && !equational.contains(poly2)) {
+						ordering.add_less(r1, r2);
+					}
+				}
+			}
+		}
+	} else {
+		ordering = ord;
 	}
 
 	SMTRAT_TIME_FINISH(ordering_stats.ordering_timer, start);
@@ -326,24 +345,7 @@ inline void compute_optimal_equational_constraints(auto& proj, const auto& order
 		}
 	}
 
-	/*
-	#if defined(LOGGING) || defined(SMTRAT_DEVOPTION_Statistics)
-		boost::container::flat_set<datastructures::PolyRef> not_equational;
-		const auto polys = ordering.polys();
-		std::set_difference(polys.begin(), polys.end(),
-							equational.begin(), equational.end(),
-							std::inserter(not_equational, not_equational.begin()));
-
-		int cost = 0;
-		for (const auto poly_ref : not_equational) {
-			const auto main_var = proj.polys()(poly_ref).main_var();
-			const auto derivative = proj.derivative(poly_ref, main_var);
-			cost += calculate_cost<M>(proj, poly_ref, derivative);
-		}
-		SMTRAT_STATISTICS_CALL(ordering_stats.discriminant_costs.add(cost));
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal equational constraints: " << equational << " with cost " << cost);
-	#endif
-	*/
+	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Equational constraints: " << equational);
 }
 
 template<typename T, ResultantCostMethod M>
@@ -375,10 +377,6 @@ inline datastructures::CellRepresentation<T> compute_cell_optimal_ordering(datas
 									response.description,
 									response.ordering,
 									response.equational);
-		compute_optimal_equational_constraints<M>(der->proj(),
-												  response.ordering,
-												  response.equational,
-												  response.description.section_defining());
 	} else { // sector case
 		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (sector case).");
 		handle_local_del(der, reduced_delineation, response);

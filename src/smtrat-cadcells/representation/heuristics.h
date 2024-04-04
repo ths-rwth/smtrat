@@ -27,10 +27,27 @@ enum CellHeuristic {
 	OPTIMAL_SUM_OVER_TOTAL_DEGREE,
 	OPTIMAL_NUM_VARIABLES,
 	OPTIMAL_NUM_RESULTANTS,
-	OPTIMAL_NUM_MONOMIALS,
-	OPTIMAL_HIGHEST_MONOMIAL
+	OPTIMAL_NUM_MONOMIALS
 };
-static const char* CellHeuristicStrings[] = {"BIGGEST_CELL", "CHAIN_EQ", "LOWEST_DEGREE_BARRIERS", "LOWEST_DEGREE_BARRIERS_EQ", "BIGGEST_CELL_FILTER", "BIGGEST_CELL_FILTER_ONLY_INDEPENDENT", "LOWEST_DEGREE_BARRIERS_FILTER", "LOWEST_DEGREE_BARRIERS_FILTER_ONLY_INDEPENDENT", "BIGGEST_CELL_PDEL", "LOWEST_DEGREE_BARRIERS_PDEL", "LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL", "OPTIMAL"};
+static const char* CellHeuristicStrings[] = {"BIGGEST_CELL",
+											 "CHAIN_EQ",
+											 "LOWEST_DEGREE_BARRIERS",
+											 "LOWEST_DEGREE_BARRIERS_EQ",
+											 "BIGGEST_CELL_FILTER",
+											 "BIGGEST_CELL_FILTER_ONLY_INDEPENDENT",
+											 "LOWEST_DEGREE_BARRIERS_FILTER",
+											 "LOWEST_DEGREE_BARRIERS_FILTER_ONLY_INDEPENDENT",
+											 "BIGGEST_CELL_PDEL",
+											 "LOWEST_DEGREE_BARRIERS_PDEL",
+											 "LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL",
+											 "OPTIMAL_FEATURE_BASED",
+											 "OPTIMAL_VARIABLE_DEPTH",
+											 "OPTIMAL_TOTAL_DEGREE_UPPER_BOUND",
+											 "OPTIMAL_TOTAL_DEGREE_EXACT",
+											 "OPTIMAL_SUM_OVER_TOTAL_DEGREE",
+											 "OPTIMAL_NUM_VARIABLES",
+											 "OPTIMAL_NUM_RESULTANTS",
+											 "OPTIMAL_NUM_MONOMIALS"};
 
 enum CoveringHeuristic {
 	BIGGEST_CELL_COVERING,
@@ -43,7 +60,15 @@ enum CoveringHeuristic {
 	LDB_COVERING_CACHE,
 	LDB_COVERING_CACHE_GLOBAL
 };
-static const char* CoveringHeuristicStrings[] = {"BIGGEST_CELL_COVERING", "CHAIN_COVERING", "BIGGEST_CELL_COVERING_FILTER", "BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT", "BIGGEST_CELL_COVERING_MIN_TDEG", "BIGGEST_CELL_COVERING_PDEL", "LDB_COVERING", "LDB_COVERING_CACHE", "LDB_COVERING_CACHE_GLOBAL"};
+static const char* CoveringHeuristicStrings[] = {"BIGGEST_CELL_COVERING",
+												 "CHAIN_COVERING",
+												 "BIGGEST_CELL_COVERING_FILTER",
+												 "BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT",
+												 "BIGGEST_CELL_COVERING_MIN_TDEG",
+												 "BIGGEST_CELL_COVERING_PDEL",
+												 "LDB_COVERING",
+												 "LDB_COVERING_CACHE",
+												 "LDB_COVERING_CACHE_GLOBAL"};
 
 /**
  * Note: If connected(i) holds, then the indexed root ordering must contain an ordering between the interval bounds.
@@ -68,7 +93,7 @@ inline std::ostream& operator<<(std::ostream& os, CoveringHeuristic heuristic) {
 }
 } // namespace smtrat::cadcells::representation
 
-#include "util.h"
+#include "heuristics_approximation.h"
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
-#include "heuristics_approximation.h"
+#include "util.h"

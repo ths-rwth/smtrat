@@ -87,10 +87,10 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_filter_root_inclusive_by_depth;
 
 public:
-    carl::statistics::Timer m_proj_is_zero_timer;
-    carl::statistics::Timer m_proj_num_roots;
-    carl::statistics::Timer m_proj_real_roots;
-    carl::statistics::Timer m_proj_is_nullified;
+    carl::statistics::Timer m_proj_timer_is_zero;
+    carl::statistics::Timer m_proj_timer_num_roots;
+    carl::statistics::Timer m_proj_timer_real_roots;
+    carl::statistics::Timer m_proj_timer_is_nullified;
     carl::statistics::Timer m_proj_timer_resultant;
     carl::statistics::Timer m_proj_timer_discriminant;
     
@@ -126,10 +126,10 @@ public:
         Statistics::addKeyValuePair("projections.real_roots.nullified.count", m_proj_realroots_nullified_count);
 
         Statistics::addKeyValuePair("projections.timer", m_proj_timer);
-        Statistics::addKeyValuePair("projections.timer.is_zero", m_proj_is_zero_timer);
-        Statistics::addKeyValuePair("projections.timer.num_roots", m_proj_num_roots);
-        Statistics::addKeyValuePair("projections.timer.real_roots", m_proj_real_roots);
-        Statistics::addKeyValuePair("projections.timer.is_nullified", m_proj_is_nullified);
+        Statistics::addKeyValuePair("projections.timer.is_zero", m_proj_timer_is_zero);
+        Statistics::addKeyValuePair("projections.timer.num_roots", m_proj_timer_num_roots);
+        Statistics::addKeyValuePair("projections.timer.real_roots", m_proj_timer_real_roots);
+        Statistics::addKeyValuePair("projections.timer.is_nullified", m_proj_timer_is_nullified);
         Statistics::addKeyValuePair("projections.timer.resultant", m_proj_timer_resultant);
         Statistics::addKeyValuePair("projections.timer.discriminant", m_proj_timer_discriminant);
 

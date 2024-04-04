@@ -269,7 +269,13 @@ public:
         assert(p.level == level_of(restricted_sample));
         if (restricted_sample.empty()) return is_zero(p);
         if (cache(restricted_sample).is_zero.find(p) == cache(restricted_sample).is_zero.end()) {
+            
+            SMTRAT_TIME_START(start);
+
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
+            
+            SMTRAT_TIME_FINISH(statistics().m_proj_timer_is_zero, start);
+
             assert(!indeterminate(mv));
             cache(restricted_sample).is_zero[p] = (bool)mv;
         }
@@ -288,7 +294,7 @@ public:
             
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
             
-            SMTRAT_TIME_FINISH(statistics().m_proj_num_roots, start);
+            SMTRAT_TIME_FINISH(statistics().m_proj_timer_num_roots, start);
             
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
@@ -309,7 +315,7 @@ public:
             
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
             
-            SMTRAT_TIME_FINISH(statistics().m_proj_real_roots, start);
+            SMTRAT_TIME_FINISH(statistics().m_proj_timer_real_roots, start);
             
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
@@ -349,7 +355,7 @@ public:
             
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
             
-            SMTRAT_TIME_FINISH(statistics().m_proj_is_nullified, start);
+            SMTRAT_TIME_FINISH(statistics().m_proj_timer_is_nullified, start);
             
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
