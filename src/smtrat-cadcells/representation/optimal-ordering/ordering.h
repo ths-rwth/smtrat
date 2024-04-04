@@ -236,6 +236,34 @@ inline std::tuple<util::Graph, std::vector<util::Graph::edge_descriptor>, int> b
 };
 
 template<ResultantCostMethod M>
+inline void compute_optimal_equational_constraints(auto& proj, const auto& ordering, auto& equational, const auto& section_defining) {
+	const auto& ordering_less = ordering.less();
+	if (ordering_less.contains(section_defining)) {
+		const auto& section_defining_less = ordering_less.at(section_defining);
+		for (const auto& root : section_defining_less) {
+			if (!ordering_less.contains(root)) {
+				for (const auto& poly : root.polys()) {
+					equational.insert(poly);
+				}
+			}
+		}
+	}
+	const auto& ordering_greater = ordering.greater();
+	if (ordering_greater.contains(section_defining)) {
+		const auto& section_defining_greater = ordering_greater.at(section_defining);
+		for (const auto& root : section_defining_greater) {
+			if (!ordering_greater.contains(root)) {
+				for (const auto& poly : root.polys()) {
+					equational.insert(poly);
+				}
+			}
+		}
+	}
+
+	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Equational constraints: " << equational);
+}
+
+template<ResultantCostMethod M>
 inline void compute_optimal_ordering(auto& proj,
 									 const auto& delin,
 									 const auto& delin_interval,
@@ -318,34 +346,6 @@ inline void compute_optimal_ordering(auto& proj,
 	SMTRAT_TIME_FINISH(ordering_stats.ordering_timer, start);
 	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_costs.add(cost / 2));
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal ordering: " << ordering << " with cost " << cost / 2);
-}
-
-template<ResultantCostMethod M>
-inline void compute_optimal_equational_constraints(auto& proj, const auto& ordering, auto& equational, const auto& section_defining) {
-	const auto& ordering_less = ordering.less();
-	if (ordering_less.contains(section_defining)) {
-		const auto& section_defining_less = ordering_less.at(section_defining);
-		for (const auto& root : section_defining_less) {
-			if (!ordering_less.contains(root)) {
-				for (const auto& poly : root.polys()) {
-					equational.insert(poly);
-				}
-			}
-		}
-	}
-	const auto& ordering_greater = ordering.greater();
-	if (ordering_greater.contains(section_defining)) {
-		const auto& section_defining_greater = ordering_greater.at(section_defining);
-		for (const auto& root : section_defining_greater) {
-			if (!ordering_greater.contains(root)) {
-				for (const auto& poly : root.polys()) {
-					equational.insert(poly);
-				}
-			}
-		}
-	}
-
-	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Equational constraints: " << equational);
 }
 
 template<typename T, ResultantCostMethod M>
