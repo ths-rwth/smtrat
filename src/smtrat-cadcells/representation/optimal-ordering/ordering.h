@@ -403,14 +403,6 @@ struct cell<CellHeuristic::OPTIMAL_FEATURE_BASED> {
 };
 
 template<>
-struct cell<CellHeuristic::OPTIMAL_HIGHEST_MONOMIAL> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::HIGHEST_MONOMIAL>(der);
-	}
-};
-
-template<>
 struct cell<CellHeuristic::OPTIMAL_NUM_MONOMIALS> {
 	template<typename T>
 	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
