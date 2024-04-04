@@ -93,7 +93,7 @@ inline std::ostream& operator<<(std::ostream& os, CoveringHeuristic heuristic) {
 }
 } // namespace smtrat::cadcells::representation
 
-#include "heuristics_approximation.h"
+#include "util.h"
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
-#include "util.h"
+#include "heuristics_approximation.h"
