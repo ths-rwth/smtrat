@@ -98,7 +98,9 @@ template<>
 inline int compute<ResultantCostMethod::TOTAL_DEGREE_EXACT>(datastructures::Projections& proj,
 															const datastructures::PolyRef p1,
 															const datastructures::PolyRef p2) {
-	return proj.total_degree(proj.res(p1, p2));
+	auto& polys = proj.polys();
+	const auto result = polys(carl::resultant(polys(p1), polys(p2)));
+	return proj.total_degree(result);
 }
 
 template<>

@@ -110,6 +110,17 @@ public:
     carl::statistics::Timer m_proj_timer_is_nullified;
     carl::statistics::Timer m_proj_timer_resultant;
     carl::statistics::Timer m_proj_timer_discriminant;
+    carl::statistics::Timer m_proj_timer_ldcf;
+    carl::statistics::Timer m_proj_timer_factors_nonconst;
+    carl::statistics::Timer m_proj_timer_coeffs;
+    carl::statistics::Timer m_proj_timer_simplest_nonzero_coeff;
+    carl::statistics::Timer m_proj_timer_derivative;
+
+    carl::statistics::Timer m_proj_timer_discriminant_of_resultant;
+    carl::statistics::Timer m_proj_timer_discriminant_of_discriminant;
+
+    std::vector<datastructures::PolyRef> resultants;
+    std::vector<datastructures::PolyRef> discriminants;
     
     bool enabled() const {
         return true;
@@ -156,6 +167,13 @@ public:
         Statistics::addKeyValuePair("projections.timer.is_nullified", m_proj_timer_is_nullified);
         Statistics::addKeyValuePair("projections.timer.resultant", m_proj_timer_resultant);
         Statistics::addKeyValuePair("projections.timer.discriminant", m_proj_timer_discriminant);
+        Statistics::addKeyValuePair("projections.timer.ldcf", m_proj_timer_ldcf);
+        Statistics::addKeyValuePair("projections.timer.factors_nonconst", m_proj_timer_factors_nonconst);
+        Statistics::addKeyValuePair("projections.timer.coeffs", m_proj_timer_coeffs);
+        Statistics::addKeyValuePair("projections.timer.simplest_nonzero_coeff", m_proj_timer_simplest_nonzero_coeff);
+        Statistics::addKeyValuePair("projections.timer.derivative", m_proj_timer_derivative);
+        Statistics::addKeyValuePair("projections.timer.discriminant_of_resultant", m_proj_timer_discriminant_of_resultant);
+        Statistics::addKeyValuePair("projections.timer.discriminant_of_discriminant", m_proj_timer_discriminant_of_discriminant);
 
         Statistics::addKeyValuePair("filter.poly_count.by_depth", m_filter_poly_count_by_depth);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_factors", m_filter_poly_count_by_depth_and_num_factors);
