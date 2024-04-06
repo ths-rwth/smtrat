@@ -477,7 +477,7 @@ namespace smtrat {
                 for (int i = 0; i < getClause(cl).size(); i++) {
                     const auto& l = getClause(cl)[i];
                     if (isTheoryAbstraction(Minisat::var(l))) {
-                        const auto& eval = carl::evaluate(reabstractLiteral(l), currentModel());
+                        const auto& eval = carl::evaluate(reabstractLiteral(l), currentModel()); // !! this does not use libpoly !!
                         if (!eval.isBool()) {
                             return false;
                         }

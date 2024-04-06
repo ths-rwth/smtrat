@@ -132,13 +132,9 @@ struct Explanation {
             }
         }
         SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Explain conflict " << constr << " with " << vars << " and " << ass);
-        #ifdef SMTRAT_DEVOPTION_Statistics
-            SMTRAT_TIME_START(start);
-        #endif
+        SMTRAT_STATISTICS_CALL(mStatistics.timer_start());
         auto result = onecell<Settings>(constr, context, ass);
-        #ifdef SMTRAT_DEVOPTION_Statistics
-            SMTRAT_TIME_FINISH(mStatistics.timer(), start);
-        #endif
+        SMTRAT_STATISTICS_CALL(mStatistics.timer_finish());
 
         if (!result) {
             SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Could not generate explanation");

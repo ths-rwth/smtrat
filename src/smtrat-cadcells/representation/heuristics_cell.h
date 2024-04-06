@@ -203,6 +203,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
 
 template<typename T>
 inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastructures::SampledDerivationRef<T>& der, LocalDelMode ldel_mode = LocalDelMode::NONE, bool enable_weak = false) {
+<<<<<<< HEAD
 	datastructures::CellRepresentation<T> response(der);
 	datastructures::Delineation reduced_delineation = der->delin();
 	if (ldel_mode == LocalDelMode::ONLY_INDEPENDENT) {
@@ -226,6 +227,32 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
 	handle_ordering_polys(der, response);
 	SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
 	return response;
+=======
+    datastructures::CellRepresentation<T> response(der);
+    datastructures::Delineation reduced_delineation = der->delin();
+    if (ldel_mode == LocalDelMode::ONLY_INDEPENDENT) {
+        handle_local_del_simplify_non_independent(reduced_delineation);
+    } else if (ldel_mode == LocalDelMode::SIMPLIFY) {
+        handle_local_del_simplify_all(reduced_delineation);
+    }
+    auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(reduced_delineation, reduced_cell));
+    response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
+    response.ordering.biggest_cell_wrt = response.description;
+    if (der->cell().is_section()) {
+        handle_local_del_simplify_non_independent(reduced_delineation);
+        handle_local_del(der, reduced_delineation, response);
+        handle_section_all_equational(reduced_delineation, response);
+    } else { // sector
+        handle_local_del(der, reduced_delineation, response);
+        handle_cell_reduction(reduced_delineation, reduced_cell, response);
+        util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, enable_weak);
+    }
+    handle_connectedness(der, response, enable_weak);
+    handle_ordering_polys(der, response);
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    return response;
+>>>>>>> development
 }
 
 template<>
@@ -301,30 +328,31 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
 	response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
 	response.ordering = global_ordering;
 
-	if (der->cell().is_section()) {
-		handle_local_del_simplify_non_independent(reduced_delineation);
-		handle_local_del(der, reduced_delineation, response);
-		util::PolyDelineations poly_delins;
-		util::decompose(reduced_delineation, reduced_cell, poly_delins);
-		util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
-		for (const auto& poly_delin : poly_delins.data) {
-			if (response.equational.contains(poly_delin.first)) continue;
-			chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
-		}
-		for (const auto& poly : der->delin().nullified()) {
-			response.equational.insert(poly);
-		}
-		for (const auto& poly : der->delin().nonzero()) {
-			response.equational.insert(poly);
-		}
-	} else { // sector
-		handle_local_del(der, reduced_delineation, response);
-		util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
-	}
-	handle_connectedness(der, response, enable_weak);
-	handle_ordering_polys(der, response);
-	SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
-	return response;
+    if (der->cell().is_section()) {
+        handle_local_del_simplify_non_independent(reduced_delineation);
+        handle_local_del(der, reduced_delineation, response);
+        util::PolyDelineations poly_delins;
+        util::decompose(reduced_delineation, reduced_cell, poly_delins);
+        util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
+        for (const auto& poly_delin : poly_delins.data) {
+            if (response.equational.contains(poly_delin.first)) continue;
+            chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
+        }
+        for (const auto& poly : der->delin().nullified()) {
+            response.equational.insert(poly);
+        }
+        for (const auto& poly : der->delin().nonzero()) {
+            response.equational.insert(poly);
+        }
+    } else { // sector
+        handle_local_del(der, reduced_delineation, response);
+        handle_cell_reduction(reduced_delineation, reduced_cell, response);
+        util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
+    }
+    handle_connectedness(der, response, enable_weak);
+    handle_ordering_polys(der, response);
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    return response;
 }
 
 template<>

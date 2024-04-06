@@ -2,6 +2,7 @@
 
 #include <smtrat-common/smtrat-common.h>
 #include <smtrat-common/model.h>
+#include <carl-arith/ran/Conversion.h>
 
 #include <vector>
 
@@ -29,6 +30,15 @@ class Bookkeeping {
 	std::vector<FormulaT> mMVBounds;
 	/** Set of theory variables. */
 	carl::Variables mVariables;
+
+	using LPConstraint = carl::BasicConstraint<carl::LPPolynomial>;
+	using LPVarComp = carl::VariableComparison<carl::LPPolynomial>;
+	using LPAtom = std::variant<LPConstraint,LPVarComp>;
+	/// Libpoly integration
+	mutable std::map<FormulaT,LPAtom> m_lp_map;
+	/// Libpoly integration
+	carl::Assignment<carl::LPPolynomial::RootType> m_lp_ass;
+
 public:
 	
 	const auto& model() const {
@@ -93,6 +103,7 @@ public:
 		mModel.emplace(v, mv);
 		mAssignedVariables.emplace_back(v);
 		mAssignments.emplace_back(f);
+		m_lp_ass.emplace(v, carl::convert<carl::LPPolynomial::RootType>(mv.asRAN()));
 	}
 
 	void popAssignment(carl::Variable v) {
@@ -101,7 +112,15 @@ public:
 		mModel.erase(v);
 		mAssignedVariables.pop_back();
 		mAssignments.pop_back();
+		m_lp_ass.erase(v);
 	}
+
+	/// Lipboly integration
+	// The Assignmentfinder does not use this, as the variable ordering changes. For evaluation, this does not matter.
+	const LPAtom& lp_get(const FormulaT& p) const;
+	/// Lipboly integration
+	carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f) const;
+	carl::ModelValue<Rational,Poly> lp_evaluate(const FormulaT& f, carl::carlVariables& vars) const;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const Bookkeeping& bk) {

@@ -6,7 +6,12 @@
 
 #include "./common.h"
 #include "datastructures/roots.h"
+<<<<<<< HEAD
 #include <carl-arith/ran/common/RealRoots.h>
+=======
+#include "datastructures/delineation.h"
+
+>>>>>>> development
 
 namespace smtrat {
 namespace cadcells {
@@ -45,6 +50,7 @@ public:
 
 private:
     carl::statistics::MultiCounter<std::pair<std::size_t, std::size_t>> m_depth_section_common_zeros_count;
+    std::size_t m_section_count = 0;
 
     carl::statistics::MultiCounter<std::size_t> m_interval_point_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_open_count_by_depth;
@@ -54,6 +60,7 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_interval_halfunbounded_count_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_representation_equational_count_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_rules_intersection_count_by_depth;
 
@@ -64,7 +71,12 @@ private:
     boost::container::flat_map<ProjectionType, carl::statistics::Series> m_proj_x_level;
 
     carl::statistics::Series m_proj_realroots_num_roots;
-    std::size_t m_proj_realroots_nullified_count;
+    std::size_t m_proj_realroots_nullified_count = 0;
+
+    std::size_t m_proj_realroots_count = 0;
+    std::size_t m_proj_realroots_algebraic_count = 0;
+    std::size_t m_proj_evaluate_count = 0;
+    std::size_t m_proj_evaluate_algebraic_count = 0;
 
     carl::statistics::MultiCounter<std::size_t> m_filter_poly_count_by_depth;
     carl::statistics::MultiCounter<std::pair<std::size_t, std::size_t>> m_filter_poly_count_by_depth_and_num_factors;
@@ -86,6 +98,15 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_filter_root_optional_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_filter_root_inclusive_by_depth;
 
+    std::size_t m_filter_roots_got_optional_outside_delin_inter = 0;
+    std::size_t m_filter_roots_got_normal_outside_delin_inter = 0;
+    std::size_t m_filter_roots_check_inside_delin_inter = 0;
+    std::size_t m_filter_roots_check_outside_delin_inter = 0;
+    std::size_t m_filter_roots_check_pair_with_interval = 0;
+    std::size_t m_filter_roots_check_pair_without_interval = 0;
+
+    std::size_t m_filter_roots_skipped_using_sample = 0;
+
 public:
     carl::statistics::Timer m_proj_timer_is_zero;
     carl::statistics::Timer m_proj_timer_num_roots;
@@ -100,6 +121,7 @@ public:
 
     void collect() {
         Statistics::addKeyValuePair("heuristics.section.common_zeros_count.by_depth", m_depth_section_common_zeros_count);
+        Statistics::addKeyValuePair("heuristics.section.count", m_section_count);
 
         Statistics::addKeyValuePair("heuristics.interval.point_count.by_depth", m_interval_point_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.open_count.by_depth", m_interval_open_count_by_depth);
@@ -109,6 +131,7 @@ public:
         Statistics::addKeyValuePair("heuristics.interval.halfunbounded_count.by_depth", m_interval_halfunbounded_count_by_depth);
 
         Statistics::addKeyValuePair("heuristics.representation.equational_count.by_depth", m_representation_equational_count_by_depth);
+        Statistics::addKeyValuePair("heuristics.representation.roots_inside.by_depth", m_representation_roots_inside_by_depth);
 
         Statistics::addKeyValuePair("heuristics.rules.intersection_count.by_depth", m_rules_intersection_count_by_depth);
 
@@ -124,6 +147,11 @@ public:
 
         Statistics::addKeyValuePair("projections.real_roots.num_roots", m_proj_realroots_num_roots);
         Statistics::addKeyValuePair("projections.real_roots.nullified.count", m_proj_realroots_nullified_count);
+        Statistics::addKeyValuePair("projections.real_roots.count", m_proj_realroots_count);
+        Statistics::addKeyValuePair("projections.real_roots.algebraic.count", m_proj_realroots_algebraic_count);
+
+        Statistics::addKeyValuePair("projections.evaluate.count", m_proj_evaluate_count);
+        Statistics::addKeyValuePair("projections.evaluate.algebraic.count", m_proj_evaluate_algebraic_count);
 
         Statistics::addKeyValuePair("projections.timer", m_proj_timer);
         Statistics::addKeyValuePair("projections.timer.is_zero", m_proj_timer_is_zero);
@@ -146,6 +174,14 @@ public:
         Statistics::addKeyValuePair("filter.root.sample_algebraic.by_depth", m_filter_root_sample_algebraic_by_depth);
         Statistics::addKeyValuePair("filter.root.optional.by_depth", m_filter_root_optional_by_depth);
         Statistics::addKeyValuePair("filter.root.inclusive.by_depth", m_filter_root_inclusive_by_depth);
+
+        Statistics::addKeyValuePair("filter.root.optional_outside_delin_inter", m_filter_roots_got_optional_outside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.normal_outside_delin_inter", m_filter_roots_got_normal_outside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.check_inside_delin_inter", m_filter_roots_check_inside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.check_outside_delin_inter", m_filter_roots_check_outside_delin_inter);
+        Statistics::addKeyValuePair("filter.root.check_pair_with_interval", m_filter_roots_check_pair_with_interval);
+        Statistics::addKeyValuePair("filter.root.check_pair_without_interval", m_filter_roots_check_pair_without_interval);
+        Statistics::addKeyValuePair("filter.root.skipped_using_sample", m_filter_roots_skipped_using_sample);
     }
 
     // projections
@@ -188,6 +224,19 @@ public:
         m_proj_realroots_num_roots.add(result.is_nullified() ? 0 : result.roots().size());
     }
 
+    void evaluate_call(const cadcells::Assignment& ass) {
+        bool algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
+        m_proj_evaluate_count++;
+        if (algebraic) m_proj_evaluate_algebraic_count++;
+    }
+
+    void real_roots_call(const cadcells::Assignment& ass) {
+        bool algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
+        m_proj_realroots_count++;
+        if (algebraic) m_proj_realroots_algebraic_count++;
+    }
+
+
     // filter_roots
 
     void set_max_level(std::size_t level) {
@@ -224,7 +273,7 @@ public:
         m_timer_filter_roots_callback.start_this();
     }
     void filter_roots_filter_end() {
-        m_timer_filter_roots.finish();
+        m_timer_filter_roots_callback.finish();
     }
 
     void filter_roots_got_normal(const cadcells::RAN&) {
@@ -242,10 +291,39 @@ public:
         m_filter_root_inclusive_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
     }
 
+    void filter_roots_got_optional_outside_delin_inter() {
+        m_filter_roots_got_optional_outside_delin_inter++;
+    }
+    void filter_roots_got_normal_outside_delin_inter() {
+        m_filter_roots_got_normal_outside_delin_inter++;
+    }
+    void filter_roots_check_inside_delin_inter() {
+        m_filter_roots_check_inside_delin_inter++;
+    }
+    void filter_roots_check_outside_delin_inter() {
+        m_filter_roots_check_outside_delin_inter++;
+    }
+
+    void filter_roots_check_pair_with_interval() {
+        m_filter_roots_check_pair_with_interval++;
+    }
+    void filter_roots_check_pair_without_interval() {
+        m_filter_roots_check_pair_without_interval++;
+    }
+
+    void filter_roots_skipped_using_sample() {
+        m_filter_roots_skipped_using_sample++;
+    }
+ 
     // heuristics
 
     void section_common_zeros(std::size_t depth, std::size_t num_common_eq_constr) {
+<<<<<<< HEAD
         m_depth_section_common_zeros_count.inc(std::make_pair(depth, num_common_eq_constr), 1);
+=======
+        m_depth_section_common_zeros_count.inc(std::make_pair(depth,num_common_eq_constr), 1);
+        m_section_count++;
+>>>>>>> development
     }
 
     void got_bound(const datastructures::SymbolicInterval& interval) {
@@ -270,6 +348,23 @@ public:
         m_representation_equational_count_by_depth.inc(m_current_max_level - m_filter_current_level, num);
     }
 
+<<<<<<< HEAD
+=======
+    void got_representation_roots_inside(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
+        if (interval.is_section()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, 0);
+        } else if (interval.lower_unbounded() && interval.upper_unbounded()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, delin.roots().size());
+        } else if (interval.lower_unbounded()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(delin.roots().begin(), interval.upper()));
+        } else if (interval.upper_unbounded()) {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), delin.roots().end())-1);
+        } else {
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), interval.upper())-1);
+        }
+    }
+
+>>>>>>> development
     /// rules
 
     void detect_intersection() {
