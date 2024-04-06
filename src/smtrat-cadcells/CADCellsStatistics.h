@@ -6,12 +6,8 @@
 
 #include "./common.h"
 #include "datastructures/roots.h"
-<<<<<<< HEAD
-#include <carl-arith/ran/common/RealRoots.h>
-=======
 #include "datastructures/delineation.h"
 
->>>>>>> development
 
 namespace smtrat {
 namespace cadcells {
@@ -318,12 +314,8 @@ public:
     // heuristics
 
     void section_common_zeros(std::size_t depth, std::size_t num_common_eq_constr) {
-<<<<<<< HEAD
-        m_depth_section_common_zeros_count.inc(std::make_pair(depth, num_common_eq_constr), 1);
-=======
         m_depth_section_common_zeros_count.inc(std::make_pair(depth,num_common_eq_constr), 1);
         m_section_count++;
->>>>>>> development
     }
 
     void got_bound(const datastructures::SymbolicInterval& interval) {
@@ -348,8 +340,6 @@ public:
         m_representation_equational_count_by_depth.inc(m_current_max_level - m_filter_current_level, num);
     }
 
-<<<<<<< HEAD
-=======
     void got_representation_roots_inside(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
         if (interval.is_section()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, 0);
@@ -364,7 +354,6 @@ public:
         }
     }
 
->>>>>>> development
     /// rules
 
     void detect_intersection() {
