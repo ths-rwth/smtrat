@@ -74,6 +74,9 @@ private:
     bool m_filter_current_underlying_algebraic;
     bool m_filter_current_indep;
 
+    bool m_filter_current_has_zeros_irred = false;
+    carl::statistics::MultiCounter<std::size_t> m_filter_poly_count_has_zeros_irred_indep_by_depth;
+
     carl::statistics::Timer m_timer_filter_roots;
     carl::statistics::Timer m_timer_filter_roots_callback;
 
@@ -137,6 +140,7 @@ public:
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_factors", m_filter_poly_count_by_depth_and_num_factors);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_roots", m_filter_poly_count_by_depth_and_num_roots);
         Statistics::addKeyValuePair("filter.poly_count.independent.by_depth", m_filter_poly_count_independent_by_depth);
+        Statistics::addKeyValuePair("filter.poly_count.has_zeros_irred_indep.by_depth", m_filter_poly_count_has_zeros_irred_indep_by_depth);
 
         Statistics::addKeyValuePair("filter.timer.filter_roots", m_timer_filter_roots);
         Statistics::addKeyValuePair("filter.timer.filter_roots_callback", m_timer_filter_roots_callback);
@@ -209,6 +213,8 @@ public:
         m_filter_poly_count_by_depth_and_num_factors.inc(std::make_pair((std::size_t)m_current_max_level-level, num_factors), 1);
         m_filter_poly_count_by_depth_and_num_roots.inc(std::make_pair((std::size_t)m_current_max_level-level, num_roots), 1);
 
+        m_filter_current_has_zeros_irred = num_factors == 1 && num_roots > 0;
+
         m_filter_current_level = level;
         m_filter_current_underlying_algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
         m_filter_current_indep = true;
@@ -218,6 +224,9 @@ public:
     void filter_roots_end() {
         if (m_filter_current_indep) {
             m_filter_poly_count_independent_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            if (m_filter_current_has_zeros_irred) {
+                m_filter_poly_count_has_zeros_irred_indep_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            }
         }
 
         m_timer_filter_roots.finish();
