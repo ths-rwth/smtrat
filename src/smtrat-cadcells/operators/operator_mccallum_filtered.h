@@ -22,12 +22,14 @@ struct MccallumFilteredSettings {
     // settings for delineate_all
     static constexpr bool only_rational_samples = false;
     static constexpr bool only_irreducible_resultants = false;
-    static constexpr bool only_if_no_intersections = false;
     static constexpr std::size_t only_if_total_degree_below = 0;
     static constexpr bool check_roots_outside_delin_int = false;
     static constexpr bool check_only_intersections_with_interval = false;
     static constexpr bool enable_intersections_with_interval = true;
     static constexpr bool use_sample_to_reduce_checks = true;
+
+    // settings for delineate_all and delineate_bounds_only
+    static constexpr bool only_if_no_intersections = false;
 
     static constexpr bool complete = false;
 };
@@ -78,7 +80,7 @@ static inline void delineate_properties(datastructures::SampledDerivation<Proper
                 rules::delineate_all<Settings>(deriv, prop, Settings::enable_weak);
                 break;
             case MccallumFilteredSettings::BOUNDS_ONLY:
-                rules::delineate_bounds_only(deriv, prop);
+                rules::delineate_bounds_only<Settings>(deriv, prop);
                 break;
             case MccallumFilteredSettings::COMPOUND:
                 rules::delineate_all_compound(deriv, prop, Settings::enable_weak, false);

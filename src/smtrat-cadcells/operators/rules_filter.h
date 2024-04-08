@@ -370,11 +370,16 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
     }
 }
 
-template<typename P>
+struct DelineateBoundsOnlySettings {
+    static constexpr bool only_if_no_intersections = false;
+};
+template<typename Settings, typename P>
 void delineate_bounds_only(datastructures::SampledDerivation<P>& deriv, const properties::root_ordering_holds& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
 
     SMTRAT_STATISTICS_CALL(if (ordering_util::has_intersection(deriv, prop.ordering)) { statistics().detect_intersection(); });
+
+    bool underlying_section = Settings::only_if_no_intersections && ordering_util::has_intersection(deriv, prop.ordering);
 
     auto decomposed = ordering_util::decompose(prop.ordering);
     for (const auto& d : decomposed) {
@@ -383,7 +388,7 @@ void delineate_bounds_only(datastructures::SampledDerivation<P>& deriv, const pr
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&, bool) {
-            if (all_relations_weak) return filter_util::result::INCLUSIVE;
+            if (all_relations_weak && !underlying_section) return filter_util::result::INCLUSIVE;
             else return filter_util::result::NORMAL;
         });
     }
