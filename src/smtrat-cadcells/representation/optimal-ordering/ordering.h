@@ -270,7 +270,7 @@ inline void compute_optimal_ordering(auto& proj,
 									 const auto& interval,
 									 auto& ordering,
 									 auto& equational) {
-	SMTRAT_TIME_START(start);
+	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_timer.start_this());
 
 	const auto& roots = delin.roots();
 	const bool is_section = delin_interval.is_section();
@@ -343,7 +343,7 @@ inline void compute_optimal_ordering(auto& proj,
 		ordering = ord;
 	}
 
-	SMTRAT_TIME_FINISH(ordering_stats.ordering_timer, start);
+	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_timer.finish());
 	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_costs.add(cost / 2));
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal ordering: " << ordering << " with cost " << cost / 2);
 }
