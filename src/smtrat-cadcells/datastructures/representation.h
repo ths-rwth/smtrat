@@ -29,7 +29,7 @@ struct CellRepresentation {
 };
 template<typename P>
 inline std::ostream& operator<<(std::ostream& os, const CellRepresentation<P>& data) {
-    os << "(cell: " << data.description << "; ordering: " << data.ordering << "; equational: " << data.equational << "; derivation: " << data.derivation << ")";
+    os << "(cell: " << data.description << "; ordering: " << data.ordering << "; equational: " << data.equational << "; derivation: " << " - " << ")"; // data.derivation
     return os;
 }
 

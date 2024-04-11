@@ -43,6 +43,7 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_interval_closed_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_unbounded_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_halfunbounded_count_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_interval_count_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_representation_equational_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_by_depth;
@@ -110,6 +111,7 @@ public:
         Statistics::addKeyValuePair("heuristics.interval.closed_count.by_depth", m_interval_closed_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.unbounded_count.by_depth", m_interval_unbounded_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.halfunbounded_count.by_depth", m_interval_halfunbounded_count_by_depth);
+        Statistics::addKeyValuePair("heuristics.interval.count.by_depth", m_interval_count_by_depth);
 
         Statistics::addKeyValuePair("heuristics.representation.equational_count.by_depth", m_representation_equational_count_by_depth);
         Statistics::addKeyValuePair("heuristics.representation.roots_inside.by_depth", m_representation_roots_inside_by_depth);
@@ -301,13 +303,15 @@ public:
         } else if (interval.lower().is_infty() || interval.upper().is_infty()) {
             m_interval_halfunbounded_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
         }        
-        if(interval.lower().is_weak() && interval.upper().is_weak()) {
+        if(interval.lower().is_weak() && interval.upper().is_weak() && !interval.is_section()) {
             m_interval_closed_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
         } else if(interval.lower().is_strict() && interval.upper().is_strict()) {
             m_interval_open_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
-        } else {
+        } else if (interval.lower().is_weak() || interval.upper().is_weak()) {
             m_interval_halfopen_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
         }
+
+        m_interval_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
     }
 
     void got_representation_equational(std::size_t num) {
