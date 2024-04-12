@@ -169,7 +169,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
-        response.description = util::compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
         if (der->cell().is_section()) {
             handle_section_all_equational(der->delin(), response);
         } else { // sector
@@ -180,7 +180,7 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
-        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
         return response;
     }
 };
@@ -205,8 +205,8 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
         handle_local_del_simplify_all(reduced_delineation);
     }
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(reduced_delineation, reduced_cell));
-    response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(der->level(), reduced_delineation, reduced_cell));
+    response.description = util::compute_simplest_cell(der->level(), der->proj(), reduced_cell, enable_weak);
     response.ordering.biggest_cell_wrt = response.description;
     if (der->cell().is_section()) {
         handle_local_del_simplify_non_independent(reduced_delineation);
@@ -219,7 +219,7 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
     return response;
 }
 
@@ -244,7 +244,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
-        response.description = util::compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             handle_section_all_equational(der->delin(), response);
@@ -256,7 +256,7 @@ struct cell<CellHeuristic::CHAIN_EQ> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
-        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
         return response;
     }
 };
@@ -266,7 +266,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
-        response.description = util::compute_simplest_cell(der->proj(), der->cell());
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
 
         if (der->cell().is_section()) {
             handle_section_all_equational(der->delin(), response);
@@ -278,7 +278,7 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
-        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
         return response;
     }
 };
@@ -293,7 +293,7 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
         handle_local_del_simplify_all(reduced_delineation);
     }
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-    response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
+    response.description = util::compute_simplest_cell(der->level(), der->proj(), reduced_cell, enable_weak);
     response.ordering = global_ordering;
 
     if (der->cell().is_section()) {
@@ -319,7 +319,7 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
     return response;
 }
 

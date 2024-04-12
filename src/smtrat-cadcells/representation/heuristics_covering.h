@@ -242,7 +242,7 @@ namespace smtrat::cadcells::representation {
             for (auto& iter : min_derivs) {
                 result.cells.emplace_back(iter);
                 auto& cell_result = result.cells.back();   
-                cell_result.description = util::compute_simplest_cell((iter)->proj(), (iter)->cell());
+                cell_result.description = util::compute_simplest_cell((iter)->level(), (iter)->proj(), (iter)->cell());
 
                 if ((iter)->cell().is_section()) {
                     handle_section_all_equational(iter, cell_result);
