@@ -54,13 +54,13 @@ inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& p
 }
 
 inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Projections& proj, const datastructures::DelineationInterval& del, bool enable_weak = false) {
+    #ifdef SMTRAT_DEVOPTION_Statistics
+    auto max_level = proj.polys().context().variable_ordering().size();
+    auto level = del.lower()->second.at(0).root.poly.level;
+    #endif
     if (del.is_section()) {
-        #ifdef SMTRAT_DEVOPTION_Statistics
-        auto max_level = proj.polys().context().variable_ordering().size();
-        auto level = del.lower()->second.at(0).root.poly.level;
-        statistics().section_common_zeros(max_level-level, del.lower()->second.size());
-        #endif
-        SMTRAT_STATISTICS_CALL(statistics().got_bound(datastructures::SymbolicInterval(util::simplest_bound(proj, del.lower()->second))));
+        SMTRAT_STATISTICS_CALL(statistics().section_common_zeros(max_level-level, del.lower()->second.size()));
+        SMTRAT_STATISTICS_CALL(statistics().got_bound(max_level-level, datastructures::SymbolicInterval(util::simplest_bound(proj, del.lower()->second))));
         return datastructures::SymbolicInterval(util::simplest_bound(proj, del.lower()->second));
     } else {
         datastructures::Bound lower = datastructures::Bound::infty();
@@ -81,7 +81,7 @@ inline datastructures::SymbolicInterval compute_simplest_cell(datastructures::Pr
                 upper = datastructures::Bound::weak(util::simplest_bound(proj, del.upper()->second, enable_weak));
             }
         }
-        SMTRAT_STATISTICS_CALL(statistics().got_bound(datastructures::SymbolicInterval(lower, upper)));
+        SMTRAT_STATISTICS_CALL(statistics().got_bound(max_level-level, datastructures::SymbolicInterval(lower, upper)));
         return datastructures::SymbolicInterval(lower, upper);
     }
 }

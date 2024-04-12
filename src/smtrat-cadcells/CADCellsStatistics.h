@@ -294,50 +294,50 @@ public:
         m_section_count++;
     }
 
-    void got_bound(const datastructures::SymbolicInterval& interval) {
-        m_interval_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+    void got_bound(std::size_t depth, const datastructures::SymbolicInterval& interval) {
+        m_interval_count_by_depth.inc(depth, 1);
 
         if (interval.is_section()) {
-            m_interval_point_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            m_interval_point_count_by_depth.inc(depth, 1);
         } else {
             if(interval.lower().is_infty() && interval.upper().is_infty()) {
-                m_interval_unbounded_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+                m_interval_unbounded_count_by_depth.inc(depth, 1);
             } else if (interval.lower().is_infty() || interval.upper().is_infty()) {
-                m_interval_halfunbounded_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+                m_interval_halfunbounded_count_by_depth.inc(depth, 1);
             }        
 
             if(interval.lower().is_weak() && interval.upper().is_weak()) {
-                m_interval_closed_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+                m_interval_closed_count_by_depth.inc(depth, 1);
             } else if(interval.lower().is_strict() && interval.upper().is_strict()) {
-                m_interval_open_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+                m_interval_open_count_by_depth.inc(depth, 1);
             } else if (interval.lower().is_weak() || interval.upper().is_weak()) {
-                m_interval_halfclosed_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+                m_interval_halfclosed_count_by_depth.inc(depth, 1);
             }
         }
     }
 
-    void got_representation_equational(std::size_t num) {
-        m_representation_equational_count_by_depth.inc(m_current_max_level-m_filter_current_level, num);
+    void got_representation_equational(std::size_t depth, std::size_t num) {
+        m_representation_equational_count_by_depth.inc(depth, num);
     }
 
-    void got_representation_roots_inside(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
+    void got_representation_roots_inside(std::size_t depth, const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
         if (interval.is_section()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, 0);
+            m_representation_roots_inside_by_depth.inc(depth, 0);
         } else if (interval.lower_unbounded() && interval.upper_unbounded()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, delin.roots().size());
+            m_representation_roots_inside_by_depth.inc(depth, delin.roots().size());
         } else if (interval.lower_unbounded()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(delin.roots().begin(), interval.upper()));
+            m_representation_roots_inside_by_depth.inc(depth, std::distance(delin.roots().begin(), interval.upper()));
         } else if (interval.upper_unbounded()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), delin.roots().end())-1);
+            m_representation_roots_inside_by_depth.inc(depth, std::distance(interval.lower(), delin.roots().end())-1);
         } else {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), interval.upper())-1);
+            m_representation_roots_inside_by_depth.inc(depth, std::distance(interval.lower(), interval.upper())-1);
         }
     }
 
     /// rules
 
-    void detect_intersection() {
-        m_rules_intersection_count_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+    void detect_intersection(std::size_t depth) {
+        m_rules_intersection_count_by_depth.inc(depth, 1);
     }
 };
 

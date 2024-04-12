@@ -180,7 +180,11 @@ struct cell<CellHeuristic::BIGGEST_CELL> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
-        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        auto max_level = der->proj().polys().context().variable_ordering().size();
+        auto level = der->level();
+        #endif
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(max_level-level, response.equational.size()));
         return response;
     }
 };
@@ -205,7 +209,11 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
         handle_local_del_simplify_all(reduced_delineation);
     }
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(reduced_delineation, reduced_cell));
+    #ifdef SMTRAT_DEVOPTION_Statistics
+    auto max_level = der->proj().polys().context().variable_ordering().size();
+    auto level = der->level();
+    #endif
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(max_level-level, reduced_delineation, reduced_cell));
     response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
     response.ordering.biggest_cell_wrt = response.description;
     if (der->cell().is_section()) {
@@ -219,7 +227,7 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(max_level-level, response.equational.size()));
     return response;
 }
 
@@ -256,7 +264,11 @@ struct cell<CellHeuristic::CHAIN_EQ> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
-        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        auto max_level = der->proj().polys().context().variable_ordering().size();
+        auto level = der->level();
+        #endif
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(max_level-level, response.equational.size()));
         return response;
     }
 };
@@ -278,7 +290,11 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
         }
         handle_connectedness(der, response);
         handle_ordering_polys(der, response);
-        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+        #ifdef SMTRAT_DEVOPTION_Statistics
+        auto max_level = der->proj().polys().context().variable_ordering().size();
+        auto level = der->level();
+        #endif
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(max_level-level, response.equational.size()));
         return response;
     }
 };
@@ -319,7 +335,11 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    #ifdef SMTRAT_DEVOPTION_Statistics
+    auto max_level = der->proj().polys().context().variable_ordering().size();
+    auto level = der->level();
+    #endif
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(max_level-level, response.equational.size()));
     return response;
 }
 
