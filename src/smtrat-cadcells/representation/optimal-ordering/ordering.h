@@ -306,7 +306,11 @@ inline void compute_optimal_ordering(auto& proj,
 	}
 
 	const auto [cov_below, cov_above, layer_below, layer_above, costs, root_to_index] = get_candidate_resultants<M>(proj, delin, delin_interval, ordering);
-	const auto [graph, matching_edges, cost] = brute_force(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
+	const auto graph = construct_graph(cov_below, cov_above, costs, root_to_index);
+
+	// const auto [graph, matching_edges, cost] = brute_force(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
+	util::Matching matching(graph);
+	const auto [matching_edges, cost] = matching.SolveMinimumCostPerfectMatching();
 
 	// iterate over edges in matching and add the corresponding roots to the ordering
 	auto ord = ordering;
