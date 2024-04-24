@@ -8,7 +8,7 @@
 #pragma once
 
 #include <string.h>
-#include <assert.h>
+#include <cassert>
 #include <sstream>
 
 namespace smtrat

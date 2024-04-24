@@ -18,6 +18,8 @@ struct ArithmeticTheory: public AbstractTheory  {
 
 	std::map<std::string, arithmetic::OperatorType> ops;
 	std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mITEs;
+	std::map<carl::Variable, std::tuple<Poly, Poly>> mKnownDivisions;
+	std::map<carl::Variable, std::tuple<Poly, Poly>> mNewDivisions;
 
 	ArithmeticTheory(ParserState* state);
 
@@ -29,11 +31,17 @@ struct ArithmeticTheory: public AbstractTheory  {
 	bool instantiate(const types::VariableType& var, const types::TermType& replacement, types::TermType& result, TheoryError& errors);
 	bool functionCall(const Identifier& identifier, const std::vector<types::TermType>& arguments, types::TermType& result, TheoryError& errors);
 
+	bool declareQuantifiedTerm(const std::vector<std::pair<std::string, carl::Sort>>& vars, const carl::FormulaType& type, const types::TermType& term, types::TermType& result, TheoryError& errors);
+
+	void handleDivisions();
+
 private:
 	std::map<FormulaT, carl::Variable> mappedFormulas;
 
 	bool convertArguments(const arithmetic::OperatorType& op, const std::vector<types::TermType>& arguments, std::vector<Poly>& result, TheoryError& errors);
 	bool convertTerm(const types::TermType& term, Poly& result, bool allow_bool = false);
+
+	void addQuantifierToFormula(FormulaT& f);
 
 };
 

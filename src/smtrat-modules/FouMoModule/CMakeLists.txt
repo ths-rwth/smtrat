@@ -1,5 +1,0 @@
-BeginDefineModule()
-ModuleMainHeader(FouMoModule/FouMoModule.h)
-ModuleName(FouMoModule)
-ModuleVersion(0 0 1)
-EndDefineModule()

@@ -82,19 +82,23 @@ void setup_logging() {
 	//carl::logging::logger().formatter("stdout")->printInformation = false;
 	carl::logging::logger().filter("smtrat")
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 	;
 	carl::logging::logger().filter("stdout")
 		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.preprocessing", carl::logging::LogLevel::LVL_DEBUG)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
+		// ("smtrat.covering_ng", carl::logging::LogLevel::LVL_TRACE)
 		// ("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
 		// ("smtrat.mcsat.onecell", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
+}
+
+void signal_handler(int) {
+	print_statistics();
+	std::quick_exit(143);
 }
 
 int main( int argc, char* argv[] )
@@ -149,6 +153,7 @@ int main( int argc, char* argv[] )
 			exitCode = smtrat::run_opb_file(strategy, smtrat::settings_parser().input_file);
 		} else {
 			// Parse input.
+			std::signal(SIGTERM, &signal_handler);
 			smtrat::resource::Limiter::getInstance().setTimeoutHandler(&print_statistics);		
 			try {
 

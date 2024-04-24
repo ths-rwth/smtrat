@@ -20,7 +20,7 @@ public:
 	void declareFun(const carl::Variable&) {}
 	void declareSort(const std::string&, const unsigned&) {}
 	void defineSort(const std::string&, const std::vector<std::string>&, const carl::Sort&) {}
-	void eliminateQuantifiers(const smtrat::qe::QEQuery&) {}
+	void qe() {}
 	void exit() {}
 	void getAssertions() {}
 	void getAllModels() {}

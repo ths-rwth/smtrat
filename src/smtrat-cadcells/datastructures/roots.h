@@ -18,7 +18,7 @@ struct IndexedRoot {
     /// The index, must be > 0.
     size_t index;
     IndexedRoot(PolyRef p, size_t i) : poly(p), index(i) { /*assert(i>0);*/ }
-    IndexedRoot() : IndexedRoot( PolyRef{0,0}, 0) {}
+    IndexedRoot() : IndexedRoot( PolyRef{0,0,0}, 0) {}
 };
 inline bool operator==(const IndexedRoot& lhs, const IndexedRoot& rhs) {
     return lhs.poly == rhs.poly && lhs.index == rhs.index;
@@ -34,6 +34,20 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     return os;
 }
 
+struct PiecewiseLinearInfo {
+    /// Active linear bound from -oo to including the first intersection point (or oo if no such point exists)
+    IndexedRoot first;
+    /// List of intersection points and linear bounds which are active beginning from including the given intersection point to including the next intersection point (or oo if no such point exists); at intersection points, two bounds are active; the list needs to be sorted by intersection point
+    std::vector<std::pair<Rational,IndexedRoot>> bounds;
+
+    bool poly_bound_at(const PolyRef& poly, const RAN& r) const {
+        if (bounds.empty()) return first.poly == poly;
+        auto it = bounds.begin();
+        while(it+1 != bounds.end() && r < (it+1)->first) it++;
+        return it->second.poly == poly;
+    }
+};
+
 /**
  * Represents the minimum function  of the contained indexed root functions.
  */
@@ -46,6 +60,7 @@ struct CompoundMinMax {
             }
         }
     }
+    std::optional<PiecewiseLinearInfo> bounds;
 };
 inline bool operator==(const CompoundMinMax& lhs, const CompoundMinMax& rhs) {
     return lhs.roots == rhs.roots;
@@ -73,6 +88,7 @@ struct CompoundMaxMin {
             }
         }
     }
+    std::optional<PiecewiseLinearInfo> bounds;
 };
 inline bool operator==(const CompoundMaxMin& lhs, const CompoundMaxMin& rhs) {
     return lhs.roots == rhs.roots;
@@ -389,7 +405,18 @@ class IndexedRootOrdering {
     
     std::vector<IndexedRootRelation> m_data;
 
+    boost::container::flat_map<datastructures::PolyRef, boost::container::flat_set<datastructures::PolyRef>> m_poly_pairs;
+
+    bool m_is_projective = false;
+
+    void add_poly_pair(PolyRef p1, PolyRef p2) {
+        m_poly_pairs.try_emplace(p1).first->second.insert(p2);
+        m_poly_pairs.try_emplace(p2).first->second.insert(p1);
+    }
+
 public:
+    std::optional<SymbolicInterval> biggest_cell_wrt; // a hack, stores which cell is described by this ordering
+
     void add_leq(RootFunction first, RootFunction second) {
         //assert(first.poly.level == second.poly.level);
         if (first != second) {
@@ -398,6 +425,10 @@ public:
             m_leq[first].insert(second);
             if (!m_geq.contains(second)) m_geq.emplace(second, boost::container::flat_set<RootFunction>());
             m_geq[second].insert(first);
+
+            if (first.is_root() && second.is_root()) {
+                add_poly_pair(first.root().poly, second.root().poly);
+            }
         }
     }
 
@@ -409,6 +440,10 @@ public:
         m_less[first].insert(second);
         if (!m_greater.contains(second)) m_greater.emplace(second, boost::container::flat_set<RootFunction>());
         m_greater[second].insert(first);
+
+        if (first.is_root() && second.is_root()) {
+            add_poly_pair(first.root().poly, second.root().poly);
+        }
     }
 
     void add_eq(RootFunction first, RootFunction second) {
@@ -535,10 +570,31 @@ public:
         polys(result);
         return result;
     }
+
+    const boost::container::flat_set<PolyRef>& polys(const PolyRef p) const {
+        return m_poly_pairs.at(p);
+    }
+
+    bool has_pair(const PolyRef p1, const PolyRef p2) const {
+        auto it = m_poly_pairs.find(p1);
+        if (it == m_poly_pairs.end()) return false;
+        return it->second.find(p2) != it->second.end();
+    }
+
+    void set_projective() {
+        m_is_projective = true;
+    }
+
+    bool is_projective() const {
+        return m_is_projective;
+    }
 };
 inline std::ostream& operator<<(std::ostream& os, const IndexedRootOrdering& data) {
     os << data.data();
     return os;
+}
+inline bool operator==(const IndexedRootOrdering& a, const IndexedRootOrdering& b) {
+    return a.data() == b.data();
 }
 
 }

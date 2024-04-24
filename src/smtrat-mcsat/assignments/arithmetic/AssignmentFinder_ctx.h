@@ -21,6 +21,7 @@ namespace arithmetic {
 
 using carl::operator<<;
 
+template<bool early_evaluation>
 class AssignmentFinder_ctx {
 #ifdef USE_LIBPOLY
 using Polynomial = carl::LPPolynomial;
@@ -91,18 +92,32 @@ public:
 		}
 	}
 	
-	bool addConstraint(const FormulaT& f1) {
+	bool addConstraint(const FormulaT& f1, std::map<FormulaT,carl::BasicConstraint<Polynomial>>& cache) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << f1);
 		if (!fits_context(f1)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f1 << " contains too many variables for context " << m_context);
 			return true;
 		}
-		auto f = carl::convert<Polynomial>(m_context, f1.constraint().constr());
+		if (cache.find(f1) == cache.end()) cache.emplace(f1, carl::convert<Polynomial>(m_context, f1.constraint().constr()));
+		auto& f = cache.at(f1);
+		if (f.lhs().context() != m_context) {
+			Polynomial p = f.lhs();
+			p.set_context(m_context);
+			f.set_lhs(std::move(p));
+		}
 		if (f.is_trivial_true() || f.is_trivial_false()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is constant " << f.is_trivial_true());
 			return f.is_trivial_true();
 		} else if (f.lhs().main_var() == m_var) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering univariate constraint " << f << " under " << m_assignment);
+			auto eval_res = carl::evaluate(f, m_assignment);
+			if (!boost::indeterminate(eval_res) && !eval_res) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
+				return false;
+			} else if (!boost::indeterminate(eval_res) && eval_res) {
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " simplified to true.");
+				return true;
+			}
 			std::vector<typename Polynomial::RootType> list;
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << f.lhs() << " in " << m_var << " w.r.t. " << m_assignment);
 			auto roots = carl::real_roots(f.lhs(), m_assignment);
@@ -125,6 +140,7 @@ public:
 			}
 		} else if (m_assignment.find(f.lhs().main_var()) != m_assignment.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " evaluates under " << m_assignment);
+			if (!early_evaluation) return true;
 			auto res = carl::evaluate(f, m_assignment);
 			assert(!indeterminate(res));
 			if (res) {
@@ -141,13 +157,17 @@ public:
 		}
 	}
 	
-	bool addMVBound(const FormulaT& f1) {
+	bool addMVBound(const FormulaT& f1, std::map<FormulaT,carl::VariableComparison<Polynomial>>& cache) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << f1);
 		if (!fits_context(f1)) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f1 << " contains too many variables for context " << m_context);
 			return true;
 		}
-		auto f = carl::convert<Polynomial>(m_context, f1.variable_comparison());
+		if (cache.find(f1) == cache.end()) cache.emplace(f1, carl::convert<Polynomial>(m_context, f1.variable_comparison()));
+		auto& f = cache.at(f1);
+		if (std::get<carl::MultivariateRoot<Polynomial>>(f.value()).poly().context() != m_context) {
+			std::get<carl::MultivariateRoot<Polynomial>>(f.value()).poly().set_context(m_context);
+		}
 		assert(std::get<carl::MultivariateRoot<Polynomial>>(f.value()).var() == f.var());
 		if (f.var() == m_var) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is univariate under " << m_assignment);
@@ -166,6 +186,7 @@ public:
 			}
 		} else if (m_assignment.find(f.var()) != m_assignment.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " evaluates under " << m_assignment);
+			if (!early_evaluation) return true;
 			auto res = carl::evaluate(f, m_assignment);
 			if (indeterminate(res)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " is not well-defined.");
@@ -211,9 +232,9 @@ public:
 			}
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", constraint << " vs " << m_ri.sampleFrom(last));
 			if (!satisfies(constraint, m_ri.sampleFrom(last))) {
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(last) << " which is " << m_ri.sampleFrom(roots.size()*2));
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(last) << " which is " << m_ri.sampleFrom(m_ri.size()*2));
 				// Refutes interval right of largest root
-				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(roots.size()*2) << " -> " << last << ".." << (m_ri.size()*2));
+				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", constraint << " refutes " << m_ri.sampleFrom(m_ri.size()*2) << " -> " << last << ".." << (m_ri.size()*2));
 				b.set_interval(last, m_ri.size()*2);
 			}
 			if (b.any()) {

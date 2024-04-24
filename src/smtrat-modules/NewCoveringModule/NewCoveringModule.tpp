@@ -290,6 +290,7 @@ Answer NewCoveringModule<Settings>::checkCore() {
         mVariableOrdering = mcsat::calculate_variable_order<Settings::variableOrderingStrategy>(mAllConstraints);
 
         SMTRAT_STATISTICS_CALL(getStatistics().setDimension(mVariableOrdering.size()));
+        SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(mVariableOrdering.size()));
 
         // We can clear mAllConstraints now, as we don't need it anymore -> Its only needed to calculate the variable ordering
         mAllConstraints.clear();

@@ -6,6 +6,6 @@
 
 namespace smtrat::qe::fm {
 
-FormulaT eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quantifiers);
+std::optional<FormulaT> qe(const FormulaT& f);
 
 }

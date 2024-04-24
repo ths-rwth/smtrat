@@ -3,7 +3,7 @@ from .data import *
 
 def inspect_answer(df, avg_runtimes = False):
     solvers = get_solvers(df)
-    answers = ['sat','unsat','unknown','wrong','error','timeout','memout','no answer','segmentation fault','segfault','abort','invalid']
+    answers = ['sat','unsat','unknown','wrong','error','timeout','memout','no answer','segmentation fault','segfault','abort','invalid','parsererror','nosuchfile']
     
     data = []
 

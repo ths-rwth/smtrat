@@ -18,37 +18,37 @@
 
 using namespace smtrat::cadcells;
 
-template<operators::op op>
+template<typename op>
 auto set_up(datastructures::Projections& proj, const std::vector<Polynomial>& polys, const Assignment& sample) {
-	auto derivation = datastructures::make_derivation<typename operators::PropertiesSet<op>::type>(proj, sample, sample.size()).sampled_ref();
+	SMTRAT_STATISTICS_CALL(smtrat::cadcells::statistics().set_max_level(sample.size()+1));
+	auto derivation = datastructures::make_derivation<typename op::PropertiesSet>(proj, sample, sample.size()).sampled_ref();
 	for (const auto& p : polys) {
 		derivation->insert(operators::properties::poly_sgn_inv{ proj.polys()(p) });
 	}
 	return derivation;
 }
 
-template<operators::op op>
-auto get_interval_using(datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type>& cell_deriv, datastructures::CellRepresentation<typename operators::PropertiesSet<op>::type>& cell_repr) {
+template<typename op>
+auto get_interval_using(datastructures::SampledDerivationRef<typename op::PropertiesSet>& cell_deriv, datastructures::CellRepresentation<typename op::PropertiesSet>& cell_repr) {
     assert((cell_deriv)->level() > 0);
 	SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project properties");
-    if (!operators::project_cell_properties<op>(*cell_deriv)) return CNF();
-    if (!operators::project_basic_properties<op>(*cell_deriv->delineated())) return CNF();
+    if (!op::project_basic_properties(*cell_deriv)) return DNF();
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Delineate properties");
-    operators::delineate_properties<op>(*cell_deriv);
+    op::delineate_properties(*cell_deriv);
     cell_deriv->delineate_cell();
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << cell_repr);
     if (cell_deriv->level() > 1) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");
-        if (!operators::project_delineated_cell_properties<op>(cell_repr)) return CNF();
+        if (!op::project_cell_properties(cell_repr)) return DNF();
     }
 	return helper::to_formula(cell_deriv->polys(), cell_deriv->main_var(), cell_repr.description);
 }
 
-template<operators::op op>
-auto next_level(datastructures::SampledDerivationRef<typename operators::PropertiesSet<op>::type> deriv) {
+template<typename op>
+auto next_level(datastructures::SampledDerivationRef<typename op::PropertiesSet> deriv) {
 	SMTRAT_LOG_TRACE("smtrat.cadcells", "Polynomials: " << deriv->polys());
 	return deriv->underlying().sampled_ref();
 }
@@ -70,6 +70,10 @@ auto as_carl(const std::vector<Atom>& atoms) {
 	}
 	return result;
 }
+
+struct McFSettings : operators::MccallumFilteredSettings {
+	static constexpr auto delineation_function = COMPOUND;
+};
 
 TEST(smtrat_cadcells, compound_bounds) {
 	if (!carl::logging::logger().has("stdout")) {
@@ -99,7 +103,7 @@ TEST(smtrat_cadcells, compound_bounds) {
 
 	datastructures::PolyPool pool(ctx);
     datastructures::Projections proj(pool);
-	auto deriv = set_up<operators::op::mccallum_filtered_all_compound>(proj, polys, ass);
+	auto deriv = set_up<operators::MccallumFiltered<McFSettings>>(proj, polys, ass);
 
 	auto upper_1 = P(ctx, 4)*P(ctx, var_y) + P(ctx, 4)*P(ctx, var_z) - P(ctx, 3);
 	auto upper_2 = P(ctx, 4)*P(ctx, var_y) - P(ctx, 4)*P(ctx, var_z) + P(ctx, 3);
@@ -114,13 +118,13 @@ TEST(smtrat_cadcells, compound_bounds) {
 	repr_z.ordering.add_less(datastructures::IndexedRoot(deriv->polys()(poly_p), 1), upper_bound);
 	repr_z.ordering.add_less(upper_bound, datastructures::IndexedRoot(deriv->polys()(poly_p), 2));
 	repr_z.ordering.add_less(upper_bound, datastructures::IndexedRoot(deriv->polys()(poly_q), 1));
-	auto res_z = get_interval_using<operators::op::mccallum_filtered_all_compound>(deriv, repr_z);
-	deriv = next_level<operators::op::mccallum_filtered_all_compound>(deriv);
+	auto res_z = get_interval_using<operators::MccallumFiltered<McFSettings>>(deriv, repr_z);
+	deriv = next_level<operators::MccallumFiltered<McFSettings>>(deriv);
 	std::cout << res_z << std::endl;
 	ASSERT_FALSE(res_z.empty());
 
-	auto res_y = algorithms::get_interval<operators::op::mccallum_filtered_all_compound, representation::BIGGEST_CELL>(deriv);
-	deriv = next_level<operators::op::mccallum_filtered_all_compound>(deriv);
+	auto res_y = algorithms::get_interval<operators::MccallumFiltered<McFSettings>, representation::BIGGEST_CELL_FILTER>(deriv);
+	deriv = next_level<operators::MccallumFiltered<McFSettings>>(deriv);
 	std::cout << res_y << std::endl;
 	
 	//ASSERT_EQ(res_default, res_filtered);

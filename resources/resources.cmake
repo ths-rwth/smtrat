@@ -73,8 +73,6 @@ if(DOXYGEN_FOUND AND ${CMAKE_VERSION} VERSION_LESS "3.9.0")
 endif()
 print_resource_info("Doxygen" Doxygen::doxygen "${DOXYGEN_VERSION}")
 
-include(resources/immer.cmake)
-
 if(USE_MIMALLOC)
 	include(resources/mimalloc.cmake)
 endif()

@@ -2,17 +2,8 @@
 
 #include <smtrat-common/smtrat-common.h>
 
-#include "QEQuery.h"
+namespace smtrat::qe {
 
-#include "cad/qe.h"
-#include "fm/qe.h"
+std::optional<FormulaT> qe(const FormulaT& formula);
 
-namespace smtrat {
-namespace qe {
-
-inline FormulaT eliminateQuantifiers(const FormulaT& qfree, const QEQuery& quantifiers) {
-	return cad::eliminateQuantifiers(qfree, quantifiers);
-}
-
-}
-}
+} // namespace smtrat::qe

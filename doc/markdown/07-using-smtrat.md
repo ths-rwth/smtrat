@@ -89,10 +89,13 @@ While many SMT-RAT strategies employ certain preprocessing techniques, it is som
 
 ### Quantifier elimination {#quantifier-elimination}
 
-**NOTE: This feature is currently not maintained. Expect bugs and wrong answers. This feature is disabled in the default build of SMT-RAT.**
+Instead of regular SMT solving, SMT-RAT can also perform quantifier elimination tasks.
+This feature is disabled in the default build of SMT-RAT and can be enabled by turning on the build option `CLI_ENABLE_QUANTIFIER_ELIMINATION`.
+This technique is used when the SMTLIB file contains a formula with quantifiers and a `(apply qe)` command like in z3.
+SMT-RAT supports different quantifier elimination methods. The default is based on cylindrical algebraic coverings and can handle non-linear arithmetic, arbitrary quantifiers and Boolean structure (NRA).
+For eliminating existential quantifiers from conjunctions of linear constraints, we provide the Fourier-Motzkin (FM) and the fmplex method.
+The method can be set either by passing the option `--module.parameter qe-method=<covering/fm/fmplex>` in the command line, or in the SMT-lib file via `(set-option :qe-method <covering/fm/fmplex>)`.
 
-Instead of regular SMT solving, SMT-RAT can also perform quantifier elimination tasks as described in @cite Neuhaeuser2018.
-This technique is used when the SMTLIB file contains a `eliminate-quantifiers` command like `(eliminate-quantifiers (exists x y) (forall z))`.
 
 ### DIMACS solving {#dimacs-solving}
 

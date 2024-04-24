@@ -1,7 +1,7 @@
 #include "AssignmentFinder.h"
 
-#include "AssignmentFinder_arithmetic.h"
-//#include "AssignmentFinder_ctx.h"
+//#include "AssignmentFinder_arithmetic.h"
+#include "AssignmentFinder_ctx.h"
 
 namespace smtrat {
 namespace mcsat {
@@ -12,10 +12,10 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 	#ifdef SMTRAT_DEVOPTION_Statistics
 		mStatistics.called();
 	#endif
-	// auto var_order = data.assignedVariables();
-	// var_order.push_back(var);
-	// AssignmentFinder_ctx af(var_order, var, data.model());
-	AssignmentFinder_detail af(var, data.model());
+	auto var_order = data.assignedVariables();
+	var_order.push_back(var);
+	AssignmentFinder_ctx<false> af(var_order, var, data.model());
+	// AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
 		if (!active(data, c)) {
@@ -24,7 +24,7 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 		}
 		assert(c.type() == carl::FormulaType::CONSTRAINT);
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding Constraint " << c);
-		if(!af.addConstraint(c)){
+		if(!af.addConstraint(c, m_cache_constraints)){
 			conflict.push_back(c);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "No Assignment, built conflicting core " << conflict << " under model " << data.model());
 			return AssignmentOrConflict(conflict);
@@ -36,7 +36,7 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 			continue;
 		}
 		SMTRAT_LOG_TRACE("smtrat.mcsat.arithmetic", "Adding MVBound " << b);
-		if (!af.addMVBound(b)) {
+		if (!af.addMVBound(b, m_cache_varcomp)) {
 			conflict.push_back(b);
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "No Assignment, built conflicting core " << conflict << " under model " << data.model());
 			return AssignmentOrConflict(conflict);

@@ -46,6 +46,14 @@ def virtual_best(df, solvers, name, statistics=[]):
 def filter_solved(df, solver):
     return df.loc[df[(solver,'answer')].isin(['sat','unsat'])].copy()
 
+def filter(df, solved_by=[], not_solved_by=[]):
+    df = df.copy()
+    for s in solved_by:
+        df = df[df[(s,'answer')].isin(['sat','unsat'])]
+    for s in not_solved_by:
+        df = df[~df[(s,'answer')].isin(['sat','unsat'])]
+    return df
+
 def cumulate_by_column(df, column):
     df.loc[:,'num'] = 1
     df = df.groupby([column]).count()
@@ -53,3 +61,27 @@ def cumulate_by_column(df, column):
     df = df[['num']]
     df = df.reset_index().set_index('num')
     return df
+
+def solved_by_class(df, solvers):
+    df = df.loc[:,[(s,'answer') for s in solvers]]
+    df = df.droplevel(1,1)
+    df = df.replace({'sat': 1, 'unsat': 1, 'unknown': 0,'wrong': 0,'error': 0,'timeout': 0,'memout': 0,'no answer': 0,'segmentation fault': 0,'segfault': 0,'abort': 0,'invalid': 0})
+    df['total']=1
+    df = df.groupby(df.index.to_series().str.split("/").str[0]).sum()
+    return df
+
+from itertools import chain, combinations
+
+def unique_solved_instances(df, solvers):
+    result_labels = []
+    results = []
+    
+    for group in chain.from_iterable(combinations(solvers, r) for r in range(len(solvers)+1)):
+        df2 = df
+        for t in group:
+            df2 = df2[df2[(t,'answer')].isin(['sat','unsat'])]
+        for t in (t for t in solvers if t not in group):
+            df2 = df2[~df2[(t,'answer')].isin(['sat','unsat'])]
+        result_labels.append(group)
+        results.append((df2.shape[0],df2.shape[0]/df.shape[0],))
+    return pd.DataFrame(results,index=result_labels,columns=['num. unique instances', 'rel. unique instances'])

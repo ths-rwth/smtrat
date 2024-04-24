@@ -115,48 +115,44 @@ inline std::ostream& operator<<(std::ostream& os, const poly_ord_inv& data) {
     return os;
 }
 
-struct root_well_def {
-    static constexpr bool is_flag = false; 
-    datastructures::IndexedRoot root;
-    size_t level() const {
-        return root.poly.level-1;
-    }
-    std::size_t hash_on_level() const {
-        auto hasher = std::hash<std::size_t>();
-        std::size_t seed = 0;
-        seed ^= hasher(root.poly.id) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        seed ^= hasher(root.index) + 0x9e3779b9 + (seed<<6) + (seed>>2);
-        return seed;
-    }
-};
-inline bool operator==(const root_well_def& lhs, const root_well_def& rhs) {
-    return lhs.root == rhs.root;
-}
-inline bool operator<(const root_well_def& lhs, const root_well_def& rhs) {
-    return lhs.root < rhs.root;
-}
-inline std::ostream& operator<<(std::ostream& os, const root_well_def& data) {
-    os << data.root << " well-def";
-    return os;
-}
-
-struct poly_pdel {
+struct poly_del {
     static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
     size_t level() const {
-        return poly.level-1;
+        return poly.base_level;
     }
     std::size_t hash_on_level() const {
         return std::hash<std::size_t>()(poly.id);
     }
 };
-inline bool operator==(const poly_pdel& lhs, const poly_pdel& rhs) {
+inline bool operator==(const poly_del& lhs, const poly_del& rhs) {
     return lhs.poly == rhs.poly;
 }
-inline bool operator<(const poly_pdel& lhs, const poly_pdel& rhs) {
+inline bool operator<(const poly_del& lhs, const poly_del& rhs) {
     return lhs.poly < rhs.poly;
 }
-inline std::ostream& operator<<(std::ostream& os, const poly_pdel& data) {
+inline std::ostream& operator<<(std::ostream& os, const poly_del& data) {
+    os << data.poly << " delineable";
+    return os;
+}
+
+struct poly_proj_del {
+    static constexpr bool is_flag = false; 
+    datastructures::PolyRef poly;
+    size_t level() const {
+        return poly.base_level;
+    }
+    std::size_t hash_on_level() const {
+        return std::hash<std::size_t>()(poly.id);
+    }
+};
+inline bool operator==(const poly_proj_del& lhs, const poly_proj_del& rhs) {
+    return lhs.poly == rhs.poly;
+}
+inline bool operator<(const poly_proj_del& lhs, const poly_proj_del& rhs) {
+    return lhs.poly < rhs.poly;
+}
+inline std::ostream& operator<<(std::ostream& os, const poly_proj_del& data) {
     os << data.poly << " projectively delineable";
     return os;
 }
@@ -182,30 +178,9 @@ inline std::ostream& operator<<(std::ostream& os, const cell_connected& data) {
     return os;
 }
 
-struct poly_additional_root_outside {
-    static constexpr bool is_flag = false; 
-    datastructures::PolyRef poly;   
-    size_t level() const {
-        return poly.level;
-    }
-     std::size_t hash_on_level() const {
-        return std::hash<std::size_t>()(poly.id);
-    }
-};
-inline bool operator==(const poly_additional_root_outside& lhs, const poly_additional_root_outside& rhs) {
-    return lhs.poly == rhs.poly;
-}
-inline bool operator<(const poly_additional_root_outside& lhs, const poly_additional_root_outside& rhs) {
-    return lhs.poly < rhs.poly;
-}
-inline std::ostream& operator<<(std::ostream& os, const poly_additional_root_outside& data) {
-    os << data.poly << " additional root outside";
-    return os;
-}
-
 struct poly_ord_inv_base {
     static constexpr bool is_flag = false; 
-    datastructures::PolyRef poly;   
+    datastructures::PolyRef poly;
     size_t level() const {
         return poly.level;
     }

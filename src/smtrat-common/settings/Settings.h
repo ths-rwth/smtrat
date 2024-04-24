@@ -5,10 +5,10 @@
 
 #include <any>
 #include <cassert>
-#include <map>
-#include <string>
-#include <sstream>
 #include <functional>
+#include <map>
+#include <sstream>
+#include <string>
 
 namespace smtrat {
 namespace settings {
@@ -38,13 +38,14 @@ struct ModuleSettings {
 
 private:
 	std::function<bool(const std::string&)> has_option;
-	std::function<const std::string&(const std::string&)> get_option;
+	std::function<std::string(const std::string&)> get_option;
 
 public:
-	ModuleSettings() : has_option([](const std::string&){return false;}), get_option([](const std::string&){return "";}) {
+	ModuleSettings()
+		: has_option([](const std::string&) { return false; }), get_option([](const std::string&) { return ""; }) {
 	}
 
-	void set_callbacks(std::function<bool(const std::string&)> callback_has, std::function<const std::string&(const std::string&)> callback_get) {
+	void set_callbacks(std::function<bool(const std::string&)> callback_has, std::function<std::string(const std::string&)> callback_get) {
 		has_option = callback_has;
 		get_option = callback_get;
 	}
@@ -58,29 +59,30 @@ public:
 				std::istringstream iss(get_option(key));
 				T value;
 				iss >> value;
-				return value;	
+				return value;
 			}
 		} else {
 			for (const auto& param : parameters) {
 				std::string p_key = param.substr(0, param.find("="));
 				if (p_key == key) {
 					if constexpr ((std::is_same_v<T, std::string>)) {
-						return param.substr(param.find("=")+1);
+						return param.substr(param.find("=") + 1);
 					} else {
-						std::istringstream iss(param.substr(param.find("=")+1));
+						std::istringstream iss(param.substr(param.find("=") + 1));
 						T value;
 						iss >> value;
-						return value;	
+						return value;
 					}
 				}
 			}
 		}
-        return default_value;
+		return default_value;
 	}
 };
 
-struct Settings: public carl::Singleton<Settings>, public carl::settings::Settings {
+struct Settings : public carl::Singleton<Settings>, public carl::settings::Settings {
 	friend carl::Singleton<Settings>;
+
 private:
 	Settings() {
 		get<CoreSettings>("core");
@@ -89,7 +91,7 @@ private:
 	}
 };
 
-}
+} // namespace settings
 
 inline const settings::Settings& Settings() {
 	return settings::Settings::getInstance();
@@ -108,4 +110,4 @@ inline const auto& settings_module() {
 	return s;
 }
 
-}
+} // namespace smtrat

@@ -281,8 +281,12 @@ public:
     };
 
     void merge_with(const DelineatedDerivation<Properties>& other) {
-        assert(m_delineation.empty() && other.m_delineation.empty());
         m_base->merge_with(*other.m_base);
+        if (!m_delineation.empty() && !other.m_delineation.empty()) {
+            m_delineation.merge_with(other.m_delineation);
+        } else {
+            assert(m_delineation.empty() && other.m_delineation.empty());
+        }
     };
 };
 
@@ -341,8 +345,12 @@ public:
     const PropertiesTSet<P>& properties() const { return m_delineated->template properties<P>(); };
 
     void merge_with(const SampledDerivation<Properties>& other) {
-        assert(!m_cell && !other.m_cell);
         m_delineated->merge_with(*other.delineated());
+        if (m_cell && other.m_cell) {
+            delineate_cell();
+        } else {
+            assert(!m_cell && !other.m_cell);
+        }
     };
 };
 
@@ -383,6 +391,17 @@ SampledDerivationRef<Properties> make_sampled_derivation(DelineatedDerivationRef
 }
 
 /**
+ * Initializes a sampled derivation w.r.t. the delineated derivation and sample.
+ */
+template<typename Properties>
+SampledDerivationRef<Properties> make_sampled_derivation(SampledDerivationRef<Properties> underlying, const RAN& main_sample) {
+    auto base_ref = std::make_shared<BaseDerivation<Properties>>(underlying->proj(), underlying, underlying->level()+1);
+    auto delineated_ref = std::make_shared<DelineatedDerivation<Properties>>(base_ref);
+    auto sampled_ref = std::make_shared<SampledDerivation<Properties>>(delineated_ref, main_sample);
+    return sampled_ref;
+}
+
+/**
  * Merges the underlying derivations of a set of sampled derivations. After the operation, all sampled derivations point to the same underlying derivation.
  */
 template<typename Properties>
@@ -399,6 +418,18 @@ void merge_underlying(std::vector<SampledDerivationRef<Properties>>& derivations
     for (auto& deriv : derivations) {
         deriv->base()->m_underlying = first_underlying;
     }
+}
+
+/**
+ * Merges a set of sampled derivations. After the operation, all sampled derivations point to the same underlying derivation.
+ */
+template<typename Properties>
+SampledDerivationRef<Properties> merge(std::vector<SampledDerivationRef<Properties>>& derivations) {
+    auto first = *derivations.begin();
+    for (auto iter = std::next(derivations.begin()); iter != derivations.end(); iter++) {
+        first->base()->merge_with(*((*iter)->base()));
+    }
+    return first;
 }
 
 

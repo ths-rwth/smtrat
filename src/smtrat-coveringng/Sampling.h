@@ -4,8 +4,7 @@ namespace smtrat::covering_ng {
 
 
 enum class SamplingAlgorithm {
-    /// First checks lower bound and then upper bound, then checks between the cells if they are covered.
-    LOWER_UPPER_BETWEEN_SAMPLING 
+    LOWER_UPPER_BETWEEN_SAMPLING, LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN
 };
 
 /*
@@ -16,17 +15,18 @@ enum class SamplingAlgorithm {
  */
 template<SamplingAlgorithm S>
 struct sampling {
-    template<typename FE, cadcells::operators::op op>
-    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& derivations, const FE& f);
+    template<typename FE, typename PropertiesSet>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& derivations, const FE& f);
 };
 
+/// First checks lower bound and then upper bound, then checks between the cells if they are covered.
 template<>
 struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
-    template<typename FE, cadcells::operators::op op>
-    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<op>& intervals, const FE&) {
+    template<typename FE, typename PropertiesSet>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& intervals, const FE&) {
         // remove redundancies of the first kind
         // the derivations are already sorted by lower bound
-        std::vector<Interval<op>> derivs;
+        std::vector<Interval<PropertiesSet>> derivs;
         auto iter = intervals.begin();
         while (iter != intervals.end()) {
             derivs.push_back(*iter);
@@ -58,6 +58,46 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING> {
                 }
             }
             // The cells cover the number line -> There is no sample to be found
+            return std::nullopt;
+        }
+    }
+};
+
+/// First checks lower bound and then upper bound, then checks between the cells if they are covered (defers choosing interval endpoints as much as possible).
+template<>
+struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN> {
+    template<typename FE, typename PropertiesSet>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& intervals, const FE&) {
+        std::vector<Interval<PropertiesSet>> derivs;
+        auto iter = intervals.begin();
+        while (iter != intervals.end()) {
+            derivs.push_back(*iter);
+            auto& last_cell = (*iter)->cell();
+            iter++;
+            while (iter != intervals.end() && !cadcells::datastructures::upper_lt_upper(last_cell, (*iter)->cell()))
+                iter++;
+        }
+
+        if (derivs.empty()) {
+            return cadcells::RAN(0);
+        } else if (!derivs.front()->cell().lower_unbounded()) {
+            return carl::sample_below(derivs.front()->cell().lower()->first);
+        } else if (!derivs.back()->cell().upper_unbounded()) {
+            return carl::sample_above(derivs.back()->cell().upper()->first);
+        } else {
+            for (size_t i = 0; i + 1 < derivs.size(); i++) {
+                if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())) {
+                    if (derivs[i]->cell().upper()->first != derivs[i + 1]->cell().lower()->first) {
+                        return carl::sample_between(derivs[i]->cell().upper()->first, derivs[i + 1]->cell().lower()->first);
+                    }
+                }
+            }
+            for (size_t i = 0; i + 1 < derivs.size(); i++) {
+                if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())) {
+                    assert (derivs[i]->cell().upper()->first == derivs[i + 1]->cell().lower()->first);
+                    return derivs[i]->cell().upper()->first;
+                }
+            }
             return std::nullopt;
         }
     }

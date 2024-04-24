@@ -5,6 +5,7 @@
 #include <smtrat-cadcells/helper_formula.h>
 
 #include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
 #include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
 #include <smtrat-cadcells/representation/heuristics.h>
 
@@ -14,59 +15,6 @@
 #include <carl-formula/formula/functions/Visit.h>
 
 namespace smtrat::mcsat::onecell {
-
-struct Base {
-    constexpr static bool use_approximation = false;
-};
-
-struct LDBSettings : Base {
-    // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
-    // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
-    constexpr static auto op = cadcells::operators::op::mccallum;
-};
-
-struct LDBFilteredAllSelectiveSettings : Base {
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EW;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
-};
-
-struct BCSettings : Base {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
-    constexpr static auto op = cadcells::operators::op::mccallum;
-};
-
-struct BCFilteredSettings : Base {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_EW;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_EW;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered;
-};
-
-struct BCFilteredAllSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all;
-};
-
-struct BCFilteredBoundsSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_bounds;
-};
-
-struct BCFilteredSamplesSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_samples;
-};
-
-struct BCFilteredAllSelectiveSettings : BCFilteredSettings {
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_all_selective;
-};
-
-struct BCApproximationSettings : BCSettings {
-    constexpr static bool use_approximation = true;
-    constexpr static auto cell_apx_heuristic = cadcells::representation::BIGGEST_CELL_APPROXIMATION;
-};
 
 /**
  * An MCSAT-style single cell explanation function.
@@ -80,11 +28,12 @@ struct BCApproximationSettings : BCSettings {
  * @return A set of constraints whose conjunction describes an unsatisfying cell that can be concluded from the input constraints.
  */
 template<typename Settings>
-std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
+std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
     #ifdef SMTRAT_DEVOPTION_Statistics
         cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
         stats.newCell();
     #endif
+    SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(sample.size()+1));
 
     bool consider_approximation = Settings::use_approximation && cadcells::representation::approximation::ApxCriteria::cell(constraints);
     #ifdef SMTRAT_DEVOPTION_Statistics
@@ -114,33 +63,44 @@ std::optional<cadcells::CNF> onecell(const std::vector<cadcells::Atom>& constrai
     }) == constraints.end();
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "constraints_all_strict = " << constraints_all_strict);
 
-    auto derivation = cadcells::algorithms::get_level_covering<Settings::op, Settings::covering_heuristic>(proj, constraints, sample);
+    auto derivation = cadcells::algorithms::get_level_covering<typename Settings::op, Settings::covering_heuristic>(proj, constraints, sample);
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
     if (!derivation) {
         return std::nullopt;
     }
 
-    cadcells::CNF description;
+    cadcells::DNF description;
     while ((*derivation)->level() > 0) {
         std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
         if constexpr (Settings::use_approximation) {
             if (consider_approximation && cadcells::representation::approximation::ApxCriteria::level((*derivation)->level())) {
-                lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_apx_heuristic>(*derivation);
+                lvl = cadcells::algorithms::get_interval<typename Settings::op, Settings::cell_apx_heuristic>(*derivation);
             } else {
-                lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_heuristic>(*derivation);
+                lvl = cadcells::algorithms::get_interval<typename Settings::op, Settings::cell_heuristic>(*derivation);
             }
         } else {
-            lvl = cadcells::algorithms::get_interval<Settings::op, Settings::cell_heuristic>(*derivation);
+            lvl = cadcells::algorithms::get_interval<typename Settings::op, Settings::cell_heuristic>(*derivation);
         }
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
         if (!lvl) {
             return std::nullopt;
         }
-        if (constraints_all_strict) {
+        if (Settings::exploit_strict_constraints && constraints_all_strict) {
             lvl->second.set_to_closure();
         }
         auto res = cadcells::helper::to_formula(proj.polys(), lvl->first, lvl->second);
-        // TODO if res contains indexed root expression, then set constraints_all_strict to false 
+        if (constraints_all_strict) {
+            for (const auto& a : res) {
+                for (const auto& b : a) {
+                    if (std::holds_alternative<cadcells::VariableComparison>(b)) {
+                        constraints_all_strict = false;
+                        SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "constraints_all_strict = false due to " << b);
+                        break;
+                    }
+                }
+                if (!constraints_all_strict) break;
+            }
+        }
         description.insert(description.end(), res.begin(), res.end());
         proj.clear_assignment_cache((*derivation)->sample());
         (*derivation) = (*derivation)->underlying().sampled_ref();

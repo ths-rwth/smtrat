@@ -41,10 +41,10 @@ class LevelWiseInformation {
 
     // get the covering heuristic from the settings
     static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = Settings::covering_heuristic;
-    static constexpr cadcells::operators::op op = Settings::op;
+    using op = typename Settings::op;
     static constexpr SamplingAlgorithm sampling_algorithm = Settings::sampling_algorithm;
     static constexpr IsSampleOutsideAlgorithm is_sample_outside_algorithm = Settings::is_sample_outside_algorithm;
-    using PropSet = typename operators::PropertiesSet<Settings::op>::type;
+    using PropSet = typename op::PropertiesSet;
 
 private:
     // All Information that has been gathered for this level
@@ -136,11 +136,6 @@ public:
         // The cells cover the numberline -> Compute the covering representation
         std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end());
         mCovering = representation::covering<covering_heuristic>::compute(derivationsVector);
-        if (!mCovering.has_value()) {
-            mCoveringStatus = CoveringStatus::failed;
-            SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
-            return true;
-        }
         SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
         SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
         return true;
@@ -294,16 +289,18 @@ public:
         auto usedConstraints = getConstraintsOfCovering(mDerivationToConstraint);
         auto cell_derivs = fullCovering.sampled_derivations();
         datastructures::merge_underlying(cell_derivs);
-        operators::project_covering_properties<op>(fullCovering);
-        datastructures::SampledDerivationRef<PropSet> new_deriv = fullCovering.cells.front().derivation->underlying().sampled_ref();
-        if (!operators::project_cell_properties<op>(*new_deriv)) {
+        if (!op::project_covering_properties(fullCovering)) {
             SMTRAT_LOG_DEBUG("smtrat.covering", "Could not project properties");
             SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
-
             return std::nullopt;
         }
-        operators::project_basic_properties<op>(*new_deriv->delineated());
-        operators::delineate_properties<op>(*new_deriv);
+        datastructures::SampledDerivationRef<PropSet> new_deriv = fullCovering.cells.front().derivation->underlying().sampled_ref();
+        if (!op::project_basic_properties(*new_deriv)) {
+            SMTRAT_LOG_DEBUG("smtrat.covering", "Could not project properties");
+            SMTRAT_TIME_FINISH(getStatistics().timeForConstructDerivation(), startTime);
+            return std::nullopt;
+        }
+        op::delineate_properties(*new_deriv);
         new_deriv->delineate_cell();
         SMTRAT_LOG_DEBUG("smtrat.covering", "Found new unsat cell for the higher dimension: " << new_deriv->cell());
 

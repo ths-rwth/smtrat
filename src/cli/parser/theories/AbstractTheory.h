@@ -98,6 +98,14 @@ struct AbstractTheory {
 	}
 	
 	/**
+	 * Resolve a quantified term.
+	 */
+	virtual bool declareQuantifiedTerm(const std::vector<std::pair<std::string, carl::Sort>>& , const carl::FormulaType& , const types::TermType& , types::TermType& , TheoryError& errors){
+		errors.next() << "Quantified terms are not supported.";
+		return false;
+	}
+
+	/**
 	 * Initialize the global symbol table for simple sorts.
 	 */
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>&) {}

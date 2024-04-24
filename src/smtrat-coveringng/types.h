@@ -7,57 +7,192 @@
 #include <smtrat-cadcells/datastructures/polynomials.h>
 #include <smtrat-cadcells/datastructures/projections.h>
 #include <smtrat-cadcells/operators/operator_mccallum.h>
+#include <smtrat-cadcells/operators/operator_mccallum_filtered.h>
 #include <smtrat-cadcells/representation/heuristics.h>
+#include <carl-formula/formula/functions/PNF.h>
+
+#include <boost/container/flat_map.hpp>
 
 namespace smtrat::covering_ng {
 
-template<cadcells::operators::op op>
-using Interval = cadcells::datastructures::SampledDerivationRef<typename cadcells::operators::PropertiesSet<op>::type>;
+template<typename PropertiesSet>
+using Interval = cadcells::datastructures::SampledDerivationRef<PropertiesSet>;
 /**
- * Sorts interval by their lower bounds. 
+ * Sorts interval by their lower bounds.
  */
-template<cadcells::operators::op op>
+template<typename PropertiesSet>
 struct IntervalCompare {
-	inline constexpr bool operator()(const Interval<op>& a, const Interval<op>& b) const {
-		auto cell_a = a->cell();
-		auto cell_b = b->cell();
+	inline constexpr bool operator()(const Interval<PropertiesSet>& a, const Interval<PropertiesSet>& b) const {
+		const auto& cell_a = a->cell();
+		const auto& cell_b = b->cell();
 		return cadcells::datastructures::lower_lt_lower(cell_a, cell_b) || (cadcells::datastructures::lower_eq_lower(cell_a, cell_b) && cadcells::datastructures::upper_lt_upper(cell_b, cell_a));
 	}
 };
-template<cadcells::operators::op op>
-using IntervalSet = std::set<Interval<op>, IntervalCompare<op>>;
+template<typename PropertiesSet>
+using IntervalSet = std::set<Interval<PropertiesSet>, IntervalCompare<PropertiesSet>>;
 
-template<cadcells::operators::op op>
+enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER };
+
+template<typename PropertiesSet>
 struct CoveringResult {
-    enum Status { SAT, UNSAT, FAILED_PROJECTION, FAILED };
-    struct NONE{};
-
     Status status;
-    std::variant<std::vector<Interval<op>>, cadcells::Assignment, NONE> content;
-    
-    CoveringResult() : status(FAILED), content(NONE {}) {}
-    CoveringResult(Status s) : status(s), content(NONE {}) {}
-    CoveringResult(std::vector<Interval<op>>& c) : status(UNSAT), content(c) {}
-    CoveringResult(const cadcells::Assignment& c) : status(SAT), content(c) {}
+	std::optional<std::vector<Interval<PropertiesSet>>> m_intervals;
+	std::optional<cadcells::Assignment> m_sample;
 
-    bool is_failed() {
-        return status == FAILED_PROJECTION || status == FAILED;
+	CoveringResult() : status(Status::FAILED) {}
+	explicit CoveringResult(Status s) : status(s){}
+	// explicit CoveringResult(std::vector<Interval<PropertiesSet>>& inter) : status(UNSAT), m_intervals(inter) {}
+	// explicit CoveringResult(const cadcells::Assignment& ass) : status(SAT), m_sample(ass) {}
+	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter) {}
+	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>&& inter) : status(s), m_intervals(inter) {}
+	CoveringResult(Status s, const cadcells::Assignment& ass) : status(s), m_sample(ass) {}
+	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass) : status(s), m_sample(ass) {}
+	CoveringResult(Status s, const cadcells::Assignment& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
+	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
+
+    bool is_failed() const {
+        return status == Status::FAILED_PROJECTION || status == Status::FAILED;
     }
-    bool is_failed_projection() {
-        return status == FAILED_PROJECTION;
+	bool is_failed_projection() const {
+        return status == Status::FAILED_PROJECTION;
     }
     bool is_sat() const {
-        return status == SAT;
+        return status == Status::SAT;
     }
     bool is_unsat() const {
-        return status == UNSAT;
+        return status == Status::UNSAT;
     }
+	bool is_parameter() const {
+		return  status == Status::PARAMETER;
+	}
     const auto& sample() const {
-        return std::get<cadcells::Assignment>(content);
+		return m_sample;
     }
     const auto& intervals() const {
-        return std::get<std::vector<Interval<op>>>(content);
+        assert(m_intervals);
+		return *m_intervals;
     }
 };
+
+template<typename PropertiesSet>
+std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& result){
+	switch (result.status) {
+	case Status::SAT:
+		os << "SAT" ;
+		break;
+	case Status::UNSAT:
+		os << "UNSAT" ;
+		break;
+	case Status::FAILED:
+		os << "Failed" ;
+		break;
+	case Status::FAILED_PROJECTION:
+		os << "Failed Projection" ;
+		break;
+	case Status::PARAMETER:
+		os << "Parameter" ;
+		break;
+	}
+	return os;
+}
+
+struct ParameterTree {
+	unsigned short status; // 0 false 1 true 2 unknown 
+	std::optional<carl::Variable> variable;
+	std::optional<cadcells::datastructures::SymbolicInterval> interval;
+	std::optional<cadcells::Assignment> sample;
+	std::vector<ParameterTree> children;
+
+	ParameterTree() : status(2) {}
+	ParameterTree(unsigned short s) : status(s) {}
+	ParameterTree(const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s, std::vector<ParameterTree>&& c) : status(2), variable(v), interval(i), sample(s), children(std::move(c)) {
+		assert(!children.empty());
+		status = children.begin()->status;
+		for (const auto& child : children) {
+			if (child.status != status) {
+				status = 2; 
+				break;
+			}
+		}
+		if (status != 2) {
+			children.clear();
+		}
+	}
+	ParameterTree(std::vector<ParameterTree>&& c) : status(2), children(std::move(c)) {
+		assert(!children.empty());
+		status = children.begin()->status;
+		for (const auto& child : children) {
+			if (child.status != status) {
+				status = 2; 
+				break;
+			}
+		}
+		if (status != 2) {
+			children.clear();
+		}
+	}
+	ParameterTree(unsigned short st, const carl::Variable& v, const cadcells::datastructures::SymbolicInterval& i, const cadcells::Assignment& s) : status(st), variable(v), interval(i), sample(s) {
+		assert(st != 2);
+	}
+};
+static std::ostream& operator<<(std::ostream& os, const ParameterTree& tree){
+	os << tree.status;
+	if (tree.variable) {
+		os << " " << *tree.variable << " " << *tree.interval << " " << *tree.sample;
+	}
+	os << " (" << std::endl;
+	for (const auto& child : tree.children) {
+		os << child << std::endl;
+	}
+	os << ")";
+	return os;
+}
+inline std::ostream& operator<<(std::ostream& os, const std::vector<ParameterTree>& trees){
+	os << "[";
+	for (const auto& tree : trees) {
+		os << tree.status << ", ";
+	}
+	os << "]";
+	return os;
+}
+
+class VariableQuantification {
+private:
+	boost::container::flat_map<carl::Variable, carl::Quantifier> m_var_types;
+
+public:
+	[[nodiscard]] const auto& var_types() const {
+		return m_var_types;
+	}
+
+	/**
+	 * Returns the type of the given variable.
+	 * @param var The variable.
+	 * @return The type of the variable. Returns EXISTS if the variable is not quantified.
+	 **/
+	[[nodiscard]] carl::Quantifier var_type(const carl::Variable& var) const{
+		auto it = m_var_types.find(var);
+		if (it == m_var_types.end()) {
+			return carl::Quantifier::FREE;
+		}
+		return it->second;
+	}
+
+	bool has(const carl::Variable& var) const{
+		return m_var_types.find(var) != m_var_types.end();
+	}
+
+	void set_var_type(const carl::Variable& var, carl::Quantifier type){
+		m_var_types[var] = type;
+	}
+
+};
+
+inline std::ostream& operator<<(std::ostream& os, const VariableQuantification& vq) {
+	for (const auto& [var, type] : vq.var_types()) {
+		os << "(" << type << " " << var << ")";
+	}
+	return os;
+}
 
 }

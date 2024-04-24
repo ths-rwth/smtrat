@@ -1,165 +1,183 @@
 #include "FourierMotzkinQE.h"
+#include "../util/EqualitySubstitution.h"
+#include "eigen_helpers.h"
+
 
 namespace smtrat::qe::fm {
 
-    FormulaT FourierMotzkinQE::eliminateQuantifiers() {
-        // iterate over query
-        for(const auto& QuantifierVariablesPair : mQuery) {
-            // we are ignoring the quantifier type
-            assert(QuantifierVariablesPair.first == QuantifierType::EXISTS);
+FormulaT FourierMotzkinQE::eliminateQuantifiers() {
+    // gather quantified variables
+    std::vector<carl::Variable> elimination_vars;
+    for (const auto& [type, vars] : m_query) {
+        assert(type == QuantifierType::EXISTS); // Only support existential for now
+        elimination_vars.insert(elimination_vars.end(), vars.begin(), vars.end());
+    }
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().vars(elimination_vars.size()));
 
-            // eliminate one variable after the other
-            for(const auto& var : QuantifierVariablesPair.second) {
-                std::cout << "eliminate " << var << std::endl;
+    // gather input constraints
+    FormulasT constraints;
+    if (m_formula.type() == carl::FormulaType::CONSTRAINT) constraints.push_back(m_formula);
+    else constraints = m_formula.subformulas();
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().input(constraints.size()));
 
-                auto bounds = findBounds(var);
-                // combine all lower-upper bound pairs.
-                FormulasT newConstraints;
-                if(!bounds[2].empty()) {
-                    newConstraints = substituteEquations(bounds,var);
-                } else {
-                    newConstraints = createNewConstraints(bounds, var);
-                }
-
-                // add all constraints which are not containing var to newConstraints
-                for(const auto formulaIt : bounds[2]) {
-                    assert((formulaIt).type() == carl::FormulaType::CONSTRAINT);
-                    newConstraints.emplace_back(formulaIt);
-                }
-
-                // assemble new formula
-                mFormula = FormulaT(carl::FormulaType::AND, newConstraints);
-            }
-        }
-
-        return mFormula;
+    for (const auto& c : constraints) {
+        assert(c.type() == carl::FormulaType::CONSTRAINT);
+        assert(
+            c.constraint().relation() == carl::Relation::LEQ ||
+            c.constraint().relation() == carl::Relation::EQ // TODO: what about strict constraints?
+        );
     }
 
-    typename FourierMotzkinQE::FormulaPartition FourierMotzkinQE::findBounds(const carl::Variable& variable) {
-        // result vector initialized with three subsets
-        typename FourierMotzkinQE::FormulaPartition res{4,std::vector<FormulaT>()};
 
-        // if the formula only contains one constraint, check for occurence of the variable.
-        if(mFormula.type() == carl::FormulaType::CONSTRAINT) {
-            if(!mFormula.constraint().variables().has(variable)) {
-                res[3].push_back(mFormula);
-            } else {
-                if(mFormula.constraint().relation() == carl::Relation::EQ){
-                    res[2].push_back(mFormula);
-                } else if(isLinearLowerBound(mFormula.constraint(), variable)){
-                    res[0].push_back(mFormula);
-                } else {
-                    res[1].push_back(mFormula);
-                }
-            }
-            return res;
-        }
+    // eliminate variables using equalities
+    qe::util::EquationSubstitution es(constraints, elimination_vars);
+    if (!es.apply()) {
+        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elimination_vars.size()));
+        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().eq_conflict());
+        return FormulaT(carl::FormulaType::FALSE);
+    }
+    constraints      = es.remaining_constraints();
+    elimination_vars = es.remaining_variables();
+    SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after es: " << constraints);
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elimination_vars.size()));
 
-        // More than one constaint: search formula to find bounds
-        for(auto formulaIt = mFormula.begin(); formulaIt != mFormula.end(); ++formulaIt) {
-            assert((*formulaIt).type() == carl::FormulaType::CONSTRAINT);
-            if((*formulaIt).constraint().variables().has(variable)) {
-                if((*formulaIt).constraint().relation() == carl::Relation::EQ) {
-                    res[2].push_back(*formulaIt);
-                } else if(isLinearLowerBound((*formulaIt).constraint(), variable)) {
-                    res[0].push_back(*formulaIt);
-                } else {
-                    res[1].push_back(*formulaIt);
-                }
-            } else {
-                res[2].push_back(*formulaIt);
-            }
-        }
+    if (elimination_vars.empty()) {
+        return FormulaT(carl::FormulaType::AND, constraints);
+    }
+    
+    // filter finished constraints from remaining constraints
+    FormulasT filtered;
+    for (const auto& c : constraints) {
+        auto vars = carl::variables(c).as_set();
+        if (std::any_of(elimination_vars.begin(),
+                        elimination_vars.end(),
+                        [&vars](const auto v){ return vars.contains(v); })
+        ) { 
+            filtered.push_back(c);
+        } else m_finished.insert(c);
+    }
+    constraints = filtered;
+    SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after filtering: " << constraints);
 
-        return res;
+    // map from variables to indices
+    m_var_idx = qe::util::VariableIndex(elimination_vars);
+    m_var_idx.gather_variables(constraints);
+    
+    // gather elimination indices
+    std::vector<std::size_t> elim_cols;
+    for (std::size_t i = 0; i < elimination_vars.size(); ++i) {
+        elim_cols.push_back(i);
     }
 
-    FormulasT FourierMotzkinQE::createNewConstraints(const typename FourierMotzkinQE::FormulaPartition& bounds, carl::Variable v) {
+    // transform to matrix-vector representation
+    matrix_t m = matrix_t::Zero(constraints.size(), m_var_idx.size());
+    vector_t b = vector_t::Zero(constraints.size());
 
-        FormulasT constraints;
-
-        // combine all pairs of lower and upper bounds.
-        for(const auto& lowerBnd : bounds[0]) {
-            for(const auto& upperBnd : bounds[1]) {
-                std::cout << "Combine " << (lowerBnd) << " and " << (upperBnd) << std::endl;
-
-                Poly lhs = getRemainder(lowerBnd.constraint(), v, true);
-
-                std::cout << "Lhs is " << lhs << std::endl;
-
-                Poly rhs = getRemainder(upperBnd.constraint(), v, false);
-
-                std::cout << "Rhs is " << rhs << std::endl;
-
-                constraints.emplace_back(FormulaT(ConstraintT(lhs-rhs, carl::Relation::LEQ)));
-
-                std::cout << "Created new constraint: " << constraints.back() << std::endl;
-            }
-        }
-
-        return constraints;
-    }
-
-    FormulasT FourierMotzkinQE::substituteEquations(const typename FourierMotzkinQE::FormulaPartition& bounds, carl::Variable v) {
-        assert(!bounds[2].empty());
-        FormulasT constraints;
-
-        // check if equations are pairwise equal - if not return false, otherwise use one of the equations.
-        for(const auto& f : bounds[2]) {
-            assert(f.type() == carl::FormulaType::CONSTRAINT);
-            for(const auto& g : bounds[2]) {
-                assert(g.type() == carl::FormulaType::CONSTRAINT);
-                if( FormulaT(f.constraint().lhs() - g.constraint().lhs(), carl::Relation::EQ).type() == carl::FormulaType::FALSE) {
-                    constraints.emplace_back(FormulaT(carl::FormulaType::FALSE));
-                    return constraints;
-                }
-            }
-        }
-
-        // at this point all equations are pairwise equal, chose one (the first) for substitution in bounds[0], bounds[1].
-        Poly substitute = bounds[2].front().constraint().lhs() - bounds[2].front().constraint().coefficient(v,1)*v;
-        // lower bounds
-        for(auto fc : bounds[0]) {
-            assert(fc.type() == carl::FormulaType::CONSTRAINT);
-            constraints.emplace_back(carl::substitute(fc.constraint().lhs(), v, substitute), fc.constraint().relation());
-        }
-        // upper bounds
-        for(auto fc : bounds[1]) {
-            assert(fc.type() == carl::FormulaType::CONSTRAINT);
-            constraints.emplace_back(carl::substitute(fc.constraint().lhs(), v, substitute), fc.constraint().relation());
-        }
-
-        return constraints;
-    }
-
-    Poly FourierMotzkinQE::getRemainder(const ConstraintT& c, carl::Variable v, bool isLowerBnd) {
-        if(isLowerBnd) {
-            if(c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::LEQ) {
-                return c.lhs() - c.coefficient(v,1)*v;
-            } else {
-                return -(c.lhs() - c.coefficient(v,1)*v);
-            }
-        } else {
-            if(c.relation() == carl::Relation::LESS || c.relation() == carl::Relation::LEQ) {
-                return -(c.lhs() - c.coefficient(v,1)*v);
-            } else {
-                return c.lhs() - c.coefficient(v,1)*v;
+    for (std::size_t i = 0; i < constraints.size(); ++i) {
+        for (const auto& t : constraints[i].constraint().lhs()) {
+            if (t.is_constant()) b(i) = Rational(-1)*t.coeff();
+            else {
+                assert(t.is_single_variable());
+                m(i, m_var_idx.index(t.single_variable())) = t.coeff();
             }
         }
     }
 
-    bool FourierMotzkinQE::isLinearLowerBound(const ConstraintT& c, carl::Variable v) {
-        assert(c.variables().has(v));
-        assert(c.coefficient(v,1).is_number());
-
-        // is linear lower bound when the coefficient is > 0 and the relation is LEQ or LESS, or if the coefficient is < 0 and the relation is GEQ or GREATER.
-        if( ((c.relation() == carl::Relation::LEQ || c.relation() == carl::Relation::LESS) && c.coefficient(v,1) < 0) ||
-        ((c.relation() == carl::Relation::GEQ || c.relation() == carl::Relation::GREATER) && c.coefficient(v,1) > 0) ) {
-            std::cout << c << " is lower bound." << std::endl;
-            return true;
+    auto [result_m, result_b] = eliminateCols(m, b, elim_cols);
+    // convert back
+    for (std::size_t i = 0, n_rows = result_m.rows(), n_cols = result_m.cols(); i < n_rows; ++i) {
+        Poly lhs = Poly(Rational(-1)*result_b(i));
+        for (std::size_t j = 0; j < n_cols; ++j) {
+            Rational& coeff = result_m(i,j);
+            if (!carl::is_zero(coeff)) {
+                lhs += coeff*Poly(m_var_idx.var(j));
+            }
         }
-        std::cout << c << " is no lower bound." << std::endl;
-        return false;
+        m_finished.insert(FormulaT(lhs, carl::Relation::LEQ));
     }
 
-} // namespace
+    return FormulaT(carl::FormulaType::AND, m_finished);
+}
+
+
+std::pair<matrix_t, vector_t> FourierMotzkinQE::eliminateCol(const matrix_t& constraints,
+                                                             const vector_t& constants,
+                                                             std::size_t col,
+                                                             bool conservative) {
+    std::vector<std::size_t> nbs, ubs, lbs;
+
+    // initialize: detect upper and lower bounds
+    for (Eigen::Index row = 0; row < constraints.rows(); ++row) {
+        if (carl::is_zero(constraints(row, col))) nbs.push_back(row);
+        else if (carl::is_positive(constraints(row, col))) ubs.push_back(row);
+        else lbs.push_back(row);
+    }
+
+    // initialize result
+    Eigen::Index n_new_constr = nbs.size() + (ubs.size() * lbs.size());
+    matrix_t newConstraints = matrix_t(n_new_constr, constraints.cols());
+    vector_t newConstants = vector_t(n_new_constr);
+
+    // compute new constraints
+    std::vector<Eigen::Index> emptyRows;
+    Eigen::Index row = 0;
+    for (; row < nbs.size(); ++row) {
+        newConstraints.row(row) = constraints.row(nbs[row]);
+        newConstants.row(row) = constants.row(nbs[row]);
+    }
+
+    for (; row < n_new_constr; ++row) {
+        std::size_t combinationIndex = row - nbs.size();
+        std::size_t lb_idx = combinationIndex / ubs.size();
+        std::size_t ub_idx = combinationIndex % ubs.size();
+        assert(lb_idx < lbs.size());
+        assert(ub_idx < ubs.size());
+        newConstraints.row(row) = (constraints(ubs[ub_idx], col) * constraints.row(lbs[lb_idx]))
+                                - (constraints(lbs[lb_idx], col) * constraints.row(ubs[ub_idx]));
+        newConstants(row) = (constraints(ubs[ub_idx], col) * constants(lbs[lb_idx]))
+                            - (constraints(lbs[lb_idx], col) * constants(ubs[ub_idx]));
+        
+        if (newConstraints.row(row).isZero()) emptyRows.push_back(row);
+    }
+
+    assert(vector_t(newConstraints.col(col)) == vector_t::Zero(newConstants.rows()));
+
+    // cleanup if demanded
+    if (!conservative) { newConstraints = removeCol(newConstraints, col); }
+
+    // Optimizer<Number> opt(newConstraints, newConstants); TODO
+    // auto red = opt.redundantConstraints();
+    // newConstraints = removeRows(newConstraints, red);
+    // newConstants = removeRows(newConstants, red);
+    return std::make_pair(newConstraints, newConstants);
+}
+
+std::pair<matrix_t, vector_t> FourierMotzkinQE::eliminateCols(const matrix_t &constraints,
+                                                              const vector_t constants,
+                                                              const std::vector<std::size_t> &cols,
+                                                              bool conservative) {
+    auto resultConstraints = constraints;
+    auto resultConstants = constants;
+    auto dimensionsToEliminate = cols;
+    while (!dimensionsToEliminate.empty()) {
+        std::cout << "starting iteration\n";
+        std::tie(resultConstraints, resultConstants) = 
+                                    eliminateCol(resultConstraints, resultConstants,
+                                                dimensionsToEliminate.front(), conservative);
+        // update the indices if the matrix and vector have changed dimensions
+        if (!conservative) {
+            // decrement this index, as one dimension before has been eliminated.
+            for (auto &idx: dimensionsToEliminate) {
+                if (idx > dimensionsToEliminate.front()) --idx;
+            }
+        }
+        dimensionsToEliminate.erase(std::begin(dimensionsToEliminate));
+        std::cout << "end iteration\n";
+
+    }
+    return std::make_pair(resultConstraints, resultConstants);
+}
+
+
+
+} // namespace smtrat::qe::fm

@@ -101,6 +101,7 @@ struct Theories {
 	}
 	
 	void addGlobalFormulas(FormulasT& formulas) {
+		SMTRAT_LOG_DEBUG("smtrat.parser", "Adding global formulas to formula set: " << state->global_formulas);
 		formulas.insert(formulas.end(), state->global_formulas.begin(), state->global_formulas.end());
 		state->global_formulas.clear();
 	}
@@ -171,6 +172,7 @@ struct Theories {
 	}
 
 	types::TermType resolveSymbol(const Identifier& identifier) const {
+		SMTRAT_LOG_DEBUG("smtrat.parser", "Resolving symbol \"" << identifier << "\".");
 		types::TermType result;
 		if (settings_parser().disable_theory) return result;
 		if (identifier.indices == nullptr) {
@@ -406,6 +408,24 @@ struct Theories {
 		HANDLE_ERROR
 		return result;
 	}
+
+	types::TermType quantifiedTerm(const std::vector<std::pair<std::string, carl::Sort>>& vars, const types::TermType& term, bool universal){
+		SMTRAT_LOG_DEBUG("smtrat.parser", "Declaring " << (universal ? "universal" : "existential") << " variables " << vars << " and term " << term);
+		TheoryError te;
+		types::TermType result;
+		carl::FormulaType type = universal ? carl::FormulaType::FORALL : carl::FormulaType::EXISTS;
+		for (auto& t: theories) {
+			if (t.second->declareQuantifiedTerm(vars, type, term, result, te)) return result;
+		}
+		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to declare " << (universal ? "universal" : "existential") << " variables " << vars << " and term " << term << ":" << te);
+		HANDLE_ERROR
+		return result;
+	}
+
+	bool isVariableDeclared(const std::string& name) const {
+		return state->variables.find(name) != state->variables.end();
+	}
+
 private:
 	ParserState* state;
 	std::map<std::string, AbstractTheory*> theories;
