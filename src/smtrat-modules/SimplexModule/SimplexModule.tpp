@@ -638,7 +638,7 @@ std::optional<typename SimplexModule<Settings>::BoundRef> SimplexModule<Settings
     // TODO: use b to have further restrictions
 
     if constexpr (Settings::pivot_strategy == simplex::PivotStrategy::FMPLEX) {
-
+        // TODO
     }
 
     if (increase == (entry.coeff() > 0)) {
