@@ -365,4 +365,55 @@ struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER_ONLY_INDEPENDENT> {
     }
 };
 
+template <>
+struct cell<CellHeuristic::ALL_COMPOUND> {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        if (der->cell().is_section()) {
+            response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+            handle_section_all_equational(der->delin(), response);
+        } else { // sector
+            datastructures::Delineation reduced_delineation = der->delin();
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_cell_reduction(reduced_delineation, reduced_cell, response);
+
+
+            datastructures::Bound lower = datastructures::Bound::infty();
+            datastructures::Bound upper = datastructures::Bound::infty();
+        
+            if (!reduced_cell.lower_unbounded()) {
+                std::vector<std::vector<datastructures::IndexedRoot>> roots;
+                auto it = reduced_cell.lower();
+                while(true) {
+                    for (const auto& ir : it->second) {
+                        roots.emplace_back(std::vector<datastructures::IndexedRoot>({ir.root}));
+                    }
+                    if (it != reduced_delineation.roots().begin()) it--;
+                    else break;
+                }
+                lower = datastructures::Bound::strict(datastructures::CompoundMaxMin(std::move(roots)));
+            }
+            if (!reduced_cell.upper_unbounded()) {
+                std::vector<std::vector<datastructures::IndexedRoot>> roots;
+                auto it = reduced_cell.upper();
+                while(it != reduced_delineation.roots().end()) {
+                    for (const auto& ir : it->second) {
+                        roots.emplace_back(std::vector<datastructures::IndexedRoot>({ir.root}));
+                    }
+                    it++;
+                }
+                upper = datastructures::Bound::strict(datastructures::CompoundMinMax(std::move(roots)));
+            }
+
+            response.description = datastructures::SymbolicInterval(lower, upper);
+            
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
+        return response;
+    }
+};
+
 }
