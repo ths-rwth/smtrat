@@ -5,6 +5,7 @@
 **Contact**
 
     Jasper Nalbach <nalbach@cs.rwth-aachen.de>
+    Valentin Promies <promies@cs.rwth-aachen.de>
 
 ## Documentation
 
