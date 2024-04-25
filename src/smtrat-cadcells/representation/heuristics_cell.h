@@ -392,7 +392,7 @@ struct cell<CellHeuristic::ALL_COMPOUND> {
                     if (it != reduced_delineation.roots().begin()) it--;
                     else break;
                 }
-                lower = datastructures::Bound::strict(datastructures::CompoundMaxMin(std::move(roots)));
+                lower = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMaxMin(std::move(roots))));
             }
             if (!reduced_cell.upper_unbounded()) {
                 std::vector<std::vector<datastructures::IndexedRoot>> roots;
@@ -403,7 +403,7 @@ struct cell<CellHeuristic::ALL_COMPOUND> {
                     }
                     it++;
                 }
-                upper = datastructures::Bound::strict(datastructures::CompoundMinMax(std::move(roots)));
+                upper = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMinMax(std::move(roots))));
             }
 
             response.description = datastructures::SymbolicInterval(lower, upper);
