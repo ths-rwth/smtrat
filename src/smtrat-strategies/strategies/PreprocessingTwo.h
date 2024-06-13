@@ -26,7 +26,7 @@ namespace smtrat
         public:
             PreprocessingTwo(): Manager() {
 				setStrategy({
-					addBackend<SymmetryModule<SymmetrySettings1>>(
+					// addBackend<SymmetryModule<SymmetrySettings1>>(
 						// addBackend<GBPPModule<GBPPSettings1>>(
 							addBackend<MCBModule<MCBSettings1>>(
 								addBackend<ICEModule<ICESettings1>>(
@@ -40,7 +40,7 @@ namespace smtrat
 								)
 							)
 						// )
-					)
+					// )
 				});
 			}
 
