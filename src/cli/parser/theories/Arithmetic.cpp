@@ -181,6 +181,14 @@ ArithmeticTheory::ArithmeticTheory(ParserState* state)
 	ops.emplace("<>", arithmetic::OperatorType(carl::Relation::NEQ));
 	ops.emplace(">=", arithmetic::OperatorType(carl::Relation::GEQ));
 	ops.emplace(">", arithmetic::OperatorType(carl::Relation::GREATER));
+
+	ops.emplace("not<", arithmetic::OperatorType(carl::Relation::LESS));
+	ops.emplace("not<=", arithmetic::OperatorType(carl::Relation::LEQ));
+	ops.emplace("not=", arithmetic::OperatorType(carl::Relation::EQ));
+	ops.emplace("not!=", arithmetic::OperatorType(carl::Relation::NEQ));
+	ops.emplace("not<>", arithmetic::OperatorType(carl::Relation::NEQ));
+	ops.emplace("not>=", arithmetic::OperatorType(carl::Relation::GEQ));
+	ops.emplace("not>", arithmetic::OperatorType(carl::Relation::GREATER));
 }
 
 bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
@@ -361,10 +369,10 @@ bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vec
 		return false;
 	}
 	arithmetic::OperatorType op = it->second;
-	if (boost::get<carl::Relation>(&op) != nullptr && arguments.size() == 3 && boost::get<FormulaT>(&arguments[0]) != nullptr && boost::get<carl::Variable>(&arguments[1]) != nullptr && boost::get<carl::MultivariateRoot<Poly>>(&arguments[2]) != nullptr) {
-		bool negated = boost::get<FormulaT>(arguments[0]).type() == carl::FormulaType::TRUE;
-		carl::Variable var = boost::get<carl::Variable>(arguments[1]);
-		carl::MultivariateRoot<Poly> root = boost::get<carl::MultivariateRoot<Poly>>(arguments[2]);
+	if (boost::get<carl::Relation>(&op) != nullptr && arguments.size() == 2 && boost::get<carl::Variable>(&arguments[0]) != nullptr && boost::get<carl::MultivariateRoot<Poly>>(&arguments[1]) != nullptr) {
+		bool negated = identifier.symbol.rfind("not", 0) == 0;
+		carl::Variable var = boost::get<carl::Variable>(arguments[0]);
+		carl::MultivariateRoot<Poly> root = boost::get<carl::MultivariateRoot<Poly>>(arguments[1]);
 		carl::Relation rel = boost::get<carl::Relation>(op);
 		result = FormulaT(carl::VariableComparison<Poly>(var, root, rel, negated));
 		return true;
