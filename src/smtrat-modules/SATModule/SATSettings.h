@@ -148,6 +148,11 @@ struct SATSettingsMCSATAPX : SATSettingsMCSAT {
     using MCSATSettings = mcsat::MCSATSettingsAPX;
 };
 
+struct SATSettingsMCSATBCCov : SATSettingsMCSAT {
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATBCCov>";
+    using MCSATSettings = mcsat::MCSATSettingsBCCov;
+};
+
 struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto moduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;

@@ -35,6 +35,15 @@ struct MCSATSettingsAPX : Base  {
 													 onecell::Explanation<onecell::DefaultSettings>>;
 };
 
+struct MCSATSettingsBCCov : Base  {
+	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,
+													 icp::Explanation,
+													 vs::Explanation,
+													 onecell::Explanation<onecell::BCCoveringSettings>,
+													 onecell::Explanation<onecell::DefaultSettings>>;
+};
+
 struct MCSATSettingsNL : Base {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     //using AssignmentFinderBackend = SequentialAssignment<smtaf::AssignmentFinder<smtaf::DefaultSettings>,arithmetic::AssignmentFinder>;

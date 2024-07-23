@@ -95,6 +95,14 @@ struct ApproximationSettings : BaseSettings { // current default
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
+struct BCCoveringSettings : BaseSettings { // current default
+    constexpr static bool exploit_strict_constraints = true;
+
+    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
+    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+    using op = cadcells::operators::MccallumFiltered<mcf_settings>;
+};
+
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
 template<typename Settings = DefaultSettings>
