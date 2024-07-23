@@ -1,7 +1,7 @@
 namespace smtrat::cadcells::representation {
 
 template<typename T>
-std::vector<datastructures::SampledDerivationRef<T>> compute_min_derivs(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+std::vector<datastructures::SampledDerivationRef<T>> compute_min_derivs(const std::vector<datastructures::SampledDerivationRef<T>>& derivs, bool remove_all_redundancies = false) {
     std::vector<datastructures::SampledDerivationRef<T>> sorted_derivs;
     for (auto& der : derivs) sorted_derivs.emplace_back(der);
 
@@ -22,7 +22,24 @@ std::vector<datastructures::SampledDerivationRef<T>> compute_min_derivs(const st
         while (iter != sorted_derivs.end() && !upper_lt_upper(last_cell, (*iter)->cell())) iter++;
     }
 
-    return min_derivs;
+    if (!remove_all_redundancies || min_derivs.size() < 3) return min_derivs;
+
+    // remove cells covered by the union of the other cells
+    // the result is not unique. We greedily (from left to right) remove redundant cells.
+    std::vector<datastructures::SampledDerivationRef<T>> min_derivs_irred;
+
+    for (auto it = min_derivs.begin(); it != min_derivs.end(); ) {
+        min_derivs_irred.emplace_back(*it);
+        auto it2 = std::next(std::next(it));
+        while (it2 != min_derivs.end() && !upper_lt_lower((*it)->cell(), (*it2)->cell())) {
+            ++it2;
+        }
+        if (it2 == min_derivs.end()) break;
+        it = std::prev(it2);
+    }
+    
+    min_derivs_irred.emplace_back(min_derivs.back());
+    return min_derivs_irred;
 }
 
 template<typename T>
@@ -346,7 +363,7 @@ struct covering<CoveringHeuristic::BIGGEST_CELL_APX> {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
-        auto min_derivs = compute_min_derivs(derivs);
+        auto min_derivs = compute_min_derivs(derivs, true);
 
         // look for places to insert approximations
         if (min_derivs.size() > 1) {
@@ -379,6 +396,12 @@ struct covering<CoveringHeuristic::BIGGEST_CELL_APX> {
                     .is_inclusive = true
                 };
 
+                SMTRAT_LOG_DEBUG(
+                    "smtrat.covering.apx",
+                    "Insert new root at " << new_root << " between " << next_cell.lower()->first
+                    << " and " << cell.upper()->first << " to get " << new_ire << "\n"
+                );
+
                 // insert approximation
                 (*it)->move_main_var_sample_below(new_root); // make sure the re-delineation works properly
                 (*it)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
@@ -395,6 +418,7 @@ struct covering<CoveringHeuristic::BIGGEST_CELL_APX> {
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);
+        SMTRAT_LOG_DEBUG("smtrat.covering.apx", "Result: " << result << "\n");
         return result;
     }
 };
