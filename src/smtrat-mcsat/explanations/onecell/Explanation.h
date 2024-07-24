@@ -87,14 +87,12 @@ struct DefaultSettings : BaseSettings { // current default
 
 template<typename Settings = DefaultSettings>
 struct Explanation {
-	#ifdef SMTRAT_DEVOPTION_Statistics
-		OCStatistics& mStatistics = statistics_get<OCStatistics>("mcsat-explanation-onecell");
-	#endif
+    SMTRAT_STATISTICS_CALL(
+        OCStatistics& mStatistics = statistics_get<OCStatistics>("mcsat-explanation-onecell")
+    );
 
     std::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
-        #ifdef SMTRAT_DEVOPTION_Statistics
-            mStatistics.explanationCalled();
-        #endif
+        SMTRAT_STATISTICS_CALL(mStatistics.explanationCalled());
 
         cadcells::VariableOrdering vars = trail.assignedVariables();
         vars.push_back(var);
@@ -141,9 +139,7 @@ struct Explanation {
             return std::nullopt;
         }
         else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                mStatistics.explanationSuccess();
-            #endif
+            SMTRAT_STATISTICS_CALL(mStatistics.explanationSuccess());
             SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result << " of constraints " << constr << " wrt " << vars << " and " << ass);
             FormulasT expl;
             for (const auto& f : reason) {
