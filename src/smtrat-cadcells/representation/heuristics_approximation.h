@@ -8,6 +8,51 @@ using IR = datastructures::IndexedRoot;
 // enum ApxStrategy {ONLY_BOUNDS, BETWEEN}; // For CHAIN, only BETWEEN makes sense, for LDB we might need another option
 // constexpr ApxStrategy approximation_strategy = ApxStrategy::ONLY_BOUNDS;
 
+namespace approximation {
+
+template<typename T>
+datastructures::SymbolicInterval compute_cell(const datastructures::SampledDerivationRef<T>& der) {
+    const auto& cell = der->cell();
+
+    if (cell.is_section()) { // Section case as before
+        return datastructures::SymbolicInterval(util::simplest_bound(der->proj(), cell.lower()->second));
+    }
+    
+    if (cell.lower_unbounded() && cell.upper_unbounded()) {
+        return datastructures::SymbolicInterval();
+    }
+    
+    if (cell.lower_unbounded()) {
+        IR upper = util::simplest_bound(proj(), cell.upper()->second);
+        if (ApxCriteria::side(der->proj(), upper, cell.upper(), del().roots().end())) {
+            upper = ApxSettings::method::approximate_bound(upper, cell.upper()->first, der, false);
+        }
+        return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper));
+    }
+    
+    if (cell.upper_unbounded()) {
+        IR lower = util::simplest_bound(der->proj(), cell.lower()->second);
+        if (ApxCriteria::side(der->proj(), lower, der->delin().roots().begin(), der->delin().roots().end()))
+            lower = ApxSettings::method::approximate_bound(lower, cell.lower()->first, der, true);
+        return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::infty());
+    }
+
+    // bounded on both sides
+    IR lower = util::simplest_bound(der->proj(), cell.lower()->second);
+    IR upper = util::simplest_bound(der->proj(), cell.upper()->second);
+    if (ApxCriteria::side(der->proj(), upper, cell.upper(), der->delin().roots().end())) {
+        upper = ApxSettings::method::approximate_bound(upper, cell.upper()->first, der, false);
+    }
+    if (ApxCriteria::side(der->proj(), lower, der->delin().roots().begin(), cell.upper())){
+        lower = ApxSettings::method::approximate_bound(lower, cell.lower()->first, der, true);
+    }
+    return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::strict(upper));
+}
+
+}
+
+
+
 template <>
 struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
     template<typename T>
@@ -23,9 +68,7 @@ struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
             handle_local_del_simplify_all(reduced_delineation);
         }
         auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-
-        approximation::CellApproximator apx(der);
-        response.description = apx.compute_cell();
+        response.description = approximation::compute_cell(der);
 
         response.ordering.biggest_cell_wrt = response.description;
         if (der->cell().is_section()) {

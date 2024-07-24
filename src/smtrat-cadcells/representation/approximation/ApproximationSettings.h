@@ -7,7 +7,9 @@ enum ApxRoot {SAMPLE_MID, SIMPLE_REPRESENTATION, STERN_BROCOT, FIXED_RATIO};
 struct ApxSettings {
     static constexpr ApxPoly bound = ApxPoly::SIMPLE;
     static constexpr ApxPoly between = ApxPoly::SIMPLE;
-    static constexpr ApxRoot root = ApxRoot::SIMPLE_REPRESENTATION;
+
+    using method = Simple;
+    using root = sample_simple_representation;
 
     const std::size_t taylor_deg = settings_module().get("apx_taylor_deg", (std::size_t)1);
     // constexpr std::size_t hyperplane_dim = 0;

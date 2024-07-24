@@ -7,141 +7,136 @@ namespace smtrat::cadcells::representation::approximation {
 
 using IR = datastructures::IndexedRoot;
 
-class CellApproximator {
-    private:
-        datastructures::Projections& m_r_proj;
-        const datastructures::DelineationInterval& m_r_cell;
-        const datastructures::Delineation& m_r_del;
-        carl::Variable m_var;
-        Assignment m_sample;
+struct Simple {
 
-        datastructures::Projections& proj() {return m_r_proj;}
-        const datastructures::DelineationInterval& cell() const {return m_r_cell;}
-        const datastructures::Delineation& del() const {return m_r_del;}
-        carl::Variable var() const {return m_var;}
-        Assignment sample() const {return m_sample;}
-        RAN main_sample() {return m_sample[m_var];}
+    template<typename T>
+    static IR approximate_bound(const IR& /*bound_re*/,
+                         const RAN& bound_value,
+                         datastructures::SampledDerivationRef<T>& der,
+                         bool below)
+    {
+        Rational root = approximate_root<ApxSettings::root>(der->main_var_sample(), bound_value, below);
+        auto& polys = der->proj().polys();
+        Polynomial var_poly = Polynomial(polys.context(),der->main_var());
+        return IR(polys(carl::get_denom(root)*var_poly - carl::get_num(root)), 1);
+    }
 
-        template<ApxPoly PA>
-        IR apx_bound(const IR& p, const RAN& bound, bool below);
-
-        template<ApxPoly PA>
-        IR apx_between(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u);
-    public:
-        template<typename T>
-        CellApproximator(datastructures::SampledDerivationRef<T>& der) 
-        : m_r_proj(der->proj()), m_r_cell(der->cell()), m_r_del(der->delin()), m_var(der->main_var()),
-          m_sample(der->sample()) {}
-
-        IR approximate_bound(const IR& p, const RAN& bound, bool below);
-        IR approximate_between(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u);
-
-        datastructures::SymbolicInterval compute_cell();
+    template<typename T>
+    static IR approximate_between(const IR& re_l, const RAN& value_l,
+                           const IR& re_u, const RAN& value_u,
+                           datastructures::SampledDerivationRef<T>& der,
+                           bool below) {
+        Rational root = approximate_root<ApxSettings::root>(value_l, value_u, false);
+        auto& polys = der->proj().polys();
+        Polynomial var_poly = Polynomial(polys.context(),der->main_var());
+        return IR(polys(carl::get_denom(root) * var_poly - carl::get_num(root)), 1);
+    }
 };
 
-template<>
-inline IR CellApproximator::apx_bound<ApxPoly::SIMPLE>(const IR& /*p*/, const RAN& bound, bool below) {
-    Rational root = approximate_root<ApxSettings::root>(main_sample(),bound,below);
-    return IR(proj().polys()(carl::get_denom(root)*Polynomial(proj().polys().context(),var()) - carl::get_num(root)), 1); // TODO poly context
-}
 
-template<>
-inline IR CellApproximator::apx_bound<ApxPoly::LINEAR_GRADIENT>(const IR& p, const RAN& bound, bool below) {
-    Poly carl_poly = carl::convert<Poly,Polynomial>(proj().polys()(p.poly));
-    Poly derivative = carl::derivative(carl_poly, var());
-    Poly gradient = carl::substitute(derivative, var(), Poly(approximate_RAN(bound)));
-    if (carl::is_zero(gradient)) return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
-    Poly carl_res = gradient*Poly(var()) - gradient*approximate_root<ApxSettings::root>(main_sample(),bound,below);
-    Polynomial res = carl::convert<Polynomial, Poly>(proj().polys().context(), carl_res);
-    return IR(proj().polys()(res), 1);
-}
+struct Taylor {
+    template<typename T>
+    static IR approximate_bound(const IR& bound_re,
+                         const RAN& bound_value,
+                         datastructures::SampledDerivationRef<T>& der,
+                         bool below) {
 
-template<>
-inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR>(const IR& p, const RAN& bound, bool below) {
-    assert(apx_settings().taylor_deg < proj().degree(p.poly));
-    assert(apx_settings().taylor_deg <= 2);
+        assert(apx_settings().taylor_deg < proj().degree(bound_re.poly));
+        assert(apx_settings().taylor_deg <= 2);
 
-    Poly carl_poly = carl::convert<Poly,Polynomial>(proj().polys()(p.poly));
+        SMTRAT_STATISTICS_CALL(
+            OCApproximationStatistics::get_instance().approximated(der->proj().degree(bound_re.poly))
+        );
 
-    std::size_t dim = sample().size();
-    VariableOrdering var_order = proj().polys().var_order();
-    auto sample_root = sample();
-    sample_root[var()] = bound; // TODO : can choose other points here (like the actual sample)
-    auto sample_new_root = sample();
-    sample_new_root[var()] = RAN(approximate_root<ApxSettings::root>(main_sample(), bound, below));
-    #ifdef SMTRAT_DEVOPTION_Statistics
-        std::size_t leftOutVars = 0;
-        for (const auto& [var, val] : sample_new_root) {
-            if (!val.is_numeric()) ++leftOutVars;
-        }
-        OCApproximationStatistics::get_instance().taylorIgnoredVars(leftOutVars, dim);
-    #endif
-    auto apx_sample = sample_root;
-    //for (const auto& [key, value] : sample_root) apx_sample[key] = approximate_RAN_sb(value);
+        auto& polys = der->proj().polys();
 
-    auto one_step_differentiate = [&] (const Poly& poly, Poly& result, std::vector<Poly>& jacobian) {
-        Rational evaluated_deriv = 0;
-        for (std::size_t i = 0; i < dim; i++) {
-            // Skip variables with irrational assignment, since (x_i - s_i) cannot be used
-            if (!sample_new_root[var_order[i]].is_numeric()) continue;
-            jacobian[i] = carl::derivative(poly, var_order[i]);
-            evaluated_deriv = approximate_RAN(*carl::evaluate(carl::convert<Polynomial,Poly>(proj().polys().context(),jacobian[i]), apx_sample));
-            if (evaluated_deriv.get_den() != 1) {
-                // find approximate value with smaller representation
-                Rational ub = evaluated_deriv * (Rational(10001)/Rational(10000));
-                Rational lb = evaluated_deriv * (Rational(9999)/Rational(10000));
-                Rational c = carl::ceil(evaluated_deriv);
-                Rational f = carl::floor(evaluated_deriv);
-                if (lb > ub) {
-                    std::swap(lb,ub);
-                }
-                if (c < ub) evaluated_deriv = c;
-                else if (lb < f) evaluated_deriv = f;
-                else evaluated_deriv = carl::sample_stern_brocot(RationalInterval(lb,ub), false);
-            }            
-            result = result + Poly(evaluated_deriv) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value()));
-        }
-        // return the sign of the main variable derivative
-        if (carl::is_zero(evaluated_deriv)) return 0;
-        else if (evaluated_deriv > 0) return 1;
-        else return -1;
-    };
-    std::vector<Poly> jacobian(dim);
-    Poly result;
-    // first order taylor approximation
-    int jacobian_sign = one_step_differentiate(carl_poly, result, jacobian);
-    if ((apx_settings().taylor_deg < 2) && (jacobian_sign == 0)) {
-        // in this case, p and p' have a common root at s => disc(p)(s_1,...,s_{n-1}) = 0
-        // => the next level is a section => should choose artificial root close to actual root?
-        // however, we do not actually use p'(s), but an approximation?
+        Poly carl_poly = carl::convert<Poly,Polynomial>(polys(bound_re.poly));
+
+        auto sample_root = der->sample();
+        sample_root[der->main_var()] = bound_value; // TODO : can choose other points here (like the actual sample)
+        auto sample_new_root = sample_root;
+        sample_new_root[der->main_var()] = RAN(approximate_root<ApxSettings::root>(der->main_var_sample(), bound_value, below));
+
         #ifdef SMTRAT_DEVOPTION_Statistics
-            OCApproximationStatistics::get_instance().taylorFailure();
+            std::size_t left_out_vars = 0;
+            for (const auto& [var, val] : sample_new_root) {
+                if (!val.is_numeric()) ++left_out_vars;
+            }
+            OCApproximationStatistics::get_instance().taylorIgnoredVars(left_out_vars, dim);
         #endif
-        return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
-    }
-    // second order
-    if (apx_settings().taylor_deg == 2) {
-        int hessian_sign = 0;
-        for (std::size_t i = 0; i < dim; i++) {
-            if (!sample_new_root[var_order[i]].is_numeric()) continue;
-            std::vector<Poly> hessian_row(dim);
-            Poly res_i;
-            hessian_sign = one_step_differentiate(jacobian[i], res_i, hessian_row);
-            result = result + (Poly(Rational(1)/Rational(2)) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value())) * res_i); 
+
+        auto apx_sample = sample_root;
+        //for (const auto& [key, value] : sample_root) apx_sample[key] = approximate_RAN_sb(value);
+
+        std::size_t dim = der->sample().size();
+        VariableOrdering var_order = polys.var_order();
+
+        auto one_step_differentiate = [&](const Poly& poly, Poly& result, std::vector<Poly>& jacobian) {
+            Rational evaluated_deriv = 0;
+            for (std::size_t i = 0; i < dim; i++) {
+                // Skip variables with irrational assignment, since (x_i - s_i) cannot be used
+                if (!sample_new_root[var_order[i]].is_numeric()) continue;
+                jacobian[i] = carl::derivative(poly, var_order[i]);
+                evaluated_deriv = approximate_RAN(*carl::evaluate(carl::convert<Polynomial,Poly>(polys.context(),jacobian[i]), apx_sample));
+                if (evaluated_deriv.get_den() != 1) {
+                    // find approximate value with smaller representation
+                    Rational ub = evaluated_deriv * (Rational(10001)/Rational(10000));
+                    Rational lb = evaluated_deriv * (Rational(9999)/Rational(10000));
+                    Rational c = carl::ceil(evaluated_deriv);
+                    Rational f = carl::floor(evaluated_deriv);
+                    if (lb > ub) {
+                        std::swap(lb,ub);
+                    }
+                    if (c < ub) evaluated_deriv = c;
+                    else if (lb < f) evaluated_deriv = f;
+                    else evaluated_deriv = carl::sample_stern_brocot(RationalInterval(lb,ub), false);
+                }            
+                result = result + Poly(evaluated_deriv) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value()));
+            }
+            // return the sign of the main variable derivative
+            if (carl::is_zero(evaluated_deriv)) return 0;
+            else if (evaluated_deriv > 0) return 1;
+            else return -1;
+        };
+    
+        std::vector<Poly> jacobian(dim);
+        Poly result;
+
+        // first order taylor approximation
+        int jacobian_sign = one_step_differentiate(carl_poly, result, jacobian);
+        if ((apx_settings().taylor_deg < 2) && (jacobian_sign == 0)) {
+            // in this case, p and p' have a common root at s => disc(p)(s_1,...,s_{n-1}) = 0
+            // => the next level is a section => should choose artificial root close to actual root?
+            // however, we do not actually use p'(s), but an approximation?
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().taylorFailure());
+            return Simple::approximate_bound(bound_re, bound_value, der, below);
         }
-        if (hessian_sign == 0 && jacobian_sign == 0) {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().taylorFailure();
-            #endif
-            return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
-        } else if (hessian_sign*jacobian_sign == 1) {
-            Polynomial result_lp = carl::convert<Polynomial,Poly>(proj().polys().context(),result);
-            return IR(proj().polys()(result_lp), 2);
+
+        // second order
+        if (apx_settings().taylor_deg == 2) {
+            int hessian_sign = 0;
+            for (std::size_t i = 0; i < dim; i++) {
+                if (!sample_new_root[var_order[i]].is_numeric()) continue;
+                std::vector<Poly> hessian_row(dim);
+                Poly res_i;
+                hessian_sign = one_step_differentiate(jacobian[i], res_i, hessian_row);
+                result = result + (Poly(Rational(1)/Rational(2)) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value())) * res_i); 
+            }
+            if (hessian_sign == 0 && jacobian_sign == 0) {
+                SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().taylorFailure());
+                return Simple::approximate_bound(bound_re, bound_value, der, below);
+            } else if (hessian_sign*jacobian_sign == 1) {
+                Polynomial result_lp = carl::convert<Polynomial,Poly>(polys.context(),result);
+                return IR(polys(result_lp), 2);
+            }
         }
+
+        Polynomial result_lp = carl::convert<Polynomial,Poly>(polys.context(),result);
+        return IR(polys(result_lp), 1);
     }
-    Polynomial result_lp = carl::convert<Polynomial,Poly>(proj().polys().context(),result);
-    return IR(proj().polys()(result_lp), 1);
-}
+};
+
+/*
 
 template<>
 inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RAN& bound, bool below) {
@@ -216,7 +211,9 @@ inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RA
     Polynomial result_lp = carl::convert<Polynomial,Poly>(proj().polys().context(),result);
     return IR(proj().polys()(result_lp), 1);
 }
+*/
 
+/*
 template<>
 inline IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN& bound, bool below) {
 
@@ -299,53 +296,6 @@ inline IR CellApproximator::apx_bound<ApxPoly::MAXIMIZE>(const IR& p, const RAN&
     }
     return IR(proj().polys()(carl::get_denom(outer) * Polynomial(proj().polys().context(),var()) - carl::get_num(outer)), 1);
 }
-
-template<>
-inline IR CellApproximator::apx_between<ApxPoly::SIMPLE>(const IR& /*p_l*/, const IR& /*p_u*/, const RAN& l, const RAN& u) {
-    Rational root = approximate_root<ApxSettings::root>(l,u,false);
-    return IR(proj().polys()(carl::get_denom(root) * Polynomial(proj().polys().context(),var()) - carl::get_num(root)), 1);
-}
-
-inline IR CellApproximator::approximate_bound(const IR& p, const RAN& bound, bool below) {
-    #ifdef SMTRAT_DEVOPTION_Statistics
-        OCApproximationStatistics::get_instance().approximated(proj().degree(p.poly));
-    #endif
-    IR result = apx_bound<ApxSettings::bound>(p, bound, below);
-    ApxCriteria::inform(proj().polys()(result.poly), result.index);
-    return result;
-}
-
-inline IR CellApproximator::approximate_between(const IR& p_l, const IR& p_u, const RAN& l, const RAN& u) {
-    #ifdef SMTRAT_DEVOPTION_Statistics
-        OCApproximationStatistics::get_instance().approximated(std::max(proj().degree(p_l.poly), proj().degree(p_u.poly)));
-    #endif
-    return apx_between<ApxSettings::between>(p_l, p_u, l, u);
-}
-
-inline datastructures::SymbolicInterval CellApproximator::compute_cell() {
-    if (cell().is_section()) { // Section case as before
-        return datastructures::SymbolicInterval(util::simplest_bound(proj(), cell().lower()->second));
-    } else if (cell().lower_unbounded() && cell().upper_unbounded()) {
-        return datastructures::SymbolicInterval();
-    } else if (cell().lower_unbounded()) {
-        IR upper = util::simplest_bound(proj(), cell().upper()->second);
-        if (ApxCriteria::side(proj(), upper, cell().upper(), del().roots().end()))
-            upper = approximate_bound(upper, cell().upper()->first, false);
-        return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper));
-    } else if (cell().upper_unbounded()) {
-        IR lower = util::simplest_bound(proj(), cell().lower()->second);
-        if (ApxCriteria::side(proj(), lower, del().roots().begin(), del().roots().end()))
-            lower = approximate_bound(lower, cell().lower()->first, true);
-        return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::infty());
-    } else {
-        IR lower = util::simplest_bound(proj(), cell().lower()->second);
-        IR upper = util::simplest_bound(proj(), cell().upper()->second);
-        if (ApxCriteria::side(proj(), upper, cell().upper(), del().roots().end()))
-            upper = approximate_bound(upper, cell().upper()->first, false);
-        if (ApxCriteria::side(proj(), lower, del().roots().begin(), cell().upper()))
-            lower = approximate_bound(lower, cell().lower()->first, true);
-        return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::strict(upper));
-    }
-}
+*/
 
 }
