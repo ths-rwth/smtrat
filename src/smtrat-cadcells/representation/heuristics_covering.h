@@ -355,6 +355,56 @@ inline Rational root_between(const RAN& l, const RAN& u) {
     return res;
 }
 
+template<typename T>
+void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+    if (derivs.size() < 2) return;
+
+    auto it = derivs.begin();
+    auto it_next = std::next(it);
+    for (; it_next != derivs.end(); ++it, ++it_next) {
+        const datastructures::DelineationInterval& cell = (*it)->cell();
+        const datastructures::DelineationInterval& next_cell = (*it_next)->cell();
+        assert(!cell.upper_unbounded() && !next_cell.lower_unbounded());
+        
+        // if the cells just touch, we do not want to approximate.
+        if (cell.is_section() || next_cell.is_section()) continue;
+        if (next_cell.lower()->first == cell.upper()->first) continue;
+
+        // check whether the simplest two boundary-defining polynomials have high degree
+        {
+            std::size_t min_deg_l = approximation::lowest_degree((*it_next)->proj(), next_cell.lower()->second);
+            std::size_t min_deg_u = approximation::lowest_degree((*it)->proj(), cell.upper()->second);
+            if (min_deg_l < 2 || min_deg_u < 2 || min_deg_l * min_deg_u < 5) continue; // TODO factor out as criteria
+        }
+
+        // from here on we consider it worth approximating
+        // calculate new root
+        Rational new_root = approximation::root_between(next_cell.lower()->first, cell.upper()->first);
+        const auto& context = (*it)->proj().polys().context();
+        const auto var = (*it)->main_var();
+        Polynomial apx_poly = carl::get_denom(new_root)*Polynomial(context,var) - carl::get_num(new_root);
+        datastructures::TaggedIndexedRoot new_ire = {
+            .root = datastructures::IndexedRoot((*it)->proj().polys()(apx_poly), 1), /* NOTE: all derivs use the same proj */
+            .is_inclusive = true
+        };
+
+        SMTRAT_LOG_DEBUG(
+            "smtrat.covering.apx",
+            "Insert new root at " << new_root << " between " << next_cell.lower()->first
+            << " and " << cell.upper()->first << " to get " << new_ire << "\n"
+        );
+
+        // insert approximation
+        (*it)->move_main_var_sample_below(new_root); // make sure the re-delineation works properly
+        (*it)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
+        (*it)->delineate_cell(); // TODO: is the re-delineation too much overhead?
+        (*it_next)->move_main_var_sample_above(new_root); // make sure the re-delineation works properly
+        (*it_next)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
+        (*it_next)->delineate_cell(); // TODO: is the re-delineation too much overhead?
+    }
+}
+
+
 } // namespace approximation
 
 
@@ -364,55 +414,7 @@ struct covering<CoveringHeuristic::BIGGEST_CELL_APX> {
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs, true);
-
-        // look for places to insert approximations
-        if (min_derivs.size() > 1) {
-            auto it = min_derivs.begin();
-            auto it_next = std::next(it);
-            for (; it_next != min_derivs.end(); ++it, ++it_next) {
-                const datastructures::DelineationInterval& cell = (*it)->cell();
-                const datastructures::DelineationInterval& next_cell = (*it_next)->cell();
-                assert(!cell.upper_unbounded() && !next_cell.lower_unbounded());
-                
-                // if the cells just touch, we do not want to approximate.
-                if (cell.is_section() || next_cell.is_section()) continue;
-                if (next_cell.lower()->first == cell.upper()->first) continue;
-
-                // check whether the simplest two boundary-defining polynomials have high degree
-                {
-                    std::size_t min_deg_l = approximation::lowest_degree((*it_next)->proj(), next_cell.lower()->second);
-                    std::size_t min_deg_u = approximation::lowest_degree((*it)->proj(), cell.upper()->second);
-                    if (min_deg_l < 2 || min_deg_u < 2 || min_deg_l * min_deg_u < 5) continue; // TODO factor out as criteria
-                }
-
-                // from here on we consider it worth approximating
-                // calculate new root
-                Rational new_root = approximation::root_between(next_cell.lower()->first, cell.upper()->first);
-                const auto& context = (*it)->proj().polys().context();
-                const auto var = (*it)->main_var();
-                Polynomial apx_poly = carl::get_denom(new_root)*Polynomial(context,var) - carl::get_num(new_root);
-                datastructures::TaggedIndexedRoot new_ire = {
-                    .root = datastructures::IndexedRoot((*it)->proj().polys()(apx_poly), 1), /* NOTE: all derivs use the same proj */
-                    .is_inclusive = true
-                };
-
-                SMTRAT_LOG_DEBUG(
-                    "smtrat.covering.apx",
-                    "Insert new root at " << new_root << " between " << next_cell.lower()->first
-                    << " and " << cell.upper()->first << " to get " << new_ire << "\n"
-                );
-
-                // insert approximation
-                (*it)->move_main_var_sample_below(new_root); // make sure the re-delineation works properly
-                (*it)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
-                (*it)->delineate_cell(); // TODO: is the re-delineation too much overhead?
-                (*it_next)->move_main_var_sample_above(new_root); // make sure the re-delineation works properly
-                (*it_next)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
-                (*it_next)->delineate_cell(); // TODO: is the re-delineation too much overhead?
-            }
-        }
-
-        // compute cells and cover-ordering as usual, but with the included approximations.
+        approximation::insert_approximations(min_derivs);
         for (auto& iter : min_derivs) {
             datastructures::CellRepresentation<T> cell_result = cell<BIGGEST_CELL_FILTER>::compute(iter);
             result.cells.emplace_back(cell_result);
