@@ -140,7 +140,11 @@ struct Explanation {
         }
         else {
             SMTRAT_STATISTICS_CALL(mStatistics.explanationSuccess());
-            SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result << " of constraints " << constr << " wrt " << vars << " and " << ass);
+            SMTRAT_LOG_DEBUG(
+                "smtrat.mcsat.onecell",
+                "Got unsat cell " << result << " of constraints " << constr << " wrt " << vars << " and " << ass
+            );
+
             FormulasT expl;
             for (const auto& f : reason) {
                 expl.push_back(f.negated());
@@ -172,7 +176,11 @@ struct Explanation {
             if (is_clause) {
                 return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(expl)));
             } else {
-                return mcsat::Explanation(ClauseChain::from_formula(FormulaT(carl::FormulaType::OR, std::move(expl)), trail.model(), Settings::clause_chain_with_equivalences));
+                return mcsat::Explanation(ClauseChain::from_formula(
+                    FormulaT(carl::FormulaType::OR, std::move(expl)),
+                    trail.model(),
+                    Settings::clause_chain_with_equivalences
+                ));
             }
         } 
     }
