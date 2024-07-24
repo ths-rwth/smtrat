@@ -12,7 +12,7 @@ namespace smtrat::cadcells::algorithms {
  * @param cell_deriv A derivation object to construct the cell from.
  * @return A vector of pairs of variables and their symbolic intervals on success or std::nullopt otherwise.
  */
-template<typename op, representation::CellHeuristic cell_heuristic>
+template<typename op, typename cell_heuristic>
 std::optional<std::pair<carl::Variable, datastructures::SymbolicInterval>> get_interval(datastructures::SampledDerivationRef<typename op::PropertiesSet>& cell_deriv) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Constructing cell on level " << cell_deriv->level());
 
@@ -23,7 +23,7 @@ std::optional<std::pair<carl::Variable, datastructures::SymbolicInterval>> get_i
     cell_deriv->delineate_cell();
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got interval " << cell_deriv->cell() << " wrt " << cell_deriv->delin());
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute cell representation");
-    auto cell_repr = representation::cell<cell_heuristic>::compute(cell_deriv);
+    auto cell_repr = cell_heuristic::compute(cell_deriv);
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << cell_repr);
     if (cell_deriv->level() > 1) {
         SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Project cell");

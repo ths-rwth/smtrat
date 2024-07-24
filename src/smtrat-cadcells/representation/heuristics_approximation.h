@@ -1,6 +1,6 @@
 #include "approximation/CellApproximator.h"
 
-namespace smtrat::cadcells::representation {
+namespace smtrat::cadcells::representation::cell_heuristic {
 
 using IR = datastructures::IndexedRoot;
 
@@ -8,8 +8,7 @@ using IR = datastructures::IndexedRoot;
 // enum ApxStrategy {ONLY_BOUNDS, BETWEEN}; // For CHAIN, only BETWEEN makes sense, for LDB we might need another option
 // constexpr ApxStrategy approximation_strategy = ApxStrategy::ONLY_BOUNDS;
 
-template <>
-struct cell<CellHeuristic::BIGGEST_CELL_APPROXIMATION> {
+struct biggest_cell_approximation {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         bool enable_weak = true;

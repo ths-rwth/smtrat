@@ -40,7 +40,7 @@ template<class Settings>
 class LevelWiseInformation {
 
     // get the covering heuristic from the settings
-    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = Settings::covering_heuristic;
+    using covering_heuristic = Settings::covering_heuristic;
     using op = typename Settings::op;
     static constexpr SamplingAlgorithm sampling_algorithm = Settings::sampling_algorithm;
     static constexpr IsSampleOutsideAlgorithm is_sample_outside_algorithm = Settings::is_sample_outside_algorithm;
@@ -135,7 +135,7 @@ public:
         }
         // The cells cover the numberline -> Compute the covering representation
         std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end());
-        mCovering = representation::covering<covering_heuristic>::compute(derivationsVector);
+        mCovering = covering_heuristic::compute(derivationsVector);
         SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
         SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
         return true;

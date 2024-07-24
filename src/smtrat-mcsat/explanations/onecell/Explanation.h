@@ -78,8 +78,8 @@ struct BCApproximationSettings : BCSettings {
 struct DefaultSettings : BaseSettings { // current default
     constexpr static bool exploit_strict_constraints = true;
 
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
-    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING_CACHE_GLOBAL;
+    using cell_heuristic = cadcells::representation::cell_heuristics::lowest_degree_barriers_cache_global;
+    using covering_heuristic = cadcells::representation::covering_heuristics::ldb_covering_cache_global;
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 

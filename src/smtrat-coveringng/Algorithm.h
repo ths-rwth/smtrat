@@ -72,11 +72,11 @@ inline std::vector<Interval<typename op::PropertiesSet>> get_enclosing_intervals
     return results;
 }
 
-template<typename op, cadcells::representation::CoveringHeuristic covering_heuristic>
+template<typename op, typename covering_heuristic>
 inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::datastructures::CoveringRepresentation<typename op::PropertiesSet>>> characterize_covering(const IntervalSet<typename op::PropertiesSet>& intervals) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", intervals);
     std::vector<Interval<typename op::PropertiesSet>> derivations(intervals.begin(), intervals.end());
-    auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
+    auto representation = covering_heuristic::compute(derivations);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
 	SMTRAT_STATISTICS_CALL(statistics().intervals_used(representation.sampled_derivations().size()));
     auto cell_derivs = representation.sampled_derivations();
@@ -92,12 +92,12 @@ inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::d
     return std::make_pair(new_deriv, representation);
 }
 
-template<typename op, cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename cell_heuristic>
 inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::datastructures::CellRepresentation<typename op::PropertiesSet>>> characterize_interval(Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", interval->cell());
 	SMTRAT_STATISTICS_CALL(statistics().intervals_used(1));
 	interval->insert(cadcells::operators::properties::cell_connected{ interval->level() }); // TODO is this the proper way?
-	auto representation = cadcells::representation::cell<cell_heuristic>::compute(interval);
+	auto representation = cell_heuristic::compute(interval);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
 	assert((interval->level() > 1));
 	if (!op::project_cell_properties(representation)) return std::nullopt;
@@ -114,13 +114,13 @@ inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::d
 // TODO later: close cell if possible based on flag - implement here or in smtrat-cadcells?
 // TODO later: optionally clear caches
 
-template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
-template<typename op, typename FE,  cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
-template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment& ass, const VariableQuantification& quantification, bool characterize_sat = false, bool characterize_unsat = false) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 
@@ -135,7 +135,7 @@ inline CoveringResult<typename op::PropertiesSet> recurse(cadcells::datastructur
 	}
 }
 
-template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	//assert(f.root_valuation() != formula::Valuation::FALSE);
@@ -218,7 +218,7 @@ inline CoveringResult<typename op::PropertiesSet> exists(cadcells::datastructure
 	}
 }
 
-template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	//assert(f.root_valuation() != formula::Valuation::FALSE);
@@ -294,7 +294,7 @@ inline CoveringResult<typename op::PropertiesSet> forall(cadcells::datastructure
 	}
 }
 
-template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<ParameterTree>> parameter(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 	assert(f.root_valuation() != formula::Valuation::FALSE);
@@ -370,7 +370,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<Paramet
 	if (ass.empty()) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
 		std::vector<Interval<typename op::PropertiesSet>> derivations(intervals.begin(), intervals.end());
-    	auto representation = cadcells::representation::covering<covering_heuristic>::compute(derivations);
+    	auto representation = covering_heuristic::compute(derivations);
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
 		std::vector<ParameterTree> tree;
 		for (const auto& cell : representation.cells) {
@@ -397,7 +397,7 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<Paramet
 	}
 }
 
-template<typename op, typename FE, cadcells::representation::CoveringHeuristic covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, smtrat::cadcells::representation::CellHeuristic cell_heuristic>
+template<typename op, typename FE, typename covering_heuristic, smtrat::covering_ng::SamplingAlgorithm sampling_algorithm, typename cell_heuristic>
 inline std::pair<CoveringResult<typename op::PropertiesSet>, ParameterTree> recurse_qe(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
 	if (quantification.var_type(proj.polys().var_order().front()) == carl::Quantifier::FREE) {
 		auto [res, tree] = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
