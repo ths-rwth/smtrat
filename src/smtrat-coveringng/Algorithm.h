@@ -31,7 +31,7 @@ inline bool is_full_sample(const cadcells::Assignment& ass, const cadcells::Vari
 }
 
 template<typename op>
-inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>& implicant, const cadcells::Assignment& ass) {
+inline std::optional<Interval<typename op::PropertiesSet>> get_enclosing_interval(cadcells::datastructures::Projections& proj, const formula::Implicant& implicant, const cadcells::Assignment& ass) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng", implicant << ", " << ass);
 
     //std::size_t level = 0;

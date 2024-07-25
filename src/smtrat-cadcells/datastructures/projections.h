@@ -517,6 +517,10 @@ public:
         return carl::evaluate(polys()(constraint), ass);
     }
 
+    auto evaluate(const Assignment& ass, const IndexedRootConstraint& constraint) {
+        return carl::evaluate(ass.at(main_var(constraint.bound.poly)), constraint.relation, evaluate(ass, constraint.bound));
+    }
+
 };
 
 }

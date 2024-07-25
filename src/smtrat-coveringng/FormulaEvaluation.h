@@ -6,7 +6,9 @@
 
 namespace smtrat::covering_ng::formula {
 
-using ImplicantOrdering = std::function<bool(cadcells::datastructures::Projections&, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>&, const boost::container::flat_set<cadcells::datastructures::PolyConstraint>&)>;
+using Implicant = boost::container::flat_set<cadcells::datastructures::PolyConstraint>;
+
+using ImplicantOrdering = std::function<bool(cadcells::datastructures::Projections&, const Implicant&, const Implicant&)>;
 
 using ConstraintOrdering = std::function<bool(cadcells::datastructures::Projections&, const cadcells::datastructures::PolyConstraint&, const cadcells::datastructures::PolyConstraint&)>;
 

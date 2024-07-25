@@ -880,7 +880,7 @@ void GraphEvaluation::revert_valuation(const cadcells::Assignment& ass) {
     }
 }
 
-void postprocess(cadcells::datastructures::Projections& proj, boost::container::flat_set<cadcells::datastructures::PolyConstraint>& i) {
+void postprocess(cadcells::datastructures::Projections& proj, Implicant& i) {
     // Replace equations by their Gröbner basis if possible
     // TODO reduce other constraints using the gröbner basis?
 
@@ -913,10 +913,10 @@ void postprocess(cadcells::datastructures::Projections& proj, boost::container::
     }
 }
 
-std::vector<boost::container::flat_set<cadcells::datastructures::PolyConstraint>> GraphEvaluation::compute_implicants() {
+std::vector<Implicant> GraphEvaluation::compute_implicants() {
     auto reasons = (root_valuation() == Valuation::FALSE) ? m_true_conflict_reasons : m_false_conflict_reasons;
 
-    std::vector<boost::container::flat_set<cadcells::datastructures::PolyConstraint>> implicants;
+    std::vector<Implicant> implicants;
     for (const auto& r : reasons) {
         implicants.emplace_back();
         for (const auto& c : r) {
