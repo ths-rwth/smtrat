@@ -12,8 +12,8 @@ struct DefaultSettings {
 
     // Projection operator
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
-    static constexpr cadcells::representation::CellHeuristic cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    using cell_heuristic = cadcells::representation::cell_heuristics::biggest_cell;
+    using covering_heuristic = cadcells::representation::covering_heuristics::biggest_cell_covering_min_tdeg;
     static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN;
 
     // Implicant computation

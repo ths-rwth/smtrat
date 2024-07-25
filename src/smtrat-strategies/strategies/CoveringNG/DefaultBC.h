@@ -9,8 +9,8 @@ namespace smtrat {
 namespace internal {
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
-    static constexpr cadcells::representation::CellHeuristic cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
+    using cell_heuristic = cadcells::representation::cell_heuristics::biggest_cell;
+    using covering_heuristic = cadcells::representation::covering_heuristics::biggest_cell_covering;
 };
 
 }
