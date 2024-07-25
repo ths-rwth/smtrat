@@ -63,7 +63,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     }) == constraints.end();
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "constraints_all_strict = " << constraints_all_strict);
 
-    auto derivation = cadcells::algorithms::get_level_covering<typename Settings::op, Settings::covering_heuristic>(proj, constraints, sample);
+    auto derivation = cadcells::algorithms::get_level_covering<typename Settings::op, typename Settings::covering_heuristic>(proj, constraints, sample);
     SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
     if (!derivation) {
         return std::nullopt;
@@ -74,12 +74,12 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
         std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
         if constexpr (Settings::use_approximation) {
             if (consider_approximation && cadcells::representation::approximation::ApxCriteria::level((*derivation)->level())) {
-                lvl = cadcells::algorithms::get_interval<typename Settings::op, Settings::cell_apx_heuristic>(*derivation);
+                lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_apx_heuristic>(*derivation);
             } else {
-                lvl = cadcells::algorithms::get_interval<typename Settings::op, Settings::cell_heuristic>(*derivation);
+                lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_heuristic>(*derivation);
             }
         } else {
-            lvl = cadcells::algorithms::get_interval<typename Settings::op, Settings::cell_heuristic>(*derivation);
+            lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_heuristic>(*derivation);
         }
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
         if (!lvl) {

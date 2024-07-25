@@ -98,7 +98,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
     }
 
     //auto res = covering_ng::exists<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
-    auto res = covering_ng::recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, ass, variable_quantification);
+    auto res = covering_ng::recurse<typename Settings::op, typename Settings::formula_evaluation::Type, typename Settings::covering_heuristic, Settings::sampling_algorithm, typename Settings::cell_heuristic>(proj, f, ass, variable_quantification);
 
     if (res.is_failed()) {
         assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());
