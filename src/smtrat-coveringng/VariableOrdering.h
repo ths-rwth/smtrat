@@ -78,6 +78,7 @@ inline std::vector<carl::Variable> variable_ordering(const carl::QuantifierPrefi
 		assert(e.first != carl::Quantifier::FREE);
 		if (last != e.first && last != carl::Quantifier::FREE) i++;
 		quantifier_block_index[e.second] = i;
+		last = e.first;
 	}
 
 
