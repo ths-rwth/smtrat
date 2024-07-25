@@ -184,7 +184,7 @@ enum class LocalDelMode { NONE, ALL, ONLY_INDEPENDENT, SIMPLIFY };
 // =========================== biggest cell ========================================================
 namespace cell_heuristics {
 
-struct biggest_cell {
+struct BiggestCell {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
@@ -208,10 +208,10 @@ struct biggest_cell {
 };
 
 
-struct biggest_cell_pdel {
+struct BiggestCellPdel {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-        auto response = biggest_cell::compute(der);
+        auto response = BiggestCell::compute(der);
         handle_projective_ordering(der, response);
         return response;
     }
@@ -253,7 +253,7 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
 
 namespace cell_heuristics {
 
-struct biggest_cell_filter {
+struct BiggestCellFilter {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_biggest_cell(der, LocalDelMode::ALL, true);
@@ -261,7 +261,7 @@ struct biggest_cell_filter {
 };
 
 
-struct biggest_cell_filter_only_independent {
+struct BiggestCellFilterOnlyIndependent {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_biggest_cell(der, LocalDelMode::ONLY_INDEPENDENT, true);
@@ -271,7 +271,7 @@ struct biggest_cell_filter_only_independent {
 
 // =========================== chain ===============================================================
 
-struct chain_eq {
+struct ChainEq {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
@@ -297,7 +297,7 @@ struct chain_eq {
 
 // =========================== lowest degree barriers ==============================================
 
-struct lowest_degree_barriers_eq {
+struct LowestDegreeBarriersEq {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);
@@ -374,7 +374,7 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
 
 namespace cell_heuristics {
 
-struct lowest_degree_barriers {
+struct LowestDegreeBarriers {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_lowest_degree_barriers(der);
@@ -382,7 +382,7 @@ struct lowest_degree_barriers {
 };
 
 
-struct lowest_degree_barriers_cache_global {
+struct LowestDegreeBarriersCacheGlobal {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_lowest_degree_barriers(der, LocalDelMode::NONE, false, true);
@@ -390,17 +390,17 @@ struct lowest_degree_barriers_cache_global {
 };
 
 
-struct lowest_degree_barriers_pdel {
+struct LowestDegreeBarriersPdel {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-        auto response = lowest_degree_barriers::compute(der);
+        auto response = LowestDegreeBarriers::compute(der);
         handle_projective_ordering(der, response);
         return response;
     }
 };
 
 
-struct lowest_degree_barriers_filter {
+struct LowestDegreeBarriersFilter {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_lowest_degree_barriers(der, LocalDelMode::ALL, true);
@@ -408,7 +408,7 @@ struct lowest_degree_barriers_filter {
 };
 
 
-struct lowest_degree_barriers_filter_only_independent {
+struct LowestDegreeBarriersFilterOnlyIndependent {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_lowest_degree_barriers(der, LocalDelMode::ONLY_INDEPENDENT, true);
@@ -418,7 +418,7 @@ struct lowest_degree_barriers_filter_only_independent {
 
 // =========================== all compound ========================================================
 
-struct all_compound {
+struct AllCompound {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         datastructures::CellRepresentation<T> response(der);

@@ -9,8 +9,8 @@ namespace smtrat {
 namespace internal {
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
-    using cell_heuristic = cadcells::representation::cell_heuristics::all_compound;
-    using covering_heuristic = cadcells::representation::covering_heuristics::all_compound_covering;
+    using cell_heuristic = cadcells::representation::cell_heuristics::AllCompound;
+    using covering_heuristic = cadcells::representation::covering_heuristics::AllCompoundCovering;
 };
 
 }

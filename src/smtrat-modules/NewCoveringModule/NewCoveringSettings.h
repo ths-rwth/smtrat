@@ -20,7 +20,7 @@ namespace smtrat {
 struct NewCoveringSettings1 {
     static constexpr char moduleName[] = "NewCoveringModule<NewCovering>";
     static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::GreedyMaxUnivariate;
-    using covering_heuristic = cadcells::representation::covering_heuristics::biggest_cell_covering;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCovering;
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettings>;
     static constexpr smtrat::SamplingAlgorithm sampling_algorithm = smtrat::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING;
     static constexpr smtrat::IsSampleOutsideAlgorithm is_sample_outside_algorithm = smtrat::IsSampleOutsideAlgorithm::DEFAULT;

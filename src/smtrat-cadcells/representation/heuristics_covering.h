@@ -50,7 +50,7 @@ namespace covering_heuristics {
 
 // ============================== lowest degree barriers ===========================================
 
-struct ldb_covering {
+struct LDBCovering {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
@@ -66,7 +66,7 @@ struct ldb_covering {
 };
 
 
-struct ldb_covering_cache {
+struct LDBCoveringCache {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
@@ -83,7 +83,7 @@ struct ldb_covering_cache {
 };
 
 
-struct ldb_covering_cache_global {
+struct LDBCoveringCacheGlobal {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
@@ -102,13 +102,13 @@ struct ldb_covering_cache_global {
 
 // ============================== biggest cell =====================================================
 
-struct biggest_cell_covering {
+struct BiggestCellCovering {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs);
         for (auto& iter : min_derivs) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::biggest_cell::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCell::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells);
@@ -117,13 +117,13 @@ struct biggest_cell_covering {
 };
 
 
-struct biggest_cell_covering_pdel {
+struct BiggestCellCoveringPdel {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs);
         for (auto& iter : min_derivs) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::biggest_cell_pdel::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellPdel::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells);
@@ -133,13 +133,13 @@ struct biggest_cell_covering_pdel {
 };
 
 
-struct biggest_cell_covering_filter {
+struct BiggestCellCoveringFilter {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs);
         for (auto& iter : min_derivs) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::biggest_cell_filter::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);
@@ -148,13 +148,13 @@ struct biggest_cell_covering_filter {
 };
 
 
-struct biggest_cell_covering_filter_only_independent {
+struct BiggestCellCoveringFilterOnlyIndependent {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs);
         for (auto& iter : min_derivs) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::biggest_cell_filter_only_independent::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilterOnlyIndependent::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);
@@ -208,7 +208,7 @@ bool is_covering(const DerivationSet<T>& set) {
 
 namespace covering_heuristics {
 
-struct biggest_cell_covering_min_tdeg {
+struct BiggestCellCoveringMinTdeg {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         struct Data {
@@ -240,7 +240,7 @@ struct biggest_cell_covering_min_tdeg {
         assert(util::is_covering(set));
         datastructures::CoveringRepresentation<T> result;
         for (auto& deriv : set) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::biggest_cell::compute(deriv);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCell::compute(deriv);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells);
@@ -251,7 +251,7 @@ struct biggest_cell_covering_min_tdeg {
 
 // ============================== chain ============================================================
 
-struct chain_covering {
+struct ChainCovering {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
@@ -294,13 +294,13 @@ struct chain_covering {
 
 // ============================== all compound =====================================================
 
-struct all_compound_covering {
+struct AllCompoundCovering {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs);
         for (auto& iter : min_derivs) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::all_compound::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::AllCompound::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells);
