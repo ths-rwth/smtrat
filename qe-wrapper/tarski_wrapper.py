@@ -6,7 +6,7 @@ from tarski_from_smtlib import to_tarski
 from stats import Statistics
 from subprocess import Popen, PIPE
 
-tarski_path = "~/code-other/tarski1.28/"
+tarski_path = "/home/jnalbach/code-other/tarski/"
 
 def run(input, sat_mode) -> str:
     my_env = os.environ.copy()
@@ -30,10 +30,7 @@ def run(input, sat_mode) -> str:
         return "unknown"
 
     try:
-        if sat_mode:
-            answer = stdout.split("(qepcad-sat F)\n")[1].split(":tar")[0]
-        else:
-            answer = stdout.split("(qepcad-qe F)\n")[1].split(":tar")[0]
+        answer = stdout.split("(qepcad-qe F)\n")[1].split(":tar")[0]
         return answer
     except:
         print("Error: ", stderr)
@@ -57,30 +54,31 @@ sat_mode = data.find('(check-sat)') != -1
 
 try:
     input = to_tarski(data, sat_mode)
-    #print(input)
 except Exception as ex:
     print(ex)
     exit(10)
 
 output = run(input, sat_mode)
 if output:
-    #print(output)
-
     if sat_mode:
-        if output.find("UNSAT") != -1:
-            print("unsat")
-            exit(3)
-        elif output.find("SAT") != -1:
-            print("sat")
-            exit(2)
-        elif output == "unknown":
+        if output == "unknown":
             print("unknown")
             exit(4)
+        elif output.find("false") != -1:
+            print("unsat")
+            exit(3)
+        elif output.find("true") != -1:
+            print("sat")
+            exit(2)
+        #else:
+        #     print("sat")
+        #     exit(2)
         else:
             print(output)
             print("segfault")
             exit(139)
     else:
+        #print(output)
         print(get_stats(output))
         if output == "unknown":
             print("unknown")

@@ -87,6 +87,14 @@ The `qe-wrapper` directory of this repository contains wrapper Python scripts fo
 * `pip3 install pysmt`
 * Run `tarski_wrapper.py <input.smt2>` or `tarski_wrapper.py <input.smt2>`. The scripts will return either `sat` or `unsat` on SMT benchmarks; or the number of atoms, disjunctions and conjunctions of the solution formula on QE benchmarks. In case the backend is incomplete, it may return `unknown`; if some benchmark uses unsupported features (e.g. division by a non-constant), the scripts will return an error as well.
 
+## Verification of Solution Formulas
+
+The solution formulas of SMT-RAT are verified as follows, using the scripts in the `qe-wrapper` directory:
+* Install [Tarski 1.40](https://github.com/chriswestbrown/tarski/tree/2e16a504f97fb6c8736ed9126d3e0b696ebbf683) 
+* Set `tarski_path` in `tarski_wrapper.py`
+* `pip3 install pysmt`
+* Run `verify_qe_result.py <path_to_smtrat> ./tarski_wrapper.py ../qe-benchmarks/smtlib/`. Some instances may not be verified due to a timeout of SMT-RAT or Tarski; you can increase this time limit in the `verify_qe_result.py` script.
+
 ## Evaluation
 
 The `evaluation.zip` contains `csv` files with the results for each solver and benchmark, as well as two Jupyter notebooks to reproduce the figures and tables from the paper. To run the Jupyter notebooks, you need to install a small [python package](https://ths-rwth.github.io/smtrat/dc/d44/benchmax-evaluation.html) delivered with SMT-RAT:

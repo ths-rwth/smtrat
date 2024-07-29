@@ -14,7 +14,7 @@ def read_formula_from_smtlib(smtlib, sat_mode):
 
     # TODO: (< a b c) is not supported by pySMT!
 
-    if sat_mode:
+    if sat_mode and len(formula.get_free_variables())>0:
         formula = Exists(formula.get_free_variables(), formula)
     
     return formula

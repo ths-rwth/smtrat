@@ -2,10 +2,12 @@ from pysmt.walkers import DagWalker, handles
 import pysmt.operators as op
 from pysmt.typing import BOOL
 from from_smtlib_common import *
+from pysmt.rewritings import nnf, prenex_normal_form
 
 class TarskiConvert(DagWalker):
-    def __init__(self, env=None, invalidate_memoization=None):
+    def __init__(self, is_nnf, env=None, invalidate_memoization=None):
         DagWalker.__init__(self, env=env, invalidate_memoization=invalidate_memoization)
+        self.is_nnf = is_nnf
 
     def transform(self, formula):
         return self.walk(formula)
@@ -23,14 +25,27 @@ class TarskiConvert(DagWalker):
     @handles(op.NOT)
     def walk_not(self, formula, args, **kwargs):
         assert (len(args) == 1)
-        return '[~' + args[0] + ']'
+        if not self.is_nnf:
+            return '[~' + args[0] + ']'
+        else:
+            if '<=' in args[0]:
+                return args[0].replace('<=','>')
+            elif '>=' in args[0]:
+                return args[0].replace('>=','<')
+            elif '<' in args[0]:
+                return args[0].replace('<','>=')
+            elif '>' in args[0]:
+                return args[0].replace('>','<=')
+            elif '=' in args[0]:
+                return args[0].replace('=','/=')
+            assert(False)
 
     @handles(op.QUANTIFIERS)
     def walk_quantifier(self, formula, args, **kwargs):
         assert (formula.is_quantifier())
         ret = ""
         quantifier_type = "all" if formula.is_forall() else "ex"
-        ret += quantifier_type + " " + ",".join([escape_var_name(var) for var in formula.quantifier_vars()])  + "[" + args[0] + "]"
+        ret += quantifier_type + " " + ",".join([escape_var_name(var) for var in formula.quantifier_vars() if str(var) != 'root'])  + "[" + args[0] + "]"
         return ret
 
     @handles(op.SYMBOL)
@@ -58,7 +73,7 @@ class TarskiConvert(DagWalker):
         assert (len(args) >= 2)
         ret = ""
         for arg in args:
-            ret += str(arg) + " "
+            ret += "(" +str(arg) + ")" + " "
         return "(" + ret[0:len(ret) - 1] + ")"
 
     @handles(op.PLUS)
@@ -66,7 +81,7 @@ class TarskiConvert(DagWalker):
         assert (len(args) >= 2)
         ret = ""
         for arg in args:
-            ret += str(arg) + " + "
+            ret += "(" + str(arg) + ")" + " + "
         return "(" + ret[0:len(ret) - 3] + ")"
 
     @handles(op.MINUS)
@@ -77,17 +92,26 @@ class TarskiConvert(DagWalker):
     @handles(op.EQUALS)
     def walk_equals(self, formula, args, **kwargs):
         assert (len(args) == 2)
-        return '[' + str(args[0]) + " = " + str(args[1]) + ']'
+        if args[0].startswith('_root'):
+            return '[' + str(args[1]) + " = " + str(args[0]) + ']'
+        else:
+            return '[' + str(args[0]) + " = " + str(args[1]) + ']'
 
     @handles(op.LE)
     def walk_le(self, formula, args, **kwargs):
         assert (len(args) == 2)
-        return '[' + str(args[0]) + " <= " + str(args[1]) + ']'
+        if args[0].startswith('_root'):
+            return '[' + str(args[1]) + " >= " + str(args[0]) + ']'
+        else:
+            return '[' + str(args[0]) + " <= " + str(args[1]) + ']'
 
     @handles(op.LT)
     def walk_lt(self, formula, args, **kwargs):
         assert (len(args) == 2)
-        return '[' + str(args[0]) + " < " + str(args[1]) + ']'
+        if args[0].startswith('_root'):
+            return '[' + str(args[1]) + " > " + str(args[0]) + ']'
+        else:
+            return '[' + str(args[0]) + " < " + str(args[1]) + ']'
 
     @handles(op.DIV)
     def walk_div(self, formula, args, **kwargs):
@@ -97,24 +121,47 @@ class TarskiConvert(DagWalker):
     @handles(op.IMPLIES)
     def walk_implies(self, formula, args, **kwargs):
         assert (len(args) == 2)
-        return '[' + args[0] + ' ==> ' + args[1] + ']'
+        return '[[' + args[0] + '] ==> [' + args[1] + ']]'
 
     @handles(op.IFF)
     def walk_iff(self, formula, args, **kwargs):
         assert (len(args) == 2)
-        return '[' + args[0] + ' <==> ' + args[1] + ']'
+        return '[[[' + args[0] + '] ==> [' + args[1] + ']] /\\ [[' + args[1] + '] ==> [' + args[0] + ']]]'
+    
+    @handles(op.FUNCTION)
+    def walk_root(self, formula, args, **kwargs):
+        assert (len(args) == 3)
+        return '_root_' + args[1] + ' ' + args[0]
+    
+    @handles(op.BOOL_CONSTANT)
+    def walk_bool_constant(self, formula, args, **kwargs):
+        if formula.constant_value():
+            return "[0 < 1]"
+        else:
+            return "[0 < 0]"
 
 def to_tarski(smtlib, sat_mode = False):
-    formula = read_formula_from_smtlib(smtlib, sat_mode)
-    print(formula)
+    if '(root' in smtlib: 
+        smtlib = '(declare-fun root (Real Real Real) Real) \n' + smtlib
 
-    converter = TarskiConvert()
+    formula = read_formula_from_smtlib(smtlib, sat_mode)
+
+    if sat_mode and '(root' in smtlib:
+        formula = formula.args()[0]
+
+    if '(root' in smtlib:
+        formula = nnf(formula)
+
+    formula = prenex_normal_form(formula)
+
+    #with open("test.smt2", 'w') as f:
+    #    printer = SmtPrinter(f)
+    #    printer.printer(formula)
+
+    converter = TarskiConvert('(root' in smtlib)
     result = converter.transform(formula)
 
     tarski_input = "(def F [" + result + "]) \n"
-    if sat_mode:
-        tarski_input += "(qepcad-sat F)\n"
-    else:
-        tarski_input += "(qepcad-qe F)\n"
+    tarski_input += "(qepcad-qe F)\n"
 
     return tarski_input
