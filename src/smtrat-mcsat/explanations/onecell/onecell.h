@@ -35,7 +35,10 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     )
     SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(sample.size()+1));
 
-    bool consider_approximation = Settings::use_approximation && Settings::Criteria::cell(constraints);
+    bool consider_approximation = Settings::use_approximation;
+    if constexpr (Settings::use_approximation) {
+        consider_approximation = Settings::Criteria::cell(constraints);
+    }
     SMTRAT_STATISTICS_CALL( if (consider_approximation) stats.approximationConsidered(); )
     SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
     cadcells::datastructures::PolyPool pool(context);
