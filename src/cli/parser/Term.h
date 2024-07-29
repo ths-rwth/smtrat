@@ -65,6 +65,7 @@ struct TermParser: public qi::grammar<Iterator, types::TermType(), Skipper> {
 			if(theories->isVariableDeclared(var.first)) continue ;
 			theories->declareVariable(var.first, var.second);
 		}
+		theories->pushQuantifierScope(1);
 	}
 
 	Theories* theories;

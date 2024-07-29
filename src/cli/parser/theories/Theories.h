@@ -196,7 +196,15 @@ struct Theories {
 		HANDLE_ERROR
 		return types::VariableType();
 	}
-	
+
+	void pushQuantifierScope(std::size_t n) {
+		for (; n > 0; n--) state->pushQuantifierScope();
+		state->global_formulas.clear();
+		state->artificialVariables.clear();
+	}
+	void popQuantifierScope(std::size_t n) {
+		for (; n > 0; n--) state->popQuantifierScope();
+	}
 	void pushExpressionScope(std::size_t n) {
 		for (; n > 0; n--) state->pushExpressionScope();
 	}
@@ -409,13 +417,32 @@ struct Theories {
 		return result;
 	}
 
-	types::TermType quantifiedTerm(const std::vector<std::pair<std::string, carl::Sort>>& vars, const types::TermType& term, bool universal){
+	types::TermType quantifiedTerm(const std::vector<std::pair<std::string, carl::Sort>>& vars, types::TermType term, bool universal){
 		SMTRAT_LOG_DEBUG("smtrat.parser", "Declaring " << (universal ? "universal" : "existential") << " variables " << vars << " and term " << term);
 		TheoryError te;
 		types::TermType result;
 		carl::FormulaType type = universal ? carl::FormulaType::FORALL : carl::FormulaType::EXISTS;
+
+		FormulasT additional;
+		addGlobalFormulas(additional);
+		if (!additional.empty()) {
+			additional.push_back(boost::get<FormulaT>(term));
+			term = FormulaT(carl::FormulaType::AND, std::move(additional));
+		}
+		if (!state->artificialVariables.empty()) {
+			std::vector<carl::Variable> qvars;
+			for (const auto& v : state->artificialVariables) {
+				qvars.push_back(v.asVariable());
+			}
+			term = FormulaT(carl::FormulaType::EXISTS, std::move(qvars), boost::get<FormulaT>(term));
+		}
+		state->artificialVariables.clear();
+
 		for (auto& t: theories) {
-			if (t.second->declareQuantifiedTerm(vars, type, term, result, te)) return result;
+			if (t.second->declareQuantifiedTerm(vars, type, term, result, te)) {
+				state->popQuantifierScope();
+				return result;
+			}
 		}
 		SMTRAT_LOG_ERROR("smtrat.parser", "Failed to declare " << (universal ? "universal" : "existential") << " variables " << vars << " and term " << term << ":" << te);
 		HANDLE_ERROR

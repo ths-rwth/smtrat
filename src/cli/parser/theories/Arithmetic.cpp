@@ -71,9 +71,9 @@ inline FormulaT makeConstraint(ArithmeticTheory& at, const Poly& lhs, const Poly
 	carl::variables(p, pVars);
 	std::vector<carl::Variable> vars;
 	while (!pVars.empty()) {
-		auto it = at.mITEs.find(*pVars.begin());
+		auto it = at.state->arithmetic_ites.find(*pVars.begin());
 		pVars.erase(*pVars.begin());
-		if (it != at.mITEs.end()) {
+		if (it != at.state->arithmetic_ites.end()) {
 			carl::variables(std::get<1>(it->second), pVars);
 			carl::variables(std::get<2>(it->second), pVars);
 			vars.push_back(it->first);
@@ -92,7 +92,7 @@ inline FormulaT makeConstraint(ArithmeticTheory& at, const Poly& lhs, const Poly
 		std::vector<FormulasT> conds(1 << n);
 		unsigned repeat = 1 << (n - 1);
 		for (auto v : vars) {
-			auto t = at.mITEs[v];
+			auto t = at.state->arithmetic_ites[v];
 			std::vector<Poly> ptmp;
 			for (auto& p : polys) {
 				// Substitute both possibilities for this ITE.
@@ -119,7 +119,7 @@ inline FormulaT makeConstraint(ArithmeticTheory& at, const Poly& lhs, const Poly
 	} else {
 		// There are many ITEs, we keep the auxiliary variables.
 		for (const auto& v : vars) {
-			auto t = at.mITEs[v];
+			auto t = at.state->arithmetic_ites[v];
 			FormulaT consThen = FormulaT(std::move(Poly(v) - std::get<1>(t)), carl::Relation::EQ);
 			FormulaT consElse = FormulaT(std::move(Poly(v) - std::get<2>(t)), carl::Relation::EQ);
 
@@ -181,6 +181,14 @@ ArithmeticTheory::ArithmeticTheory(ParserState* state)
 	ops.emplace("<>", arithmetic::OperatorType(carl::Relation::NEQ));
 	ops.emplace(">=", arithmetic::OperatorType(carl::Relation::GEQ));
 	ops.emplace(">", arithmetic::OperatorType(carl::Relation::GREATER));
+
+	ops.emplace("not<", arithmetic::OperatorType(carl::Relation::LESS));
+	ops.emplace("not<=", arithmetic::OperatorType(carl::Relation::LEQ));
+	ops.emplace("not=", arithmetic::OperatorType(carl::Relation::EQ));
+	ops.emplace("not!=", arithmetic::OperatorType(carl::Relation::NEQ));
+	ops.emplace("not<>", arithmetic::OperatorType(carl::Relation::NEQ));
+	ops.emplace("not>=", arithmetic::OperatorType(carl::Relation::GEQ));
+	ops.emplace("not>", arithmetic::OperatorType(carl::Relation::GREATER));
 }
 
 bool ArithmeticTheory::declareVariable(const std::string& name, const carl::Sort& sort, types::VariableType& result, TheoryError& errors) {
@@ -242,7 +250,7 @@ bool ArithmeticTheory::handleITE(const FormulaT& ifterm, const types::TermType& 
 	}
 	carl::Variable auxVar = /*thenpoly.integer_valued() && elsepoly.integer_valued() ? carl::fresh_integer_variable() :*/ carl::fresh_real_variable();
 	state->artificialVariables.emplace_back(auxVar);
-	mITEs[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
+	state->arithmetic_ites[auxVar] = std::make_tuple(ifterm, thenpoly, elsepoly);
 	result = Poly(auxVar);
 	return true;
 }
@@ -361,10 +369,10 @@ bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vec
 		return false;
 	}
 	arithmetic::OperatorType op = it->second;
-	if (boost::get<carl::Relation>(&op) != nullptr && arguments.size() == 3 && boost::get<FormulaT>(&arguments[0]) != nullptr && boost::get<carl::Variable>(&arguments[1]) != nullptr && boost::get<carl::MultivariateRoot<Poly>>(&arguments[2]) != nullptr) {
-		bool negated = boost::get<FormulaT>(arguments[0]).type() == carl::FormulaType::TRUE;
-		carl::Variable var = boost::get<carl::Variable>(arguments[1]);
-		carl::MultivariateRoot<Poly> root = boost::get<carl::MultivariateRoot<Poly>>(arguments[2]);
+	if (boost::get<carl::Relation>(&op) != nullptr && arguments.size() == 2 && boost::get<carl::Variable>(&arguments[0]) != nullptr && boost::get<carl::MultivariateRoot<Poly>>(&arguments[1]) != nullptr) {
+		bool negated = identifier.symbol.rfind("not", 0) == 0;
+		carl::Variable var = boost::get<carl::Variable>(arguments[0]);
+		carl::MultivariateRoot<Poly> root = boost::get<carl::MultivariateRoot<Poly>>(arguments[1]);
 		carl::Relation rel = boost::get<carl::Relation>(op);
 		result = FormulaT(carl::VariableComparison<Poly>(var, root, rel, negated));
 		return true;
@@ -389,7 +397,7 @@ bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vec
 				*/
 
 				std::stringstream name;
-				name << "div_" << mNewDivisions.size() + mKnownDivisions.size();
+				name << "div_" << state->arithmetic_divisions.size();
 				auto div_var_new = carl::fresh_variable(name.str(), carl::VariableType::VT_REAL);
 				auto p_new = Poly(args[0]);
 				auto q_new = Poly(args[1]);
@@ -402,8 +410,9 @@ bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vec
 				const FormulaT div_formula(carl::FormulaType::OR, den_is0, FormulaT(ConstraintT(Poly(div_var_new) * q_new - p_new, carl::Relation::EQ)));
 				SMTRAT_LOG_DEBUG("smtrat.parser", "Adding division formula: " << div_formula);
 				state->global_formulas.emplace_back(div_formula);
+				state->artificialVariables.emplace_back(div_var_new);
 
-				for (const auto& [div_var_old, div_pair_old] : mKnownDivisions) {
+				for (const auto& [div_var_old, div_pair_old] : state->arithmetic_divisions) {
 					// ((p = p' and q = q') => div_pq = div_pq') == (p != p' || q != q' || div_pq = div_pq')
 					const auto& [p_old, q_old] = div_pair_old;
 					// const FormulaT lhs = FormulaT(carl::FormulaType::AND, FormulaT(ConstraintT(p_new - p_old, carl::Relation::EQ)), FormulaT(ConstraintT(q_new - q_old, carl::Relation::EQ)));
@@ -418,7 +427,7 @@ bool ArithmeticTheory::functionCall(const Identifier& identifier, const std::vec
 					SMTRAT_LOG_DEBUG("smtrat.parser", "Adding division pairwise formula: " << div_formula_pairwise);
 					state->global_formulas.emplace_back(div_formula_pairwise);
 				}
-				mKnownDivisions[div_var_new] = std::make_pair(p_new, q_new);
+				state->arithmetic_divisions[div_var_new] = std::make_pair(p_new, q_new);
 
 				result = Poly(div_var_new);
 				return true;

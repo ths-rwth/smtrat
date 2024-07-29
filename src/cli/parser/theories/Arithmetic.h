@@ -17,9 +17,6 @@ struct ArithmeticTheory: public AbstractTheory  {
 	static void addSimpleSorts(qi::symbols<char, carl::Sort>& sorts);
 
 	std::map<std::string, arithmetic::OperatorType> ops;
-	std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> mITEs;
-	std::map<carl::Variable, std::tuple<Poly, Poly>> mKnownDivisions;
-	std::map<carl::Variable, std::tuple<Poly, Poly>> mNewDivisions;
 
 	ArithmeticTheory(ParserState* state);
 

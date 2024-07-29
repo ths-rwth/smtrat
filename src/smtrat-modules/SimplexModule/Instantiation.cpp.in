@@ -1,0 +1,13 @@
+/**
+ * @file SimplexInstantiation.cpp.in
+ * @author YOUR NAME <YOUR EMAIL ADDRESS>
+ *
+ * @version 2023-04-28
+ * Created on 2023-04-28.
+ */
+
+#include "${Prefix}Module.tpp"
+
+namespace smtrat {
+${INSTANTIATIONS}
+}

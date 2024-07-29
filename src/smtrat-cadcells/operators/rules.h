@@ -219,18 +219,41 @@ void cell_represents(datastructures::SampledDerivation<P>& deriv, const datastru
 }
 
 template<typename P>
+void root_ordering_holds_pair(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRoot& first, const datastructures::IndexedRoot& second) {
+    if (first.poly != second.poly) {
+        assert(deriv.contains(properties::poly_del{ first.poly }));
+        assert(deriv.contains(properties::poly_del{ second.poly }));
+        deriv.insert(properties::poly_ord_inv{ deriv.proj().res(first.poly, second.poly) });
+    }
+}
+
+template<typename P>
 void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     deriv.insert(properties::cell_connected{ deriv.level() });
     for (const auto& rel : ordering.data()) {
-        assert(rel.first.is_root() && rel.second.is_root());
-        auto& first = rel.first.root();
-        auto& second = rel.second.root();
-        if (first.poly != second.poly) {
-            assert(rel.is_strict || (ordering.holds_transitive(first,second,false) && ordering.holds_transitive(second,first,false))); // not supported
-            assert(deriv.contains(properties::poly_del{ first.poly }));
-            assert(deriv.contains(properties::poly_del{ second.poly }));
-            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(first.poly, second.poly) });
+        assert(rel.is_strict || (ordering.holds_transitive(rel.first,rel.second,false) && ordering.holds_transitive(rel.second,rel.first,false))); // not supported
+
+        if (rel.first.is_root() && rel.second.is_root()) {
+            root_ordering_holds_pair(deriv, rel.first.root(), rel.second.root());
+        } else if (rel.first.is_root() && !rel.second.is_root()) {
+            for (const auto& r2 : rel.second.roots()) {
+                assert(r2.size() == 1);
+                root_ordering_holds_pair(deriv, rel.first.root(), r2.front());
+            }
+        } else if (!rel.first.is_root() && rel.second.is_root()) {
+            for (const auto& r1 : rel.first.roots()) {
+                assert(r1.size() == 1);
+                root_ordering_holds_pair(deriv, r1.front(), rel.second.root());
+            }
+        } else if (rel.first.is_cmaxmin() && rel.second.is_cminmax()) {
+            for (const auto& r1 : rel.first.roots()) {
+                assert(r1.size() == 1);
+                for (const auto& r2 : rel.second.roots()) {
+                    assert(r2.size() == 1);
+                    root_ordering_holds_pair(deriv, r1.front(), r2.front());
+                }
+            }
         }
     }
 }

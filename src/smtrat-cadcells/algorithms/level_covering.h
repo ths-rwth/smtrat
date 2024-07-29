@@ -11,7 +11,7 @@ namespace smtrat::cadcells::algorithms {
  * @param sample A sample such that all but the highest variable in @ref constraints are assigned.
  * @return A sampled derivation which contains the information to reproduce the conflict. 
  */
-template<typename op, representation::CoveringHeuristic covering_heuristic>
+template<typename op, typename covering_heuristic>
 std::optional<datastructures::SampledDerivationRef<typename op::PropertiesSet>> get_level_covering(datastructures::Projections& proj, const std::vector<Atom>& constraints, const Assignment& sample) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.algorithms.onecell", constraints << ", " << sample);
     std::vector<datastructures::SampledDerivationRef<typename op::PropertiesSet>> unsat_cells;
@@ -21,7 +21,7 @@ std::optional<datastructures::SampledDerivationRef<typename op::PropertiesSet>> 
     }
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Computing covering representation");
-    auto covering_repr = representation::covering<covering_heuristic>::compute(unsat_cells);
+    auto covering_repr = covering_heuristic::compute(unsat_cells);
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Got representation " << covering_repr);
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.algorithms.onecell", "Compute covering projection");

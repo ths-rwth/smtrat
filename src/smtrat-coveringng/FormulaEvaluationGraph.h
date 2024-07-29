@@ -105,7 +105,7 @@ public:
     void set_formula(const FormulaT& f);
     void extend_valuation(const cadcells::Assignment& ass);
     void revert_valuation(const cadcells::Assignment& ass);
-    std::vector<boost::container::flat_set<cadcells::datastructures::PolyConstraint>> compute_implicants();
+    std::vector<Implicant> compute_implicants();
     Valuation root_valuation() const;
 };
 

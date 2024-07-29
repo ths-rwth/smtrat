@@ -29,19 +29,23 @@ namespace smtrat {
  */
 class Default : public Manager {
     static bool condition_lra(carl::Condition condition) {
-		return (!(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition));
+		return (!(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition)) && !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
 	}
 
 	static bool condition_nra(carl::Condition condition) {
-		return ((carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition));
+		return ((carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition)) && !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
+	}
+
+    static bool condition_ra_ext(carl::Condition condition) {
+		return !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition) && (carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
 	}
 
 	static bool condition_lira(carl::Condition condition) {
-		return (!(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition));
+		return (!(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition)) && !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
 	}
 
     static bool condition_nira(carl::Condition condition) {
-		return ((carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition));
+		return ((carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) && (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition)) && !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
 	}
 
     static bool condition_quantifier_free(carl::Condition condition) {
@@ -58,6 +62,10 @@ class Default : public Manager {
 
 	static bool condition_qf_nra(carl::Condition condition) {
 		return condition_quantifier_free(condition) && condition_nra(condition);
+	}
+
+    static bool condition_qf_ra_ext(carl::Condition condition) {
+		return condition_quantifier_free(condition) && condition_ra_ext(condition);
 	}
 
 	static bool condition_qf_lira(carl::Condition condition) {
@@ -105,6 +113,9 @@ class Default : public Manager {
                 })
             }).condition( &condition_qf_nra ),
             addBackend<FPPModule<FPPSettings1>>({
+                addBackend<SATModule<SATSettingsMCSATDefault>>()
+            }).condition( &condition_qf_ra_ext ),
+            addBackend<FPPModule<FPPSettings1>>({
                 addBackend<SATModule<SATSettings1>>({
                     addBackend<CubeLIAModule<CubeLIASettings1>>({
                         addBackend<LRAModule<LRASettings1>>()
@@ -127,6 +138,8 @@ class Default : public Manager {
                     })
                 }).condition( &condition_quantifier_free )
             }).condition( &condition_nonqf_ra ),
+            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>(
+            ).condition( &condition_ra_ext ),
         });
     }
 };

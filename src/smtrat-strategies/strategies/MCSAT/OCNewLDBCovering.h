@@ -15,7 +15,7 @@ struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 
 	constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
     constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING;
-	constexpr static auto op = cadcells::operators::op::mccallum;
+	using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
 struct SATSettings : smtrat::SATSettingsMCSAT {

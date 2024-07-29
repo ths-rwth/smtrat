@@ -85,13 +85,20 @@ def transform_to_seconds(df):
     for solver in df.columns.get_level_values(0).unique():
         df[(solver,'runtime')] /= 1000
 
-def rename_solvers(df, name_map):
-    df.columns.set_levels(map(lambda x: name_map[x] if x in name_map else x, df.columns.levels[0]) , level=0, inplace=True)
-
-def csv_to_pandas(filename, only=None, rename = {}):
-    df = pd.read_csv(filename, header=[0,1], index_col=0)
+def filter_solvers(df, only=None, exclude=None):
     if only:
         df = df[[c for c in df.columns if c[0] in only]]
-    rename_solvers(df, rename)
-    transform_to_seconds(df)
+    if exclude:
+        df = df[[c for c in df.columns if not c[0] in exclude]]
+    return df
+
+def rename_solvers(df, name_map):
+    df.columns = df.columns.set_levels(map(lambda x: name_map[x] if x in name_map else x, df.columns.levels[0]) , level=0)
+    return df
+
+def csv_to_pandas(filename, only=None, exclude=None, rename = {}):
+    df = pd.read_csv(filename, header=[0,1], index_col=0)
+    df = filter_solvers(df, only, exclude)
+    df = rename_solvers(df, rename)
+    #transform_to_seconds(df)
     return df

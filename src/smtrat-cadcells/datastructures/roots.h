@@ -34,6 +34,24 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     return os;
 }
 
+struct IndexedRootConstraint {
+    carl::Relation relation;
+    IndexedRoot bound;
+};
+inline bool operator==(const IndexedRootConstraint& lhs, const IndexedRootConstraint& rhs) {
+    return lhs.relation == rhs.relation && lhs.bound == rhs.bound;
+}
+inline bool operator<(const IndexedRootConstraint& lhs, const IndexedRootConstraint& rhs) {
+    return lhs.relation < rhs.relation || (lhs.relation == rhs.relation &&  lhs.bound < rhs.bound);
+}
+inline bool operator!=(const IndexedRootConstraint& lhs, const IndexedRootConstraint& rhs) {
+    return !(lhs == rhs);
+}
+inline std::ostream& operator<<(std::ostream& os, const IndexedRootConstraint& data) {
+    os << "(var " << data.relation << " " << data.bound << ")";
+    return os;
+}
+
 struct PiecewiseLinearInfo {
     /// Active linear bound from -oo to including the first intersection point (or oo if no such point exists)
     IndexedRoot first;

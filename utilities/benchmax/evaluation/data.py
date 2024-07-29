@@ -3,6 +3,13 @@ import pandas as pd
 def get_solvers(df):
     return df.columns.get_level_values(0).unique()
 
+def get_fields(df, solver):
+    fields = []
+    for c in df.columns:
+        if solver == c[0]:
+            fields.append(c[1])
+    return fields
+
 def compare_results(answer1,time1,answer2,time2):
     if answer1 in ['sat','unsat'] and not answer2 in ['sat','unsat']:
         return True

@@ -17,6 +17,28 @@ namespace parser {
 
 	struct ParserState {
 
+		struct QuantifierScope {
+		private:
+			FormulasT global_formulas;
+			std::vector<smtrat::ModelVariable> artificialVariables;
+			std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> arithmetic_ites;
+			std::map<carl::Variable, std::tuple<Poly, Poly>> arithmetic_divisions;
+		public:
+			QuantifierScope(const ParserState& state)
+			{
+				this->global_formulas = state.global_formulas;
+				this->artificialVariables = state.artificialVariables;
+				this->arithmetic_ites = state.arithmetic_ites;
+				this->arithmetic_divisions = state.arithmetic_divisions;
+			}
+			void discharge(ParserState& state) {
+				state.global_formulas = std::move(this->global_formulas);
+				state.artificialVariables = std::move(this->artificialVariables);
+				state.arithmetic_ites = std::move(this->arithmetic_ites);
+				state.arithmetic_divisions = std::move(this->arithmetic_divisions);
+			}
+		};
+
 		struct ExpressionScope {
 		private:
 			std::map<std::string, types::TermType> bindings;
@@ -70,9 +92,12 @@ namespace parser {
 		std::map<std::string, const UserFunctionInstantiator*> defined_user_functions;
 		FormulasT global_formulas;
 		std::vector<smtrat::ModelVariable> artificialVariables;
+		std::map<carl::Variable, std::tuple<FormulaT, Poly, Poly>> arithmetic_ites;
+		std::map<carl::Variable, std::tuple<Poly, Poly>> arithmetic_divisions;
 
 		InstructionHandler& handler;
 
+		std::stack<QuantifierScope> quantifierScopes;
 		std::stack<ExpressionScope> expressionScopes;
 		std::stack<ScriptScope> scriptScopes;
 
@@ -88,6 +113,14 @@ namespace parser {
 			defined_user_functions.clear();
 		}
 
+		void pushQuantifierScope() {
+			quantifierScopes.emplace(*this);
+		}
+		void popQuantifierScope() {
+			quantifierScopes.top().discharge(*this);
+			quantifierScopes.pop();
+		}
+
 		void pushExpressionScope() {
 			expressionScopes.emplace(*this);
 		}
@@ -95,12 +128,15 @@ namespace parser {
 			expressionScopes.top().discharge(*this);
 			expressionScopes.pop();
 		}
+		
 		void pushScriptScope() {
 			assert(expressionScopes.empty());
+			assert(quantifierScopes.empty());
 			scriptScopes.emplace(*this);
 		}
 		void popScriptScope() {
 			assert(expressionScopes.empty());
+			assert(quantifierScopes.empty());
 			assert(!scriptScopes.empty());
 			scriptScopes.top().discharge(*this);
 			scriptScopes.pop();
@@ -118,6 +154,7 @@ namespace parser {
 			defined_user_functions.clear();
 			global_formulas.clear();
 			artificialVariables.clear();
+			while (!quantifierScopes.empty()) quantifierScopes.pop();
 			while (!expressionScopes.empty()) expressionScopes.pop();
 			while (!scriptScopes.empty()) scriptScopes.pop();
 		}

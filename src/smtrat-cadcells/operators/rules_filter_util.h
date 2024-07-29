@@ -73,8 +73,45 @@ enum class result {
     NORMAL, INCLUSIVE, NORMAL_OPTIONAL, INCLUSIVE_OPTIONAL, OMIT
 };
 
+namespace filter_roots_util {
+    template<typename P>
+    inline void handle_result(datastructures::DelineatedDerivation<P>& deriv, const datastructures::PolyRef poly, const RAN& ran, const std::vector<datastructures::IndexedRoot>& irs, result res) {
+        switch (res) {
+        case result::NORMAL:
+            for (const auto& ir : irs) {
+                deriv.delin().add_root(ran, datastructures::TaggedIndexedRoot { ir, false, false, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal(ran));
+            }
+            break;
+        case result::INCLUSIVE:
+            for (const auto& ir : irs) {
+                deriv.delin().add_root(ran, datastructures::TaggedIndexedRoot { ir, true, false, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_inclusive(ran));
+            }
+            break;
+        case result::NORMAL_OPTIONAL:
+            for (const auto& ir : irs) {
+                deriv.delin().add_root(ran, datastructures::TaggedIndexedRoot { ir, false, true, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional(ran));
+            }
+            break;
+        case result::INCLUSIVE_OPTIONAL:
+            for (const auto& ir : irs) {
+                deriv.delin().add_root(ran, datastructures::TaggedIndexedRoot { ir, true, true, poly });
+                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_inclusive_optional(ran));
+            }
+            break;
+        case result::OMIT:
+            break;
+        default:
+            assert(false);
+        }
+    }
+
+}
+
 template<typename P>
-inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastructures::PolyRef poly, std::function<result(const RAN&)> filter_condition) {
+inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const datastructures::PolyRef poly, std::function<result(const RAN&, bool forward)> filter_condition, std::optional<RAN> sample = std::nullopt) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_roots " << poly);
     datastructures::RootMapPlain root_map;
     if (deriv.proj().is_const(poly)) return;
@@ -98,40 +135,30 @@ inline void filter_roots(datastructures::DelineatedDerivation<P>& deriv, const d
         }
     }
     SMTRAT_STATISTICS_CALL(statistics().filter_roots_start(poly.level, deriv.proj().factors_nonconst(poly).size(), root_map.size(), deriv.underlying_sample()));
-    for (const auto& entry : root_map) {
-        SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "considering root " << entry);
-        SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_start(entry.first));
-        switch (filter_condition(entry.first)) {
-        case result::NORMAL:
-            for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, false, false, poly });
-                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal(entry.first));
-            }
-            break;
-        case result::INCLUSIVE:
-            for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true, false, poly });
-                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_inclusive(entry.first));
-            }
-            break;
-        case result::NORMAL_OPTIONAL:
-            for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, false, true, poly });
-                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional(entry.first));
-            }
-            break;
-        case result::INCLUSIVE_OPTIONAL:
-            for (const auto& ir : entry.second) {
-                deriv.delin().add_root(entry.first, datastructures::TaggedIndexedRoot { ir, true, true, poly });
-                SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_inclusive_optional(entry.first));
-            }
-            break;
-        case result::OMIT:
-            break;
-        default:
-            assert(false);
+    if (!sample) {
+        for (const auto& entry : root_map) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "considering root " << entry);
+            SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_start(entry.first));
+            filter_roots_util::handle_result(deriv, poly, entry.first, entry.second, filter_condition(entry.first, true));
+            SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_end());
         }
-        SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_end());
+    } else {
+        auto it = root_map.upper_bound(*sample);
+        while (it != root_map.begin()) {
+            it--;
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "considering root " << *it);
+            SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_start(it->first));
+            filter_roots_util::handle_result(deriv, poly, it->first, it->second, filter_condition(it->first, false));
+            SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_end());
+        }
+        it = root_map.upper_bound(*sample);
+        while(it != root_map.end()) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "considering root " << *it);
+            SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_start(it->first));
+            filter_roots_util::handle_result(deriv, poly, it->first, it->second, filter_condition(it->first, true));
+            SMTRAT_STATISTICS_CALL(statistics().filter_roots_filter_end());
+            it++;
+        }
     }
     SMTRAT_STATISTICS_CALL(statistics().filter_roots_end());
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "filter_roots end");
