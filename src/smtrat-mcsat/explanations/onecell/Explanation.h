@@ -83,6 +83,30 @@ struct DefaultSettings : BaseSettings { // current default
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
+
+struct DefaultApproximationSettings : BaseSettings {
+    constexpr static bool exploit_strict_constraints = true;
+    constexpr static bool use_approximation          = true;
+
+    // namespace apx = cadcells::representation::approximation;
+
+    using Criteria = cadcells::representation::approximation::ApxCriteria<typename cadcells::representation::approximation::BaseCriteriaSettings>;
+
+    struct ApxSettings {
+        using method = cadcells::representation::approximation::Simple<cadcells::representation::approximation::SimpleSettings>;
+        using Criteria = DefaultApproximationSettings::Criteria;
+    };
+    using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
+
+    using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobal;
+    using covering_heuristic = cadcells::representation::covering_heuristics::LDBCoveringCacheGlobal;
+
+    struct OpSettings : cadcells::operators::MccallumFilteredSettings {
+        static constexpr DelineationFunction delineation_function = COMPOUND_PWL;
+    };
+    using op = cadcells::operators::MccallumFiltered<OpSettings>;
+};
+
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
 template<typename Settings = DefaultSettings>
