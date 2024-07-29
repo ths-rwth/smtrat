@@ -7,7 +7,6 @@ using IR = datastructures::IndexedRoot;
 
 template<typename Settings>
 struct Simple {
-    // TODO: have root as template parameter here?
     template<typename T>
     static IR bound(const IR& /*bound_re*/, const RAN& bound_value, const datastructures::SampledDerivationRef<T>& der, bool below) {
         Rational root = approximate_root<typename Settings::Sampling>(der->main_var_sample(), bound_value, below);
