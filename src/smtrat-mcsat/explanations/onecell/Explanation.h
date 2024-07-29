@@ -83,17 +83,16 @@ struct DefaultSettings : BaseSettings { // current default
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
+namespace apx = cadcells::representation::approximation;
 
 struct DefaultApproximationSettings : BaseSettings {
     constexpr static bool exploit_strict_constraints = true;
     constexpr static bool use_approximation          = true;
 
-    // namespace apx = cadcells::representation::approximation;
-
-    using Criteria = cadcells::representation::approximation::ApxCriteria<typename cadcells::representation::approximation::BaseCriteriaSettings>;
+    using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
 
     struct ApxSettings {
-        using method = cadcells::representation::approximation::Simple<cadcells::representation::approximation::SimpleSettings>;
+        using method = apx::Simple<apx::SimpleSettings>;
         using Criteria = DefaultApproximationSettings::Criteria;
     };
     using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
