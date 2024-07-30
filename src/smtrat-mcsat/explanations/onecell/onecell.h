@@ -29,17 +29,17 @@ namespace smtrat::mcsat::onecell {
  */
 template<typename Settings>
 std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
-    #ifdef SMTRAT_DEVOPTION_Statistics
+    SMTRAT_STATISTICS_CALL(
         cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
         stats.newCell();
-    #endif
+    )
     SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(sample.size()+1));
 
-    bool consider_approximation = Settings::use_approximation && cadcells::representation::approximation::ApxCriteria::cell(constraints);
-    #ifdef SMTRAT_DEVOPTION_Statistics
-        if (consider_approximation) stats.approximationConsidered();
-    #endif
-    
+    bool consider_approximation = Settings::use_approximation;
+    if constexpr (Settings::use_approximation) {
+        consider_approximation = Settings::Criteria::cell(constraints);
+    }
+    SMTRAT_STATISTICS_CALL( if (consider_approximation) stats.approximationConsidered(); )
     SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
     cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);
@@ -73,7 +73,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     while ((*derivation)->level() > 0) {
         std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
         if constexpr (Settings::use_approximation) {
-            if (consider_approximation && cadcells::representation::approximation::ApxCriteria::level((*derivation)->level())) {
+            if (consider_approximation && Settings::Criteria::level((*derivation)->level())) {
                 lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_apx_heuristic>(*derivation);
             } else {
                 lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_heuristic>(*derivation);

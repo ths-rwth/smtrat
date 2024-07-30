@@ -36,6 +36,18 @@ private:
 	bool m_max_considered_reached = false; 	// flag whether the max number of apx considered is reached
 	bool m_max_apx_reached = false; 		// flag whether the max number of apx is reached
 
+	std::size_t m_irrational_sample = 0; 	// #times a sample was irrational
+	std::size_t m_pwl_approximation = 0;    // #times a pwl approximation was used
+	std::size_t m_pwl_left_intersection = 0;	// #times a linear segment on the left had an intersection with the polynomial
+	std::size_t m_pwl_right_intersection = 0;	// #times a linear segment on the right had an intersection with the polynomial
+	std::size_t m_pwl_fallback_univariate = 0;	// #times a fallback was used because the polynomial was univariate
+	std::size_t m_pwl_fallback_level_too_low = 0;	// #times a fallback was used because the level was too low
+	std::size_t m_pwl_fallback_primary_irrational = 0;		// #times a fallback was used because the primary sample was irrational
+	std::size_t m_pwl_fallback_no_delineable_interval = 0;	// #times a fallback was used because no delineable interval was found
+	std::size_t m_pwl_fallback_no_delineable_space = 0;		// #times a fallback was used because there was no space in the delineable interval
+
+
+
 	void collectCounterStats(Counter c, const std::string& name) {
 		std::size_t max = 0;
 		std::size_t n = 0;
@@ -92,6 +104,16 @@ public:
 		Statistics::addKeyValuePair("apx_too_often", m_apx_too_often);
 		Statistics::addKeyValuePair("max_considered_reached", m_max_considered_reached);
 		Statistics::addKeyValuePair("max_apx_reached", m_max_apx_reached);
+
+		Statistics::addKeyValuePair("irrational_sample", m_irrational_sample);
+		Statistics::addKeyValuePair("pwl_approximation", m_pwl_approximation);
+		Statistics::addKeyValuePair("pwl_left_intersection", m_pwl_left_intersection);
+		Statistics::addKeyValuePair("pwl_right_intersection", m_pwl_right_intersection);
+		Statistics::addKeyValuePair("pwl_fallback_univariate", m_pwl_fallback_univariate);
+		Statistics::addKeyValuePair("pwl_fallback_level_too_low", m_pwl_fallback_level_too_low);
+		Statistics::addKeyValuePair("pwl_fallback_primary_irrational", m_pwl_fallback_primary_irrational);
+		Statistics::addKeyValuePair("pwl_fallback_no_delineable_interval", m_pwl_fallback_no_delineable_interval);
+		Statistics::addKeyValuePair("pwl_fallback_no_delineable_space", m_pwl_fallback_no_delineable_space);
 	}
 
 	void newCell() {
@@ -127,6 +149,17 @@ public:
 	void apxTooOften() {++m_apx_too_often;}
 	void maxConsideredReached() {m_max_considered_reached = true;}
 	void maxApxReached() {m_max_apx_reached = true;}
+
+	void irrationalSample() {++m_irrational_sample;}
+	void pwlApproximation() {++m_pwl_approximation;}
+	void pwlLeftIntersection() {++m_pwl_left_intersection;}
+	void pwlRightIntersection() {++m_pwl_right_intersection;}
+	void pwlFallbackUnivariate() {++m_pwl_fallback_univariate;}
+	void pwlFallbackLevelTooLow() {++m_pwl_fallback_level_too_low;}
+	void pwlFallbackPrimaryIrrational() {++m_pwl_fallback_primary_irrational;}
+	void pwlFallbackNoDelineableInterval() {++m_pwl_fallback_no_delineable_interval;}
+	void pwlFallbackNoDelineableSpace() {++m_pwl_fallback_no_delineable_space;}
+
 
 	static OCApproximationStatistics& get_instance() {
 		static OCApproximationStatistics& statistics = statistics_get<OCApproximationStatistics>("onecell-approximation");
