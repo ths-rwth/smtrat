@@ -36,7 +36,7 @@ protected:
 		bool result;
 		if(j == 0) result = (i_right_height >= j_right_height && i_m <= j_m);
         else if(j == slopes.size() - 1) result = (i_left_height >= j_left_height && i_m >= j_m);
-		else result = (i_left_height >= j_left_height && i_right_height >= j_right_height;)
+		else result = (i_left_height >= j_left_height && i_right_height >= j_right_height);
 
 		// insert into cache
 		isOverCache[std::make_pair(i, j)] = result;
@@ -144,9 +144,7 @@ public:
 		return slopes[segment] * point + intercepts[segment];
 	}
 
-	std::size_t get_number_of_segments() {
-		return segments.size();
-	}
+	std::size_t get_number_of_segments() { return segments.size(); }
 
 	LinearSegment get_segment(std::size_t index) {
 		assert(index < segments.size());
@@ -177,13 +175,13 @@ public:
 			compoundMinMax.roots.emplace_back();
 
 			LinearSegment definingSegment = get_segment(j);
-			auto definingPoly = definingSegment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+			auto definingPoly = definingSegment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 			auto ir = datastructures::IndexedRoot(definingPoly, 1);
 
 			for(std::size_t i = 0; i < slopes.size(); ++i) {
 				if(isUnder(i, j)) {
 					LinearSegment segment = get_segment(i);
-					auto polynomial = segment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+					auto polynomial = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 					compoundMinMax.roots.back().emplace_back(polynomial, 1);
 				}
 			}
@@ -208,13 +206,13 @@ public:
 			compoundMaxMin.roots.emplace_back();
 
 			LinearSegment definingSegment = get_segment(j);
-			auto definingPoly = definingSegment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+			auto definingPoly = definingSegment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 			auto ir = datastructures::IndexedRoot(definingPoly, 1);
 
 			for(std::size_t i = 0; i < slopes.size(); ++i) {
 				if(isOver(i, j)) {
 					LinearSegment segment = get_segment(i);
-					auto polynomial = segment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+					auto polynomial = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 					compoundMaxMin.roots.back().emplace_back(polynomial, 1);
 				}
 			}
@@ -247,7 +245,7 @@ public:
 			compoundMinMax.roots.emplace_back();
 
 			LinearSegment definingSegment = get_segment(i);
-			auto definingPoly = definingSegment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+			auto definingPoly = definingSegment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 			auto definingIR = datastructures::IndexedRoot(definingPoly, 1);
 
 			compoundMinMax.roots.back().emplace_back(definingPoly, 1);
@@ -258,7 +256,7 @@ public:
 
 				if (isUnder(j, i)) {
 					LinearSegment segment = get_segment(j);
-					auto poly = segment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+					auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
 					compoundMinMax.roots.back().emplace_back(poly, 1);
 					continue;
@@ -271,7 +269,7 @@ public:
 				for (std::size_t k = smaller + 1; k < bigger; ++k) {
 					if (isUnder(k, i) && isOver(k, j)) {
 						LinearSegment segment = get_segment(k);
-						auto poly = segment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+						auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
 						compoundMinMax.roots.back().emplace_back(poly, 1);
 
@@ -299,7 +297,7 @@ public:
 			compoundMaxMin.roots.emplace_back();
 
 			LinearSegment definingSegment = get_segment(i);
-			auto definingPoly = definingSegment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+			auto definingPoly = definingSegment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 			auto definingIR = datastructures::IndexedRoot(definingPoly, 1);
 
 			compoundMaxMin.roots.back().emplace_back(definingPoly, 1);
@@ -310,7 +308,7 @@ public:
 
 				if (isOver(j, i)) {
 					LinearSegment segment = get_segment(j);
-					auto poly = segment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+					auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
 					compoundMaxMin.roots.back().emplace_back(poly, 1);
 					continue;
@@ -323,7 +321,7 @@ public:
 				for (std::size_t k = smaller + 1; k < bigger; ++k) {
 					if (isOver(k, i) && isUnder(k, j)) {
 						LinearSegment segment = get_segment(k);
-						auto poly = segment.get_poly_ref(polys, ctx, primary_variable, secondary_variable);
+						auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
 						compoundMaxMin.roots.back().emplace_back(poly, 1);
 
@@ -331,15 +329,11 @@ public:
 						break;
 					}
 				}
-
 				assert(found);
 			}
 
-			if (i == 0) {
-				pwlInfo.first = definingIR;
-			} else {
-				pwlInfo.bounds.push_back({points[i].first, definingIR});
-			}
+			if (i == 0) pwlInfo.first = definingIR;
+            else pwlInfo.bounds.push_back({points[i].first, definingIR});
 		}
 
 		compoundMaxMin.bounds = pwlInfo;

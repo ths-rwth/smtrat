@@ -1,3 +1,5 @@
+#pragma once
+
 namespace smtrat::cadcells::representation::approximation {
 
 inline Rational mediant(Rational a, Rational b) {
@@ -30,6 +32,28 @@ inline Rational approximate_RAN_above(const RAN& r) {
         res = carl::sample_between(res, r.interval().upper());
     }
     return res;
+}
+
+
+inline Rational rational_below(RAN target) {
+    if (!target.is_numeric()) return target.get_lower_bound();
+    Rational below = carl::is_integer(target) ? carl::floor(target.value()) - 1
+                                              : carl::floor(target.value());
+    Rational result = (below + target.value()) / Rational(2);
+    // Rational result = mediant_until_below(below, target.value(), target.value(), apx_settings().pwl_iteration_minimum);
+	assert(result < target);
+	return result;
+}
+
+
+inline Rational rational_above(RAN target) {
+    if (!target.is_numeric()) return target.get_upper_bound();
+    Rational above = carl::is_integer(target) ? carl::ceil(target.value()) + 1
+                                              : carl::ceil(target.value());
+    Rational result = (above + target.value()) / Rational(2);
+    // Rational result = mediant_until_above(target.value(), above, target.value(), apx_settings().pwl_iteration_minimum);
+	assert(result > target);
+	return result;
 }
 
 

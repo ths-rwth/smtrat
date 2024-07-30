@@ -106,6 +106,36 @@ struct DefaultApproximationSettings : BaseSettings {
     using op = cadcells::operators::MccallumFiltered<OpSettings>;
 };
 
+
+struct PWLApproximationSettings : BaseSettings {
+    constexpr static bool exploit_strict_constraints = true;
+    constexpr static bool use_approximation          = true;
+
+    using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+
+    struct PWLSettings {
+        using Sampling = apx::SampleSimple;
+        static constexpr double pwl_fallback_distance = 1.0;
+        static constexpr std::size_t pwl_num_segments = 4;
+        using PWLBuilder = apx::AdvancedPWLBuilder;
+        static constexpr bool refine_pwl = false;
+    };
+
+    struct ApxSettings {
+        using method = apx::PiecewiseLinear<PWLSettings>;
+        using Criteria = PWLApproximationSettings::Criteria;
+    };
+    using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
+
+    using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobal;
+    using covering_heuristic = cadcells::representation::covering_heuristics::LDBCoveringCacheGlobal;
+
+    struct OpSettings : cadcells::operators::MccallumFilteredSettings {
+        static constexpr DelineationFunction delineation_function = COMPOUND_PWL;
+    };
+    using op = cadcells::operators::MccallumFiltered<OpSettings>;
+};
+
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
 template<typename Settings = DefaultSettings>

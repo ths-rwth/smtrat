@@ -1,6 +1,9 @@
+#pragma once
+
 #include <carl-arith/poly/Conversion.h>
 #include "criteria.h"
 #include "PWLBuilder.h"
+#include "PWLRefiner.h"
 
 namespace smtrat::cadcells::representation::approximation {
 
@@ -129,139 +132,132 @@ struct Taylor {
 template<typename Settings>
 struct PiecewiseLinear {
     template<typename T>
-    static IR bound(const IR& bound_re, const RAN& bound_value, const datastructures::SampledDerivationRef<T>& der, bool below) {
-        std::size_t dim = sample().size();
-        VariableOrdering var_order = proj().polys().var_order();
+    static datastructures::RootFunction bound(const IR& bound_re, const RAN& bound_value, const datastructures::SampledDerivationRef<T>& der, bool below) {
+        auto& polys = der->proj().polys();
+        const auto& sample = der->sample();
 
-        Polynomial res = proj().polys()(p.poly);
+        std::size_t dim = der->sample().size();
+        VariableOrdering var_order = polys.var_order();
 
         // polynomials of level less than 2 are not handled by the PWL approximation
-        if (p.poly.level < 2 || dim < 2) {
+        if (bound_re.poly.level < 2 || dim < 2) {
             SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackLevelTooLow());
-            return pwl_apx_fallback(p, bound, below, settings);
+            return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
         // check if sample is irrational
-        bool is_irrational = std::any_of(
-            sample().begin(), sample().end(),
-            [](const auto& it){ return !it.second.is_numeric(); }
-        );
-
-        SMTRAT_STATISTICS_CALL(if (is_irrational) OCApproximationStatistics::get_instance().irrationalSample();)
+        SMTRAT_STATISTICS_CALL(
+            if (std::any_of(sample.begin(), sample.end(), [](const auto& it){ return !it.second.is_numeric(); })) {
+                OCApproximationStatistics::get_instance().irrationalSample();
+            }
+        )
 
         auto primary_variable = var_order[dim - 2];
         auto secondary_variable = var_order[dim - 1];
-
-        RAN sample_primary = sample()[primary_variable];
-        RAN sample_secondary = sample()[secondary_variable];
+        RAN sample_primary = sample.at(primary_variable);
+        RAN sample_secondary = sample.at(secondary_variable);
 
         // we cannot use the basic piecewise linear approximation if the primary sample variable is irrational
         if (!sample_primary.is_numeric()) {
             SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackPrimaryIrrational());
-            return pwl_apx_fallback(p, bound, below, settings);
+            return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
-        assert(sample_primary.is_numeric());
-        smtrat::Rational approximated_sample_primary = sample_primary.value();
-
         // compute delineable interval
-        const boost::container::flat_set<datastructures::PolyRef> set({p.poly});
-        auto delineable_interval = smtrat::cadcells::operators::rules::filter_util::delineable_interval(
-            proj(),
-            underlying_sample(),
+        const boost::container::flat_set<datastructures::PolyRef> set({bound_re.poly});
+        auto delineable_interval = operators::rules::filter_util::delineable_interval(
+            der->proj(),
+            der->underlying_sample(),
             set
         );
 
         if (!delineable_interval) {
             SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackNoDelineableInterval());
-            return pwl_apx_fallback(p, bound, below, settings);
+            return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
         // check if there is space around the sample in the delineable interval
         carl::Interval<RAN> interval = *delineable_interval;
-        if ((interval.upper_bound_type() != carl::BoundType::INFTY && interval.upper() <= sample_primary)
-         || (interval.lower_bound_type() != carl::BoundType::INFTY && interval.lower() >= sample_primary)
+        if ((interval.upper_bound_type() != carl::BoundType::INFTY && interval.upper() <= sample_primary) ||
+            (interval.lower_bound_type() != carl::BoundType::INFTY && interval.lower() >= sample_primary)
         ) {
             SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackNoDelineableSpace());
-            return pwl_apx_fallback(p, bound, below, settings);
+            return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
         // log that we are doing a piecewise linear approximation
         // ! no more approximation fallbacks from here on out !
         SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlApproximation());
 
+        Rational approximated_sample_primary = sample_primary.value();
+
         // define points left and right of the sample
-        smtrat::Rational left_rational;
-        if (interval.lower_bound_type() == carl::BoundType::INFTY) {
-            // fallback sampling distance for when the delineable interval is unbounded to the left
-            left_rational = approximated_sample_primary - settings.pwl_fallback_sampling_distance;
-        } else {
-            left_rational = rational_above_experimental<RANApproximation::MIDPOINT>(interval.lower(), sample_primary);
-        }
+        // fallback sampling distance for when the delineable interval is unbounded to the left
+        Rational left_rational = ((interval.lower_bound_type() == carl::BoundType::INFTY)
+                               ? approximated_sample_primary - Settings::pwl_fallback_distance
+                               : Settings::Sampling::below(sample_primary, interval.lower()));
+ 
+        Rational right_rational = ((interval.upper_bound_type() == carl::BoundType::INFTY)
+                                ? approximated_sample_primary + Settings::pwl_fallback_distance
+                                : Settings::Sampling::above(sample_primary, interval.upper()));
 
-        smtrat::Rational right_rational;
-        if (interval.upper_bound_type() == carl::BoundType::INFTY) {
-            // fallback sampling distance for when the delineable interval is unbounded to the right
-            right_rational = approximated_sample_primary + settings.pwl_fallback_sampling_distance;
-        } else {
-            right_rational = rational_below_experimental<RANApproximation::MIDPOINT>(interval.upper(), sample_primary);
-        }
-
-        smtrat::Rational L = (right_rational - left_rational) / (settings.pwl_num_segments - 1);
-        std::vector<smtrat::Rational> primary_coordinates;
-        for (int i = 0; i < settings.pwl_num_segments; i++) {
-            primary_coordinates.push_back(left_rational + L * i);
+        std::vector<Rational> primary_coordinates;
+        Rational L = (right_rational - left_rational) / (Settings::pwl_num_segments - 1);
+        for (std::size_t i = 0; i < Settings::pwl_num_segments; ++i) {
+            primary_coordinates.push_back(left_rational + (L * i));
         }
 
         // check if the sample is already in the primary coordinates, if not, insert it
         if (!std::binary_search(primary_coordinates.begin(), primary_coordinates.end(), approximated_sample_primary)) {
             auto it = std::lower_bound(primary_coordinates.begin(), primary_coordinates.end(), approximated_sample_primary);
-            primary_coordinates.insert(it, approximated_sample_primary);
+            if (it == primary_coordinates.end() || (*it != approximated_sample_primary)) {
+                primary_coordinates.insert(it, approximated_sample_primary);
+            }
         }
 
-
-        Settings::PWLBuilder builder; // advanced or simple
+        typename Settings::PWLBuilder builder; // advanced or simple
 
         // probe the polynomial at the coordinates
         for (auto primary_coordinate : primary_coordinates) {
-            Assignment assignment = underlying_sample();
+            Assignment assignment = der->underlying_sample();
             assignment[primary_variable] = primary_coordinate;
 
-            auto roots = proj().real_roots(assignment, p.poly);
-            assert(p.index - 1 < roots.size());
-            RAN root = roots[p.index - 1];
+            auto roots = der->proj().real_roots(assignment, bound_re.poly);
+            assert(bound_re.index - 1 < roots.size());
+            RAN root = roots[bound_re.index - 1];
 
-            smtrat::Rational approximated_root;
+            Rational approximated_root;
             if (primary_coordinate == approximated_sample_primary) {
-                approximated_root = below ? rational_above_experimental<RANApproximation::MIDPOINT>(root, sample_secondary)
-                                          : rational_below_experimental<RANApproximation::MIDPOINT>(root, sample_secondary);
+                approximated_root = below ? Settings::Sampling::below(sample_secondary, root)
+                                          : Settings::Sampling::above(sample_secondary, root);
             } else {
-                approximated_root = below ? rational_above_experimental<RANApproximation::MIDPOINT>(root)
-                                          : rational_below_experimental<RANApproximation::MIDPOINT>(root);
+                approximated_root = below ? rational_above(root) : rational_below(root);
             }
 
             builder.addPoint(primary_coordinate, approximated_root);
         }
 
-        Polynomial::ContextType contextType = proj().polys().context();
+        Polynomial::ContextType ctx = polys.context();
 
-        if (ApxSettings::pwl_strategy == REFINE) {
-            PWLRefiner refiner;
-            return refiner.refine(
+        if constexpr (Settings::refine_pwl) {
+            refine(
                 builder,
-                p,
-                sample(),
-                underlying_sample(),
-                contextType,
-                proj(),
+                bound_re,
+                sample,
+                der->underlying_sample(),
+                ctx,
+                der->proj(),
                 primary_variable,
                 secondary_variable,
-                below);
+                below
+            );
         }
 
-
-        return below ? builder->buildCompoundMaxMin(contextType, proj().polys(), primary_variable, secondary_variable)
-                     : builder->buildCompoundMinMax(contextType, proj().polys(), primary_variable, secondary_variable);
+        if (below) {
+            return builder.buildCompoundMaxMin(ctx, polys, primary_variable, secondary_variable);
+        } else {
+            return builder.buildCompoundMinMax(ctx, polys, primary_variable, secondary_variable);
+        }
     }
 
 };
