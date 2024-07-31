@@ -10,20 +10,20 @@ protected:
 	std::vector<Rational> slopes; // list of slopes
 	std::vector<Rational> intercepts; // list of y-intercepts
 	std::vector<LinearSegment> segments; // map of segments
-	std::map<std::pair<std::size_t, std::size_t>, bool> isOverCache; // map for caching the results of isOver
-	std::map<std::pair<std::size_t, std::size_t>, bool> isUnderCache;
+	std::map<std::pair<std::size_t, std::size_t>, bool> is_over_cache; // map for caching the results of isOver
+	std::map<std::pair<std::size_t, std::size_t>, bool> is_under_cache;
 
 	/**
 	 * @param i the index of the segment l_i
 	 * @param j the index of the segment l_j
 	 * @return whether the segment l_i \in I_{\geq,j}
 	 */
-	inline bool isOver(std::size_t i, std::size_t j) {
+	inline bool is_over(std::size_t i, std::size_t j) {
 		if(i == j) return true;
 
 		// check cache
-		auto it = isOverCache.find(std::make_pair(i, j));
-		if(it != isOverCache.end()) { return it->second; }
+		auto it = is_over_cache.find(std::make_pair(i, j));
+		if(it != is_over_cache.end()) { return it->second; }
 
 		Rational j_m = slopes[j];
 		Rational j_left_height = points[j].second;
@@ -39,7 +39,7 @@ protected:
 		else result = (i_left_height >= j_left_height && i_right_height >= j_right_height);
 
 		// insert into cache
-		isOverCache[std::make_pair(i, j)] = result;
+		is_over_cache[std::make_pair(i, j)] = result;
 		return result;
 	}
 
@@ -48,12 +48,12 @@ protected:
      * @param j the index of the segment l_j
      * @return whether the segment l_i \in I_{\leq,j}
 	 */
-	inline bool isUnder(std::size_t i, std::size_t j) {
+	inline bool is_under(std::size_t i, std::size_t j) {
 		if(i == j) return true;
 
 		// check cache
-		auto it = isUnderCache.find(std::make_pair(i, j));
-		if(it != isUnderCache.end()) { return it->second; }
+		auto it = is_under_cache.find(std::make_pair(i, j));
+		if(it != is_under_cache.end()) { return it->second; }
 
 		Rational j_m = slopes[j];
 		Rational j_left_height = points[j].second;
@@ -69,7 +69,7 @@ protected:
         else result = i_left_height <= j_left_height && i_right_height <= j_right_height;
 
 		// insert into cache
-		isUnderCache[std::make_pair(i, j)] = result;
+		is_under_cache[std::make_pair(i, j)] = result;
 		return result;
 	}
 
@@ -82,7 +82,7 @@ public:
 		for (const auto& segment : segments) std::cout << "    " << segment << std::endl;
 	}
 
-	void addPoint(const Rational primary, const Rational secondary) {
+	void add_point(const Rational primary, const Rational secondary) {
 		auto insertionPos = std::lower_bound(
 			points.begin(), points.end(),
             std::make_pair(primary, Rational(0)),
@@ -151,15 +151,15 @@ public:
 		return segments[index];
 	}
 
-	virtual datastructures::CompoundMinMax buildCompoundMinMax(carl::LPPolynomial::ContextType &ctx,
-                                                               datastructures::PolyPool& polys,
-                                                               carl::Variable primary_variable,
-                                                               carl::Variable secondary_variable) = 0;
+	virtual datastructures::CompoundMinMax build_compound_min_max(carl::LPPolynomial::ContextType &ctx,
+                                                               	  datastructures::PolyPool& polys,
+                                                               	  carl::Variable primary_variable,
+                                                               	  carl::Variable secondary_variable) = 0;
 
-	virtual datastructures::CompoundMaxMin buildCompoundMaxMin(carl::LPPolynomial::ContextType &ctx,
-                                                               datastructures::PolyPool& polys,
-                                                               carl::Variable primary_variable,
-                                                               carl::Variable secondary_variable) = 0;
+	virtual datastructures::CompoundMaxMin build_compound_max_min(carl::LPPolynomial::ContextType &ctx,
+                                                               	  datastructures::PolyPool& polys,
+                                                               	  carl::Variable primary_variable,
+                                                               	  carl::Variable secondary_variable) = 0;
 };
 
 
@@ -167,7 +167,7 @@ class SimplePWLBuilder : public PWLBuilder {
 public:
 	SimplePWLBuilder() {}
 
-	datastructures::CompoundMinMax buildCompoundMinMax(carl::LPPolynomial::ContextType &ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
+	datastructures::CompoundMinMax build_compound_min_max(carl::LPPolynomial::ContextType &ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
 		datastructures::CompoundMinMax compoundMinMax;
 
 		datastructures::PiecewiseLinearInfo pwlInfo;
@@ -179,7 +179,7 @@ public:
 			auto ir = datastructures::IndexedRoot(definingPoly, 1);
 
 			for(std::size_t i = 0; i < slopes.size(); ++i) {
-				if(isUnder(i, j)) {
+				if(is_under(i, j)) {
 					LinearSegment segment = get_segment(i);
 					auto polynomial = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 					compoundMinMax.roots.back().emplace_back(polynomial, 1);
@@ -198,7 +198,7 @@ public:
 		return compoundMinMax;
 	}
 
-	datastructures::CompoundMaxMin buildCompoundMaxMin(carl::LPPolynomial::ContextType &ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
+	datastructures::CompoundMaxMin build_compound_max_min(carl::LPPolynomial::ContextType &ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
 		datastructures::CompoundMaxMin compoundMaxMin;
 
 		datastructures::PiecewiseLinearInfo pwlInfo;
@@ -210,7 +210,7 @@ public:
 			auto ir = datastructures::IndexedRoot(definingPoly, 1);
 
 			for(std::size_t i = 0; i < slopes.size(); ++i) {
-				if(isOver(i, j)) {
+				if(is_over(i, j)) {
 					LinearSegment segment = get_segment(i);
 					auto polynomial = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 					compoundMaxMin.roots.back().emplace_back(polynomial, 1);
@@ -237,7 +237,7 @@ class AdvancedPWLBuilder : public PWLBuilder {
 public:
 	AdvancedPWLBuilder() {}
 
-	datastructures::CompoundMinMax buildCompoundMinMax(carl::LPPolynomial::ContextType& ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
+	datastructures::CompoundMinMax build_compound_min_max(carl::LPPolynomial::ContextType& ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
 		datastructures::CompoundMinMax compoundMinMax;
 		datastructures::PiecewiseLinearInfo pwlInfo;
 
@@ -252,9 +252,9 @@ public:
 
 			for (std::size_t j = 0; j < slopes.size(); ++j) {
 				if (i == j) continue;
-				if (isOver(i, j)) continue;
+				if (is_over(i, j)) continue;
 
-				if (isUnder(j, i)) {
+				if (is_under(j, i)) {
 					LinearSegment segment = get_segment(j);
 					auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
@@ -267,7 +267,7 @@ public:
 				std::size_t smaller = (i < j) ? i : j;
 				std::size_t bigger = (i > j) ? i : j;
 				for (std::size_t k = smaller + 1; k < bigger; ++k) {
-					if (isUnder(k, i) && isOver(k, j)) {
+					if (is_under(k, i) && is_over(k, j)) {
 						LinearSegment segment = get_segment(k);
 						auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
@@ -289,7 +289,7 @@ public:
 		return compoundMinMax;
 	}
 
-	datastructures::CompoundMaxMin buildCompoundMaxMin(carl::LPPolynomial::ContextType& ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
+	datastructures::CompoundMaxMin build_compound_max_min(carl::LPPolynomial::ContextType& ctx, smtrat::cadcells::datastructures::PolyPool& polys, carl::Variable primary_variable, carl::Variable secondary_variable) {
 		datastructures::CompoundMaxMin compoundMaxMin;
 		datastructures::PiecewiseLinearInfo pwlInfo;
 
@@ -304,9 +304,9 @@ public:
 
 			for (std::size_t j = 0; j < slopes.size(); ++j) {
 				if (i == j) continue;
-				if (isUnder(i, j)) continue;
+				if (is_under(i, j)) continue;
 
-				if (isOver(j, i)) {
+				if (is_over(j, i)) {
 					LinearSegment segment = get_segment(j);
 					auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 
@@ -319,7 +319,7 @@ public:
 				std::size_t smaller = i < j ? i : j;
 				std::size_t bigger = i > j ? i : j;
 				for (std::size_t k = smaller + 1; k < bigger; ++k) {
-					if (isOver(k, i) && isUnder(k, j)) {
+					if (is_over(k, i) && is_under(k, j)) {
 						LinearSegment segment = get_segment(k);
 						auto poly = segment.poly_ref(polys, ctx, primary_variable, secondary_variable);
 

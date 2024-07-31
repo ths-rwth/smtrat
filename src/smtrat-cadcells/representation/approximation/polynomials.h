@@ -57,7 +57,7 @@ struct Taylor {
             for (const auto& [var, val] : sample_new_root) {
                 if (!val.is_numeric()) ++left_out_vars;
             }
-            OCApproximationStatistics::get_instance().taylorIgnoredVars(left_out_vars, dim);
+            OCApproximationStatistics::get_instance().taylor_ignored_vars(left_out_vars, dim);
         #endif
 
         VariableOrdering var_order = polys.var_order();
@@ -100,7 +100,7 @@ struct Taylor {
             // in this case, p and p' have a common root at s => disc(p)(s_1,...,s_{n-1}) = 0
             // => the next level is a section => should choose artificial root close to actual root?
             // however, we do not actually use p'(s), but an approximation?
-            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().taylorFailure());
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().taylor_failure());
             return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
         // second order
@@ -114,7 +114,7 @@ struct Taylor {
                 result = result + (Poly(Rational(1)/Rational(2)) * (Poly(var_order[i]) - Poly(sample_new_root[var_order[i]].value())) * res_i); 
             }
             if (hessian_sign == 0 && jacobian_sign == 0) {
-                SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().taylorFailure());
+                SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().taylor_failure());
                 return Simple<Settings>::bound(bound_re, bound_value, der, below);
             } else if (hessian_sign*jacobian_sign == 1) {
                 Polynomial result_lp = carl::convert<Polynomial,Poly>(polys.context(),result);
@@ -141,14 +141,14 @@ struct PiecewiseLinear {
 
         // polynomials of level less than 2 are not handled by the PWL approximation
         if (bound_re.poly.level < 2 || dim < 2) {
-            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackLevelTooLow());
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwl_fallback_level_too_low());
             return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
         // check if sample is irrational
         SMTRAT_STATISTICS_CALL(
             if (std::any_of(sample.begin(), sample.end(), [](const auto& it){ return !it.second.is_numeric(); })) {
-                OCApproximationStatistics::get_instance().irrationalSample();
+                OCApproximationStatistics::get_instance().irrational_sample();
             }
         )
 
@@ -159,7 +159,7 @@ struct PiecewiseLinear {
 
         // we cannot use the basic piecewise linear approximation if the primary sample variable is irrational
         if (!sample_primary.is_numeric()) {
-            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackPrimaryIrrational());
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwl_fallback_primary_irrational());
             return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
@@ -172,7 +172,7 @@ struct PiecewiseLinear {
         );
 
         if (!delineable_interval) {
-            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackNoDelineableInterval());
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwl_fallback_no_delineable_interval());
             return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
@@ -181,13 +181,13 @@ struct PiecewiseLinear {
         if ((interval.upper_bound_type() != carl::BoundType::INFTY && interval.upper() <= sample_primary) ||
             (interval.lower_bound_type() != carl::BoundType::INFTY && interval.lower() >= sample_primary)
         ) {
-            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlFallbackNoDelineableSpace());
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwl_fallback_no_delineable_space());
             return Simple<Settings>::bound(bound_re, bound_value, der, below);
         }
 
         // log that we are doing a piecewise linear approximation
         // ! no more approximation fallbacks from here on out !
-        SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwlApproximation());
+        SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().pwl_approximation());
 
         Rational approximated_sample_primary = sample_primary.value();
 
@@ -234,7 +234,7 @@ struct PiecewiseLinear {
                 approximated_root = below ? rational_above(root) : rational_below(root);
             }
 
-            builder.addPoint(primary_coordinate, approximated_root);
+            builder.add_point(primary_coordinate, approximated_root);
         }
 
         Polynomial::ContextType ctx = polys.context();
@@ -254,9 +254,9 @@ struct PiecewiseLinear {
         }
 
         if (below) {
-            return builder.buildCompoundMaxMin(ctx, polys, primary_variable, secondary_variable);
+            return builder.build_compound_max_min(ctx, polys, primary_variable, secondary_variable);
         } else {
-            return builder.buildCompoundMinMax(ctx, polys, primary_variable, secondary_variable);
+            return builder.build_compound_min_max(ctx, polys, primary_variable, secondary_variable);
         }
     }
 
@@ -283,7 +283,7 @@ inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RA
         for (const auto& [var, val] : sample_new_root) {
             if (!val.is_numeric()) ++leftOutVars;
         }
-        OCApproximationStatistics::get_instance().taylorIgnoredVars(leftOutVars, dim);
+        OCApproximationStatistics::get_instance().taylor_ignored_vars(leftOutVars, dim);
     #endif
     auto apx_sample = sample_root;
     for (const auto& [key, value] : sample_root) apx_sample[key] = approximate_RAN_sb(value);
@@ -321,7 +321,7 @@ inline IR CellApproximator::apx_bound<ApxPoly::TAYLOR_LIN>(const IR& p, const RA
     int jacobian_sign = one_step_differentiate(carl_poly, result, jacobian, dim);
     if (jacobian_sign == 0) {
         #ifdef SMTRAT_DEVOPTION_Statistics
-            OCApproximationStatistics::get_instance().taylorFailure();
+            OCApproximationStatistics::get_instance().taylor_failure();
         #endif
         return apx_bound<ApxPoly::SIMPLE>(p, bound, below);
     }

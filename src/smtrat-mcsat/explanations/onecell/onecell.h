@@ -31,7 +31,7 @@ template<typename Settings>
 std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
     SMTRAT_STATISTICS_CALL(
         cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
-        stats.newCell();
+        stats.new_cell();
     )
     SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(sample.size()+1));
 
@@ -39,7 +39,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     if constexpr (Settings::use_approximation) {
         consider_approximation = Settings::Criteria::cell(constraints);
     }
-    SMTRAT_STATISTICS_CALL( if (consider_approximation) stats.approximationConsidered(); )
+    SMTRAT_STATISTICS_CALL( if (consider_approximation) stats.approximation_considered(); )
     SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
     cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);

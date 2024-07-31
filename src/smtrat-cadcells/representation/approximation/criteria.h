@@ -61,14 +61,14 @@ private:
     bool crit_considered_count() {
         if (!m_settings.crit_considered_enabled) return true;
         if (m_considered_cells < m_settings.considered_cells_limit) return true;
-        SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().maxConsideredReached());
+        SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().hit_considered_limit());
         return false; 
     }
 
     bool crit_apx_count() {
         if (!m_settings.crit_apx_cells_enabled) return true;
         if (m_approximated_cells < m_settings.approximated_cells_limit) return true;
-        SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().maxApxReached());
+        SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().hit_approximation_limit());
         return false; 
     }
 
@@ -92,7 +92,7 @@ private:
         if (m_poly_apx_counter[p] < m_settings.apx_per_poly_limit) return true;
         #ifdef SMTRAT_DEVOPTION_Statistics
             if (m_poly_apx_counter[p] == m_settings.apx_per_poly_limit)
-                OCApproximationStatistics::get_instance().apxTooOften();
+                OCApproximationStatistics::get_instance().apx_too_often();
         #endif
         return false;
     }
@@ -106,7 +106,7 @@ private:
                 res = false;
                 /*#ifdef SMTRAT_DEVOPTION_Statistics
                     if (m_constraint_involved_counter[c] == m_settings.crit_max_constraint_involved)
-                        OCApproximationStatistics::get_instance().involvedTooOften();
+                        OCApproximationStatistics::get_instance().involved_too_often();
                 #endif*/
             }
         }
@@ -148,7 +148,7 @@ public:
                 ++ac.m_constraint_involved_counter[c];
                 #ifdef SMTRAT_DEVOPTION_Statistics
                     if (ac.m_constraint_involved_counter[c] == ac.m_settings.apx_per_constraint_limit)
-                        OCApproximationStatistics::get_instance().involvedTooOften();
+                        OCApproximationStatistics::get_instance().involved_too_often();
                 #endif
             }
         }

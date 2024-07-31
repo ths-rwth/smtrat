@@ -8,7 +8,7 @@
 namespace smtrat::cadcells::representation::approximation {
 
 inline std::size_t refine_if_necessary(
-    PWLBuilder& pwlBuilder,
+    PWLBuilder& pwl_builder,
     std::size_t segment_index,
     const datastructures::IndexedRoot& ir,
     const Assignment& sample,
@@ -20,7 +20,7 @@ inline std::size_t refine_if_necessary(
     bool below,
     int depth = 1
 ) {
-    LinearSegment ls = pwlBuilder.get_segment(segment_index);
+    LinearSegment ls = pwl_builder.get_segment(segment_index);
     datastructures::PolyRef poly_ref = ls.poly_ref(proj.polys(), ctx, primary_variable, secondary_variable);
 
     Assignment under_underlying_sample = underlying_sample;
@@ -50,19 +50,19 @@ inline std::size_t refine_if_necessary(
     Rational approximated_root = below ? rational_below(bound_between)
                                        : rational_above(bound_between);
 
-    pwlBuilder.addPoint(between, approximated_root);
+    pwl_builder.add_point(between, approximated_root);
 
     if (depth == 0) { return 1; }
 
     return (
         refine_if_necessary(
-            pwlBuilder,
+            pwl_builder,
             segment_index,
             ir, sample, underlying_sample, ctx, proj, primary_variable, secondary_variable, below,
             depth - 1
         ) +
         refine_if_necessary(
-            pwlBuilder,
+            pwl_builder,
             segment_index + 1,
             ir, sample, underlying_sample, ctx, proj, primary_variable, secondary_variable, below,
             depth - 1
@@ -72,7 +72,7 @@ inline std::size_t refine_if_necessary(
 
 
 inline datastructures::RootFunction refine(
-    PWLBuilder& pwlBuilder,
+    PWLBuilder& pwl_builder,
     const datastructures::IndexedRoot& ir,
     const Assignment& sample,
     const Assignment& underlying_sample,
@@ -82,18 +82,18 @@ inline datastructures::RootFunction refine(
     carl::Variable secondary_variable,
     bool below
 ) {
-    for (std::size_t segment_index = 0; segment_index < pwlBuilder.get_number_of_segments(); ++segment_index) {
+    for (std::size_t segment_index = 0; segment_index < pwl_builder.get_number_of_segments(); ++segment_index) {
         segment_index += refine_if_necessary(
-            pwlBuilder,
+            pwl_builder,
             segment_index,
             ir, sample, underlying_sample, ctx, proj, primary_variable, secondary_variable, below
         );
     }
 
     if (below) {
-        return pwlBuilder.buildCompoundMaxMin(ctx, proj.polys(), primary_variable, secondary_variable);
+        return pwl_builder.build_compound_max_min(ctx, proj.polys(), primary_variable, secondary_variable);
     } else {
-        return pwlBuilder.buildCompoundMinMax(ctx, proj.polys(), primary_variable, secondary_variable);
+        return pwl_builder.build_compound_min_max(ctx, proj.polys(), primary_variable, secondary_variable);
     }
 }
 
