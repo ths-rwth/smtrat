@@ -8,11 +8,11 @@
 
 #pragma once
 
-#include <smtrat-strategies/strategies/PreprocessingOne.h>
-#include <smtrat-strategies/strategies/PreprocessingTwo.h>
-#include <smtrat-strategies/strategies/BVPreprocessing.h>
-#include <smtrat-strategies/strategies/PBPreprocessing.h>
-#include <smtrat-strategies/strategies/OptimizationPreprocessing.h>
+#include <smtrat-strategies/strategies/Preprocessing/PreprocessingOne.h>
+#include <smtrat-strategies/strategies/Preprocessing/PreprocessingTwo.h>
+#include <smtrat-strategies/strategies/Preprocessing/BVPreprocessing.h>
+#include <smtrat-strategies/strategies/Preprocessing/PBPreprocessing.h>
+#include <smtrat-strategies/strategies/Preprocessing/OptimizationPreprocessing.h>
 
 namespace smtrat
 {
