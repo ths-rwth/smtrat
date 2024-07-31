@@ -26,55 +26,6 @@ struct BaseSettings {
     constexpr static bool exploit_strict_constraints = true;
 };
 
-/*
-
-struct LDBSettings : BaseSettings {
-    // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING;
-    // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
-    //using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
-    using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
-};
-
-struct LDBpdelSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_PDEL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_PDEL;
-    constexpr static auto op = cadcells::operators::op::mccallum_pdel;
-};
-
-struct LDBFilteredAllSelectiveSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_FILTER;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_onlyrat_ew;
-};
-
-struct BCSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
-    using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
-};
-
-struct BCpdelSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_PDEL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_PDEL;
-    constexpr static auto op = cadcells::operators::op::mccallum_pdel;
-};
-
-struct BCFilteredSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered;
-};
-
-struct BCApproximationSettings : BCSettings {
-    constexpr static bool use_approximation = true;
-    constexpr static auto cell_apx_heuristic = cadcells::representation::BIGGEST_CELL_APPROXIMATION;
-};
-*/
-
 struct DefaultSettings : BaseSettings { // current default
     constexpr static bool exploit_strict_constraints = true;
 

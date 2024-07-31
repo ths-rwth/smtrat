@@ -13,14 +13,13 @@ namespace internal {
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 
-	constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING_CACHE;
+	using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriers;
+    using covering_heuristic = cadcells::representation::covering_heuristics::LDBCoveringCache;
 	using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
-		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
 		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::onecell::Explanation<OCSettings>, mcsat::nlsat::Explanation>;
 	};
 };

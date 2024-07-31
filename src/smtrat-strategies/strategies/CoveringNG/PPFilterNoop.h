@@ -12,8 +12,8 @@ namespace internal {
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
     using op = cadcells::operators::MccallumFiltered<cadcells::operators::MccallumFilteredSettings>;
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 };
 
 }
