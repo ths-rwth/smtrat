@@ -1,3 +1,5 @@
+#include "approximation/polynomials.h"
+
 namespace smtrat::cadcells::representation {
 
 template<typename T>
@@ -325,54 +327,13 @@ struct AllCompoundCovering {
     }
 };
 
+}
+
+// ============================== approximation ====================================================
 
 namespace approximation {
 
-// TODO: this should be in util
-inline std::size_t lowest_degree(datastructures::Projections& proj, const std::vector<datastructures::TaggedIndexedRoot>& bounds) {
-    assert(bounds.size() > 0);
-    std::size_t min_deg = proj.degree(bounds.front().root.poly); // TODO: hack
-    for (const auto& ire : bounds) {
-        std::size_t deg_of_bounding_poly = proj.degree(ire.root.poly);
-        if(deg_of_bounding_poly < min_deg) min_deg = deg_of_bounding_poly;
-    }
-    return min_deg;
-}
-
-inline Rational root_between(const RAN& l, const RAN& u) {
-    assert(l < u);
-    Rational l_simple, u_simple;
-
-    if (carl::is_integer(u)) u_simple = u.value() - 1;
-    else if (u.is_numeric()) u_simple = carl::floor(u.value());
-    else u_simple = carl::floor(u.interval().lower());
-    // If an integer is between l and u, return the closest to u
-    if (u_simple > l) return u_simple; // TODO: add option to choose another integer
-
-    if (l.is_numeric()) l_simple = l.value();
-    else {
-        l_simple = carl::branching_point(l);
-        while (l_simple < l) {
-            l_simple = carl::sample_between(l_simple, l.interval().upper());
-        }
-    }
-
-    if (u.is_numeric()) u_simple = u.value();
-    else {
-        u_simple = carl::branching_point(u);
-        while (u_simple > u) {
-            u_simple = carl::sample_between(u.interval().lower(), u_simple);
-        }
-    }
-
-    assert(l_simple < u_simple);
-    RationalInterval region = RationalInterval(l_simple, carl::BoundType::STRICT, u_simple, carl::BoundType::STRICT);
-    auto res = carl::sample_stern_brocot(region, false);
-    assert(l < res && res < u);
-    return res;
-}
-
-template<typename T>
+template<typename Settings, typename T>
 void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
     if (derivs.size() < 2) return;
 
@@ -389,14 +350,14 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
 
         // check whether the simplest two boundary-defining polynomials have high degree
         {
-            std::size_t min_deg_l = approximation::lowest_degree((*it_next)->proj(), next_cell.lower()->second);
-            std::size_t min_deg_u = approximation::lowest_degree((*it)->proj(), cell.upper()->second);
-            if (min_deg_l < 2 || min_deg_u < 2 || min_deg_l * min_deg_u < 5) continue; // TODO factor out as criteria
+            auto ir_l = util::simplest_bound((*it_next)->proj(), next_cell.lower()->second);
+            auto ir_u = util::simplest_bound((*it)->proj(), cell.upper()->second);
+            if (!Settings::Criteria::poly_pair((*it)->proj(), ir_l, ir_u)) continue;
         }
 
         // from here on we consider it worth approximating
         // calculate new root
-        Rational new_root = approximation::root_between(next_cell.lower()->first, cell.upper()->first);
+        Rational new_root = SampleSimple::above(next_cell.lower()->first, cell.upper()->first); // TODO : Settings?
         const auto& context = (*it)->proj().polys().context();
         const auto var = (*it)->main_var();
         Polynomial apx_poly = carl::get_denom(new_root)*Polynomial(context,var) - carl::get_num(new_root);
@@ -414,22 +375,26 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         // insert approximation
         (*it)->move_main_var_sample_below(new_root); // make sure the re-delineation works properly
         (*it)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
-        (*it)->delineate_cell(); // TODO: is the re-delineation too much overhead?
+        (*it)->delineate_cell();
         (*it_next)->move_main_var_sample_above(new_root); // make sure the re-delineation works properly
         (*it_next)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
-        (*it_next)->delineate_cell(); // TODO: is the re-delineation too much overhead?
+        (*it_next)->delineate_cell();
     }
 }
 
-
 } // namespace approximation
 
+namespace covering_heuristics {
+
+template<typename Settings>
 struct BiggestCellAPXCovering {
     template<typename T>
     static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs, true);
-        approximation::insert_approximations(min_derivs);
+
+        approximation::insert_approximations<Settings>(min_derivs);
+
         for (auto& iter : min_derivs) {
             datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
             result.cells.emplace_back(cell_result);
