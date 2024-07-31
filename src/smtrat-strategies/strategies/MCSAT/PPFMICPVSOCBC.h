@@ -4,6 +4,7 @@
 
 #include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/SATModule/SATModule.tpp>
 #include <smtrat-modules/STropModule/STropModule.h>
 
 namespace smtrat {

@@ -4,6 +4,7 @@
 
 #include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
+#include <smtrat-modules/SATModule/SATModule.tpp>
 #include <smtrat-modules/STropModule/STropModule.h>
 
 namespace smtrat {
@@ -14,21 +15,26 @@ struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
     static constexpr DelineationFunction delineation_function = NOOP;
 };
 
-struct ApxSettings : mcsat::onecell::BaseSettings { // current default
+namespace apx = cadcells::representation::approximation;
+
+struct APXSettings {
+	using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+};
+
+struct OCSettings : mcsat::onecell::BaseSettings { // current default
     constexpr static bool exploit_strict_constraints = true;
 
 	using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobal;
-    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellAPXCovering;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellAPXCovering<APXSettings>;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
-struct SATSettings : SATSettingsMCSAT {
-	static constexpr auto moduleName = "SATModule<SATSettingsMCSATAPX>";
+struct SATSettings : smtrat::SATSettingsMCSAT {
     struct MCSATSettings : mcsat::Base {
 		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,
 													 			mcsat::icp::Explanation,
 													 			mcsat::vs::Explanation,
-													 			mcsat::onecell::Explanation<internal::ApxSettings>,
+													 			mcsat::onecell::Explanation<internal::OCSettings>,
 													 			mcsat::onecell::Explanation<mcsat::onecell::DefaultSettings>>;
 
 	};
