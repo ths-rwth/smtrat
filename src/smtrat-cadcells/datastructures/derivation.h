@@ -328,6 +328,26 @@ public:
     const Assignment& sample() const { return m_sample; };
     const RAN& main_var_sample() const { return m_sample.at(m_delineated->main_var()); };
 
+    void move_main_var_sample_below(const Rational& r) {
+        if (main_var_sample() < r) return;
+        assert(m_cell->upper_unbounded() || (r < m_cell->upper()->first));
+        if (m_cell->lower_unbounded()) {
+            m_sample.insert_or_assign(main_var(), carl::sample_below(r));
+        } else {
+            m_sample.insert_or_assign(main_var(), carl::sample_between(m_cell->lower()->first, r));
+        }
+    }
+
+    void move_main_var_sample_above(const Rational& r) {
+        if (main_var_sample() > r) return;
+        assert(m_cell->lower_unbounded() || (r > m_cell->lower()->first));
+        if (m_cell->upper_unbounded()) {
+            m_sample.insert_or_assign(main_var(), carl::sample_above(r));
+        } else {
+            m_sample.insert_or_assign(main_var(), carl::sample_between(r, m_cell->upper()->first));
+        }
+    }
+
     BaseDerivationRef<Properties>& base() { return m_delineated->base(); };
     const BaseDerivationRef<Properties>& base() const { return m_delineated->base(); };
     Delineation& delin() { return m_delineated->delin(); };
