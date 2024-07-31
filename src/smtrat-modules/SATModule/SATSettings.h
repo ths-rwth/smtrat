@@ -43,6 +43,7 @@ struct SATSettings1 {
     static constexpr MCSAT_BOOLEAN_DOMAIN_PROPAGATION mcsat_boolean_domain_propagation = MCSAT_BOOLEAN_DOMAIN_PROPAGATION::FULL;
     static constexpr bool mcsat_backjump_decide = true;
     using VarScheduler = VarSchedulerSMTTheoryGuided<TheoryGuidedDecisionHeuristicLevel::SATISFIED_FIRST>;
+    using MCSATSettings = mcsat::MCSATSettingsDefault;
 };
 
 struct SATSettings3 : SATSettings1 {
