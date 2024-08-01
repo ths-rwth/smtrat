@@ -33,6 +33,7 @@ struct BaseCriteriaSettings {
     static constexpr std::size_t apx_per_poly_limit       = 5;
     static constexpr std::size_t single_degree_threshold  = 5;
     static constexpr std::size_t pair_degree_threshold    = 7;
+    static constexpr std::size_t sample_bitsize_limit     = 32;
 
     static constexpr bool crit_level_enabled              = true;
     static constexpr bool crit_considered_enabled         = false;
@@ -42,6 +43,7 @@ struct BaseCriteriaSettings {
     static constexpr bool crit_apx_per_constraint_enabled = false;
     static constexpr bool crit_apx_per_poly_enabled       = false;
     static constexpr bool crit_side_enabled               = false;
+    static constexpr bool crit_sample_enabled             = true;
 };
 
 }

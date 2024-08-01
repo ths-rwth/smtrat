@@ -17,6 +17,7 @@ private:
         std::size_t apx_per_poly_limit;
         std::size_t single_degree_threshold;
         std::size_t pair_degree_threshold;
+        std::size_t sample_bitsize_limit;
 
         bool crit_level_enabled;
         bool crit_considered_enabled;
@@ -26,6 +27,7 @@ private:
         bool crit_apx_per_constraint_enabled;
         bool crit_apx_per_poly_enabled;
         bool crit_side_enabled;
+        bool crit_sample_enabled;
 
         DynamicSettings() {
             considered_cells_limit   = settings_module().get("considered_cells_limit", Settings::considered_cells_limit);
@@ -34,6 +36,7 @@ private:
             apx_per_poly_limit       = settings_module().get("apx_per_poly_limit", Settings::apx_per_poly_limit);
             single_degree_threshold  = settings_module().get("single_degree_threshold", Settings::single_degree_threshold);
             pair_degree_threshold    = settings_module().get("pair_degree_threshold", Settings::pair_degree_threshold);
+            sample_bitsize_limit     = settings_module().get("sample_bitsize_limit", Settings::sample_bitsize_limit);
 
             crit_level_enabled              = settings_module().get("crit_level_enabled", Settings::crit_level_enabled);
             crit_considered_enabled         = settings_module().get("crit_considered_enabled", Settings::crit_considered_enabled);
@@ -43,6 +46,7 @@ private:
             crit_apx_per_constraint_enabled = settings_module().get("crit_apx_per_constraint_enabled", Settings::crit_apx_per_constraint_enabled);
             crit_apx_per_poly_enabled       = settings_module().get("crit_apx_per_poly_enabled", Settings::crit_apx_per_poly_enabled);
             crit_side_enabled               = settings_module().get("crit_side_enabled", Settings::crit_side_enabled);
+            crit_sample_enabled             = settings_module().get("crit_sample_enabled", Settings::crit_sample_enabled);
         }
     };
 
@@ -124,6 +128,11 @@ private:
         return false;
     }
 
+    bool crit_sample(const Rational& s) {
+        if (!m_settings.crit_sample_enabled) return true;
+        return mpz_sizeinbase(s.get_den(), 2) + mpz_sizeinbase(s.get_num(), 2) <= m_settings.sample_bitsize_limit;
+    }
+
     void new_cell(const std::vector<Atom>& constraints) {
         m_curr_constraints = constraints;
         m_currently_approximating = false;
@@ -178,6 +187,11 @@ public:
             && ac.crit_poly_apx_count(proj, ir_l)
             && ac.crit_poly_apx_count(proj, ir_u)
         );
+    }
+
+    static bool sample(const Rational& s) {
+        ApxCriteria& ac = get_instance();
+        return ac.crit_sample(s);
     }
 
     static bool side(datastructures::Projections& proj, const IR& ir, datastructures::RootMap::const_iterator start, datastructures::RootMap::const_iterator end){

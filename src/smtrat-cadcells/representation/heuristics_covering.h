@@ -355,9 +355,13 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
             if (!Settings::Criteria::poly_pair((*it)->proj(), ir_l, ir_u)) continue;
         }
 
-        // from here on we consider it worth approximating
         // calculate new root
         Rational new_root = SampleSimple::above(next_cell.lower()->first, cell.upper()->first); // TODO : Settings?
+
+        // if the new sample is an ugly number, we might want to skip it.
+        if (!Settings::Criteria::sample(new_root)) continue;
+
+        // construct root expression
         const auto& context = (*it)->proj().polys().context();
         const auto var = (*it)->main_var();
         Polynomial apx_poly = carl::get_denom(new_root)*Polynomial(context,var) - carl::get_num(new_root);
