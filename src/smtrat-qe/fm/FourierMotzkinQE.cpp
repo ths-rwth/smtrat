@@ -24,7 +24,8 @@ FormulaT FourierMotzkinQE::eliminateQuantifiers() {
         assert(c.type() == carl::FormulaType::CONSTRAINT);
         assert(
             c.constraint().relation() == carl::Relation::LEQ ||
-            c.constraint().relation() == carl::Relation::EQ // TODO: what about strict constraints?
+            c.constraint().relation() == carl::Relation::LESS ||
+            c.constraint().relation() == carl::Relation::EQ
         );
     }
 
@@ -70,7 +71,13 @@ FormulaT FourierMotzkinQE::eliminateQuantifiers() {
     }
 
     // transform to matrix-vector representation
-    matrix_t m = matrix_t::Zero(constraints.size(), m_var_idx.size());
+    bool contains_strict = std::any_of(
+                                constraints.begin(), constraints.end(),
+                                [](const auto& c) {
+                                    return c.constraint().relation() == carl::Relation::LESS;
+                                });
+    std::size_t n_cols = contains_strict ? m_var_idx.size() + 1 : m_var_idx.size();
+    matrix_t m = matrix_t::Zero(constraints.size(), n_cols);
     vector_t b = vector_t::Zero(constraints.size());
 
     for (std::size_t i = 0; i < constraints.size(); ++i) {
@@ -81,19 +88,27 @@ FormulaT FourierMotzkinQE::eliminateQuantifiers() {
                 m(i, m_var_idx.index(t.single_variable())) = t.coeff();
             }
         }
+        if (constraints[i].constraint().relation() == carl::Relation::LESS) {
+            m(i, n_cols-1) = Rational(1);
+        }
     }
 
     auto [result_m, result_b] = eliminateCols(m, b, elim_cols);
     // convert back
-    for (std::size_t i = 0, n_rows = result_m.rows(), n_cols = result_m.cols(); i < n_rows; ++i) {
+    for (std::size_t i = 0, n_rows = result_m.rows(), n_cols_res = result_m.cols(); i < n_rows; ++i) {
         Poly lhs = Poly(Rational(-1)*result_b(i));
-        for (std::size_t j = 0; j < n_cols; ++j) {
+        std::size_t c = contains_strict ? n_cols_res - 1 : n_cols_res;
+        for (std::size_t j = 0; j < c; ++j) {
             Rational& coeff = result_m(i,j);
             if (!carl::is_zero(coeff)) {
                 lhs += coeff*Poly(m_var_idx.var(j));
             }
         }
-        m_finished.insert(FormulaT(lhs, carl::Relation::LEQ));
+        if (contains_strict && !carl::is_zero(result_m(i, n_cols_res-1))) {
+            m_finished.insert(FormulaT(lhs, carl::Relation::LESS));
+        } else {
+            m_finished.insert(FormulaT(lhs, carl::Relation::LEQ));
+        }
     }
 
     return FormulaT(carl::FormulaType::AND, m_finished);
