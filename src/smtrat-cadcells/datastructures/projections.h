@@ -171,9 +171,7 @@ public:
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().resultant();
-            #endif
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().resultant());
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
@@ -205,9 +203,7 @@ public:
         if (cache(p).disc) {
             return *cache(p).disc;
         } else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().discriminant();
-            #endif
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().discriminant());
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
@@ -222,9 +218,7 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                OCApproximationStatistics::get_instance().coefficient();
-            #endif
+            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().coefficient());
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
