@@ -16,7 +16,7 @@ struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellPdel;
 	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringPdel;
 
-	using op = cadcells::operators::MccallumPdel<cadcells::operators::MccallumPdelSettingsComplete>;
+	using op = cadcells::operators::MccallumPdel<cadcells::operators::MccallumPdelSettings>;
 };
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
@@ -27,9 +27,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewBCpdel : public Manager {
+class MCSAT_OCNewBCpdelIncomplete : public Manager {
 public:
-	MCSAT_OCNewBCpdel() : Manager() {
+	MCSAT_OCNewBCpdelIncomplete() : Manager() {
 		setStrategy(addBackend<SATModule<internal::SATSettings>>());
 	}
 };
