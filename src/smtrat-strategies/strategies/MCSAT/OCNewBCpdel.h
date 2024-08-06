@@ -27,9 +27,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class MCSAT_OCNewPdel : public Manager {
+class MCSAT_OCNewBCpdel : public Manager {
 public:
-	MCSAT_OCNewPdel() : Manager() {
+	MCSAT_OCNewBCpdel() : Manager() {
 		setStrategy(addBackend<SATModule<internal::SATSettings>>());
 	}
 };
