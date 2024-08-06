@@ -21,8 +21,7 @@ struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
-		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::onecell::Explanation<OCSettings>,
-																mcsat::nlsat::Explanation>;
+		using ExplanationBackend = mcsat::onecell::Explanation<OCSettings>;
 	};
 };
 } // namespace internal
