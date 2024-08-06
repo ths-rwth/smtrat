@@ -27,9 +27,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class OCNewBCincomplete : public Manager {
+class MCSAT_OCNewBCincomplete : public Manager {
 public:
-	OCNewBCincomplete() : Manager() {
+	MCSAT_OCNewBCincomplete() : Manager() {
 		setStrategy(addBackend<SATModule<internal::SATSettings>>());
 	}
 };
