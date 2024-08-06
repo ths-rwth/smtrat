@@ -367,7 +367,7 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         };
 
         SMTRAT_LOG_DEBUG(
-            "smtrat.covering.apx",
+            "smtrat.cadcells.representation.apx",
             "Insert new root at " << new_root << " between " << next_cell.lower()->first
             << " and " << cell.upper()->first << " to get " << new_ire << "\n"
         );
@@ -400,7 +400,7 @@ struct BiggestCellAPXCovering {
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);
-        SMTRAT_LOG_DEBUG("smtrat.covering.apx", "Result: " << result << "\n");
+        SMTRAT_LOG_DEBUG("smtrat.cadcells.representation.apx", "Result: " << result << "\n");
         return result;
     }
 };
