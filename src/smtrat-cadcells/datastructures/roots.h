@@ -432,6 +432,8 @@ class IndexedRootOrdering {
         m_poly_pairs.try_emplace(p2).first->second.insert(p1);
     }
 
+    static const boost::container::flat_set<datastructures::PolyRef> empty_result;
+
 public:
     std::optional<SymbolicInterval> biggest_cell_wrt; // a hack, stores which cell is described by this ordering
 
@@ -590,7 +592,10 @@ public:
     }
 
     const boost::container::flat_set<PolyRef>& polys(const PolyRef p) const {
-        return m_poly_pairs.at(p);
+        auto it = m_poly_pairs.find(p);
+        if (it == m_poly_pairs.end()) return empty_result;
+        else return it->second;
+        //return m_poly_pairs.at(p);
     }
 
     bool has_pair(const PolyRef p1, const PolyRef p2) const {
