@@ -375,6 +375,8 @@ namespace smtrat
 			std::cout << "### Processing clause" << std::endl;
 			print(std::cout, "###");
 			#endif
+            FormulaT f(rReceivedFormula());
+            mMCSAT.setInputFormula(f);
 			mMCSAT.initVariables(mBooleanConstraintMap);
             for (const auto& v : mMCSAT.theoryVarAbstractions()) {
                 var_scheduler.insert(v);
