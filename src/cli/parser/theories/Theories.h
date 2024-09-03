@@ -425,16 +425,17 @@ struct Theories {
 
 		FormulasT additional;
 		addGlobalFormulas(additional);
-		if (!additional.empty()) {
-			additional.push_back(boost::get<FormulaT>(term));
-			term = FormulaT(carl::FormulaType::AND, std::move(additional));
-		}
-		if (!state->artificialVariables.empty()) {
+		if (!state->artificialVariables.empty() && !additional.empty()) {
 			std::vector<carl::Variable> qvars;
 			for (const auto& v : state->artificialVariables) {
 				qvars.push_back(v.asVariable());
 			}
-			term = FormulaT(carl::FormulaType::EXISTS, std::move(qvars), boost::get<FormulaT>(term));
+			// the AUX_EXISTS quantifier is kind of a hack. it will be resolved during PNFing to EXISTS, ignoring whether the formula is negated.
+			term = FormulaT(carl::FormulaType::AUX_EXISTS, std::move(qvars), FormulaT(carl::FormulaType::AND, std::move(additional)), boost::get<FormulaT>(term));
+		}
+		else if (!additional.empty()) {
+			additional.push_back(boost::get<FormulaT>(term));
+			term = FormulaT(carl::FormulaType::AND, std::move(additional));
 		}
 		state->artificialVariables.clear();
 
