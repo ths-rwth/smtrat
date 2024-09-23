@@ -3,7 +3,6 @@
 #include "../common.h"
 #include <smtrat-common/smtrat-common.h>
 #include <boost/intrusive/set.hpp>
-#include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -139,7 +138,6 @@ public:
             ref.id = (id_t)m_polys[ref.level-1].size();
             m_polys[ref.level-1].push_back(std::make_unique<Element>(std::move(npoly), ref.id));
             m_poly_ids[ref.level-1].insert_commit(*m_polys[ref.level-1].back(), insert_data);
-            SMTRAT_STATISTICS_CALL(OCApproximationStatistics::get_instance().degree(poly.degree(m_var_order[ref.level-1])));        
         }
         return std::make_pair(ref, signflip);
     }
