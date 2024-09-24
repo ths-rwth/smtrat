@@ -4,8 +4,7 @@
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
-namespace smtrat {
-namespace cadcells {
+namespace smtrat::cadcells {
 
 class OCApproximationStatistics : public Statistics {
 private:
@@ -26,14 +25,7 @@ private:
     std::size_t m_half_unbounded_levels = 0;     // #one side unbounded levels in the constructed cells
     std::vector<std::size_t> m_cell_dimensions;  // Dimension of the constructed cells
 
-    std::size_t m_resultants    = 0;         // #computed resultants
-    std::size_t m_discriminants = 0;         // #computed discriminants
-    std::size_t m_ldcfs         = 0;         // #computed leading coefficients
-    Counter m_constructed_degree_counter;    // Counts the occuring degrees of all constructed polynomials
-
     std::size_t m_involved_too_often = 0;     // #times a constraint was involved in too many conflicts
-    std::size_t m_apx_too_often      = 0;     // #times a poly was approximated too often
-    bool m_max_considered_reached    = false; // flag whether the max number of apx considered is reached
     bool m_max_apx_reached           = false; // flag whether the max number of apx is reached
 
     std::size_t m_irrational_sample                   = 0; // #times a sample was irrational
@@ -99,14 +91,7 @@ public:
         Statistics::addKeyValuePair("mean_taylor_ignored_vars",            meanIgnoredVars);
         Statistics::addKeyValuePair("taylor_failure",                      m_taylor_grad_zero);
 
-        Statistics::addKeyValuePair("resultants",                          m_resultants);
-        Statistics::addKeyValuePair("discriminants",                       m_discriminants);
-        Statistics::addKeyValuePair("leading_coefficients",                m_ldcfs);
-        collect_counter_stats("construction_degrees",                      m_constructed_degree_counter);
-
         Statistics::addKeyValuePair("involved_too_often",                  m_involved_too_often);
-        Statistics::addKeyValuePair("apx_too_often",                       m_apx_too_often);
-        Statistics::addKeyValuePair("max_considered_reached",              m_max_considered_reached);
         Statistics::addKeyValuePair("max_apx_reached",                     m_max_apx_reached);
 
         Statistics::addKeyValuePair("irrational_sample",                   m_irrational_sample);
@@ -128,7 +113,7 @@ public:
         if (m_currently_approximated) ++m_approximated_cells_success;
         m_cell_dimensions.push_back(d);
     }
-    void approximation_considered() { ++m_considered_cells; }
+    void approximation_considered(bool is_considered) { if (is_considered) ++m_considered_cells; }
     void approximated(std::size_t d) {
         ++m_approximated_degree_counter[d];
         if (!m_currently_approximated) {
@@ -144,14 +129,7 @@ public:
     void half_unbounded_level() { ++m_half_unbounded_levels; }
     void cell_dimension(std::size_t d) { m_cell_dimensions.push_back(d); }
 
-    void resultant()    { ++m_resultants; }
-    void discriminant() { ++m_discriminants; }
-    void coefficient()  { ++m_ldcfs; }
-    void degree(std::size_t d) { ++m_constructed_degree_counter[d]; }
-
     void involved_too_often()       { ++m_involved_too_often; }
-    void apx_too_often()            { ++m_apx_too_often; }
-    void hit_considered_limit()     { m_max_considered_reached = true; }
     void hit_approximation_limit()  { m_max_apx_reached = true; }
 
     void irrational_sample()                   { ++m_irrational_sample; }
@@ -163,15 +141,13 @@ public:
     void pwl_fallback_primary_irrational()     { ++m_pwl_fallback_primary_irrational; }
     void pwl_fallback_no_delineable_space()    { ++m_pwl_fallback_no_delineable_space; }
     void pwl_fallback_no_delineable_interval() { ++m_pwl_fallback_no_delineable_interval; }
-
-
-    static OCApproximationStatistics& get_instance() {
-        static OCApproximationStatistics& statistics = statistics_get<OCApproximationStatistics>("approximation");
-        return statistics;
-    }
 };
 
+OCApproximationStatistics &apx_statistics() {
+    static OCApproximationStatistics &stats = statistics_get<OCApproximationStatistics>("approximation");
+    return stats;
 }
+
 }
 
 #endif
