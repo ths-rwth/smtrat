@@ -352,14 +352,14 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         {
             auto ir_l = util::simplest_bound((*it_next)->proj(), next_cell.lower()->second);
             auto ir_u = util::simplest_bound((*it)->proj(), cell.upper()->second);
-            if (!Settings::Criteria::poly_pair((*it)->proj(), ir_l, ir_u)) continue;
+            if (!Settings::Criteria::get().poly_pair((*it)->proj(), ir_l, ir_u)) continue;
         }
 
         // calculate new root
         Rational new_root = SampleSimple::above(next_cell.lower()->first, cell.upper()->first); // TODO : Settings?
 
         // if the new sample is an ugly number, we might want to skip it.
-        if (!Settings::Criteria::sample(new_root)) continue;
+        if (!Settings::Criteria::get().sample(new_root)) continue;
 
         // construct root expression
         const auto& context = (*it)->proj().polys().context();
@@ -397,7 +397,9 @@ struct BiggestCellAPXCovering {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs, true);
 
-        approximation::insert_approximations<Settings>(min_derivs);
+        if (Settings::Criteria::get().covering()) {
+            approximation::insert_approximations<Settings>(min_derivs);
+        }
 
         for (auto& iter : min_derivs) {
             datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
