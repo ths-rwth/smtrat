@@ -2,8 +2,10 @@
 
 #include <smtrat-solver/Manager.h>
 
+#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/SATModule/SATModule.tpp>
+#include <smtrat-modules/STropModule/STropModule.h>
 
 #include "common.h"
 
@@ -33,10 +35,14 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 
 class Approximation_Simple : public Manager {
 public:
-	Approximation_Simple()
-		: Manager() {
-		setStrategy(
-			addBackend<SATModule<internal::SATSettings>>());
+	Approximation_Simple() : Manager() {
+        setStrategy(
+            addBackend<FPPModule<FPPSettings1>>({
+                addBackend<STropModule<STropSettings3>>({
+                    addBackend<SATModule<internal::SATSettings>>()
+                })
+            })
+        );
 	}
 };
 

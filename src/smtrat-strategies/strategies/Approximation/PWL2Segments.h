@@ -2,8 +2,10 @@
 
 #include <smtrat-solver/Manager.h>
 
+#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/SATModule/SATModule.tpp>
+#include <smtrat-modules/STropModule/STropModule.h>
 
 #include "common.h"
 
@@ -32,8 +34,13 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
 		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
-		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::onecell::Explanation<OCSettings>,
-                                                                mcsat::nlsat::Explanation>;
+		using ExplanationBackend = mcsat::SequentialExplanation<
+                                       mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,
+									   mcsat::icp::Explanation,
+									   mcsat::vs::Explanation,
+									   mcsat::onecell::Explanation<OCSettings>,
+									   mcsat::onecell::Explanation<mcsat::onecell::DefaultSettings>
+                                    >;
 	};
 };
 
@@ -41,10 +48,14 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 
 class Approximation_PWL2Segments : public Manager {
 public:
-	Approximation_PWL2Segments()
-		: Manager() {
-		setStrategy(
-			addBackend<SATModule<internal::SATSettings>>());
+	Approximation_PWL2Segments() : Manager() {
+        setStrategy(
+            addBackend<FPPModule<FPPSettings1>>({
+                addBackend<STropModule<STropSettings3>>({
+                    addBackend<SATModule<internal::SATSettings>>()
+                })
+            })
+        );
 	}
 };
 
