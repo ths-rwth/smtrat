@@ -40,7 +40,7 @@ private:
             --m_blocking_next;
             return false;
         }
-        if (m_approximated_cells % Settings::approximated_cells_limit == 0) {
+        if ((m_approximated_cells > 0) && (m_approximated_cells % Settings::approximated_cells_limit == 0)) {
             SMTRAT_STATISTICS_CALL(apx_statistics().hit_approximation_limit());
             if (Settings::blocking > 0) {
                 m_blocking_next = Settings::blocking + m_blocking_increment; // increment the number of blocked cells

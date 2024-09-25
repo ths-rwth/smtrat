@@ -76,6 +76,8 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
             } else {
                 lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_heuristic>(*derivation);
             }
+        } else {
+            lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_heuristic>(*derivation);
         }
         SMTRAT_LOG_TRACE("smtrat.mcsat.onecell", "Polynomials: " << pool);
         if (!lvl) {

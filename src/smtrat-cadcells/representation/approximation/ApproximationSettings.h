@@ -28,6 +28,8 @@ struct BaseTaylorSettings {
 // TODO: this is so far away from the actual criteria and dynamic settings
 struct BaseCriteriaSettings {
     static constexpr std::size_t approximated_cells_limit = 50;
+    static constexpr std::size_t blocking                 = 1;
+    static constexpr std::size_t blocking_increment       = 1;
     static constexpr std::size_t apx_per_constraint_limit = 10;
     static constexpr double      involved_constraint_scale = 10;  
     static constexpr std::size_t single_degree_threshold  = 5;

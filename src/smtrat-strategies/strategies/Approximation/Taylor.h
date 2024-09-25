@@ -31,8 +31,13 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
 		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
-		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::onecell::Explanation<OCSettings>,
-                                                                mcsat::nlsat::Explanation>;
+		using ExplanationBackend = mcsat::SequentialExplanation<
+                                       mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,
+									   mcsat::icp::Explanation,
+									   mcsat::vs::Explanation,
+									   mcsat::onecell::Explanation<OCSettings>,
+									   mcsat::onecell::Explanation<mcsat::onecell::DefaultSettings>
+                                    >;
 	};
 };
 
