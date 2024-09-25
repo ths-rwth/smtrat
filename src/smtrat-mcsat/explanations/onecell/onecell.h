@@ -104,6 +104,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     }
     proj.clear_assignment_cache(cadcells::empty_assignment);
 
+    SMTRAT_STATISTICS_CALL(apx_statistics().success(sample.size()));
     return description;
 }
 

@@ -18,15 +18,13 @@ private:
 
     Counter m_approximated_degree_counter;          // Counts approximations for each degree
 
-    std::vector<std::pair<std::size_t,std::size_t>>  m_taylor_ignored; // For each taylor-approximated polynomial, #variables left out and # variables
+    std::vector<std::size_t> m_cell_dimensions;     // Dimension of the constructed cells
+
+    std::size_t m_involved_too_often = 0; // #times a constraint was involved in too many conflicts
+    std::size_t m_max_apx_reached    = 0; // #times the max number of apx was reached
+
     std::size_t m_taylor_grad_zero = 0; // #times the taylor method fails because of gradient 0
-
-    std::size_t m_unbounded_levels      = 0;     // #unbounded levels in the constructed cells
-    std::size_t m_half_unbounded_levels = 0;     // #one side unbounded levels in the constructed cells
-    std::vector<std::size_t> m_cell_dimensions;  // Dimension of the constructed cells
-
-    std::size_t m_involved_too_often = 0;     // #times a constraint was involved in too many conflicts
-    bool m_max_apx_reached           = false; // flag whether the max number of apx is reached
+    std::vector<std::pair<std::size_t,std::size_t>>  m_taylor_ignored; // For each taylor-approximated polynomial, #variables left out and # variables
 
     std::size_t m_irrational_sample                   = 0; // #times a sample was irrational
     std::size_t m_pwl_approximation                   = 0; // #times a pwl approximation was used
@@ -67,14 +65,10 @@ public:
 
         collect_counter_stats("apx_degrees", m_approximated_degree_counter);
 
-        Statistics::addKeyValuePair("unbounded_levels",                    m_unbounded_levels);
-        Statistics::addKeyValuePair("half_unbounded_levels",               m_half_unbounded_levels);
-        
         std::size_t sumDimensions = 0;
         for (const std::size_t d : m_cell_dimensions) sumDimensions += d;
         double mean_cell_dim = safe_divide((double) sumDimensions, (double) m_cell_dimensions.size());
-
-        Statistics::addKeyValuePair("mean_cell_dimension",                 mean_cell_dim);
+        Statistics::addKeyValuePair("mean_cell_dimension", mean_cell_dim);
 
         std::size_t maxIgnoredVars = 0;
         double sum = 0.0;
@@ -125,12 +119,8 @@ public:
     void taylor_ignored_vars(std::size_t ignored, std::size_t total) {m_taylor_ignored.emplace_back(ignored, total); }
     void taylor_failure() { ++m_taylor_grad_zero; }
 
-    void unbounded_level()      { ++m_unbounded_levels; }
-    void half_unbounded_level() { ++m_half_unbounded_levels; }
-    void cell_dimension(std::size_t d) { m_cell_dimensions.push_back(d); }
-
     void involved_too_often()       { ++m_involved_too_often; }
-    void hit_approximation_limit()  { m_max_apx_reached = true; }
+    void hit_approximation_limit()  { ++m_max_apx_reached; }
 
     void irrational_sample()                   { ++m_irrational_sample; }
     void pwl_approximation()                   { ++m_pwl_approximation; }

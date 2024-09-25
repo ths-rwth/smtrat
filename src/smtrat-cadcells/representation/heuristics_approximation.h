@@ -29,6 +29,7 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
         if (criteria.side(proj, upper, cell.upper(), der->delin().roots().end())) {
             RF upper_apx = Settings::method::bound(upper, cell.upper()->first, der, false);
             criteria.did_approximation();
+            SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(upper.poly)));
             return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper_apx));
         }
         return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper));
@@ -39,6 +40,7 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
         if (criteria.side(proj, lower, der->delin().roots().begin(), der->delin().roots().end())){
             RF lower_apx = Settings::method::bound(lower, cell.lower()->first, der, true);
             criteria.did_approximation();
+            SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(lower.poly)));
             return datastructures::SymbolicInterval(datastructures::Bound::strict(lower_apx), datastructures::Bound::infty());
         }
         return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::infty());
@@ -51,10 +53,12 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     if (criteria.side(proj, upper, cell.upper(), der->delin().roots().end())){
         upper_rf = Settings::method::bound(upper, cell.upper()->first, der, false);
         criteria.did_approximation();
+        SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(upper.poly)));
     }
     if (criteria.side(proj, lower, der->delin().roots().begin(), cell.upper())) {
         lower_rf = Settings::method::bound(lower, cell.lower()->first, der, true);
         criteria.did_approximation();
+        SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(lower.poly)));
     }
     return datastructures::SymbolicInterval(datastructures::Bound::strict(lower_rf), datastructures::Bound::strict(upper_rf));
 }
