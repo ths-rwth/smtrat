@@ -18,7 +18,7 @@ struct TaylorSettings {
 
 struct ApxSettings {
     using method = apx::Taylor<TaylorSettings>;
-    using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+    using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
 };
 
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {

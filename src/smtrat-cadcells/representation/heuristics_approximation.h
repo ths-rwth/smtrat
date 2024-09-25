@@ -1,6 +1,9 @@
 #pragma once
 
 #include "approximation/ApproximationSettings.h"
+#include "approximation/ran_approximation.h"
+#include "approximation/polynomials.h"
+#include "approximation/criteria.h"
 
 namespace smtrat::cadcells::representation::approximation {
 
@@ -11,6 +14,7 @@ template<typename Settings, typename T>
 datastructures::SymbolicInterval approximate_interval(datastructures::SampledDerivationRef<T>& der) {
     const auto& cell = der->cell();
     auto& proj = der->proj();
+    auto& criteria = Settings::Criteria::get();
 
     if (cell.is_section()) { // Section case as before
         return datastructures::SymbolicInterval(util::simplest_bound(proj, cell.lower()->second));
@@ -22,8 +26,9 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     
     if (cell.lower_unbounded()) {
         IR upper = util::simplest_bound(proj, cell.upper()->second);
-        if (Settings::Criteria::side(proj, upper, cell.upper(), der->delin().roots().end())) {
+        if (criteria.side(proj, upper, cell.upper(), der->delin().roots().end())) {
             RF upper_apx = Settings::method::bound(upper, cell.upper()->first, der, false);
+            criteria.did_approximation();
             return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper_apx));
         }
         return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper));
@@ -31,8 +36,9 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     
     if (cell.upper_unbounded()) {
         IR lower = util::simplest_bound(proj, cell.lower()->second);
-        if (Settings::Criteria::side(proj, lower, der->delin().roots().begin(), der->delin().roots().end())){
+        if (criteria.side(proj, lower, der->delin().roots().begin(), der->delin().roots().end())){
             RF lower_apx = Settings::method::bound(lower, cell.lower()->first, der, true);
+            criteria.did_approximation();
             return datastructures::SymbolicInterval(datastructures::Bound::strict(lower_apx), datastructures::Bound::infty());
         }
         return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::infty());
@@ -42,10 +48,14 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     IR upper = util::simplest_bound(proj, cell.upper()->second);
     RF lower_rf = lower;
     RF upper_rf = upper;
-    if (Settings::Criteria::side(proj, upper, cell.upper(), der->delin().roots().end()))
+    if (criteria.side(proj, upper, cell.upper(), der->delin().roots().end())){
         upper_rf = Settings::method::bound(upper, cell.upper()->first, der, false);
-    if (Settings::Criteria::side(proj, lower, der->delin().roots().begin(), cell.upper()))
+        criteria.did_approximation();
+    }
+    if (criteria.side(proj, lower, der->delin().roots().begin(), cell.upper())) {
         lower_rf = Settings::method::bound(lower, cell.lower()->first, der, true);
+        criteria.did_approximation();
+    }
     return datastructures::SymbolicInterval(datastructures::Bound::strict(lower_rf), datastructures::Bound::strict(upper_rf));
 }
 

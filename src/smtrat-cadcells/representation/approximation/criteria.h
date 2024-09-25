@@ -8,7 +8,7 @@ namespace smtrat::cadcells::representation::approximation {
 using IR = datastructures::IndexedRoot;
 
 template<typename Settings>
-class ApxCriteria {
+class Criteria {
 private:
     bool m_currently_approximating = false;
     std::size_t m_approximated_cells = 0;
@@ -74,7 +74,7 @@ private:
 
 public:
 
-    static ApxCriteria<Settings>& get() { static ApxCriteria<Settings> ac; return ac; }
+    static Criteria<Settings>& get() { static Criteria<Settings> ac; return ac; }
 
 
     // informs that the current cell was approximated
@@ -143,7 +143,7 @@ public:
      */
     bool sample(const Rational& s) {
         if (!Settings::crit_sample_enabled) return true;
-        static_assert(std::is_same<Rational, mpq_class>);
+        static_assert(std::is_same<Rational, mpq_class>::value);
         return mpz_sizeinbase(s.get_den_mpz_t(), 2) + mpz_sizeinbase(s.get_num_mpz_t(), 2) <= Settings::sample_bitsize_limit;
     }
 

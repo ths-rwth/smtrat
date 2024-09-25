@@ -13,7 +13,7 @@ namespace internal {
 
 struct ApxSettings {
     using method = apx::Simple<apx::SimpleSettings>;
-    using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+    using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
 };
 
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {

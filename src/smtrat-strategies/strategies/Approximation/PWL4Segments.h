@@ -21,7 +21,7 @@ struct PWLSettings {
 
 struct ApxSettings {
     using method = apx::PiecewiseLinear<PWLSettings>;
-    using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+    using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
 };
 
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {

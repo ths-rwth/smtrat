@@ -15,7 +15,7 @@ struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
 namespace apx = cadcells::representation::approximation;
 
 struct APXSettings {
-	using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+	using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
