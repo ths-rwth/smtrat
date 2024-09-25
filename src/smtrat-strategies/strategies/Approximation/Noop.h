@@ -17,18 +17,6 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
     constexpr static bool use_approximation = false;
 };
 
-struct SATSettings : smtrat::SATSettingsMCSAT {
-	struct MCSATSettings : mcsat::Base {
-		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
-		using ExplanationBackend = mcsat::SequentialExplanation<
-                                       mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,
-									   mcsat::icp::Explanation,
-									   mcsat::vs::Explanation,
-									   mcsat::onecell::Explanation<OCSettings>,
-									   mcsat::onecell::Explanation<mcsat::onecell::DefaultSettings>
-                                    >;
-	};
-};
 } // namespace internal
 
 class Approximation_Noop : public Manager {
@@ -37,7 +25,7 @@ public:
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
-                    addBackend<SATModule<internal::SATSettings>>()
+                    addBackend<SATModule<strategies::approximation::SATSettings<internal::OCSettings>>>()
                 })
             })
         );

@@ -31,19 +31,6 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 	using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
 };
 
-struct SATSettings : smtrat::SATSettingsMCSAT {
-	struct MCSATSettings : mcsat::Base {
-		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
-		using ExplanationBackend = mcsat::SequentialExplanation<
-                                       mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,
-									   mcsat::icp::Explanation,
-									   mcsat::vs::Explanation,
-									   mcsat::onecell::Explanation<OCSettings>,
-									   mcsat::onecell::Explanation<mcsat::onecell::DefaultSettings>
-                                    >;
-	};
-};
-
 } // namespace internal
 
 class Approximation_PWL2Segments : public Manager {
@@ -52,7 +39,7 @@ public:
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
-                    addBackend<SATModule<internal::SATSettings>>()
+                    addBackend<SATModule<strategies::approximation::SATSettings<internal::OCSettings>>>()
                 })
             })
         );
