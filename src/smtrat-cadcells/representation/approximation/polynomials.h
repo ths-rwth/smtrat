@@ -1,6 +1,7 @@
 #pragma once
 
 #include <carl-arith/poly/Conversion.h>
+#include <smtrat-cadcells/OCApproximationStatistics.h>
 #include "PWLBuilder.h"
 #include "PWLRefiner.h"
 
