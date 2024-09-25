@@ -23,6 +23,8 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     if (cell.lower_unbounded() && cell.upper_unbounded()) {
         return datastructures::SymbolicInterval();
     }
+
+    // TODO: weak bounds when approximating?
     
     if (cell.lower_unbounded()) {
         IR upper = util::simplest_bound(proj, cell.upper()->second);
