@@ -12,6 +12,7 @@ class Criteria {
 private:
     bool m_currently_approximating = false;
     std::size_t m_approximated_cells = 0;
+    std::size_t m_approximated_cells_since_block = 0;
 
     std::size_t m_blocking_next = 0;
     std::size_t m_blocking_increment = 0;
@@ -36,15 +37,16 @@ private:
      */
     bool crit_apx_count() {
         if (!Settings::crit_apx_cells_enabled) return true;
-        if (m_blocking_next > 0) {
+        if (m_blocking_next > 1) { // 1 instead of 0 because the very first blocked cell does not decrement this counter
             --m_blocking_next;
             return false;
         }
-        if ((m_approximated_cells > 0) && (m_approximated_cells % Settings::approximated_cells_limit == 0)) {
+        if (m_approximated_cells_since_block == Settings::approximated_cells_limit) {
             SMTRAT_STATISTICS_CALL(apx_statistics().hit_approximation_limit());
             if (Settings::blocking > 0) {
                 m_blocking_next = Settings::blocking + m_blocking_increment; // increment the number of blocked cells
                 m_blocking_increment += Settings::blocking_increment; // the increment itself increases for the next time
+                m_approximated_cells_since_block = 0;
             }
             return false;
         }
@@ -82,6 +84,7 @@ public:
         if (m_currently_approximating) return;
 
         ++m_approximated_cells;
+        ++m_approximated_cells_since_block;
         m_currently_approximating = true;
 
         if (Settings::crit_apx_per_constraint_enabled) { // apx per constraint book keeping
