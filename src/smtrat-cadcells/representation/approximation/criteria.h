@@ -152,8 +152,10 @@ public:
      * based on the bounds and potential resultants with other roots on that side
      */
     bool side(datastructures::Projections& proj, const IR& ir, datastructures::RootMap::const_iterator start, datastructures::RootMap::const_iterator end){
-        if (poly(proj, ir) || !Settings::crit_side_enabled) return true;
-
+        // TODO: this returns true if the bound has large degree **OR** if (side enabled and there is an expensive pair)
+        // TODO: what about **AND**? 
+        if (poly(proj, ir)) return true;
+        if (!Settings::crit_side_enabled) return false;
         for (auto it = start; it != end; ++it) {
             for (const auto& ir_outer : it->second) {
                 if (ir.poly == ir_outer.root.poly) continue;
