@@ -23,8 +23,6 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     if (cell.lower_unbounded() && cell.upper_unbounded()) {
         return datastructures::SymbolicInterval();
     }
-
-    // TODO: weak bounds when approximating?
     
     if (cell.lower_unbounded()) {
         IR upper = util::simplest_bound(proj, cell.upper()->second);
@@ -32,7 +30,7 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
             RF upper_apx = Settings::method::bound(upper, cell.upper()->first, der, false);
             criteria.did_approximation();
             SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(upper.poly)));
-            return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper_apx));
+            return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::weak(upper_apx));
         }
         return datastructures::SymbolicInterval(datastructures::Bound::infty(), datastructures::Bound::strict(upper));
     }
@@ -43,26 +41,26 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
             RF lower_apx = Settings::method::bound(lower, cell.lower()->first, der, true);
             criteria.did_approximation();
             SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(lower.poly)));
-            return datastructures::SymbolicInterval(datastructures::Bound::strict(lower_apx), datastructures::Bound::infty());
+            return datastructures::SymbolicInterval(datastructures::Bound::weak(lower_apx), datastructures::Bound::infty());
         }
         return datastructures::SymbolicInterval(datastructures::Bound::strict(lower), datastructures::Bound::infty());
     }
     
     IR lower = util::simplest_bound(proj, cell.lower()->second);
     IR upper = util::simplest_bound(proj, cell.upper()->second);
-    RF lower_rf = lower;
-    RF upper_rf = upper;
+    datastructures::Bound l = datastructures::Bound::strict(lower);
+    datastructures::Bound u = datastructures::Bound::strict(upper);
     if (criteria.side(proj, upper, cell.upper(), der->delin().roots().end())){
-        upper_rf = Settings::method::bound(upper, cell.upper()->first, der, false);
+        u = datastructures::Bound::weak(Settings::method::bound(upper, cell.upper()->first, der, false));
         criteria.did_approximation();
         SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(upper.poly)));
     }
     if (criteria.side(proj, lower, der->delin().roots().begin(), cell.upper())) {
-        lower_rf = Settings::method::bound(lower, cell.lower()->first, der, true);
+        l = datastructures::Bound::weak(Settings::method::bound(lower, cell.lower()->first, der, true));
         criteria.did_approximation();
         SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(lower.poly)));
     }
-    return datastructures::SymbolicInterval(datastructures::Bound::strict(lower_rf), datastructures::Bound::strict(upper_rf));
+    return datastructures::SymbolicInterval(l, u);
 }
 
 }
