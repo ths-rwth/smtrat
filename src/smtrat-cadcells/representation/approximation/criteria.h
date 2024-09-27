@@ -28,6 +28,10 @@ private:
         m_currently_approximating = false;
     }
 
+    void new_covering() {
+        m_currently_approximating = false;
+    }
+
 
     /** Checks whether the current cell should be approximated based on the number of approx. cells.
      * 
@@ -170,7 +174,8 @@ public:
 
 
     bool covering() {
-        return false; // TODO
+        new_covering();
+        return crit_apx_count();
     }
 };
 

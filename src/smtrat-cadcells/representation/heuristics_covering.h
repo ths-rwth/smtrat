@@ -383,6 +383,8 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         (*it_next)->move_main_var_sample_above(new_root); // make sure the re-delineation works properly
         (*it_next)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
         (*it_next)->delineate_cell();
+
+        Settings::Criteria::get().did_approximation();
     }
 }
 
