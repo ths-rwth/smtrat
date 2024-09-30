@@ -15,7 +15,7 @@ struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
 namespace apx = cadcells::representation::approximation;
 
 struct APXSettings {
-    struct Criteria : apx::Criteria<typename apx::BaseCriteriaSettings> {
+    struct CriteriaSettings : apx::BaseCriteriaSettings {
         static constexpr std::size_t approximated_cells_limit = 5;
         static constexpr std::size_t blocking                 = 1;
         static constexpr std::size_t blocking_increment       = 1;
@@ -26,6 +26,7 @@ struct APXSettings {
 
         static constexpr bool crit_pair_degree_enabled        = true;
     };
+    using Criteria = apx::Criteria<CriteriaSettings>;
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
