@@ -28,7 +28,7 @@ struct BaseTaylorSettings {
 // TODO: this is so far away from the actual criteria and dynamic settings
 struct BaseCriteriaSettings {
     static constexpr std::size_t approximated_cells_limit = 50;
-    static constexpr std::size_t blocking                 = 1;
+    static constexpr std::size_t blocking                 = 0;
     static constexpr std::size_t blocking_increment       = 1;
     static constexpr std::size_t apx_per_constraint_limit = 10;
     static constexpr double      involved_constraint_scale = 10;  
@@ -37,13 +37,13 @@ struct BaseCriteriaSettings {
     static constexpr std::size_t pair_degree_threshold    = 7;
     static constexpr std::size_t sample_bitsize_limit     = 32;
 
-    static constexpr bool crit_level_enabled              = true;
+    static constexpr bool crit_level_enabled              = false;
     static constexpr bool crit_apx_cells_enabled          = true;
     static constexpr bool crit_single_degree_enabled      = true;
     static constexpr bool crit_pair_degree_enabled        = false;
     static constexpr bool crit_apx_per_constraint_enabled = false;
     static constexpr bool crit_side_enabled               = false;
-    static constexpr bool crit_sample_enabled             = true;
+    static constexpr bool crit_sample_enabled             = false;
 };
 
 }

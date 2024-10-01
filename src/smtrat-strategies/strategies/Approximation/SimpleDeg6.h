@@ -15,7 +15,10 @@ namespace internal {
 
 struct ApxSettings {
     using method = apx::Simple<apx::SimpleSettings>;
-    using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
+    struct CriteriaSettings : apx::BaseCriteriaSettings {
+        static constexpr std::size_t single_degree_threshold  = 6;
+    };
+    using Criteria = apx::Criteria<CriteriaSettings>;
 };
 
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
@@ -25,9 +28,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_Simple : public Manager {
+class Approximation_SimpleDeg6 : public Manager {
 public:
-	Approximation_Simple() : Manager() {
+	Approximation_SimpleDeg6() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

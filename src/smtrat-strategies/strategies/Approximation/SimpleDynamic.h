@@ -16,12 +16,9 @@ namespace internal {
 struct ApxSettings {
     using method = apx::Simple<apx::SimpleSettings>;
     struct CriteriaSettings : apx::BaseCriteriaSettings {
-        static constexpr std::size_t apx_per_constraint_limit = 5;
-        static constexpr double      involved_constraint_scale = 0.3;  
-        static constexpr std::size_t single_degree_threshold  = 5;
-
-        static constexpr bool crit_apx_cells_enabled          = false;
-        static constexpr bool crit_apx_per_constraint_enabled = true;
+        static constexpr std::size_t approximated_cells_limit = 100;
+        static constexpr std::size_t single_degree_threshold  = 3;
+        static constexpr std::size_t dynamic_degree_scale     = 2;
     };
     using Criteria = apx::Criteria<CriteriaSettings>;
 };
@@ -33,9 +30,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_Simple3 : public Manager {
+class Approximation_SimpleDynamic : public Manager {
 public:
-	Approximation_Simple3() : Manager() {
+	Approximation_SimpleDynamic() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
