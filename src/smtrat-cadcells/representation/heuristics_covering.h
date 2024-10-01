@@ -402,8 +402,8 @@ struct BiggestCellAPXCovering {
         }
 
         for (auto& iter : min_derivs) {
-            //datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCell::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
+            //datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCell::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);
