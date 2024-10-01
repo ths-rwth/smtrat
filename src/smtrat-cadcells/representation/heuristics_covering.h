@@ -349,11 +349,9 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         if (next_cell.lower()->first == cell.upper()->first) continue;
 
         // check whether the simplest two boundary-defining polynomials have high degree
-        {
-            auto ir_l = util::simplest_bound((*it_next)->proj(), next_cell.lower()->second);
-            auto ir_u = util::simplest_bound((*it)->proj(), cell.upper()->second);
-            if (!Settings::Criteria::get().poly_pair((*it)->proj(), ir_l, ir_u)) continue;
-        }
+        auto ir_l = util::simplest_bound((*it_next)->proj(), next_cell.lower()->second);
+        auto ir_u = util::simplest_bound((*it)->proj(), cell.upper()->second);
+        if (!Settings::Criteria::get().poly_pair((*it)->proj(), ir_l, ir_u)) continue;
 
         // calculate new root
         Rational new_root = SampleSimple::above(next_cell.lower()->first, cell.upper()->first); // TODO : Settings?
@@ -404,7 +402,8 @@ struct BiggestCellAPXCovering {
         }
 
         for (auto& iter : min_derivs) {
-            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
+            //datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCell::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);

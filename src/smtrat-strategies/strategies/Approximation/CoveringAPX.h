@@ -25,14 +25,15 @@ struct APXSettings {
         static constexpr std::size_t sample_bitsize_limit     = 32;
 
         static constexpr bool crit_pair_degree_enabled        = true;
+        static constexpr bool crit_sample_enabled             = true;
     };
     using Criteria = apx::Criteria<CriteriaSettings>;
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
-    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    // using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
     using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellAPXCovering<APXSettings>;
-    using op = cadcells::operators::MccallumFiltered<mcf_settings>;
+    // using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
 }
