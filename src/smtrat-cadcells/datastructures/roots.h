@@ -59,9 +59,10 @@ struct PiecewiseLinearInfo {
     std::vector<std::pair<Rational,IndexedRoot>> bounds;
 
     bool poly_bound_at(const PolyRef& poly, const RAN& r) const {
-        if (bounds.empty()) return first.poly == poly;
+        if (bounds.empty()) return first.poly == poly;       
         auto it = bounds.begin();
-        while(it+1 != bounds.end() && r < (it+1)->first) it++;
+        if (r < it->first) return first.poly == poly;
+        while(it+1 != bounds.end() && r >= (it+1)->first) it++;
         return it->second.poly == poly;
     }
 };
