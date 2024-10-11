@@ -137,9 +137,9 @@ public:
     bool poly_pair(datastructures::Projections& proj, const IR& ir_l, const IR& ir_u) {
         if (!Settings::crit_pair_degree_enabled) return true;
         std::size_t deg_l = proj.degree(ir_l.poly);
-        if (deg_l <= 2) return false; // TODO: magic number
+        if (deg_l <= 1) return false; // TODO: magic number
         std::size_t deg_u = proj.degree(ir_u.poly);
-        if (deg_u <= 2) return false;
+        if (deg_u <= 1) return false;
         return deg_l * deg_u >= Settings::pair_degree_threshold;
     }
 

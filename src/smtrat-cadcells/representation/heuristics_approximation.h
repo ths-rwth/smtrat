@@ -4,6 +4,7 @@
 #include "approximation/ran_approximation.h"
 #include "approximation/polynomials.h"
 #include "approximation/criteria.h"
+#include "util.h"
 
 namespace smtrat::cadcells::representation::approximation {
 
@@ -63,6 +64,91 @@ datastructures::SymbolicInterval approximate_interval(datastructures::SampledDer
     return datastructures::SymbolicInterval(l, u);
 }
 
+
+template<typename Settings, typename T>
+void insert_approximation_above(datastructures::SampledDerivationRef<T>& der, datastructures::Delineation& delin, const datastructures::DelineationInterval& cell, bool force_inside=false) {
+    assert(!cell.upper_unbounded());
+    auto it = cell.upper();
+    auto& proj = der->proj();
+
+    for (const auto& ir : it->second) {
+        // if any poly at the bound is linear, do nothing
+        if (proj.degree(ir.root.poly) <= 1) return;
+    }
+    
+    if (it->second.size() > 1 || force_inside) {
+        // if there are multiple polys at the bound, apx inside
+        Rational new_root = SampleSimple::above(der->main_var_sample(), cell.upper()->first);
+        Polynomial var_poly = Polynomial(proj.polys().context(), der->main_var());
+        IR new_bound(
+            proj.polys()(carl::get_denom(new_root)*var_poly - carl::get_num(new_root)), 1
+        );
+        delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
+        return;
+    }
+
+    // if there is a non-linear poly outside the bound before a linear one, apx outside
+    assert(it->second.size() == 1);
+    IR bound = it->second.front().root;
+    ++it;
+    while (it != delin.roots().end()) {
+        for (const auto& ir : it->second) {
+            if (proj.degree(ir.root.poly) <= 1) return; // linear bound before anything was approximated
+            if (!Settings::Criteria::get().poly_pair(proj, bound, ir.root)) continue;
+            // do apx
+            Rational new_root = SampleSimple::above(cell.upper()->first, it->first);
+            Polynomial var_poly = Polynomial(proj.polys().context(), der->main_var());
+            IR new_bound(
+                proj.polys()(carl::get_denom(new_root)*var_poly - carl::get_num(new_root)), 1
+            );
+            delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
+            return;
+        }
+    }
+}
+
+template<typename Settings, typename T>
+void insert_approximation_below(datastructures::SampledDerivationRef<T>& der, datastructures::Delineation& delin, const datastructures::DelineationInterval& cell, bool force_inside=false) {
+    assert(!cell.lower_unbounded());
+    auto it = cell.lower();
+    auto& proj = der->proj();
+
+    for (const auto& ir : it->second) {
+        // if any poly at the bound is linear, do nothing
+        if (proj.degree(ir.root.poly) <= 1) return;
+    }
+    
+    if (it->second.size() > 1 || force_inside) {
+        // if there are multiple polys at the bound, apx inside
+        Rational new_root = SampleSimple::below(der->main_var_sample(), cell.upper()->first);
+        Polynomial var_poly = Polynomial(proj.polys().context(), der->main_var());
+        IR new_bound(
+            proj.polys()(carl::get_denom(new_root)*var_poly - carl::get_num(new_root)), 1
+        );
+        delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
+        return;
+    }
+
+    // if there is a non-linear poly outside the bound before a linear one, apx outside
+    assert(it->second.size() == 1);
+    IR bound = it->second.front().root;
+    while (it != delin.roots().begin()) {
+        --it;
+        for (const auto& ir : it->second) {
+            if (proj.degree(ir.root.poly) <= 1) return; // linear bound before anything was approximated
+            if (!Settings::Criteria::get().poly_pair(proj, bound, ir.root)) continue;
+            // do apx
+            Rational new_root = SampleSimple::below(cell.lower()->first, it->first);
+            Polynomial var_poly = Polynomial(proj.polys().context(), der->main_var());
+            IR new_bound(
+                proj.polys()(carl::get_denom(new_root)*var_poly - carl::get_num(new_root)), 1
+            );
+            delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
+            return;
+        }
+    }
+}
+
 }
 
 namespace smtrat::cadcells::representation::cell_heuristics {
@@ -97,6 +183,77 @@ struct BiggestCellApproximation {
         }
         handle_connectedness(der, response, enable_weak);
         handle_ordering_polys(der, response);
+        return response;
+    }
+};
+
+
+template<typename Settings>
+struct InAndOutApproximation {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        bool enable_weak = true;
+
+        datastructures::Delineation reduced_delineation = der->delin();
+        auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+
+        if (reduced_cell.is_sector()) {
+            // insert approximations into the delineation
+            if (reduced_cell.lower_unbounded()) {
+                if (!reduced_cell.upper_unbounded()) {
+                    // (-oo,u)
+                    approximation::insert_approximation_above<Settings>(der, reduced_delineation, reduced_cell);
+                }
+                // (-oo,oo) -> do nothing
+            } else {
+                if (reduced_cell.upper_unbounded()) {
+                    // (l,oo)
+                    approximation::insert_approximation_below<Settings>(der, reduced_delineation, reduced_cell);
+                } else {
+                    // (l,u)
+                    approximation::IR l = util::simplest_bound(der->proj(), reduced_cell.lower()->second);
+                    approximation::IR u = util::simplest_bound(der->proj(), reduced_cell.lower()->second);
+                    bool l_inside = (der->proj().degree(l.poly) > der->proj().degree(u.poly));
+                    approximation::insert_approximation_above<Settings>(der, reduced_delineation, reduced_cell, !l_inside);
+                    reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+                    approximation::insert_approximation_below<Settings>(der, reduced_delineation, reduced_cell, l_inside);
+                }
+            }
+            reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+        }
+
+        datastructures::CellRepresentation<T> response(der);
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+        if (der->cell().is_section()) {
+            handle_local_del_simplify_non_independent(reduced_delineation);
+            handle_local_del(der, reduced_delineation, response);
+            util::PolyDelineations poly_delins;
+            util::decompose(reduced_delineation, reduced_cell, poly_delins);
+            util::simplest_ldb_ordering(
+                der->proj(), reduced_delineation, reduced_cell, response.description,
+                response.ordering, response.equational, enable_weak, false
+            );
+            for (const auto& poly_delin : poly_delins.data) {
+                if (response.equational.contains(poly_delin.first)) continue;
+                chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
+            }
+            for (const auto& poly : der->delin().nullified()) {
+                response.equational.insert(poly);
+            }
+            for (const auto& poly : der->delin().nonzero()) {
+                response.equational.insert(poly);
+            }
+        } else { // sector
+            handle_local_del(der, reduced_delineation, response);
+            handle_cell_reduction(reduced_delineation, reduced_cell, response);
+            util::simplest_ldb_ordering(
+                der->proj(), reduced_delineation, reduced_cell, response.description,
+                response.ordering, response.equational, enable_weak, false
+            );
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
         return response;
     }
 };
