@@ -120,7 +120,7 @@ void insert_approximation_below(datastructures::SampledDerivationRef<T>& der, da
     
     if (it->second.size() > 1 || force_inside) {
         // if there are multiple polys at the bound, apx inside
-        Rational new_root = SampleSimple::below(der->main_var_sample(), cell.upper()->first);
+        Rational new_root = SampleSimple::below(der->main_var_sample(), cell.lower()->first);
         Polynomial var_poly = Polynomial(proj.polys().context(), der->main_var());
         IR new_bound(
             proj.polys()(carl::get_denom(new_root)*var_poly - carl::get_num(new_root)), 1
