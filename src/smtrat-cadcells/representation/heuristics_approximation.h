@@ -84,7 +84,7 @@ void insert_approximation_above(datastructures::SampledDerivationRef<T>& der, da
             proj.polys()(carl::get_denom(new_root)*var_poly - carl::get_num(new_root)), 1
         );
         delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
-        SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(2)));
+        SMTRAT_STATISTICS_CALL(apx_statistics().approximated(2));
         return;
     }
 
