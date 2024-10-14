@@ -85,6 +85,7 @@ void insert_approximation_above(datastructures::SampledDerivationRef<T>& der, da
         );
         delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
         SMTRAT_STATISTICS_CALL(apx_statistics().approximated(2));
+        criteria.did_approximation();
         return;
     }
 
@@ -104,6 +105,7 @@ void insert_approximation_above(datastructures::SampledDerivationRef<T>& der, da
             );
             delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
             SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(bound.poly)));
+            criteria.did_approximation();
             return;
         }
     }
@@ -129,6 +131,7 @@ void insert_approximation_below(datastructures::SampledDerivationRef<T>& der, da
         );
         delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
         SMTRAT_STATISTICS_CALL(apx_statistics().approximated(2));
+        criteria.did_approximation();
         return;
     }
 
@@ -148,6 +151,7 @@ void insert_approximation_below(datastructures::SampledDerivationRef<T>& der, da
             );
             delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
             SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(bound.poly)));
+            criteria.did_approximation();
             return;
         }
     }
@@ -217,10 +221,11 @@ struct InAndOutApproximation {
                     // (l,u)
                     approximation::IR l = util::simplest_bound(der->proj(), reduced_cell.lower()->second);
                     approximation::IR u = util::simplest_bound(der->proj(), reduced_cell.lower()->second);
+                    bool inside = Settings::Criteria::get().poly_pair(der->proj(), l, u);
                     bool l_inside = (der->proj().degree(l.poly) > der->proj().degree(u.poly));
-                    approximation::insert_approximation_above<Settings>(der, reduced_delineation, reduced_cell, !l_inside);
+                    approximation::insert_approximation_above<Settings>(der, reduced_delineation, reduced_cell, inside && !l_inside);
                     reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-                    approximation::insert_approximation_below<Settings>(der, reduced_delineation, reduced_cell, l_inside);
+                    approximation::insert_approximation_below<Settings>(der, reduced_delineation, reduced_cell, inside && l_inside);
                 }
             }
             reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
