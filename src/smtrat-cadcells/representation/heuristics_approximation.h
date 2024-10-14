@@ -85,7 +85,7 @@ void insert_approximation_above(datastructures::SampledDerivationRef<T>& der, da
         );
         delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
         SMTRAT_STATISTICS_CALL(apx_statistics().approximated(2));
-        criteria.did_approximation();
+        Settings::Criteria::get().did_approximation();
         return;
     }
 
@@ -105,7 +105,7 @@ void insert_approximation_above(datastructures::SampledDerivationRef<T>& der, da
             );
             delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
             SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(bound.poly)));
-            criteria.did_approximation();
+            Settings::Criteria::get().did_approximation();
             return;
         }
     }
@@ -131,7 +131,7 @@ void insert_approximation_below(datastructures::SampledDerivationRef<T>& der, da
         );
         delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
         SMTRAT_STATISTICS_CALL(apx_statistics().approximated(2));
-        criteria.did_approximation();
+        Settings::Criteria::get().did_approximation();
         return;
     }
 
@@ -151,7 +151,7 @@ void insert_approximation_below(datastructures::SampledDerivationRef<T>& der, da
             );
             delin.add_root(RAN(new_root), datastructures::TaggedIndexedRoot{new_bound});
             SMTRAT_STATISTICS_CALL(apx_statistics().approximated(proj.degree(bound.poly)));
-            criteria.did_approximation();
+            Settings::Criteria::get().did_approximation();
             return;
         }
     }
