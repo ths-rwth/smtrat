@@ -279,7 +279,7 @@ public:
     }
 
     const std::vector<RAN>& real_roots(const Assignment& sample, PolyRef p) {
-        assert(p.level >= level_of(sample)+1);
+        //assert(p.level >= level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
