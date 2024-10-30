@@ -6,21 +6,23 @@ namespace smtrat::covering_ng {
 // TODO characterize_sat, characterize_unsat
 
 template<typename op, typename cell_heuristic>
-inline std::optional<std::pair<Interval<typename op::PropertiesSet>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(cadcells::datastructures::Projections& proj, std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
+inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet>>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(cadcells::datastructures::Projections& proj, std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", down_to_level << ", " << interval->sample());
 
+	std::optional<Interval<typename op::PropertiesSet>> resint = interval;
 	std::vector<cadcells::datastructures::SymbolicInterval> sis;
-	std::size_t level = interval->level();
+	std::size_t level = (*resint)->level();
 	while(level > down_to_level) {
 		if (level == 1) {
-			auto representation = cell_heuristic::compute(interval);
+			auto representation = cell_heuristic::compute(*resint);
 			sis.push_back(representation.description);
+			resint = std::nullopt;
 		} else {
-			auto res = characterize_interval<op, cell_heuristic>(interval);
+			auto res = characterize_interval<op, cell_heuristic>(*resint);
 			if (!res) {
 				return std::nullopt;
 			} else {
-				interval = res->first;
+				resint = res->first;
 				sis.push_back(res->second.description);
 			}
 		}
@@ -29,7 +31,7 @@ inline std::optional<std::pair<Interval<typename op::PropertiesSet>, std::vector
 	std::reverse(sis.begin(),sis.end());
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cell " << sis);
 
-	return std::make_pair(interval, sis);
+	return std::make_pair(resint, sis);
 }
 
 inline std::vector<cadcells::RAN> nucad_sample_inside(cadcells::datastructures::Projections& proj, cadcells::Assignment ass, const std::vector<cadcells::datastructures::SymbolicInterval>& cell) {
@@ -136,11 +138,15 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 		return CoveringResult<typename op::PropertiesSet>(res.status);
 	} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
 		auto input = *res.intervals().begin();
-		std::optional<std::pair<Interval<typename op::PropertiesSet>, std::vector<cadcells::datastructures::SymbolicInterval>>> inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
+		auto inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
 		if (inner_cell) {
-			std::vector<Interval<typename op::PropertiesSet>> new_intervals;
-			new_intervals.push_back(inner_cell->first);
-			return CoveringResult<typename op::PropertiesSet>(res.status, new_intervals);
+			if (inner_cell->first) {
+				std::vector<Interval<typename op::PropertiesSet>> new_intervals;
+				new_intervals.push_back(*inner_cell->first);
+				return CoveringResult<typename op::PropertiesSet>(res.status, new_intervals);
+			} else {
+				return CoveringResult<typename op::PropertiesSet>(res.status);
+			}
 		} else {
 			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 			return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -157,7 +163,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
     op::delineate_properties(*input);
     input->delineate_cell();
 
-	std::optional<std::pair<Interval<typename op::PropertiesSet>, std::vector<cadcells::datastructures::SymbolicInterval>>> inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
+	auto inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
 	if (!inner_cell) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 		return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -218,13 +224,19 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 		} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
 			return res;
 		} else {
-			underlying_cell->merge_with(**res.intervals().begin());
+			if (underlying_cell) {
+				(*underlying_cell)->merge_with(**res.intervals().begin());
+			}
 		}
 	}
 
-	std::vector<Interval<typename op::PropertiesSet>> new_intervals;
-	new_intervals.push_back(underlying_cell);
-	return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT , new_intervals);
+	if (underlying_cell) {
+		std::vector<Interval<typename op::PropertiesSet>> new_intervals;
+		new_intervals.push_back(*underlying_cell);
+		return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, new_intervals);
+	} else {
+		return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT);
+	}
 }
 
 
