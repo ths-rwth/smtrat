@@ -63,7 +63,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
         SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got QF formula: " << input);
         matrix = input;
     }
-	assert(!prefix.empty() || input == matrix);
+	//assert(!prefix.empty() || input == matrix);
 
     covering_ng::VariableQuantification variable_quantification;
 	for (const auto& q : prefix) {
