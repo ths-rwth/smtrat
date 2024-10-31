@@ -70,10 +70,9 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 
 	auto variable = first_unassigned_var(ass, proj.polys().var_order());
 
-	std::size_t current_level;
 	auto initial_ass_size = ass.size();
-	for (current_level = initial_ass_size; current_level < initial_ass_size+sample.size(); current_level++) {
-		ass.emplace(proj.polys().var_order()[current_level], sample[current_level-initial_ass_size]);
+	for (std::size_t i = 0; i < sample.size(); i++) {
+		ass.emplace(proj.polys().var_order()[initial_ass_size+i], sample[i]);
 		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
 		f.extend_valuation(ass);
 		SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
@@ -115,13 +114,10 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 		}
 	}
 
-	assert(current_level >= initial_ass_size);
-	while (true) {
-		ass.erase(proj.polys().var_order()[current_level]);
+	for (std::size_t i = 0; i < sample.size(); i++) {
+		ass.erase(proj.polys().var_order()[initial_ass_size+sample.size()-i-1]);
 		f.revert_valuation(ass);
 		assert(f.root_valuation() != formula::Valuation::UNKNOWN);
-		if (current_level == initial_ass_size) break;
-		current_level--;
 	}
 	assert(ass.size() == initial_ass_size);
 
