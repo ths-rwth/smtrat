@@ -3,7 +3,6 @@
 namespace smtrat::covering_ng {
 
 // TODO parameter
-// TODO characterize_sat, characterize_unsat
 
 template<typename op, typename cell_heuristic>
 inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet>>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(cadcells::datastructures::Projections& proj, std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
@@ -129,10 +128,14 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 
 	auto sample = nucad_sample_inside(proj, ass, cell);
-	auto res = nucad_recurse<op,FE,cell_heuristic>(proj, f, ass, quantification, sample, characterize_sat, characterize_unsat);
+	auto res = nucad_recurse<op,FE,cell_heuristic>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS));
 	if (res.is_failed()) {
 		return CoveringResult<typename op::PropertiesSet>(res.status);
 	} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
+		if ((res.is_sat() && !characterize_sat) || (res.is_unsat() && !characterize_unsat)) {
+			return CoveringResult<typename op::PropertiesSet>(res.status, (*res.intervals().begin())->sample());
+		}
+
 		auto input = *res.intervals().begin();
 		auto inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
 		if (inner_cell) {
