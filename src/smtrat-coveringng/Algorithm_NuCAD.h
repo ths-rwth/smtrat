@@ -171,6 +171,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Split " << cell << " using " << inner_cell);
 	std::vector<std::vector<cadcells::datastructures::SymbolicInterval>> other_cells;
+	std::vector<std::vector<cadcells::datastructures::SymbolicInterval>> other_cells_sections;
 	auto tmpass = ass;
 	for(std::size_t j=0;j<inner_cell->second.size();j++) {
 		tmpass.emplace( first_unassigned_var(tmpass, proj.polys().var_order()), sample[j] );
@@ -187,10 +188,10 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 			for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().emplace_back(cell.at(i));
 
 			if (!inner_cell->second.at(j).is_section()) {
-				other_cells.emplace_back();
-				for (std::size_t i=0; i<j;i++) other_cells.back().emplace_back(inner_cell->second.at(i));
-				other_cells.back().emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
-				for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().emplace_back(cell.at(i));
+				other_cells_sections.emplace_back();
+				for (std::size_t i=0; i<j;i++) other_cells_sections.back().emplace_back(inner_cell->second.at(i));
+				other_cells_sections.back().emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
+				for (std::size_t i=j+1; i<cell.size();i++) other_cells_sections.back().emplace_back(cell.at(i));
 			}
 		}
 
@@ -207,13 +208,15 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 			for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().emplace_back(cell.at(i));
 
 			if (!inner_cell->second.at(j).is_section()) {
-				other_cells.emplace_back();
-				for (std::size_t i=0; i<j;i++) other_cells.back().emplace_back(inner_cell->second.at(i));
-				other_cells.back().emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()));
-				for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().emplace_back(cell.at(i));
+				other_cells_sections.emplace_back();
+				for (std::size_t i=0; i<j;i++) other_cells_sections.back().emplace_back(inner_cell->second.at(i));
+				other_cells_sections.back().emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()));
+				for (std::size_t i=j+1; i<cell.size();i++) other_cells_sections.back().emplace_back(cell.at(i));
 			}
 		}
 	}
+	other_cells.insert(other_cells.end(), other_cells_sections.begin(), other_cells_sections.end());
+	other_cells_sections.clear();
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cells " << other_cells);
 
 	for (const auto& other_cell : other_cells) {
