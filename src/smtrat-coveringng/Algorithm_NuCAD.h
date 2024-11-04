@@ -2,7 +2,8 @@
 
 namespace smtrat::covering_ng {
 
-// TODO parameter
+// TODO queue in nucad_quantifier to avoid sections?
+// TODO statistics
 
 template<typename op, typename cell_heuristic>
 inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet>>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(cadcells::datastructures::Projections& proj, std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
@@ -100,16 +101,11 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 			while (ass.size()+num_next_levels < proj.polys().var_order().size() && quantification.var_type(proj.polys().var_order()[ass.size()]) == quantification.var_type(proj.polys().var_order()[ass.size()+num_next_levels])) num_next_levels++;
 
 			const auto variable = first_unassigned_var(ass, proj.polys().var_order());
-			auto quantificationType = quantification.var_type(variable);
-
-			if (quantificationType == carl::Quantifier::FREE) {
-				quantificationType = carl::Quantifier::EXISTS;
-			}
 
 			std::vector<cadcells::datastructures::SymbolicInterval> cell;
 			for (std::size_t i=0; i<num_next_levels; i++) cell.emplace_back();
 
-			res = nucad_quantifier<op, FE, cell_heuristic>(proj, f, ass, quantification, quantificationType, cell, characterize_sat, characterize_unsat);
+			res = nucad_quantifier<op, FE, cell_heuristic>(proj, f, ass, quantification, quantification.var_type(variable), cell, characterize_sat, characterize_unsat);
 		}
 	}
 
@@ -123,12 +119,38 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 	return res;
 }
 
+struct NuCADTreeBuilder {
+	carl::Variable var;
+	cadcells::datastructures::SymbolicInterval interval;
+	std::optional<ParameterTree> subtree;
+
+	std::shared_ptr<NuCADTreeBuilder> lo;
+	std::shared_ptr<NuCADTreeBuilder> lb;
+	std::shared_ptr<NuCADTreeBuilder> m;
+	std::shared_ptr<NuCADTreeBuilder> ub;
+	std::shared_ptr<NuCADTreeBuilder> uo;
+};
+
+inline ParameterTree to_parameter_tree(std::shared_ptr<NuCADTreeBuilder> in) {
+	std::vector<ParameterTree> children;
+	if (in->subtree) {
+		children.push_back(*in->subtree);
+	} else {
+		if (in->lo) children.push_back(to_parameter_tree(in->lo));
+		if (in->lb) children.push_back(to_parameter_tree(in->lb));
+		if (in->m ) children.push_back(to_parameter_tree(in->m ));
+		if (in->ub) children.push_back(to_parameter_tree(in->ub));
+		if (in->uo) children.push_back(to_parameter_tree(in->uo));
+	}
+	return ParameterTree(in->var, in->interval, carl::Assignment<cadcells::RAN>(), std::move(children)); 
+}
+
 template<typename op, typename FE, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
 
 	auto sample = nucad_sample_inside(proj, ass, cell);
-	auto res = nucad_recurse<op,FE,cell_heuristic>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS));
+	auto res = nucad_recurse<op,FE,cell_heuristic>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
 	if (res.is_failed()) {
 		return CoveringResult<typename op::PropertiesSet>(res.status);
 	} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
@@ -169,29 +191,69 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	}	
 	auto underlying_cell = inner_cell->first;
 
-	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Split " << cell << " using " << inner_cell);
-	std::vector<std::vector<cadcells::datastructures::SymbolicInterval>> other_cells;
-	std::vector<std::vector<cadcells::datastructures::SymbolicInterval>> other_cells_sections;
+	std::shared_ptr<NuCADTreeBuilder> nucad_root;
+	if (next_quantifier == carl::Quantifier::FREE) {
+		std::shared_ptr<NuCADTreeBuilder> current;
+		auto variter = proj.polys().var_order().begin() + ass.size();
+		for (const auto& si : inner_cell->second) {
+			if (!nucad_root) {
+				nucad_root = std::make_shared<NuCADTreeBuilder>();
+				current = nucad_root;
+			} else {
+				current->m = std::make_shared<NuCADTreeBuilder>();
+				current = current->m;
+			}
+			current->var = *variter;
+			current->interval = si;
+			variter++;
+		}
+		current->subtree = std::move(res.parameter_tree());
+	}
+	
+	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Split " << cell << " using " << inner_cell->second);
+	std::vector<std::pair<std::vector<cadcells::datastructures::SymbolicInterval>,std::shared_ptr<NuCADTreeBuilder>>> other_cells;
+	std::vector<std::pair<std::vector<cadcells::datastructures::SymbolicInterval>,std::shared_ptr<NuCADTreeBuilder>>> other_cells_sections;
 	auto tmpass = ass;
 	for(std::size_t j=0;j<inner_cell->second.size();j++) {
-		tmpass.emplace( first_unassigned_var(tmpass, proj.polys().var_order()), sample[j] );
+		auto current_var = first_unassigned_var(tmpass, proj.polys().var_order());
+		tmpass.emplace( current_var, sample[j] );
 		if (inner_cell->second.at(j).lower() != cell.at(j).lower() && (cell.at(j).lower().is_infty() || proj.evaluate(tmpass, cell.at(j).lower().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first)) {
 			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first));
 
 			other_cells.emplace_back();
-			for (std::size_t i=0; i<j;i++) other_cells.back().emplace_back(inner_cell->second.at(i));
+			for (std::size_t i=0; i<j;i++) other_cells.back().first.emplace_back(inner_cell->second.at(i));
 			if (inner_cell->second.at(j).lower().is_infty()) {
-				other_cells.back().emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::infty());
+				other_cells.back().first.emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::infty());
 			} else {
-				other_cells.back().emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::strict(inner_cell->second.at(j).lower().value()));
+				other_cells.back().first.emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::strict(inner_cell->second.at(j).lower().value()));
 			}
-			for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().emplace_back(cell.at(i));
+			for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().first.emplace_back(cell.at(i));
+
+			if (next_quantifier == carl::Quantifier::FREE) {
+				std::shared_ptr<NuCADTreeBuilder> current = nucad_root;
+				for (std::size_t i=0; i<j;i++) current = current->m;
+				current->lo = std::make_shared<NuCADTreeBuilder>();
+				current = current->lo;
+				current->var = current_var;
+				current->interval = other_cells.back().first.at(j);
+				other_cells.back().second = current;
+			}
 
 			if (!inner_cell->second.at(j).is_section()) {
 				other_cells_sections.emplace_back();
-				for (std::size_t i=0; i<j;i++) other_cells_sections.back().emplace_back(inner_cell->second.at(i));
-				other_cells_sections.back().emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
-				for (std::size_t i=j+1; i<cell.size();i++) other_cells_sections.back().emplace_back(cell.at(i));
+				for (std::size_t i=0; i<j;i++) other_cells_sections.back().first.emplace_back(inner_cell->second.at(i));
+				other_cells_sections.back().first.emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
+				for (std::size_t i=j+1; i<cell.size();i++) other_cells_sections.back().first.emplace_back(cell.at(i));
+
+				if (next_quantifier == carl::Quantifier::FREE) {
+					std::shared_ptr<NuCADTreeBuilder> current = nucad_root;
+					for (std::size_t i=0; i<j;i++) current = current->m;
+					current->lb = std::make_shared<NuCADTreeBuilder>();
+					current = current->lb;
+					current->var = current_var;
+					current->interval = other_cells_sections.back().first.at(j);
+					other_cells_sections.back().second = current;
+				}
 			}
 		}
 
@@ -199,19 +261,39 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 			assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && proj.evaluate(tmpass, cell.at(j).upper().value()).first > proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first));
 
 			other_cells.emplace_back();
-			for (std::size_t i=0; i<j;i++) other_cells.back().emplace_back(inner_cell->second.at(i));
+			for (std::size_t i=0; i<j;i++) other_cells.back().first.emplace_back(inner_cell->second.at(i));
 			if (inner_cell->second.at(j).upper().is_infty()) {
-				other_cells.back().emplace_back(cadcells::datastructures::Bound::infty(),cell.at(j).upper());
+				other_cells.back().first.emplace_back(cadcells::datastructures::Bound::infty(),cell.at(j).upper());
 			} else {
-				other_cells.back().emplace_back(cadcells::datastructures::Bound::strict(inner_cell->second.at(j).upper().value()),cell.at(j).upper());
+				other_cells.back().first.emplace_back(cadcells::datastructures::Bound::strict(inner_cell->second.at(j).upper().value()),cell.at(j).upper());
 			}
-			for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().emplace_back(cell.at(i));
+			for (std::size_t i=j+1; i<cell.size();i++) other_cells.back().first.emplace_back(cell.at(i));
+
+			if (next_quantifier == carl::Quantifier::FREE) {
+				std::shared_ptr<NuCADTreeBuilder> current = nucad_root;
+				for (std::size_t i=0; i<j;i++) current = current->m;
+				current->uo = std::make_shared<NuCADTreeBuilder>();
+				current = current->uo;
+				current->var = current_var;
+				current->interval = other_cells.back().first.at(j);
+				other_cells.back().second = current;
+			}
 
 			if (!inner_cell->second.at(j).is_section()) {
 				other_cells_sections.emplace_back();
-				for (std::size_t i=0; i<j;i++) other_cells_sections.back().emplace_back(inner_cell->second.at(i));
-				other_cells_sections.back().emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()));
-				for (std::size_t i=j+1; i<cell.size();i++) other_cells_sections.back().emplace_back(cell.at(i));
+				for (std::size_t i=0; i<j;i++) other_cells_sections.back().first.emplace_back(inner_cell->second.at(i));
+				other_cells_sections.back().first.emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()));
+				for (std::size_t i=j+1; i<cell.size();i++) other_cells_sections.back().first.emplace_back(cell.at(i));
+
+				if (next_quantifier == carl::Quantifier::FREE) {
+					std::shared_ptr<NuCADTreeBuilder> current = nucad_root;
+					for (std::size_t i=0; i<j;i++) current = current->m;
+					current->ub = std::make_shared<NuCADTreeBuilder>();
+					current = current->ub;
+					current->var = current_var;
+					current->interval = other_cells_sections.back().first.at(j);
+					other_cells_sections.back().second = current;
+				}
 			}
 		}
 	}
@@ -220,7 +302,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cells " << other_cells);
 
 	for (const auto& other_cell : other_cells) {
-		auto res = nucad_quantifier<op,FE,cell_heuristic>(proj, f, ass, quantification, next_quantifier, other_cell, characterize_sat, characterize_unsat);
+		auto res = nucad_quantifier<op,FE,cell_heuristic>(proj, f, ass, quantification, next_quantifier, other_cell.first, characterize_sat, characterize_unsat);
 		if (res.is_failed()) {
 			return CoveringResult<typename op::PropertiesSet>(res.status);
 		} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
@@ -229,15 +311,26 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 			if (underlying_cell) {
 				(*underlying_cell)->merge_with(**res.intervals().begin());
 			}
+			if (next_quantifier == carl::Quantifier::FREE) {
+				other_cell.second->subtree = std::move(res.parameter_tree());
+			}
 		}
 	}
 
 	if (underlying_cell) {
 		std::vector<Interval<typename op::PropertiesSet>> new_intervals;
 		new_intervals.push_back(*underlying_cell);
-		return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, new_intervals);
+		if (next_quantifier == carl::Quantifier::FREE) {
+			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, to_parameter_tree(nucad_root), new_intervals);
+		} else {
+			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, new_intervals);
+		}
 	} else {
-		return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT);
+		if (next_quantifier == carl::Quantifier::FREE) {
+			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, to_parameter_tree(nucad_root));
+		} else {
+			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT);
+		}
 	}
 }
 
