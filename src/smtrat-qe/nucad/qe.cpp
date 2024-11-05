@@ -12,10 +12,6 @@
 namespace smtrat::qe::nucad {
 
 std::optional<FormulaT> qe(const FormulaT& input) {
-
-#ifdef SMTRAT_DEVOPTION_Statistics
-	QeNucadStatistics::get_instance().set_variable_ordering(Settings::variable_ordering_heuristic);
-#endif
 	
 	auto [prefix, matrix] = carl::to_pnf(input);
 
