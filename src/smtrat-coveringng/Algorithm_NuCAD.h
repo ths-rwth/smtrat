@@ -6,7 +6,7 @@ namespace smtrat::covering_ng {
 // TODO statistics
 
 template<typename op, typename cell_heuristic>
-inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet>>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(cadcells::datastructures::Projections& proj, std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
+inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet>>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", down_to_level << ", " << interval->sample());
 
 	std::optional<Interval<typename op::PropertiesSet>> resint = interval;
@@ -66,9 +66,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 
 template<typename op, typename FE, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, const std::vector<cadcells::RAN>& sample, bool characterize_sat = false, bool characterize_unsat = false) {
-	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
-
-	auto variable = first_unassigned_var(ass, proj.polys().var_order());
+	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << sample);
 
 	auto initial_ass_size = ass.size();
 	for (std::size_t i = 0; i < sample.size(); i++) {
@@ -120,7 +118,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 }
 
 struct NuCADTreeBuilder {
-	carl::Variable var;
+	carl::Variable var = carl::Variable::NO_VARIABLE;
 	cadcells::datastructures::SymbolicInterval interval;
 	std::optional<ParameterTree> subtree;
 
@@ -142,12 +140,16 @@ inline ParameterTree to_parameter_tree(std::shared_ptr<NuCADTreeBuilder> in) {
 		if (in->ub) children.push_back(to_parameter_tree(in->ub));
 		if (in->uo) children.push_back(to_parameter_tree(in->uo));
 	}
-	return ParameterTree(in->var, in->interval, carl::Assignment<cadcells::RAN>(), std::move(children)); 
+	if (in->var == carl::Variable::NO_VARIABLE) {
+		return ParameterTree(std::move(children)); 
+	} else {
+		return ParameterTree(in->var, in->interval, carl::Assignment<cadcells::RAN>(), std::move(children)); 
+	}
 }
 
 template<typename op, typename FE, typename cell_heuristic>
 inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
-	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
+	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << next_quantifier << ", " << cell);
 
 	auto sample = nucad_sample_inside(proj, ass, cell);
 	auto res = nucad_recurse<op,FE,cell_heuristic>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
@@ -159,7 +161,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 		}
 
 		auto input = *res.intervals().begin();
-		auto inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
+		auto inner_cell = nucad_construct_cell<op,cell_heuristic>(ass.size(), input);
 		if (inner_cell) {
 			if (inner_cell->first) {
 				std::vector<Interval<typename op::PropertiesSet>> new_intervals;
@@ -184,7 +186,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
     op::delineate_properties(*input);
     input->delineate_cell();
 
-	auto inner_cell = nucad_construct_cell<op,cell_heuristic>(proj, ass.size(), input);
+	auto inner_cell = nucad_construct_cell<op,cell_heuristic>(ass.size(), input);
 	if (!inner_cell) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 		return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
@@ -193,16 +195,12 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 
 	std::shared_ptr<NuCADTreeBuilder> nucad_root;
 	if (next_quantifier == carl::Quantifier::FREE) {
-		std::shared_ptr<NuCADTreeBuilder> current;
+		nucad_root = std::make_shared<NuCADTreeBuilder>();
+		std::shared_ptr<NuCADTreeBuilder> current = nucad_root;
 		auto variter = proj.polys().var_order().begin() + ass.size();
 		for (const auto& si : inner_cell->second) {
-			if (!nucad_root) {
-				nucad_root = std::make_shared<NuCADTreeBuilder>();
-				current = nucad_root;
-			} else {
-				current->m = std::make_shared<NuCADTreeBuilder>();
-				current = current->m;
-			}
+			current->m = std::make_shared<NuCADTreeBuilder>();
+			current = current->m;
 			current->var = *variter;
 			current->interval = si;
 			variter++;

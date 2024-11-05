@@ -96,9 +96,9 @@ enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER };
 template<typename PropertiesSet>
 struct CoveringResult {
     Status status;
+	std::optional<ParameterTree> m_parameter_tree;
 	std::optional<std::vector<Interval<PropertiesSet>>> m_intervals;
 	std::optional<cadcells::Assignment> m_sample;
-	std::optional<ParameterTree> m_parameter_tree;
 
 	CoveringResult() : status(Status::FAILED) {}
 	explicit CoveringResult(Status s) : status(s){ init(); }
