@@ -6,6 +6,7 @@
 #include <random>
 #include "Statistics.h"
 #include <carl-formula/formula/functions/PNF.h>
+#include "../coverings/util/to_formula.h"
 #include "util/to_formula.h"
 #include <smtrat-coveringng/Simplification.h>
 
@@ -52,17 +53,17 @@ std::optional<FormulaT> qe(const FormulaT& input) {
 	}
 	auto tree = std::move(res.parameter_tree());
 
-	// TODO encoding: encode bounds for each variable only once!
-
 	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got tree " << std::endl << tree);
 	covering_ng::simplify(tree);
 	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got simplified tree " << std::endl << tree);
-	// FormulaT output_formula = util::to_formula_true_only(pool, tree);
-	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got formula (true_only) " << util::to_formula_true_only(pool, tree));
-	FormulaT output_formula = util::to_formula_alternate(pool, tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got formula (true_only) " << coverings::util::to_formula_true_only(pool, tree));
+	//FormulaT output_formula = coverings::util::to_formula_alternate(pool, tree);
+	//FormulaT output_formula = coverings::util::to_formula_true_only(pool, tree);
+	//FormulaT output_formula = nucad::util::to_formula_true_only_elim_redundant(pool, tree);
+	FormulaT output_formula = nucad::util::to_formula_alternate_elim_redundant(pool, tree);
 	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got formula " << output_formula);
 	SMTRAT_STATISTICS_CALL(QeNucadStatistics::get_instance().process_output_formula(output_formula));
-	SMTRAT_VALIDATION_ADD("smtrat.qe.nucad", "output_formula", FormulaT(carl::FormulaType::IFF, { util::to_formula_true_only(pool, tree), output_formula }).negated(), false);
+	SMTRAT_VALIDATION_ADD("smtrat.qe.nucad", "output_formula", FormulaT(carl::FormulaType::IFF, { coverings::util::to_formula_true_only(pool, tree), output_formula }).negated(), false);
 	return output_formula;
 }
 

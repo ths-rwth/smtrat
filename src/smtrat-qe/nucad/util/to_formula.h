@@ -5,8 +5,8 @@
 
 namespace smtrat::qe::nucad::util {
 
-FormulaT to_formula_true_only(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree);
+FormulaT to_formula_true_only_elim_redundant(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree);
 
-FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree);
+FormulaT to_formula_alternate_elim_redundant(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree);
 
-} // namespace smtrat::qe::coverings
+} // namespace smtrat::qe::nucad

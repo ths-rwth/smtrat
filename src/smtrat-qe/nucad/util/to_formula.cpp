@@ -10,102 +10,106 @@
 #include <smtrat-coveringng/types.h>
 #include <smtrat-cadcells/helper_formula.h>
 #include <carl-formula/formula/functions/NNF.h>
+#include "../../coverings/util/to_formula.h"
 
 namespace smtrat::qe::nucad::util {
 
-FormulaT to_formula(const cadcells::datastructures::PolyPool& pool, carl::Variable variable, const cadcells::datastructures::SymbolicInterval& interval) {
-	auto dnf = cadcells::helper::to_formula(pool, variable, interval);
-	FormulasT result;
-	for (const auto& disjunction : dnf) {
-		std::vector<FormulaT> tmp;
-		for (const auto& f : disjunction) {
-			if (std::holds_alternative<cadcells::Constraint>(f)) {
-				tmp.push_back(FormulaT(ConstraintT(carl::convert<Poly>(std::get<cadcells::Constraint>(f)))));
-			} else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
-				auto constraint = carl::as_constraint(std::get<cadcells::VariableComparison>(f));
-				if (!constraint) {
-					tmp.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))));
-				} else {
-					tmp.push_back(FormulaT(ConstraintT(carl::convert<Poly>(*constraint))));
-				}
-			} else {
-				assert(false);
-			}
-		}
-		result.emplace_back(carl::FormulaType::OR, std::move(tmp));
-	}
-	return FormulaT(carl::FormulaType::AND, std::move(result));
-}
-
-FormulaT to_formula_true_only(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
+std::pair<FormulaT,std::vector<carl::Variable>> to_formula_true_only_elim_redundant_internal(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
 	if (tree.status == 0) {
-		return FormulaT(carl::FormulaType::FALSE);
+		return std::make_pair(FormulaT(carl::FormulaType::FALSE), std::vector<carl::Variable>());
 	}
 	assert(tree.status > 0);
+
+	std::vector<carl::Variable> res;
+    bool first = true;
 
 	FormulaT children_formula(carl::FormulaType::TRUE);
 	if (tree.status == 2) {
 		FormulasT children_formulas;
 		for (const auto& child : tree.children) {
-			children_formulas.push_back(to_formula_true_only(pool, child));
+			auto [formula, subres] = to_formula_true_only_elim_redundant_internal(pool, child);
+			children_formulas.push_back(formula);
+
+			if (first) {
+				res = subres;
+				first = false;
+			} else {
+				std::vector<carl::Variable> tmp;
+				std::set_intersection(res.begin(), res.end(), subres.begin(), subres.end(), std::back_inserter(tmp));
+				res = tmp;
+			}
 		}
 		children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
 	}
 		
 	FormulaT interval_formula(carl::FormulaType::TRUE);
-	if (tree.interval) {
-		interval_formula = to_formula(pool, *tree.variable, *tree.interval);
+	if (tree.variable) {
+		if (std::find(res.begin(),res.end(),*tree.variable) == res.end()) {
+			interval_formula = qe::coverings::util::to_formula(pool, *tree.variable, *tree.interval);
+            auto it = std::lower_bound(res.begin(), res.end(), *tree.variable);
+            res.insert(it, *tree.variable);
+        }
 	}
 
-	return FormulaT(carl::FormulaType::AND, { interval_formula, children_formula });
+	return std::make_pair( FormulaT(carl::FormulaType::AND, { interval_formula, children_formula }), res);
 }
 
-FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree, bool positive) {
+FormulaT to_formula_true_only_elim_redundant(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
+	return to_formula_true_only_elim_redundant_internal(pool,tree).first;
+}
+
+std::pair<FormulaT,std::vector<carl::Variable>> to_formula_alternate_elim_redundant(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree, bool positive) {
+	std::vector<carl::Variable> res;
+    bool first = true;
+
 	FormulaT children_formula(carl::FormulaType::TRUE);
 	if (tree.status == 2) {
 		auto num_pos = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return child.status == 1; });
 		auto num_neg = std::count_if(tree.children.begin(), tree.children.end(), [](const auto& child) { return child.status == 0; });
-		if (num_pos <= num_neg) {
-			FormulasT children_formulas;
-			for (const auto& child : tree.children) {
-				if (child.status == 2) {
-					children_formulas.push_back(to_formula_alternate(pool, child, true));
-				} else if (child.status == 1) {
-					children_formulas.push_back(to_formula_alternate(pool, child, true));
+		bool encode_positive = (num_pos <= num_neg);
+		FormulasT children_formulas;
+		for (const auto& child : tree.children) {
+			if (child.status == encode_positive || child.status == 2) {
+				auto [formula, subres] = to_formula_alternate_elim_redundant(pool, child, encode_positive);
+				children_formulas.push_back(formula);
+
+				if (first) {
+					res = subres;
+					first = false;
+				} else {
+					std::vector<carl::Variable> tmp;
+					std::set_intersection(res.begin(), res.end(), subres.begin(), subres.end(), std::back_inserter(tmp));
+					res = tmp;
 				}
 			}
-			children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
-			if (!positive) children_formula = carl::to_nnf(children_formula.negated());
-		} else {
-			FormulasT children_formulas;
-			for (const auto& child : tree.children) {
-				if (child.status == 2) {
-					children_formulas.push_back(to_formula_alternate(pool, child, false));
-				} else if (child.status == 0) {
-					children_formulas.push_back(to_formula_alternate(pool, child, false));
-				}
-			}
-			children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
-			if (positive) children_formula = carl::to_nnf(children_formula.negated());
+		}
+		children_formula = FormulaT(carl::FormulaType::OR, std::move(children_formulas));
+		if ((encode_positive && !positive) || (!encode_positive && positive)) {
+			children_formula = carl::to_nnf(children_formula.negated());
+			res.clear();
 		}
 	}
 		
 	FormulaT interval_formula(carl::FormulaType::TRUE);
-	if (tree.interval) {
-		interval_formula = to_formula(pool, *tree.variable, *tree.interval);
+	if (tree.variable) {
+		if (std::find(res.begin(),res.end(),*tree.variable) == res.end()) {
+			interval_formula = qe::coverings::util::to_formula(pool, *tree.variable, *tree.interval);
+			auto it = std::lower_bound(res.begin(), res.end(), *tree.variable);
+			res.insert(it, *tree.variable);
+		}
 	}
 
-	return FormulaT(carl::FormulaType::AND, { interval_formula, children_formula });
+	return std::make_pair( FormulaT(carl::FormulaType::AND, { interval_formula, children_formula }), res);
 }
 
-FormulaT to_formula_alternate(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
+FormulaT to_formula_alternate_elim_redundant(const cadcells::datastructures::PolyPool& pool, const covering_ng::ParameterTree& tree) {
 	if (tree.status == 1) {
 		return FormulaT(carl::FormulaType::TRUE);
 	} else if (tree.status == 0) {
 		return FormulaT(carl::FormulaType::FALSE);
 	} else {
-		return to_formula_alternate(pool, tree, true);
+		return to_formula_alternate_elim_redundant(pool, tree, true).first;
 	}
 }
 
-} // namespace smtrat::qe::coverings
+} // namespace smtrat::qe::nucad
