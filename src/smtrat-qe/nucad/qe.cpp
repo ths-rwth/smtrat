@@ -12,7 +12,24 @@
 
 namespace smtrat::qe::nucad {
 
-std::optional<FormulaT> qe(const FormulaT& input) {
+std::optional<FormulaT> qe(const FormulaT& input_orig) {
+
+	auto input = input_orig;
+    if constexpr (Settings::transform_boolean_variables_to_reals) {
+		std::vector<carl::Variable> aux_vars;
+        // this is a hack until we have proper Boolean reasoning
+        std::map<FormulaT,FormulaT> substitutions;
+        for (const auto b_var : carl::boolean_variables(input)) {
+            auto r_var = carl::fresh_real_variable("r_"+b_var.name());
+            aux_vars.push_back(r_var);
+            auto constraint = FormulaT(ConstraintT(r_var, carl::Relation::GREATER));
+            substitutions.emplace(FormulaT(b_var), constraint);
+        }
+        input = carl::substitute(input, substitutions);
+		input = FormulaT(carl::FormulaType::EXISTS, aux_vars, input);
+        assert(carl::boolean_variables(input).empty());
+        SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Formula after replacing Boolean variables: " << input);
+    }
 	
 	auto [prefix, matrix] = carl::to_pnf(input);
 

@@ -30,5 +30,7 @@ struct DefaultSettings {
             return Type(proj, fe_implicant_ordering, fe_results, fe_constraint_ordering, fe_stop_evaluation_on_conflict, fe_preprocess, fe_postprocess, fe_boolean_exploration);
         }
     };
+
+    static constexpr bool transform_boolean_variables_to_reals = true;
 };
 } // namespace smtrat::qe::coverings
