@@ -4,9 +4,13 @@
 #include <smtrat-common/smtrat-common.h>
 #include "../util/VariableIndex.h"
 #include "../util/Matrix.h"
+#include "../util/redundancies.h"
 #include "../util/EqualitySubstitution.h"
 #include "Node.h"
 #include "FMplexQEStatistics.h"
+#include <smtrat-solver/Manager.h>
+#include <smtrat-modules/SimplexModule/SimplexModule.h>
+
 
 namespace smtrat::qe::fmplex {
 
@@ -41,7 +45,7 @@ private: // members
     FormulaSetT             m_found_conjuncts;
     qe::util::VariableIndex m_var_idx;
     ColIndex                m_first_parameter_col;
-    std::set<Row, cmp_row>  m_found_rows;
+    std::vector<Row>        m_found_rows;
 
 
 public:
@@ -91,7 +95,56 @@ private:
                 break;
             }
         }
-        m_found_rows.insert(truncated);
+
+        // check for redundancy
+        for (auto it_other = m_found_rows.begin(); it_other != m_found_rows.end(); ++it_other) {
+            auto red = util::compare_rows(*it_other, truncated, constant_column());
+            if (red == util::Redundancy::FIRST_IMPLIES_SECOND) return;
+            if (red == util::Redundancy::SECOND_IMPLIES_FIRST) { // overwrite the weaker constraint
+                *it_other = truncated;
+                return;
+            }
+        }
+        m_found_rows.push_back(truncated);
+    }
+
+
+    void remove_redundancies(Node& n) {
+        FormulasT constraints;
+        FormulasT result;
+        const Matrix& m = n.matrix;
+        Matrix result_m(m.n_rows(), m.n_cols());
+        carl::Variable delta = carl::fresh_real_variable("delta");
+        for (RowIndex i = 0; i < m.n_rows(); ++i) {
+            Poly lhs;
+            auto it = m.row_begin(i);
+            const auto end = m.row_end(i);
+            for (; it != end && it->col_index < constant_column(); ++it) {
+                lhs += it->value*Poly(m_var_idx.var(it->col_index));
+            }
+            if (it != end && it->col_index == constant_column()) {
+                lhs += it->value;
+                ++it;
+            }
+            if (it != end && it->col_index == delta_column()) {
+                lhs += it->value*Poly(delta);
+            }
+            constraints.push_back(FormulaT(lhs, carl::Relation::LEQ));
+        }
+
+        auto irred_rows = util::irredundant_rows(constraints, {FormulaT(Poly(delta), carl::Relation::GREATER)});
+        
+        std::set<RowIndex> new_ignored;
+        
+        for (std::size_t i = 0; i < irred_rows.size(); ++i) {
+            result_m.append_row(m.row_begin(irred_rows[i]), m.row_end(irred_rows[i]));
+            if (n.ignored.contains(irred_rows[i])) {
+                new_ignored.emplace_hint(new_ignored.end(), i);
+            }
+        }
+
+        n.matrix = result_m;
+        n.ignored = new_ignored;
     }
 
     /**

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include "../util/quantifier_splitting.h"
+#include "../util/redundancies.h"
 
 #include "FMplexQE.h"
 
@@ -30,11 +31,18 @@ FormulaT FMplexQE::eliminate_quantifiers() {
                 SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().split_tried());
                 auto split = split_into_independent_nodes(m_nodes.back());
                 m_nodes.pop_back();
+                for (auto& n : split) {
+                    //util::remove_redundancies(n, constant_column());
+                    // remove_redundancies(n); TODO: this is not proved to be correct yet
+                    n.choose_elimination();
+                }
                 m_nodes.insert(m_nodes.end(), split.begin(), split.end());
                 SMTRAT_STATISTICS_CALL(
                     if (split.size() > 1) FMplexQEStatistics::get_instance().split_done();
                 )
             } else {
+                //util::remove_redundancies(m_nodes.back(), constant_column());
+                // remove_redundancies(m_nodes.back()); TODO: this is not proved to be correct yet
                 m_nodes.back().choose_elimination();
             }
             break;
@@ -137,52 +145,51 @@ FMplexQE::Matrix FMplexQE::build_initial_matrix(const FormulasT& constraints) {
 
 
 std::vector<Node> FMplexQE::split_into_independent_nodes(const Node& n) const {
-        const Matrix& m = n.matrix;
-        std::vector<bool> col_used(n.cols_to_elim.size(), false);
-        std::vector<bool> row_used(m.n_rows(), false);
-        std::size_t n_unused_rows = m.n_rows();
-        
-        std::vector<std::size_t> pending;
-        std::vector<Node> result;
+    const Matrix& m = n.matrix;
+    std::vector<bool> col_used(n.cols_to_elim.size(), false);
+    std::vector<bool> row_used(m.n_rows(), false);
+    std::size_t n_unused_rows = m.n_rows();
+    
+    std::vector<std::size_t> pending;
+    std::vector<Node> result;
 
-        for (std::size_t i = 0; i < n.cols_to_elim.size();) {
-            pending.push_back(i);
-            result.push_back(Node(Matrix(n_unused_rows, m.n_cols()), {}));
-            ++i;
-            while (!pending.empty()) {
-                std::size_t v = pending.back();
-                pending.pop_back();
-                if (col_used[v]) continue;
-                col_used[v] = true;
-                ColIndex actual_col = n.cols_to_elim[v];
-                result.back().cols_to_elim.push_back(actual_col);
-                auto col_end = m.col_end(actual_col);
-                for (auto it = m.col_begin(actual_col); it != col_end; ++it) {
-                    if (row_used[it.row()]) continue;
-                    for (const auto& e : m.row_entries(it.row())) {
-                        if (e.col_index >= m_first_parameter_col) break;
-                        if (e.col_index == actual_col) continue;
-                        for (std::size_t j = 0; ; ++j) {
-                            assert(j < n.cols_to_elim.size());
-                            if (n.cols_to_elim[j] == e.col_index) {
-                                pending.push_back(j);
-                                break;
-                            }
+    for (std::size_t i = 0; i < n.cols_to_elim.size();) {
+        pending.push_back(i);
+        result.push_back(Node(Matrix(n_unused_rows, m.n_cols()), {}));
+        ++i;
+        while (!pending.empty()) {
+            std::size_t v = pending.back();
+            pending.pop_back();
+            if (col_used[v]) continue;
+            col_used[v] = true;
+            ColIndex actual_col = n.cols_to_elim[v];
+            result.back().cols_to_elim.push_back(actual_col);
+            auto col_end = m.col_end(actual_col);
+            for (auto it = m.col_begin(actual_col); it != col_end; ++it) {
+                if (row_used[it.row()]) continue;
+                for (const auto& e : m.row_entries(it.row())) {
+                    if (e.col_index >= m_first_parameter_col) break;
+                    if (e.col_index == actual_col) continue;
+                    for (std::size_t j = 0; ; ++j) {
+                        assert(j < n.cols_to_elim.size());
+                        if (n.cols_to_elim[j] == e.col_index) {
+                            pending.push_back(j);
+                            break;
                         }
                     }
-                    row_used[it.row()] = true;
-                    --n_unused_rows;
-                    if (n.ignored.contains(it.row())) {
-                        result.back().ignored.insert(result.back().matrix.n_rows());
-                    }
-                    result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));
                 }
+                row_used[it.row()] = true;
+                --n_unused_rows;
+                if (n.ignored.contains(it.row())) {
+                    result.back().ignored.insert(result.back().matrix.n_rows());
+                }
+                result.back().matrix.append_row(m.row_begin(it.row()), m.row_end(it.row()));
             }
-            while (i < n.cols_to_elim.size() && col_used[i]) ++i;
         }
-        for (Node& n : result) n.choose_elimination();
-        return result;
+        while (i < n.cols_to_elim.size() && col_used[i]) ++i;
     }
+    return result;
+}
 
 
 void FMplexQE::build_initial_systems() {
@@ -209,7 +216,7 @@ void FMplexQE::build_initial_systems() {
     elim_vars   = es.remaining_variables();
     SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after es: " << constraints);
     SMTRAT_STATISTICS_CALL(FMplexQEStatistics::get_instance().elim_eq(elim_vars.size()));
-    
+
     // filter finished constraints from remaining constraints
     FormulasT filtered;
     for (const auto& c : constraints) {
