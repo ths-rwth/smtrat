@@ -67,8 +67,13 @@ Answer NuCADModule<Settings>::checkCore() {
 
     covering_ng::VariableQuantification variable_quantification;
 	for (const auto& q : prefix) {
-		variable_quantification.set_var_type(q.second, q.first);
+        variable_quantification.set_var_type(q.second, q.first);
 	}
+    for (auto& var : carl::variables(matrix)) {
+        if (!variable_quantification.has(var)) {
+            variable_quantification.set_var_type(var, carl::Quantifier::EXISTS);
+        }
+    }
 
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
@@ -121,6 +126,7 @@ Answer NuCADModule<Settings>::checkCore() {
         }
         return Answer::SAT;
     } else {
+        assert(res.is_unsat());
         mModel.clear();
         generateTrivialInfeasibleSubset();
         return Answer::UNSAT;
