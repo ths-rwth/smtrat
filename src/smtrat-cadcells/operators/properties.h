@@ -10,6 +10,48 @@
  */
 namespace smtrat::cadcells::operators::properties {
 
+struct poly_constraint_truth_inv {
+    static constexpr bool is_flag = false; 
+    datastructures::PolyConstraint constr;
+    size_t level() const {
+        return constr.lhs.level;
+    }
+    std::size_t hash_on_level() const {
+        return std::hash<std::size_t>()(constr.lhs.id);
+    }
+};
+inline bool operator==(const poly_constraint_truth_inv& lhs, const poly_constraint_truth_inv& rhs) {
+    return lhs.constr == rhs.constr;
+}
+inline bool operator<(const poly_constraint_truth_inv& lhs, const poly_constraint_truth_inv& rhs) {
+    return lhs.constr < rhs.constr;
+}
+inline std::ostream& operator<<(std::ostream& os, const poly_constraint_truth_inv& data) {
+    os << data.constr << " ti";
+    return os;
+}
+
+struct iroot_constraint_truth_inv {
+    static constexpr bool is_flag = false; 
+    datastructures::IndexedRootConstraint constr;
+    size_t level() const {
+        return constr.bound.poly.level;
+    }
+    std::size_t hash_on_level() const {
+        return std::hash<std::size_t>()(constr.bound.poly.id);
+    }
+};
+inline bool operator==(const iroot_constraint_truth_inv& lhs, const iroot_constraint_truth_inv& rhs) {
+    return lhs.constr == rhs.constr;
+}
+inline bool operator<(const iroot_constraint_truth_inv& lhs, const iroot_constraint_truth_inv& rhs) {
+    return lhs.constr < rhs.constr;
+}
+inline std::ostream& operator<<(std::ostream& os, const iroot_constraint_truth_inv& data) {
+    os << data.constr << " ti";
+    return os;
+}
+
 struct poly_sgn_inv {
     static constexpr bool is_flag = false; 
     datastructures::PolyRef poly;
