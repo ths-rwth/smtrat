@@ -2,7 +2,6 @@
 
 namespace smtrat::covering_ng {
 
-// TODO queue in nucad_quantifier to avoid sections?
 // TODO statistics
 
 template<typename op, typename cell_heuristic>
@@ -319,13 +318,13 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 		std::vector<Interval<typename op::PropertiesSet>> new_intervals;
 		new_intervals.push_back(*underlying_cell);
 		if (next_quantifier == carl::Quantifier::FREE) {
-			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, to_parameter_tree(nucad_root), new_intervals);
+			return CoveringResult<typename op::PropertiesSet>(Status::SAT, to_parameter_tree(nucad_root), new_intervals);
 		} else {
 			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, new_intervals);
 		}
 	} else {
 		if (next_quantifier == carl::Quantifier::FREE) {
-			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT, to_parameter_tree(nucad_root));
+			return CoveringResult<typename op::PropertiesSet>(Status::SAT, to_parameter_tree(nucad_root));
 		} else {
 			return CoveringResult<typename op::PropertiesSet>(next_quantifier == carl::Quantifier::EXISTS ? Status::UNSAT : Status::SAT);
 		}
