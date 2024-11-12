@@ -98,10 +98,10 @@ static inline bool project_cell_properties(datastructures::CellRepresentation<Pr
     for(const auto& prop : deriv.properties<properties::iroot_constraint_truth_inv>()) {
         if (repr.equational.find(prop.constr.bound.poly) != repr.equational.end()) {
             // this is a hack:
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "truth_inv(" << prop.constr << ") <= the hack");
             assert(!deriv.proj().is_nullified(deriv.underlying_sample(), prop.constr.bound.poly));
             rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, prop.constr.bound.poly);
             deriv.insert(operators::properties::poly_del{ prop.constr.bound.poly });
-            return true;
         } else if (deriv.delin().nonzero().find(prop.constr.bound.poly) != deriv.delin().nonzero().end()) {
             assert(false);
             return false;

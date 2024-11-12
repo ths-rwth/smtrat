@@ -60,7 +60,7 @@ bool iroot_constr_truth_inv(datastructures::SampledDerivation<P>& deriv, const d
     }
 
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "truth_inv(" << constr << ") <= some properties");
-    deriv.insert(operators::properties::poly_del{ constr.bound.poly });
+    assert(deriv.contains(operators::properties::poly_del{ constr.bound.poly }));
 
     return true;
 }
