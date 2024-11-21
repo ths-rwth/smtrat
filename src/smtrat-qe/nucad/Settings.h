@@ -14,6 +14,8 @@ struct DefaultSettings {
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCell;
 
+    static constexpr bool enable_weak = false;
+
     // Implicant computation
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;

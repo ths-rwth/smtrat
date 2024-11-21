@@ -59,11 +59,11 @@ inline std::vector<cadcells::RAN> nucad_sample_inside(cadcells::datastructures::
 	return result;
 }
 
-template<typename op, typename FE, typename cell_heuristic>
+template<typename op, typename FE, typename cell_heuristic, bool enable_weak>
 inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, bool characterize_sat, bool characterize_unsat);
 
 
-template<typename op, typename FE, typename cell_heuristic>
+template<typename op, typename FE, typename cell_heuristic, bool enable_weak>
 inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, const std::vector<cadcells::RAN>& sample, bool characterize_sat = false, bool characterize_unsat = false) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << sample);
 
@@ -102,7 +102,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 			std::vector<cadcells::datastructures::SymbolicInterval> cell;
 			for (std::size_t i=0; i<num_next_levels; i++) cell.emplace_back();
 
-			res = nucad_quantifier<op, FE, cell_heuristic>(proj, f, ass, quantification, quantification.var_type(variable), cell, characterize_sat, characterize_unsat);
+			res = nucad_quantifier<op, FE, cell_heuristic,enable_weak>(proj, f, ass, quantification, quantification.var_type(variable), cell, characterize_sat, characterize_unsat);
 		}
 	}
 
@@ -146,12 +146,12 @@ inline ParameterTree to_parameter_tree(std::shared_ptr<NuCADTreeBuilder> in) {
 	}
 }
 
-template<typename op, typename FE, typename cell_heuristic>
+template<typename op, typename FE, typename cell_heuristic, bool enable_weak>
 inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << next_quantifier << ", " << cell);
 
 	auto sample = nucad_sample_inside(proj, ass, cell);
-	auto res = nucad_recurse<op,FE,cell_heuristic>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
+	auto res = nucad_recurse<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
 	if (res.is_failed()) {
 		return CoveringResult<typename op::PropertiesSet>(res.status);
 	} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
@@ -232,13 +232,15 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	for(std::size_t j=0;j<inner_cell->second.size();j++) {
 		auto current_var = first_unassigned_var(tmpass, proj.polys().var_order());
 		tmpass.emplace( current_var, sample[j] );
-		if (inner_cell->second.at(j).lower() != cell.at(j).lower() && (cell.at(j).lower().is_infty() || proj.evaluate(tmpass, cell.at(j).lower().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first)) {
-			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first));
+		if (inner_cell->second.at(j).lower() != cell.at(j).lower() && (cell.at(j).lower().is_infty() || inner_cell->second.at(j).lower().is_strict() != cell.at(j).lower().is_strict() || proj.evaluate(tmpass, cell.at(j).lower().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first)) {
+			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first && cell.at(j).lower().is_weak() && inner_cell->second.at(j).lower().is_strict()) || (proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
 
 			other_cells.emplace_back();
 			for (std::size_t i=0; i<j;i++) other_cells.back().first.emplace_back(inner_cell->second.at(i));
 			if (inner_cell->second.at(j).lower().is_infty()) {
 				other_cells.back().first.emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::infty());
+			} else if (inner_cell->second.at(j).lower().is_strict() && enable_weak) {
+				other_cells.back().first.emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
 			} else {
 				other_cells.back().first.emplace_back(cell.at(j).lower(), cadcells::datastructures::Bound::strict(inner_cell->second.at(j).lower().value()));
 			}
@@ -254,7 +256,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 				other_cells.back().second = current;
 			}
 
-			if (!inner_cell->second.at(j).is_section()) {
+			if (!inner_cell->second.at(j).is_section() && !(inner_cell->second.at(j).lower().is_strict() && enable_weak)) {
 				other_cells_sections.emplace_back();
 				for (std::size_t i=0; i<j;i++) other_cells_sections.back().first.emplace_back(inner_cell->second.at(i));
 				other_cells_sections.back().first.emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
@@ -272,13 +274,15 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 			}
 		}
 
-		if (inner_cell->second.at(j).upper() != cell.at(j).upper() && (cell.at(j).upper().is_infty() || proj.evaluate(tmpass, cell.at(j).upper().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first)) {
-			assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && proj.evaluate(tmpass, cell.at(j).upper().value()).first > proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first));
+		if (inner_cell->second.at(j).upper() != cell.at(j).upper() && (cell.at(j).upper().is_infty() || inner_cell->second.at(j).upper().is_strict() != cell.at(j).upper().is_strict() || proj.evaluate(tmpass, cell.at(j).upper().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first)) {
+			assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && ((proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first && cell.at(j).upper().is_weak() && inner_cell->second.at(j).upper().is_strict()) || (proj.evaluate(tmpass, cell.at(j).upper().value()).first > proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first))));
 
 			other_cells.emplace_back();
 			for (std::size_t i=0; i<j;i++) other_cells.back().first.emplace_back(inner_cell->second.at(i));
 			if (inner_cell->second.at(j).upper().is_infty()) {
 				other_cells.back().first.emplace_back(cadcells::datastructures::Bound::infty(),cell.at(j).upper());
+			} else if (inner_cell->second.at(j).upper().is_strict() && enable_weak) {
+				other_cells.back().first.emplace_back( cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()), cell.at(j).upper());
 			} else {
 				other_cells.back().first.emplace_back(cadcells::datastructures::Bound::strict(inner_cell->second.at(j).upper().value()),cell.at(j).upper());
 			}
@@ -294,7 +298,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 				other_cells.back().second = current;
 			}
 
-			if (!inner_cell->second.at(j).is_section()) {
+			if (!inner_cell->second.at(j).is_section() && !(inner_cell->second.at(j).upper().is_strict() && enable_weak)) {
 				other_cells_sections.emplace_back();
 				for (std::size_t i=0; i<j;i++) other_cells_sections.back().first.emplace_back(inner_cell->second.at(i));
 				other_cells_sections.back().first.emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()));
@@ -317,7 +321,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cells " << other_cells);
 
 	for (const auto& other_cell : other_cells) {
-		auto res = nucad_quantifier<op,FE,cell_heuristic>(proj, f, ass, quantification, next_quantifier, other_cell.first, characterize_sat, characterize_unsat);
+		auto res = nucad_quantifier<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, next_quantifier, other_cell.first, characterize_sat, characterize_unsat);
 		if (res.is_failed()) {
 			return CoveringResult<typename op::PropertiesSet>(res.status);
 		} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {

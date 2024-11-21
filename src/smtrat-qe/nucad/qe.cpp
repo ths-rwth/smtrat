@@ -63,7 +63,7 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 		return FormulaT(carl::FormulaType::TRUE);
 	}
 
-	auto res = nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::cell_heuristic>(proj, f, assignment, variableQuantification, std::vector<cadcells::RAN>());
+	auto res = nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::cell_heuristic, Settings::enable_weak>(proj, f, assignment, variableQuantification, std::vector<cadcells::RAN>());
 	if (res.is_failed() || res.is_failed_projection()) {
 		SMTRAT_LOG_FATAL("smtrat.qe.nucad", "Failed")
 		return std::nullopt;

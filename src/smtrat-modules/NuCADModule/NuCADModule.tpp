@@ -102,7 +102,7 @@ Answer NuCADModule<Settings>::checkCore() {
         return Answer::SAT;
     }
 
-    auto res = covering_ng::nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, typename Settings::cell_heuristic>(proj, f, ass, variable_quantification, std::vector<cadcells::RAN>());
+    auto res = covering_ng::nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, typename Settings::cell_heuristic, Settings::enable_weak>(proj, f, ass, variable_quantification, std::vector<cadcells::RAN>());
 
     if (res.is_failed()) {
         assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());
