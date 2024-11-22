@@ -4,7 +4,7 @@
 #include <carl-formula/formula/FormulaContent.h>
 #include <optional>
 #include <random>
-#include "Statistics.h"
+#include "../Statistics.h"
 #include <carl-formula/formula/functions/PNF.h>
 #include "util/to_formula.h"
 #include <smtrat-coveringng/Simplification.h>
@@ -12,11 +12,6 @@
 namespace smtrat::qe::coverings {
 
 std::optional<FormulaT> qe(const FormulaT& input_orig) {
-
-#ifdef SMTRAT_DEVOPTION_Statistics
-	QeCoveringsStatistics::get_instance().set_variable_ordering(Settings::variable_ordering_heuristic);
-#endif
-
 	auto input = input_orig;
     if constexpr (Settings::transform_boolean_variables_to_reals) {
 		std::vector<carl::Variable> aux_vars;
@@ -48,10 +43,6 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 	auto var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
 	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Variable Order: " << var_order)
-#ifdef SMTRAT_DEVOPTION_Statistics
-	QeCoveringsStatistics::get_instance().set_variable_ordering(var_order);
-	QeCoveringsStatistics::get_instance().set_variable_ordering(Settings::variable_ordering_heuristic);
-#endif
 	SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 
 	cadcells::Polynomial::ContextType context(var_order);
@@ -63,10 +54,10 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 	f.set_formula(matrix);
 	f.extend_valuation(assignment);
 	if (f.root_valuation() == covering_ng::formula::Valuation::FALSE || matrix.is_false()) {
-		SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(FormulaT(carl::FormulaType::FALSE)));
+		SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_output_formula(FormulaT(carl::FormulaType::FALSE)));
 		return FormulaT(carl::FormulaType::FALSE);
 	} else if (f.root_valuation() == covering_ng::formula::Valuation::TRUE || matrix.is_true()) {
-		SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(FormulaT(carl::FormulaType::TRUE)));
+		SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_output_formula(FormulaT(carl::FormulaType::TRUE)));
 		return FormulaT(carl::FormulaType::TRUE);
 	}
 
@@ -77,13 +68,15 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 	}
 
 	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got tree " << std::endl << tree);
+	SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_tree(tree));
 	covering_ng::simplify(tree);
+	SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_simplified_tree(tree));
 	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got simplified tree " << std::endl << tree);
 	// FormulaT output_formula = util::to_formula_true_only(pool, tree);
 	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got formula (true_only) " << util::to_formula_true_only(pool, tree));
 	FormulaT output_formula = util::to_formula_alternate(pool, tree);
 	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got formula " << output_formula);
-	SMTRAT_STATISTICS_CALL(QeCoveringsStatistics::get_instance().process_output_formula(output_formula));
+	SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_output_formula(output_formula));
 	SMTRAT_VALIDATION_ADD("smtrat.qe.coverings", "output_formula", FormulaT(carl::FormulaType::IFF, { util::to_formula_true_only(pool, tree), output_formula }).negated(), false);
 	return output_formula;
 }
