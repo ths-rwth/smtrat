@@ -39,7 +39,8 @@ inline Redundancy compare_rows(const Row& row1, const Row& row2, const std::size
         ++it1;
         ++it2;
     }
-    return Redundancy::NONE;
+    return (it1 == row1.end() && it2 == row2.end()) ? Redundancy::FIRST_IMPLIES_SECOND
+                                                    : Redundancy::NONE;
 }
 
 

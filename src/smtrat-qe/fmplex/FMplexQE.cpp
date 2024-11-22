@@ -67,10 +67,13 @@ FormulaT FMplexQE::eliminate_quantifiers() {
 
     SMTRAT_LOG_DEBUG("smtrat.qe","after loop");
     if (m_found_rows.empty() && m_found_conjuncts.empty()) return FormulaT(carl::FormulaType::TRUE);
-    FormulasT conjuncts;
-    conjuncts.reserve(m_found_rows.size() + m_found_conjuncts.size());
-    for (const auto& r : m_found_rows) conjuncts.push_back(constraint_from_row(r));
-    for (const auto& c : m_found_conjuncts) conjuncts.push_back(c); // TODO: deduplication between the two sets?
+    std::set<FormulaT> conjuncts;
+    for (const auto& r : m_found_rows) conjuncts.insert(constraint_from_row(r));
+    for (const auto& c : m_found_conjuncts) {
+        if (c.type() != carl::FormulaType::CONSTRAINT) continue;
+        conjuncts.insert(c);
+    }
+
     return FormulaT(carl::FormulaType::AND, conjuncts);
 }
 
