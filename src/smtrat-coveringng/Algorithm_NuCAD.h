@@ -2,8 +2,6 @@
 
 namespace smtrat::covering_ng {
 
-// TODO statistics
-
 template<typename op, typename cell_heuristic>
 inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet>>, std::vector<cadcells::datastructures::SymbolicInterval>>> nucad_construct_cell(std::size_t down_to_level, Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", down_to_level << ", " << interval->sample());
@@ -41,7 +39,7 @@ inline std::vector<cadcells::RAN> nucad_sample_inside(cadcells::datastructures::
 		if (si.is_section()) {
 			result.emplace_back(proj.evaluate(ass,si.lower().value()).first);
 		} else if (!si.lower().is_infty() && !si.upper().is_infty()) {
-			assert(proj.evaluate(ass,si.lower().value()).first<proj.evaluate(ass,si.upper().value()).first);
+			assert(proj.evaluate(ass,si.lower().value()).first<=proj.evaluate(ass,si.upper().value()).first);
 			result.emplace_back(carl::sample_between(proj.evaluate(ass,si.lower().value()).first,proj.evaluate(ass,si.upper().value()).first));
 		} else if (!si.upper().is_infty()) {
 			assert(si.lower().is_infty());
@@ -232,7 +230,17 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	for(std::size_t j=0;j<inner_cell->second.size();j++) {
 		auto current_var = first_unassigned_var(tmpass, proj.polys().var_order());
 		tmpass.emplace( current_var, sample[j] );
-		if (inner_cell->second.at(j).lower() != cell.at(j).lower() && (cell.at(j).lower().is_infty() || inner_cell->second.at(j).lower().is_strict() != cell.at(j).lower().is_strict() || proj.evaluate(tmpass, cell.at(j).lower().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first)) {
+
+		if (!cell.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first) {
+			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).lower().value() << " by " <<  cell.at(j).lower().value());
+			inner_cell->second[j].lower().set_value(cell.at(j).lower().value());
+		}
+		if (!cell.at(j).upper().is_infty() && proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first) {
+			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).upper().value() << " by " <<  cell.at(j).upper().value());
+			inner_cell->second[j].upper().set_value(cell.at(j).upper().value());
+		}
+
+		if (inner_cell->second.at(j).lower() != cell.at(j).lower()) {
 			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first && cell.at(j).lower().is_weak() && inner_cell->second.at(j).lower().is_strict()) || (proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
 
 			other_cells.emplace_back();
@@ -274,7 +282,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 			}
 		}
 
-		if (inner_cell->second.at(j).upper() != cell.at(j).upper() && (cell.at(j).upper().is_infty() || inner_cell->second.at(j).upper().is_strict() != cell.at(j).upper().is_strict() || proj.evaluate(tmpass, cell.at(j).upper().value()).first != proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first)) {
+		if (inner_cell->second.at(j).upper() != cell.at(j).upper()) {
 			assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && ((proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first && cell.at(j).upper().is_weak() && inner_cell->second.at(j).upper().is_strict()) || (proj.evaluate(tmpass, cell.at(j).upper().value()).first > proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first))));
 
 			other_cells.emplace_back();

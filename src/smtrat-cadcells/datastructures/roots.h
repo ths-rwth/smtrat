@@ -250,6 +250,9 @@ public:
         return *m_value;
     }
 
+    void set_value(const RootFunction& value) {
+        m_value = value;
+    }
     void set_weak() {
         if (is_strict()) m_type = Type::weak;
     }
@@ -303,11 +306,17 @@ public:
     const auto& lower() const {
         return m_lower;
     }
+    auto& lower() {
+        return m_lower;
+    }
 
     /**
      * Returns the upper bound.
      */
     const auto& upper() const {
+        return m_upper;
+    }
+    auto& upper() {
         return m_upper;
     }
 
