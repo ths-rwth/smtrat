@@ -36,10 +36,10 @@ inline std::vector<cadcells::RAN> nucad_sample_inside(cadcells::datastructures::
 
 	std::vector<cadcells::RAN> result;
 	for (const auto& si : cell) {
-		if (si.is_section()) {
+		if (si.is_section() || (si.lower().is_weak() && si.upper().is_weak() && proj.evaluate(ass,si.lower().value()).first==proj.evaluate(ass,si.upper().value()).first)) {
 			result.emplace_back(proj.evaluate(ass,si.lower().value()).first);
 		} else if (!si.lower().is_infty() && !si.upper().is_infty()) {
-			assert(proj.evaluate(ass,si.lower().value()).first<=proj.evaluate(ass,si.upper().value()).first);
+			assert(proj.evaluate(ass,si.lower().value()).first<proj.evaluate(ass,si.upper().value()).first);
 			result.emplace_back(carl::sample_between(proj.evaluate(ass,si.lower().value()).first,proj.evaluate(ass,si.upper().value()).first));
 		} else if (!si.upper().is_infty()) {
 			assert(si.lower().is_infty());
@@ -264,7 +264,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 				other_cells.back().second = current;
 			}
 
-			if (!inner_cell->second.at(j).is_section() && !(inner_cell->second.at(j).lower().is_strict() && enable_weak)) {
+			if (inner_cell->second.at(j).lower().is_strict() && ! enable_weak) {
 				other_cells_sections.emplace_back();
 				for (std::size_t i=0; i<j;i++) other_cells_sections.back().first.emplace_back(inner_cell->second.at(i));
 				other_cells_sections.back().first.emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).lower().value()));
@@ -306,7 +306,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 				other_cells.back().second = current;
 			}
 
-			if (!inner_cell->second.at(j).is_section() && !(inner_cell->second.at(j).upper().is_strict() && enable_weak)) {
+			if (inner_cell->second.at(j).upper().is_strict() && ! enable_weak) {
 				other_cells_sections.emplace_back();
 				for (std::size_t i=0; i<j;i++) other_cells_sections.back().first.emplace_back(inner_cell->second.at(i));
 				other_cells_sections.back().first.emplace_back(cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()),cadcells::datastructures::Bound::weak(inner_cell->second.at(j).upper().value()));
