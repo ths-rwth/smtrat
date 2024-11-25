@@ -31,7 +31,7 @@ inline std::optional<std::pair<std::optional<Interval<typename op::PropertiesSet
 	return std::make_pair(resint, sis);
 }
 
-inline std::vector<cadcells::RAN> nucad_sample_inside(cadcells::datastructures::Projections& proj, cadcells::Assignment ass, const std::vector<cadcells::datastructures::SymbolicInterval>& cell) {
+inline std::optional<std::vector<cadcells::RAN>> nucad_sample_inside(cadcells::datastructures::Projections& proj, cadcells::Assignment ass, const std::vector<cadcells::datastructures::SymbolicInterval>& cell) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", ass << ", " << cell);
 
 	std::vector<cadcells::RAN> result;
@@ -39,7 +39,8 @@ inline std::vector<cadcells::RAN> nucad_sample_inside(cadcells::datastructures::
 		if (si.is_section() || (si.lower().is_weak() && si.upper().is_weak() && proj.evaluate(ass,si.lower().value()).first==proj.evaluate(ass,si.upper().value()).first)) {
 			result.emplace_back(proj.evaluate(ass,si.lower().value()).first);
 		} else if (!si.lower().is_infty() && !si.upper().is_infty()) {
-			assert(proj.evaluate(ass,si.lower().value()).first<proj.evaluate(ass,si.upper().value()).first);
+			assert(proj.evaluate(ass,si.lower().value()).first<=proj.evaluate(ass,si.upper().value()).first);
+			if (proj.evaluate(ass,si.lower().value()).first==proj.evaluate(ass,si.upper().value()).first) return std::nullopt;
 			result.emplace_back(carl::sample_between(proj.evaluate(ass,si.lower().value()).first,proj.evaluate(ass,si.upper().value()).first));
 		} else if (!si.upper().is_infty()) {
 			assert(si.lower().is_infty());
@@ -100,7 +101,9 @@ inline CoveringResult<typename op::PropertiesSet> nucad_recurse(cadcells::datast
 			std::vector<cadcells::datastructures::SymbolicInterval> cell;
 			for (std::size_t i=0; i<num_next_levels; i++) cell.emplace_back();
 
-			res = nucad_quantifier<op, FE, cell_heuristic,enable_weak>(proj, f, ass, quantification, quantification.var_type(variable), cell, characterize_sat, characterize_unsat);
+			auto sres = nucad_quantifier<op, FE, cell_heuristic,enable_weak>(proj, f, ass, quantification, quantification.var_type(variable), cell, characterize_sat, characterize_unsat);
+			assert(sres);
+			res = *sres;
 		}
 	}
 
@@ -145,11 +148,15 @@ inline ParameterTree to_parameter_tree(std::shared_ptr<NuCADTreeBuilder> in) {
 }
 
 template<typename op, typename FE, typename cell_heuristic, bool enable_weak>
-inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
+inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << next_quantifier << ", " << cell);
 
 	auto sample = nucad_sample_inside(proj, ass, cell);
-	auto res = nucad_recurse<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
+	if (!sample) {
+		assert(enable_weak);
+		return std::nullopt;
+	}
+	auto res = nucad_recurse<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, *sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
 	if (res.is_failed()) {
 		return CoveringResult<typename op::PropertiesSet>(res.status);
 	} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
@@ -229,7 +236,7 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	auto tmpass = ass;
 	for(std::size_t j=0;j<inner_cell->second.size();j++) {
 		auto current_var = first_unassigned_var(tmpass, proj.polys().var_order());
-		tmpass.emplace( current_var, sample[j] );
+		tmpass.emplace( current_var, (*sample)[j] );
 
 		if (!cell.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first) {
 			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).lower().value() << " by " <<  cell.at(j).lower().value());
@@ -329,17 +336,22 @@ inline CoveringResult<typename op::PropertiesSet> nucad_quantifier(cadcells::dat
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cells " << other_cells);
 
 	for (const auto& other_cell : other_cells) {
-		auto res = nucad_quantifier<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, next_quantifier, other_cell.first, characterize_sat, characterize_unsat);
-		if (res.is_failed()) {
-			return CoveringResult<typename op::PropertiesSet>(res.status);
-		} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
-			return res;
+		auto sres = nucad_quantifier<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, next_quantifier, other_cell.first, characterize_sat, characterize_unsat);
+		if (!sres) {
+			//other_cell.second->subtree = ParameterTree(0);
 		} else {
-			if (underlying_cell) {
-				(*underlying_cell)->merge_with(**res.intervals().begin());
-			}
-			if (next_quantifier == carl::Quantifier::FREE) {
-				other_cell.second->subtree = std::move(res.parameter_tree());
+			auto res = *sres;
+			if (res.is_failed()) {
+				return CoveringResult<typename op::PropertiesSet>(res.status);
+			} else if ((res.is_sat() && next_quantifier == carl::Quantifier::EXISTS) || (res.is_unsat() && next_quantifier == carl::Quantifier::FORALL)) {
+				return res;
+			} else {
+				if (underlying_cell) {
+					(*underlying_cell)->merge_with(**res.intervals().begin());
+				}
+				if (next_quantifier == carl::Quantifier::FREE) {
+					other_cell.second->subtree = std::move(res.parameter_tree());
+				}
 			}
 		}
 	}
