@@ -155,9 +155,10 @@ template<typename op, typename FE, typename cell_heuristic, bool enable_weak>
 inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << next_quantifier << ", " << cell);
 
-	auto sample = nucad_sample_inside(proj, ass, cell);
+	auto sample = nucad_sample_inside(proj, ass, cell); // TODO make non-optional again?
 	if (!sample) {
-		assert(enable_weak);
+		assert(false);
+		//assert(enable_weak);
 		return std::nullopt;
 	}
 	auto res = nucad_recurse<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, *sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
@@ -216,7 +217,7 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 	if (!inner_cell) {
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 		return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
-	}	
+	}
 
 	#ifdef SMTRAT_DEVOPTION_Validation 
 	FormulasT lemma;
@@ -258,17 +259,27 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 		auto current_var = first_unassigned_var(tmpass, proj.polys().var_order());
 		tmpass.emplace( current_var, (*sample)[j] );
 
-		if (!cell.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first) {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).lower().value() << " by " <<  cell.at(j).lower().value());
-			inner_cell->second[j].lower().set_value(cell.at(j).lower().value());
+		// TODO darf man das machen mit replace?
+		//if (!cell.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first) {
+		//	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).lower().value() << " by " <<  cell.at(j).lower().value());
+		//	inner_cell->second[j].lower().set_value(cell.at(j).lower().value());
+		//}
+		//if (!cell.at(j).upper().is_infty() && proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first) {
+		//	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).upper().value() << " by " <<  cell.at(j).upper().value());
+		//	inner_cell->second[j].upper().set_value(cell.at(j).upper().value());
+		//}
+
+		if (!cell.at(j).lower().is_infty()) {
+			std::cout << proj.evaluate(tmpass, cell.at(j).lower().value()).first << " " << proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first << std::endl;
 		}
-		if (!cell.at(j).upper().is_infty() && proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first) {
-			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).upper().value() << " by " <<  cell.at(j).upper().value());
-			inner_cell->second[j].upper().set_value(cell.at(j).upper().value());
+		if (!cell.at(j).upper().is_infty()) {
+			std::cout << proj.evaluate(tmpass, cell.at(j).upper().value()).first << " " << proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first << std::endl;
+
 		}
 
 		if (inner_cell->second.at(j).lower() != cell.at(j).lower()) {
-			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first && cell.at(j).lower().is_weak() && inner_cell->second.at(j).lower().is_strict()) || (proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
+			//assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first && cell.at(j).lower().is_weak() && inner_cell->second.at(j).lower().is_strict()) || (proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
+			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first <= proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
 
 			other_cells.emplace_back();
 			for (std::size_t i=0; i<j;i++) other_cells.back().first.emplace_back(inner_cell->second.at(i));
@@ -310,7 +321,8 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 		}
 
 		if (inner_cell->second.at(j).upper() != cell.at(j).upper()) {
-			assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && ((proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first && cell.at(j).upper().is_weak() && inner_cell->second.at(j).upper().is_strict()) || (proj.evaluate(tmpass, cell.at(j).upper().value()).first > proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first))));
+			//assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && ((proj.evaluate(tmpass, cell.at(j).upper().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first && cell.at(j).upper().is_weak() && inner_cell->second.at(j).upper().is_strict()) || (proj.evaluate(tmpass, cell.at(j).upper().value()).first > proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first))));
+			assert(cell.at(j).upper().is_infty() || (!inner_cell->second.at(j).upper().is_infty() && ((proj.evaluate(tmpass, cell.at(j).upper().value()).first >= proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first))));
 
 			other_cells.emplace_back();
 			for (std::size_t i=0; i<j;i++) other_cells.back().first.emplace_back(inner_cell->second.at(i));

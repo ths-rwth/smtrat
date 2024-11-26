@@ -34,7 +34,7 @@ void handle_connectedness(datastructures::SampledDerivationRef<T>& der, datastru
         && !response.description.lower().is_infty()
         && !response.description.upper().is_infty()
     ) {
-        if (enable_weak) {
+        if (enable_weak && response.description.lower().is_weak() && response.description.upper().is_weak()) {
             response.ordering.add_leq(response.description.lower().value(), response.description.upper().value());
         } else {
             response.ordering.add_less(response.description.lower().value(), response.description.upper().value());
