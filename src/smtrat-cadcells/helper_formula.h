@@ -4,6 +4,10 @@
 #include "datastructures/roots.h"
 #include "datastructures/polynomials.h"
 
+#include <carl-arith/poly/Conversion.h>
+#include <carl-arith/constraint/Conversion.h>
+#include <carl-arith/extended/Conversion.h>
+
 namespace smtrat::cadcells::helper {
 
 /**
@@ -56,6 +60,30 @@ inline DNF to_formula(const datastructures::PolyPool& pool, carl::Variable main_
         }
     } 
     return cnf;
+}
+
+inline FormulaT to_formula_carl(const cadcells::datastructures::PolyPool& pool, carl::Variable variable, const cadcells::datastructures::SymbolicInterval& interval) {
+	auto dnf = cadcells::helper::to_formula(pool, variable, interval);
+	FormulasT result;
+	for (const auto& disjunction : dnf) {
+		std::vector<FormulaT> tmp;
+		for (const auto& f : disjunction) {
+			if (std::holds_alternative<cadcells::Constraint>(f)) {
+				tmp.push_back(FormulaT(ConstraintT(carl::convert<Poly>(std::get<cadcells::Constraint>(f)))));
+			} else if (std::holds_alternative<cadcells::VariableComparison>(f)) {
+				auto constraint = carl::as_constraint(std::get<cadcells::VariableComparison>(f));
+				if (!constraint) {
+					tmp.push_back(FormulaT(carl::convert<Poly>(std::get<cadcells::VariableComparison>(f))));
+				} else {
+					tmp.push_back(FormulaT(ConstraintT(carl::convert<Poly>(*constraint))));
+				}
+			} else {
+				assert(false);
+			}
+		}
+		result.emplace_back(carl::FormulaType::OR, std::move(tmp));
+	}
+	return FormulaT(carl::FormulaType::AND, std::move(result));
 }
 
 }

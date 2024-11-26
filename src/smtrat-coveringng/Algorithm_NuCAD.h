@@ -1,5 +1,9 @@
 #include "Algorithm.h"
 
+#ifdef SMTRAT_DEVOPTION_Validation
+#include <smtrat-cadcells/helper_formula.h>
+#endif
+
 namespace smtrat::covering_ng {
 
 template<typename op, typename cell_heuristic>
@@ -213,6 +217,22 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 		SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
 		return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
 	}	
+
+	#ifdef SMTRAT_DEVOPTION_Validation 
+	FormulasT lemma;
+	for (std::size_t j=0;j<inner_cell->second.size();j++) {
+		auto var = proj.polys().var_order().at(ass.size()+j);
+		lemma.emplace_back(smtrat::cadcells::helper::to_formula_carl(proj.polys(), var, inner_cell->second.at(j)));
+	}
+	FormulasT lemma1;
+	for (std::size_t j=0;j<cell.size();j++) {
+		auto var = proj.polys().var_order().at(ass.size()+j);
+		lemma1.emplace_back(smtrat::cadcells::helper::to_formula_carl(proj.polys(), var, cell.at(j)));
+	}
+	lemma.emplace_back(FormulaT(carl::FormulaType::AND, std::move(lemma1)).negated());
+	SMTRAT_VALIDATION_ADD("smtrat.covering_ng", "nucad_result", FormulaT(carl::FormulaType::AND, std::move(lemma)), false);
+	#endif
+
 	auto underlying_cell = inner_cell->first;
 
 	std::shared_ptr<NuCADTreeBuilder> nucad_root;
@@ -336,6 +356,21 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got cells " << other_cells);
 
 	for (const auto& other_cell : other_cells) {
+		#ifdef SMTRAT_DEVOPTION_Validation 
+		FormulasT lemma;
+		for (std::size_t j=0;j<other_cell.first.size();j++) {
+			auto var = proj.polys().var_order().at(ass.size()+j);
+			lemma.emplace_back(smtrat::cadcells::helper::to_formula_carl(proj.polys(), var, other_cell.first.at(j)));
+		}
+		FormulasT lemma1;
+		for (std::size_t j=0;j<cell.size();j++) {
+			auto var = proj.polys().var_order().at(ass.size()+j);
+			lemma1.emplace_back(smtrat::cadcells::helper::to_formula_carl(proj.polys(), var, cell.at(j)));
+		}
+		lemma.emplace_back(FormulaT(carl::FormulaType::AND, std::move(lemma1)).negated());
+		SMTRAT_VALIDATION_ADD("smtrat.covering_ng", "nucad_split", FormulaT(carl::FormulaType::AND, std::move(lemma)), false);
+		#endif
+
 		auto sres = nucad_quantifier<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, next_quantifier, other_cell.first, characterize_sat, characterize_unsat);
 		if (!sres) {
 			//other_cell.second->subtree = ParameterTree(0);
