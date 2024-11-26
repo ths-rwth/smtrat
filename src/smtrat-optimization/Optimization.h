@@ -72,13 +72,13 @@ public:
             mSolver.setObjectiveVariable(objectiveVariable(objective));
 			mSolver.add(objectiveEquality);
             Answer result = mSolver.check(full);
-			SMTRAT_LOG_TRACE("smtrat.optimization", "Got response " << result << ", cleaning up...");
-			mSolver.remove(objectiveEquality);
-			mSolver.setObjectiveVariable(carl::Variable::NO_VARIABLE);
+            SMTRAT_LOG_TRACE("smtrat.optimization", "Got response " << result);
+
             if (!is_sat(result)) {
+                SMTRAT_LOG_TRACE("smtrat.optimization", "Not satisfied, terminating...");
 				mSolver.pop();
                 return std::make_tuple(result, Model(), ObjectiveValues());
-            }
+            }            
 			model = mSolver.model();
 			SMTRAT_LOG_TRACE("smtrat.optimization", "Got model " << model);
 			isOptimal = isOptimal && result == OPTIMAL;
@@ -98,6 +98,10 @@ public:
 				SMTRAT_LOG_TRACE("smtrat.optimization", "Found optimal value " << optVal.asRational());
 			}
 			optimalValues.emplace_back(objective.function, optVal);
+
+            SMTRAT_LOG_TRACE("smtrat.optimization", "Cleaning up...");
+			mSolver.remove(objectiveEquality);
+			mSolver.setObjectiveVariable(carl::Variable::NO_VARIABLE);
 
 			// add bound
 			if (iter+1 != objectives().end()) {
