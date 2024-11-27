@@ -157,8 +157,8 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 
 	auto sample = nucad_sample_inside(proj, ass, cell); // TODO make non-optional again?
 	if (!sample) {
-		assert(false);
-		//assert(enable_weak);
+		//assert(false);
+		assert(enable_weak);
 		return std::nullopt;
 	}
 	auto res = nucad_recurse<op,FE,cell_heuristic,enable_weak>(proj, f, ass, quantification, *sample, characterize_sat || (next_quantifier == carl::Quantifier::FORALL) || (next_quantifier == carl::Quantifier::FREE), characterize_unsat || (next_quantifier == carl::Quantifier::EXISTS) || (next_quantifier == carl::Quantifier::FREE));
