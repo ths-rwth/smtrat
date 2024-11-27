@@ -123,7 +123,7 @@ TEST(smtrat_cadcells, compound_bounds) {
 	std::cout << res_z << std::endl;
 	ASSERT_FALSE(res_z.empty());
 
-	auto res_y = algorithms::get_interval<operators::MccallumFiltered<McFSettings>, representation::BIGGEST_CELL_FILTER>(deriv);
+	auto res_y = algorithms::get_interval<operators::MccallumFiltered<McFSettings>, typename representation::cell_heuristics::BiggestCellFilter>(deriv);
 	deriv = next_level<operators::MccallumFiltered<McFSettings>>(deriv);
 	std::cout << res_y << std::endl;
 	

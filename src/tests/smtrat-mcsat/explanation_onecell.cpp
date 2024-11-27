@@ -13,8 +13,8 @@ struct McFSettings : smtrat::cadcells::operators::MccallumFilteredSettings {
 struct FilteredSettings : smtrat::mcsat::onecell::BaseSettings {
     constexpr static bool exploit_strict_constraints = true;
 
-    constexpr static auto cell_heuristic = smtrat::cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
-    constexpr static auto covering_heuristic = smtrat::cadcells::representation::LDB_COVERING_CACHE_GLOBAL;
+    using cell_heuristic = smtrat::cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobal;
+    using covering_heuristic = smtrat::cadcells::representation::covering_heuristics::LDBCoveringCacheGlobal;
     using op = smtrat::cadcells::operators::MccallumFiltered<McFSettings>;
 };
 
@@ -62,8 +62,8 @@ TEST(smtrat_mcsat, onecell)
 }
 
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
-	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_FILTER;
-	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+	using cell_heuristic = smtrat::cadcells::representation::cell_heuristics::BiggestCellFilter;
+	using covering_heuristic = smtrat::cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 	using op = smtrat::cadcells::operators::MccallumFiltered<McFSettings>;
 };
 
@@ -270,8 +270,8 @@ struct McFSettings2 : smtrat::cadcells::operators::MccallumFilteredSettings {
     static constexpr bool only_rational_samples = true;
 };
 struct OCSettingsSel : smtrat::mcsat::onecell::BaseSettings {
-	constexpr static auto cell_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
-	constexpr static auto covering_heuristic = smtrat::cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
+	using cell_heuristic = smtrat::cadcells::representation::cell_heuristics::BiggestCellFilterOnlyIndependent;
+	using covering_heuristic = smtrat::cadcells::representation::covering_heuristics::BiggestCellCoveringFilterOnlyIndependent;
 	using op = smtrat::cadcells::operators::MccallumFiltered<McFSettings2>;
 };
 
