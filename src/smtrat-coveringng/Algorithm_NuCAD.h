@@ -269,14 +269,6 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 		//	inner_cell->second[j].upper().set_value(cell.at(j).upper().value());
 		//}
 
-		if (!cell.at(j).lower().is_infty()) {
-			std::cout << proj.evaluate(tmpass, cell.at(j).lower().value()).first << " " << proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first << std::endl;
-		}
-		if (!cell.at(j).upper().is_infty()) {
-			std::cout << proj.evaluate(tmpass, cell.at(j).upper().value()).first << " " << proj.evaluate(tmpass, inner_cell->second.at(j).upper().value()).first << std::endl;
-
-		}
-
 		if (inner_cell->second.at(j).lower() != cell.at(j).lower()) {
 			//assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first && cell.at(j).lower().is_weak() && inner_cell->second.at(j).lower().is_strict()) || (proj.evaluate(tmpass, cell.at(j).lower().value()).first < proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
 			assert(cell.at(j).lower().is_infty() || (!inner_cell->second.at(j).lower().is_infty() && ((proj.evaluate(tmpass, cell.at(j).lower().value()).first <= proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first))));
