@@ -186,6 +186,24 @@ std::pair<simplex::Variable, Rational> SimplexModule<Settings>::add_to_tableau(c
     }
     m_tableau.add_var(r, Rational(-1), slack_var);
 
+    // replay pivoting on the new row if necessary
+    std::vector<Tableau::Entry> basic_entries;
+    for (const auto& e : m_tableau.get_row(r)) {
+        if (e.var() != slack_var && is_basic(e.var())) {
+            basic_entries.push_back(e);
+        }
+    }
+    for (const auto& e : basic_entries) {
+        Tableau::RowID r_other = tableau_index(e.var());
+        Rational factor = m_base_coeffs[r];
+        m_tableau.mul(r, m_base_coeffs[r_other]);
+        m_base_coeffs[r] = m_base_coeffs[r_other];
+        m_tableau.add(r, factor * e.coeff(), r_other);
+    }
+    Rational g;
+    m_tableau.gcd_normalize(r,g);
+    if (!carl::is_one(g)) m_base_coeffs[r] /= g;
+
     return {slack_var, Rational(1)};
 }
 
@@ -527,23 +545,27 @@ bool SimplexModule<Settings>::reactivate_derived_bounds() {
 template<class Settings>
 void SimplexModule<Settings>::build_initial_assignment() {
     SMTRAT_LOG_DEBUG("smtrat.simplex", "building initial assignment");
+    std::size_t assignment_sz = m_assignment.size();
 
-    if (m_assignment.empty()) {
+    // there is an assignment from a previous run
+    for (simplex::Variable v = 0; v < assignment_sz; ++v) {
+        if (is_basic(v) || assigned_in_range(v)) continue;
+        if (has_lower_bound(v))     m_assignment[v] = get_value(lower_bound(v));
+        else /*has_upper_bound(v)*/ m_assignment[v] = get_value(upper_bound(v));
+    }
+
+    // assign variables that have been added since the last run
+    // this is only relevant in the first check or if not all constraints are known at the start
+    if (assignment_sz < m_num_variables) {
         m_assignment.resize(m_num_variables);
-        for (simplex::Variable v = 0; v < m_num_variables; ++v) {
+        for (simplex::Variable v = assignment_sz; v < m_num_variables; ++v) {
             if (is_basic(v)) continue;
             else if (has_lower_bound(v)) m_assignment[v] = get_value(lower_bound(v));
             else if (has_upper_bound(v)) m_assignment[v] = get_value(upper_bound(v));
             else m_assignment[v] = DeltaRational(0);
         }
-    } else {
-        // there is an assignment from a previous run
-        for (simplex::Variable v = 0; v < m_num_variables; ++v) {
-            if (is_basic(v) || assigned_in_range(v)) continue;
-            if (has_lower_bound(v))     m_assignment[v] = get_value(lower_bound(v));
-            else /*has_upper_bound(v)*/ m_assignment[v] = get_value(upper_bound(v));
-        }
     }
+
     compute_basic_assignment();
 }
 
@@ -726,6 +748,7 @@ void SimplexModule<Settings>::pivot_and_update(PivotCandidate pivot_candidate) {
     simplex::Variable x_i = pivot_candidate.basic_var();
     simplex::Variable x_j = pivot_candidate.nonbasic_var();
 
+    SMTRAT_LOG_DEBUG("smtrat.simplex", "pivoting row " << tableau_index(x_i) << " with var " << x_j);
     // TODO: make the value needed to fix more accessible (also for is_suitable)
     DeltaRational diff = violates_lower(x_i) ? get_value(lower_bound(x_i)) - m_assignment[x_i]
                                              : get_value(upper_bound(x_i)) - m_assignment[x_i];
