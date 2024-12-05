@@ -17,30 +17,39 @@ inline Redundancy compare_rows(const Row& row1, const Row& row2, const std::size
     if (it1->col_index != it2->col_index) return Redundancy::NONE;
     Rational scale = it1->value / it2->value;
     if (scale < 0) return Redundancy::NONE;
-    while (it1 != row1.end() && it2 != row2.end()) {
-        if ((it1->col_index >= constant_index) && (it2->col_index >= constant_index)) {
-            if (it1->col_index > it2->col_index) {
-                if (it2->col_index > constant_index + 1) return Redundancy::FIRST_IMPLIES_SECOND;
-                return (it2->value > 0) ? Redundancy::SECOND_IMPLIES_FIRST
-                                        : Redundancy::FIRST_IMPLIES_SECOND;
-            }
-            if (it1->col_index < it2->col_index) {
-                if (it1->col_index > constant_index + 1) return Redundancy::FIRST_IMPLIES_SECOND;
-                return (it1->value > 0) ? Redundancy::FIRST_IMPLIES_SECOND
-                                        : Redundancy::SECOND_IMPLIES_FIRST;
-            }
-            assert(it1->col_index == it2->col_index);
-            return ((scale * it2->value) > it1->value) ? Redundancy::SECOND_IMPLIES_FIRST
-                                                       : Redundancy::FIRST_IMPLIES_SECOND;
+
+    for (;; ++it1, ++it2) {
+        bool finish1 = (it1 == row1.end() || it1->col_index > constant_index + 1);
+        bool finish2 = (it2 == row2.end() || it2->col_index > constant_index + 1);
+        if (finish1 && finish2) return Redundancy::FIRST_IMPLIES_SECOND;
+        if (finish1) { // we know !finish2
+            if (it2->col_index < constant_index) return Redundancy::NONE;
+            // constant_index <= it2->col_index <= constant_index + 1
+            return (it2->value > 0) ? Redundancy::SECOND_IMPLIES_FIRST : Redundancy::FIRST_IMPLIES_SECOND;
         }
-        if ((it1->col_index != it2->col_index) || (scale != it1->value / it2->value)) {
+        if (finish2) {
+            if (it1->col_index < constant_index) return Redundancy::NONE;
+            // constant_index <= it1->col_index <= constant_index + 1
+            return (it1->value > 0) ? Redundancy::FIRST_IMPLIES_SECOND: Redundancy::SECOND_IMPLIES_FIRST;
+        }
+        if (it1->col_index >= constant_index) {
+            if (it2->col_index < constant_index) return Redundancy::NONE;
+            if (it1->col_index < it2->col_index) { // const and delta
+                return (it1->value > 0) ? Redundancy::FIRST_IMPLIES_SECOND: Redundancy::SECOND_IMPLIES_FIRST;
+            }
+            if (it1->col_index > it2->col_index) { // delta and const
+                return (it2->value > 0) ? Redundancy::SECOND_IMPLIES_FIRST: Redundancy::FIRST_IMPLIES_SECOND;
+            }
+            // const and const or delta and delta
+            if ((scale * it2->value) > it1->value) return Redundancy::SECOND_IMPLIES_FIRST;
+            if ((scale * it2->value) < it1->value) return Redundancy::FIRST_IMPLIES_SECOND;
+            // if equal: continue
+        } else if ((it1->col_index != it2->col_index) || (scale != it1->value / it2->value)) {
             return Redundancy::NONE;
         }
-        ++it1;
-        ++it2;
     }
-    return (it1 == row1.end() && it2 == row2.end()) ? Redundancy::FIRST_IMPLIES_SECOND
-                                                    : Redundancy::NONE;
+
+    return Redundancy::FIRST_IMPLIES_SECOND;
 }
 
 
@@ -74,6 +83,16 @@ class Simplex : public smtrat::Manager {
     };
 
 inline std::vector<std::size_t> irredundant_rows(const FormulasT& constraints, const FormulasT& core) {
+    static bool forward = true;
+    static bool dont = true;
+
+    if (forward && dont) {
+        forward = !forward;
+        dont = !dont;
+        std::vector<std::size_t> result;
+        for (std::size_t i = 0; i < constraints.size(); ++i) result.push_back(i);
+        return result;
+    }
     auto solver = Simplex();
     for (const auto& f : core) solver.inform(f);
     for (const auto& f : constraints) solver.inform(f);
@@ -82,19 +101,39 @@ inline std::vector<std::size_t> irredundant_rows(const FormulasT& constraints, c
     for (const auto& f : constraints) solver.add(f);
 
     std::vector<std::size_t> result;
-    for (std::size_t i = 0; i < constraints.size(); ++i) {
-        solver.remove(constraints[i]);
-        solver.add(constraints[i].negated());
+    if (forward) {
+        for (std::size_t i = 0; i < constraints.size(); ++i) {
+            solver.remove(constraints[i]);
+            solver.add(constraints[i].negated());
 
-        if(solver.check() == Answer::UNSAT) {
-            solver.remove(constraints[i].negated());
-        } else {            
-            // irredundant
-            solver.remove(constraints[i].negated());
-            solver.add(constraints[i]);
-            result.push_back(i);
+            if(solver.check() == Answer::UNSAT) {
+                solver.remove(constraints[i].negated());
+            } else {            
+                // irredundant
+                solver.remove(constraints[i].negated());
+                solver.add(constraints[i]);
+                result.push_back(i);
+            }
+        }
+    } else {
+        for (std::size_t i = 0; i < constraints.size(); ++i) {
+            std::size_t j = constraints.size() - i - 1;
+            solver.remove(constraints[j]);
+            solver.add(constraints[j].negated());
+
+            if(solver.check() == Answer::UNSAT) {
+                solver.remove(constraints[j].negated());
+            } else {            
+                // irredundant
+                solver.remove(constraints[j].negated());
+                solver.add(constraints[j]);
+                result.push_back(j);
+            }
         }
     }
+    if (forward) dont = !dont;
+    forward = !forward;
+    
     return result;
 }
 

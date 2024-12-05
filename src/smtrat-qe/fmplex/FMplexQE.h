@@ -110,12 +110,13 @@ private:
 
 
     void remove_redundancies(Node& n) {
+        auto simple_irred_rows = util::simple_irredundant_rows(n.matrix, constant_column());
         FormulasT constraints;
         FormulasT result;
         const Matrix& m = n.matrix;
         Matrix result_m(m.n_rows(), m.n_cols());
         carl::Variable delta = carl::fresh_real_variable("delta");
-        for (RowIndex i = 0; i < m.n_rows(); ++i) {
+        for (RowIndex i : simple_irred_rows) {
             Poly lhs;
             auto it = m.row_begin(i);
             const auto end = m.row_end(i);
@@ -137,8 +138,9 @@ private:
         std::set<RowIndex> new_ignored;
         
         for (std::size_t i = 0; i < irred_rows.size(); ++i) {
-            result_m.append_row(m.row_begin(irred_rows[i]), m.row_end(irred_rows[i]));
-            if (n.ignored.contains(irred_rows[i])) {
+            RowIndex j = simple_irred_rows[irred_rows[i]];
+            result_m.append_row(m.row_begin(j), m.row_end(j));
+            if (n.ignored.contains(j)) {
                 new_ignored.emplace_hint(new_ignored.end(), i);
             }
         }
