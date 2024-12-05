@@ -197,7 +197,7 @@ std::pair<simplex::Variable, Rational> SimplexModule<Settings>::add_to_tableau(c
         Tableau::RowID r_other = tableau_index(e.var());
         Rational factor = m_base_coeffs[r];
         m_tableau.mul(r, m_base_coeffs[r_other]);
-        m_base_coeffs[r] = m_base_coeffs[r_other];
+        m_base_coeffs[r] *= m_base_coeffs[r_other];
         m_tableau.add(r, factor * e.coeff(), r_other);
     }
     Rational g;
