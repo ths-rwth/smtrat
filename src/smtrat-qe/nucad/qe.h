@@ -18,6 +18,8 @@
 namespace smtrat::qe::nucad {
 
 using Settings = DefaultSettings;
+// using Settings = DefaultBCFilterSettings;
+// using Settings = DefaultBCFilterEWSettings;
 
 std::optional<FormulaT> qe(const FormulaT& formula);
 
