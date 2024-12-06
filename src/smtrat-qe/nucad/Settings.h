@@ -44,7 +44,7 @@ struct DefaultBCFilterSettings : DefaultSettings {
 
 
 
-struct DefaultBCFilterEW : DefaultSettings {
+struct DefaultBCFilterEWSettings : DefaultSettings {
     struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
         static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
         static constexpr bool enable_weak = true;
