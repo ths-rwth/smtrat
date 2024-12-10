@@ -1,8 +1,10 @@
 # SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
 
-**Contact**
+Online Resource associated with the paper
 
-    Jasper Nalbach <nalbach@cs.rwth-aachen.de>
+    Extensions of the Cylindrical Algebraic Covering Method for Quantifiers
+    Jasper Nalbach <nalbach@cs.rwth-aachen.de> (RWTH Aachen University) and Gereon Kremer (Certora)
+    Published in: Mathematics in Computer Science
 
 ## Instructions for Running the Experiments
 
