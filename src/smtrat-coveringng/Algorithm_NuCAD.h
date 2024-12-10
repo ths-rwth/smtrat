@@ -146,6 +146,8 @@ inline ParameterTree to_parameter_tree(std::shared_ptr<NuCADTreeBuilder> in) {
 	}
 	if (in->var == carl::Variable::NO_VARIABLE) {
 		return ParameterTree(std::move(children)); 
+	} else if (children.empty()) {
+		return ParameterTree();  
 	} else {
 		return ParameterTree(in->var, in->interval, carl::Assignment<cadcells::RAN>(), std::move(children)); 
 	}
@@ -155,7 +157,7 @@ template<typename op, typename FE, typename cell_heuristic, bool enable_weak>
 inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifier(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification, carl::Quantifier next_quantifier, const std::vector<cadcells::datastructures::SymbolicInterval>& cell, bool characterize_sat, bool characterize_unsat) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass << ", " << next_quantifier << ", " << cell);
 
-	auto sample = nucad_sample_inside(proj, ass, cell); // TODO make non-optional again?
+	auto sample = nucad_sample_inside(proj, ass, cell);
 	if (!sample) {
 		//assert(false);
 		assert(enable_weak);
@@ -259,7 +261,6 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 		auto current_var = first_unassigned_var(tmpass, proj.polys().var_order());
 		tmpass.emplace( current_var, (*sample)[j] );
 
-		// TODO darf man das machen mit replace?
 		if (!cell.at(j).lower().is_infty() && proj.evaluate(tmpass, cell.at(j).lower().value()).first == proj.evaluate(tmpass, inner_cell->second.at(j).lower().value()).first) {
 			SMTRAT_LOG_TRACE("smtrat.covering_ng", "Replace " << inner_cell->second.at(j).lower().value() << " by " <<  cell.at(j).lower().value());
 			inner_cell->second[j].lower().set_value(cell.at(j).lower().value());
