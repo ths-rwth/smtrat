@@ -15,9 +15,11 @@
 #include "smtrat-cadcells/datastructures/roots.h"
 #include "smtrat-coveringng/VariableOrdering.h"
 
+#include "config.h"
+
 namespace smtrat::qe::nucad {
 
-using Settings = DefaultSettings;
+// using Settings = DefaultSettings;
 // using Settings = DefaultBCFilterSettings;
 // using Settings = DefaultBCFilterEWSettings;
 

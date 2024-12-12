@@ -33,4 +33,24 @@ struct DefaultSettings {
 
     static constexpr bool transform_boolean_variables_to_reals = true;
 };
+
+struct DefaultBCFilterSettings : DefaultSettings {
+    struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
+        static constexpr DelineationFunction delineation_function = NOOP;
+    };
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using op = cadcells::operators::MccallumFiltered<mcf_settings>;
+};
+
+
+
+struct DefaultBCFilterEWSettings : DefaultSettings {
+    struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
+        static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+        static constexpr bool enable_weak = true;
+    };
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using op = cadcells::operators::MccallumFiltered<mcf_settings>;
+    static constexpr bool enable_weak = true;
+};
 } // namespace smtrat::qe::coverings
