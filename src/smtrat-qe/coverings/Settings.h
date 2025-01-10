@@ -39,6 +39,7 @@ struct DefaultBCFilterSettings : DefaultSettings {
         static constexpr DelineationFunction delineation_function = NOOP;
     };
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
@@ -50,6 +51,7 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
         static constexpr bool enable_weak = true;
     };
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
     static constexpr bool enable_weak = true;
 };
