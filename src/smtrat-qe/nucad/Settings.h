@@ -37,6 +37,7 @@ struct DefaultSettings {
 struct DefaultBCFilterSettings : DefaultSettings {
     struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
         static constexpr DelineationFunction delineation_function = NOOP;
+        static constexpr bool complete = true;
     };
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
@@ -48,6 +49,7 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
     struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
         static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
         static constexpr bool enable_weak = true;
+        static constexpr bool complete = true;
     };
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
