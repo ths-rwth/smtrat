@@ -43,6 +43,13 @@ using PropertiesSet = datastructures::PropertiesT<properties::poly_sgn_inv,prope
 
 static inline bool project_basic_properties(datastructures::SampledDerivation<PropertiesSet>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
+
+    if (Settings::complete) {
+        for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+            rules::root_ordering_holds_delineated_complete(deriv, prop.ordering);
+        }
+    }
+
     for(const auto& prop : deriv.properties<properties::poly_del>()) {
         if (!rules::poly_del(deriv, prop.poly)) return false;
     }

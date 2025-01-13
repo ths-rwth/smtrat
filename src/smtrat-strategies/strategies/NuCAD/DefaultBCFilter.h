@@ -10,6 +10,7 @@ namespace internal {
 
 struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
     static constexpr DelineationFunction delineation_function = NOOP;
+    static constexpr bool complete = true;
 };
 
 struct NuCADSettings : NuCADSettingsDefault  {

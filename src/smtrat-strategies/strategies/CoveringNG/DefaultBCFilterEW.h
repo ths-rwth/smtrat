@@ -11,6 +11,7 @@ namespace internal {
 struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
     static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
 	static constexpr bool enable_weak = true;
+    static constexpr bool complete = true;
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {

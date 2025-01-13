@@ -21,9 +21,9 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 
 }
 
-class CoveringNG_DefaultBCFilter: public Manager {
+class CoveringNG_DefaultBCFilterComplete: public Manager {
 public:
-	CoveringNG_DefaultBCFilter() : Manager() {
+	CoveringNG_DefaultBCFilterComplete() : Manager() {
 		setStrategy(
             addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
         );
