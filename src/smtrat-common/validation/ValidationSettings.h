@@ -10,6 +10,7 @@ namespace validation {
 
 struct ValidationSettings {
 	bool export_as_smtlib;
+	bool export_as_smtlib_flush;
 	std::string smtlib_filename;
 
 	std::vector<std::string> channels;
@@ -31,6 +32,7 @@ void registerValidationSettings(T& parser) {
 
 	parser.add("Validation settings").add_options()
 		("validation.export-smtlib", po::bool_switch(&s.export_as_smtlib), "store validation formulas to smtlib file")
+		("validation.export-smtlib-flush", po::bool_switch(&s.export_as_smtlib_flush), "store validation formulas to smtlib file after each time a lemma is produced (useful if the solver segfaults)")
 		("validation.smtlib-filename", po::value<std::string>(&s.smtlib_filename)->default_value("validation.smt2"), "filename of smtlib output")
 		("validation.channel", po::value<std::vector<std::string>>(&s.channels), "add a channel to be considered")
 	;

@@ -23,7 +23,7 @@ struct Mccallum {
 
 static constexpr bool filter = false;
 
-using PropertiesSet = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::poly_del,properties::cell_connected>;
+using PropertiesSet = datastructures::PropertiesT<properties::poly_sgn_inv,properties::poly_irreducible_sgn_inv,properties::poly_semi_sgn_inv,properties::poly_ord_inv,properties::poly_del,properties::cell_connected,properties::poly_constraint_truth_inv,properties::iroot_constraint_truth_inv>;
 
 /**
  * Project basic cell properties.
@@ -42,6 +42,9 @@ static inline bool project_basic_properties(datastructures::SampledDerivation<Pr
             rules::poly_ord_inv_maybe_null(deriv, prop.poly);
         } 
     }
+    for(const auto& prop : deriv.properties<properties::poly_constraint_truth_inv>()) {
+        if (!rules::poly_constr_truth_inv(deriv, prop.constr)) return false;
+    }
     for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
         deriv.insert(properties::poly_sgn_inv{prop.poly});
     }
@@ -58,6 +61,9 @@ static inline void delineate_properties(datastructures::SampledDerivation<Proper
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         rules::delineate(*deriv.delineated(), prop);
+    }
+    for(const auto& prop : deriv.properties<properties::iroot_constraint_truth_inv>()) {
+        rules::delineate(deriv, prop);
     }
 }
 
@@ -88,6 +94,27 @@ static inline bool project_cell_properties(datastructures::CellRepresentation<Pr
     rules::cell_represents(deriv, repr.description);
 
     rules::root_ordering_holds(deriv.underlying().sampled(), repr.ordering);
+
+    for(const auto& prop : deriv.properties<properties::iroot_constraint_truth_inv>()) {
+        if (repr.equational.find(prop.constr.bound.poly) != repr.equational.end()) {
+            // this is a hack:
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "truth_inv(" << prop.constr << ") <= the hack");
+            assert(!deriv.proj().is_nullified(deriv.underlying_sample(), prop.constr.bound.poly));
+            rules::poly_irreducible_sgn_inv_ec(deriv, repr.description, prop.constr.bound.poly);
+            deriv.insert(operators::properties::poly_del{ prop.constr.bound.poly });
+        } else if (deriv.delin().nonzero().find(prop.constr.bound.poly) != deriv.delin().nonzero().end()) {
+            assert(false);
+            return false;
+        } else if (deriv.delin().nullified().find(prop.constr.bound.poly) != deriv.delin().nullified().end()) {
+            assert(false);
+            return false;
+        } else {
+            if (!rules::iroot_constr_truth_inv(deriv, repr.description, repr.ordering, prop.constr)) {
+                assert(false);
+                return false;
+            }
+        }
+    }
 
     for(const auto& prop : deriv.properties<properties::poly_irreducible_sgn_inv>()) {
         if (repr.equational.find(prop.poly) != repr.equational.end()) {

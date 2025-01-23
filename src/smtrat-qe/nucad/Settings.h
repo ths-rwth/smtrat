@@ -5,7 +5,7 @@
 #include <smtrat-coveringng/VariableOrdering.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 
-namespace smtrat::qe::coverings {
+namespace smtrat::qe::nucad {
 struct DefaultSettings {
 	// Variable ordering
     static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
@@ -13,8 +13,8 @@ struct DefaultSettings {
     // Projection operator
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCell;
-    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringMinTdeg;
-    static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN;
+
+    static constexpr bool enable_weak = false;
 
     // Implicant computation
     struct formula_evaluation {
@@ -40,7 +40,6 @@ struct DefaultBCFilterSettings : DefaultSettings {
         static constexpr bool complete = true;
     };
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
-    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
@@ -53,8 +52,8 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
         static constexpr bool complete = true;
     };
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
-    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
     static constexpr bool enable_weak = true;
 };
+
 } // namespace smtrat::qe::coverings

@@ -74,7 +74,7 @@ protected:
 	}
 
 public:
-	void debug(const datastructures::IndexedRoot &ir, const Assignment &sample, const datastructures::Projections& proj, const carl::Variable &primary_variable, const carl::Variable &secondary_variable) {
+	void debug(const datastructures::IndexedRoot &/*ir*/, const Assignment &/*sample*/, const datastructures::Projections& /*proj*/, const carl::Variable &/*primary_variable*/, const carl::Variable &/*secondary_variable*/) {
 		std::cout << "PWLBuilder::debug" << std::endl;
 		std::cout << "  points: " << std::endl;
 		for (const auto& point : points) std::cout << "    (" << point.first << ", " << point.second << ")" << std::endl;

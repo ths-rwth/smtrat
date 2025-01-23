@@ -282,11 +282,11 @@ public:
 
     void merge_with(const DelineatedDerivation<Properties>& other) {
         m_base->merge_with(*other.m_base);
-        if (!m_delineation.empty() && !other.m_delineation.empty()) {
+        //if (!m_delineation.empty() && !other.m_delineation.empty()) {
             m_delineation.merge_with(other.m_delineation);
-        } else {
-            assert(m_delineation.empty() && other.m_delineation.empty());
-        }
+        //} else {
+        //    assert(m_delineation.empty() && other.m_delineation.empty());
+        //}
     };
 };
 

@@ -34,7 +34,7 @@ void handle_connectedness(datastructures::SampledDerivationRef<T>& der, datastru
         && !response.description.lower().is_infty()
         && !response.description.upper().is_infty()
     ) {
-        if (enable_weak) {
+        if (enable_weak && response.description.lower().is_weak() && response.description.upper().is_weak()) {
             response.ordering.add_leq(response.description.lower().value(), response.description.upper().value());
         } else {
             response.ordering.add_less(response.description.lower().value(), response.description.upper().value());
@@ -444,7 +444,7 @@ struct AllCompound {
                     if (it != reduced_delineation.roots().begin()) it--;
                     else break;
                 }
-                lower = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMaxMin{std::move(roots)}));
+                lower = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMaxMin{std::move(roots),std::nullopt}));
             }
             if (!reduced_cell.upper_unbounded()) {
                 std::vector<std::vector<datastructures::IndexedRoot>> roots;
@@ -455,7 +455,7 @@ struct AllCompound {
                     }
                     it++;
                 }
-                upper = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMinMax{std::move(roots)}));
+                upper = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMinMax{std::move(roots),std::nullopt}));
             }
 
             response.description = datastructures::SymbolicInterval(lower, upper);

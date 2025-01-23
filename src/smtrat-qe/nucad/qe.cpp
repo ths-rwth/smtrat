@@ -6,12 +6,14 @@
 #include <random>
 #include "../Statistics.h"
 #include <carl-formula/formula/functions/PNF.h>
+#include "../coverings/util/to_formula.h"
 #include "util/to_formula.h"
 #include <smtrat-coveringng/Simplification.h>
 
-namespace smtrat::qe::coverings {
+namespace smtrat::qe::nucad {
 
 std::optional<FormulaT> qe(const FormulaT& input_orig) {
+
 	auto input = input_orig;
     if constexpr (Settings::transform_boolean_variables_to_reals) {
 		std::vector<carl::Variable> aux_vars;
@@ -31,9 +33,9 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 	
 	auto [prefix, matrix] = carl::to_pnf(input);
 
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Original formula: " << input);
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Prefix: " << prefix);
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Matrix: " << matrix);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Original formula: " << input);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Prefix: " << prefix);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Matrix: " << matrix);
 
 	covering_ng::VariableQuantification variableQuantification;
 	for (const auto& q : prefix) {
@@ -42,7 +44,7 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 
 	auto var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Variable Order: " << var_order)
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Variable Order: " << var_order)
 	SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 
 	cadcells::Polynomial::ContextType context(var_order);
@@ -61,24 +63,27 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 		return FormulaT(carl::FormulaType::TRUE);
 	}
 
-	auto [res, tree] = recurse_qe<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm, Settings::cell_heuristic>(proj, f, assignment, variableQuantification);
+	auto res = nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::cell_heuristic, Settings::enable_weak>(proj, f, assignment, variableQuantification, std::vector<cadcells::RAN>());
 	if (res.is_failed() || res.is_failed_projection()) {
-		SMTRAT_LOG_FATAL("smtrat.qe.coverings", "Coverings Failed")
+		SMTRAT_LOG_FATAL("smtrat.qe.nucad", "Failed")
 		return std::nullopt;
 	}
+	auto tree = std::move(res.parameter_tree());
 
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got tree " << std::endl << tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got tree " << std::endl << tree);
 	SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_tree(tree));
 	covering_ng::simplify(tree);
 	SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_simplified_tree(tree));
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got simplified tree " << std::endl << tree);
-	// FormulaT output_formula = util::to_formula_true_only(pool, tree);
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got formula (true_only) " << util::to_formula_true_only(pool, tree));
-	FormulaT output_formula = util::to_formula_alternate(pool, tree);
-	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got formula " << output_formula);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got simplified tree " << std::endl << tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got formula (true_only) " << coverings::util::to_formula_true_only(pool, tree));
+	//FormulaT output_formula = coverings::util::to_formula_alternate(pool, tree);
+	//FormulaT output_formula = coverings::util::to_formula_true_only(pool, tree);
+	//FormulaT output_formula = nucad::util::to_formula_true_only_elim_redundant(pool, tree);
+	FormulaT output_formula = nucad::util::to_formula_alternate_elim_redundant(pool, tree);
+	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Got formula " << output_formula);
 	SMTRAT_STATISTICS_CALL(QeStatistics::get_instance().process_output_formula(output_formula));
-	SMTRAT_VALIDATION_ADD("smtrat.qe.coverings", "output_formula", FormulaT(carl::FormulaType::IFF, { util::to_formula_true_only(pool, tree), output_formula }).negated(), false);
+	SMTRAT_VALIDATION_ADD("smtrat.qe.nucad", "output_formula", FormulaT(carl::FormulaType::IFF, { coverings::util::to_formula_true_only(pool, tree), output_formula }).negated(), false);
 	return output_formula;
 }
 
-} // namespace smtrat::qe::coverings
+} // namespace smtrat::qe::nucad

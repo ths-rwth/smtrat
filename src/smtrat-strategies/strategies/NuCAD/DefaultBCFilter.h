@@ -1,7 +1,7 @@
 #pragma once
 
-#include <smtrat-modules/CoveringNGModule/CoveringNGModule.h>
-#include <smtrat-modules/CoveringNGModule/CoveringNGModule.tpp>
+#include <smtrat-modules/NuCADModule/NuCADModule.h>
+#include <smtrat-modules/NuCADModule/NuCADModule.tpp>
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
@@ -13,19 +13,18 @@ struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
     static constexpr bool complete = true;
 };
 
-struct CoveringNGSettings : CoveringNGSettingsDefault  {
+struct NuCADSettings : NuCADSettingsDefault  {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
-    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
 }
 
-class CoveringNG_DefaultBCFilter: public Manager {
+class NuCAD_DefaultBCFilter: public Manager {
 public:
-	CoveringNG_DefaultBCFilter() : Manager() {
+	NuCAD_DefaultBCFilter() : Manager() {
 		setStrategy(
-            addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
+            addBackend<NuCADModule<internal::NuCADSettings>>()
         );
 	}
 };

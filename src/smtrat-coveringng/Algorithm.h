@@ -343,8 +343,10 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<Paramet
 			assert(!is_full_sample(ass, proj.polys().var_order()));
 			std::vector<ParameterTree> higher_tree;
 			std::tie(res, higher_tree) = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
-			for (const auto& i : res.intervals()) {
-				interval_data.emplace(i, higher_tree);
+			if (!res.is_failed()) {
+				for (const auto& i : res.intervals()) {
+					interval_data.emplace(i, higher_tree);
+				}
 			}
 		} else {
 			res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification, true, true);
@@ -401,7 +403,11 @@ template<typename op, typename FE, typename covering_heuristic, smtrat::covering
 inline std::pair<CoveringResult<typename op::PropertiesSet>, ParameterTree> recurse_qe(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
 	if (quantification.var_type(proj.polys().var_order().front()) == carl::Quantifier::FREE) {
 		auto [res, tree] = parameter<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
-		return std::make_pair(res, ParameterTree(std::move(tree)));
+		if (!res.is_failed()) {
+			return std::make_pair(res, ParameterTree(std::move(tree)));
+		} else {
+			return std::make_pair(res, ParameterTree());
+		}
 	} else {
 		auto res = recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
 		if (res.is_sat()) {

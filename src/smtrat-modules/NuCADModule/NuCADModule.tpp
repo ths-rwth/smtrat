@@ -1,37 +1,37 @@
-#include "CoveringNGModule.h"
+#include "NuCADModule.h"
 
 #include <carl-arith/ran/Conversion.h>
 #include <carl-formula/formula/functions/Substitution.h>
-#include <smtrat-coveringng/Algorithm.h>
+#include <smtrat-coveringng/Algorithm_NuCAD.h>
 #include <smtrat-coveringng/VariableOrdering.h>
 
 namespace smtrat {
 
 template<class Settings>
-CoveringNGModule<Settings>::CoveringNGModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
+NuCADModule<Settings>::NuCADModule(const ModuleInput* _formula, Conditionals& _conditionals, Manager* _manager)
     : Module(_formula, _conditionals, _manager) {}
 
 template<class Settings>
-CoveringNGModule<Settings>::~CoveringNGModule() {}
+NuCADModule<Settings>::~NuCADModule() {}
 
 template<class Settings>
-bool CoveringNGModule<Settings>::informCore(const FormulaT&) {
+bool NuCADModule<Settings>::informCore(const FormulaT&) {
     return true;
 }
 
 template<class Settings>
-bool CoveringNGModule<Settings>::addCore(ModuleInput::const_iterator) {
+bool NuCADModule<Settings>::addCore(ModuleInput::const_iterator) {
     return true;
 }
 
 template<class Settings>
-void CoveringNGModule<Settings>::removeCore(ModuleInput::const_iterator) {}
+void NuCADModule<Settings>::removeCore(ModuleInput::const_iterator) {}
 
 template<class Settings>
-void CoveringNGModule<Settings>::updateModel() const {}
+void NuCADModule<Settings>::updateModel() const {}
 
 template<typename Settings>
-Answer CoveringNGModule<Settings>::checkCore() {
+Answer NuCADModule<Settings>::checkCore() {
     FormulaT input(rReceivedFormula());
 
     std::map<carl::Variable, carl::Variable> var_mapping;
@@ -67,8 +67,13 @@ Answer CoveringNGModule<Settings>::checkCore() {
 
     covering_ng::VariableQuantification variable_quantification;
 	for (const auto& q : prefix) {
-		variable_quantification.set_var_type(q.second, q.first);
+        variable_quantification.set_var_type(q.second, q.first);
 	}
+    for (auto& var : carl::variables(matrix)) {
+        if (!variable_quantification.has(var)) {
+            variable_quantification.set_var_type(var, carl::Quantifier::EXISTS);
+        }
+    }
 
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
@@ -97,8 +102,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
         return Answer::SAT;
     }
 
-    //auto res = covering_ng::exists<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::covering_heuristic, Settings::sampling_algorithm>(proj, f, ass);
-    auto res = covering_ng::recurse<typename Settings::op, typename Settings::formula_evaluation::Type, typename Settings::covering_heuristic, Settings::sampling_algorithm, typename Settings::cell_heuristic>(proj, f, ass, variable_quantification);
+    auto res = covering_ng::nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, typename Settings::cell_heuristic, Settings::enable_weak>(proj, f, ass, variable_quantification, std::vector<cadcells::RAN>());
 
     if (res.is_failed()) {
         assert(!Settings::transform_boolean_variables_to_reals || res.is_failed_projection());
@@ -122,6 +126,7 @@ Answer CoveringNGModule<Settings>::checkCore() {
         }
         return Answer::SAT;
     } else {
+        assert(res.is_unsat());
         mModel.clear();
         generateTrivialInfeasibleSubset();
         return Answer::UNSAT;

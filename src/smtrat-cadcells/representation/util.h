@@ -53,7 +53,7 @@ inline datastructures::IndexedRoot simplest_bound(datastructures::Projections& p
     return simplest->root;
 }
 
-inline datastructures::SymbolicInterval compute_simplest_cell(std::size_t level, datastructures::Projections& proj, const datastructures::DelineationInterval& del, bool enable_weak = false) {
+inline datastructures::SymbolicInterval compute_simplest_cell([[maybe_unused]] std::size_t level, datastructures::Projections& proj, const datastructures::DelineationInterval& del, bool enable_weak = false) {
     if (del.is_section()) {
         SMTRAT_STATISTICS_CALL(statistics().section_common_zeros(level, del.lower()->second.size()));
         SMTRAT_STATISTICS_CALL(statistics().got_bound(level, datastructures::SymbolicInterval(util::simplest_bound(proj, del.lower()->second))));

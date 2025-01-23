@@ -113,9 +113,8 @@ class Default : public Manager {
             }).condition( &condition_qf_nra ),
 
             // QF_NRA extended with root expressions
-            addBackend<FPPModule<FPPSettings1>>({
-                addBackend<SATModule<SATSettingsMCSATDefault>>()
-            }).condition( &condition_qf_ra_ext ),
+            addBackend<SATModule<SATSettingsMCSATDefault>>(
+            ).condition( &condition_qf_ra_ext ),
 
             // NRA
             addBackend<PNFerModule>({

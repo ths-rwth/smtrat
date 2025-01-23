@@ -3,6 +3,7 @@
 #include "../config.h"
 #include "ValidationCollector.h"
 #include "ValidationSettings.h"
+#include "ValidationPrinter.h"
 
 namespace smtrat {
     inline auto& validation_get(const std::string& channel, const std::string& file, int line) {
@@ -16,6 +17,9 @@ namespace smtrat {
             if (settings_validation().channel_active(variable.channel())) { \
                 auto id = variable.add(formula, consistent, name); \
                 SMTRAT_LOG_DEBUG(variable.channel(), "Assumption " << variable.identifier() << " #" << id << " (" << name << "): " << formula); \
+                if (smtrat::settings_validation().export_as_smtlib_flush) { \
+                    smtrat::validation::validation_formulas_to_smtlib_file(smtrat::settings_validation().smtlib_filename); \
+                } \
             } \
         }
         #define SMTRAT_VALIDATION_ADD(channel, name, formula, consistent) { SMTRAT_VALIDATION_INIT_STATIC(channel,tmp); SMTRAT_VALIDATION_ADD_TO(tmp,name,formula,consistent); }

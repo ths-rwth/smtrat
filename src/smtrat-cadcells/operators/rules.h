@@ -160,7 +160,7 @@ template<typename P>
 void cell_connected(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& ordering) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "connected(" << deriv.level() << ")");
     if (!cell.is_section() && !cell.lower().is_infty() && !cell.upper().is_infty()) {
-        assert(ordering.is_projective() || ordering.holds_transitive(cell.lower().value(),cell.upper().value(), false));
+        assert(ordering.is_projective() || ordering.holds_transitive(cell.lower().value(),cell.upper().value(), true) || (cell.lower().is_weak() && cell.upper().is_weak() && ordering.holds_transitive(cell.lower().value(),cell.upper().value(), false)));
     }
     deriv.insert(properties::cell_connected{ deriv.level()-1 });
 }
@@ -279,3 +279,4 @@ void poly_irreducible_null_sgn_inv(datastructures::SampledDerivation<P>& deriv, 
 #include "rules_filter.h"
 #include "rules_covering.h"
 #include "rules_null.h" 
+#include "rules_constr.h"
