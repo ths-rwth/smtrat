@@ -34,6 +34,8 @@ option( USE_MIMALLOC "Build mimalloc" OFF )
 
 # Strategy
 set(SMTRAT_Strategy "Default" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Settings_QE_CAlC "DefaultSettings" CACHE STRING "Settings for CAlC for quantifier elimination")
+set(SMTRAT_Settings_QE_NuCAD "DefaultSettings" CACHE STRING "Settings for NuCAD for quantifier elimination")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options
