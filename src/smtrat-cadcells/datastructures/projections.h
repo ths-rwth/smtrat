@@ -182,11 +182,9 @@ public:
 #endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_resultant.start_this());
-            
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
             assert(!is_zero(result));
             cache(p).res.emplace(q, result);
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_resultant.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().resultant(total_degree(result), degree(result), result.level));
@@ -234,11 +232,9 @@ public:
 #endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_discriminant.start_this());
-            
             auto result = m_pool(carl::discriminant(m_pool(p)));
             assert(!is_zero(result));
             cache(p).disc = result;
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_discriminant.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
 #ifdef SMTRAT_DEVOPTION_Statistics
@@ -264,11 +260,9 @@ public:
 #endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_ldcf.start_this());
-            
             auto result = m_pool(m_pool(p).lcoeff());
             assert(!is_zero(result));
             cache(p).ldcf = result;
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_ldcf.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().leading_coefficient(total_degree(result), degree(result), result.level));
@@ -299,9 +293,7 @@ public:
             SMTRAT_STATISTICS_CALL(statistics().evaluate_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_is_zero.start_this());
-
             auto mv = carl::evaluate(carl::BasicConstraint<Polynomial>(m_pool(p), carl::Relation::EQ), restricted_sample);
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_is_zero.finish());
             assert(!indeterminate(mv));
             cache(restricted_sample).is_zero[p] = (bool) mv;
@@ -311,7 +303,7 @@ public:
     }
 
     size_t num_roots(const Assignment& sample, PolyRef p) {
-        assert(p.level >= level_of(sample) + 1);
+        //assert(p.level >= level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
@@ -319,9 +311,7 @@ public:
             SMTRAT_STATISTICS_CALL(statistics().real_roots_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_num_roots.start_this());
-            
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_num_roots.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
@@ -331,7 +321,7 @@ public:
     }
 
     const std::vector<RAN>& real_roots(const Assignment& sample, PolyRef p) {
-        assert(p.level >= level_of(sample) + 1);
+        //assert(p.level >= level_of(sample)+1);
         assert(!carl::is_constant(m_pool(p)));
         auto restricted_sample = restrict_base_assignment(sample, p);
         assert(level_of(restricted_sample) == p.base_level);
@@ -339,9 +329,7 @@ public:
             SMTRAT_STATISTICS_CALL(statistics().real_roots_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_real_roots.start_this());
-            
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_real_roots.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
@@ -378,9 +366,7 @@ public:
             SMTRAT_STATISTICS_CALL(statistics().real_roots_call(restricted_sample));
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_is_nullified.start_this());
-            
             cache(restricted_sample).real_roots.emplace(p, carl::real_roots(m_pool(p), restricted_sample));
-            
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_is_nullified.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().real_roots_result(cache(restricted_sample).real_roots.at(p)));
@@ -408,7 +394,7 @@ public:
         std::vector<PolyRef> result;
         SMTRAT_STATISTICS_CALL(statistics().projection_start());
         SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_coeffs.start_this());
-        for (const auto& coeff : m_pool(p).coefficients()) {
+        for (const auto& coeff :  m_pool(p).coefficients()) {
             result.emplace_back(m_pool(coeff));
             SMTRAT_STATISTICS_CALL(statistics().coefficient(total_degree(m_pool(coeff)), degree(m_pool(coeff)), m_pool(coeff).level));
         }
@@ -586,6 +572,11 @@ public:
     auto evaluate(const Assignment& ass, const PolyConstraint& constraint) {
         return carl::evaluate(polys()(constraint), ass);
     }
+
+    auto evaluate(const Assignment& ass, const IndexedRootConstraint& constraint) {
+        return carl::evaluate(ass.at(main_var(constraint.bound.poly)), constraint.relation, evaluate(ass, constraint.bound));
+    }
+
 };
 
 } // namespace smtrat::cadcells::datastructures

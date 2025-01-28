@@ -15,7 +15,7 @@ include(smtratmacros)
 
 set(PROJECT_FULLNAME "SMT-RAT")
 set(PROJECT_DESCRIPTION "Toolbox for Strategic and Parallel Satisfiability-Modulo-Theories Solving")
-set_version(24 02)
+set_version(24 06)
 
 # set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/bin")
 set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR} CACHE PATH "Directory for built executables")
@@ -34,6 +34,8 @@ option( USE_MIMALLOC "Build mimalloc" OFF )
 
 # Strategy
 set(SMTRAT_Strategy "Default" CACHE STRING "Used strategy in the solver")
+set(SMTRAT_Settings_QE_CAlC "DefaultSettings" CACHE STRING "Settings for CAlC for quantifier elimination")
+set(SMTRAT_Settings_QE_NuCAD "DefaultSettings" CACHE STRING "Settings for NuCAD for quantifier elimination")
 option( SMTRAT_STRAT_PARALLEL_MODE "Parallel mode" OFF )
 
 # Development options

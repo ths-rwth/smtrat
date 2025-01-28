@@ -340,7 +340,8 @@ namespace smtrat
                     result = FormulaT(carl::FormulaType::IMPLIES, {prem, conc});
                 break;
             }
-            case carl::FormulaType::CONSTRAINT: {
+            case carl::FormulaType::CONSTRAINT:
+            case carl::FormulaType::VARCOMPARE: {
                 FormulaT tmp = result;
                 while( result != (tmp = carl::substitute(tmp, mArithSubs)) )
                     result = tmp;
@@ -360,8 +361,11 @@ namespace smtrat
                 FormulaT sub = elimSubstitutions(_formula.quantified_formula());
                 if (sub != _formula.quantified_formula())
                     result = FormulaT(_formula.type(), _formula.quantified_variables(), sub);
+                break;
             }
-            default: {}
+            default: {
+                assert(false);
+            }
         }
 		if (!_outermost) {
 	        iter = mBoolSubs.find( result );

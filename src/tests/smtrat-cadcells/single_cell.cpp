@@ -18,7 +18,7 @@
 
 using namespace smtrat::cadcells;
 
-template<typename op, representation::CellHeuristic cell_heuristic>
+template<typename op, typename cell_heuristic>
 std::optional<DNF> single_cell(const std::vector<Polynomial>& polys, Polynomial::ContextType context, const Assignment& sample) {
 	datastructures::PolyPool pool(context);
     datastructures::Projections proj(pool);
@@ -98,11 +98,11 @@ TEST(smtrat_cadcells, single_cell) {
 	std::vector<P> polys({ poly_p, poly_q });
 
 	std::cout << "--- DEFAULT ---" << std::endl;
-	auto res_default = single_cell<operators::Mccallum<operators::MccallumSettings>, representation::LOWEST_DEGREE_BARRIERS>(polys, ctx, ass);
+	auto res_default = single_cell<operators::Mccallum<operators::MccallumSettings>, representation::cell_heuristics::LowestDegreeBarriers>(polys, ctx, ass);
 	std::cout << res_default << std::endl;
 	std::cout << as_carl(*res_default) << std::endl;
 	std::cout << "--- FILTERED ---" << std::endl;
-	auto res_filtered = single_cell<operators::MccallumFiltered<McFSettings>, representation::LOWEST_DEGREE_BARRIERS>(polys, ctx, ass);
+	auto res_filtered = single_cell<operators::MccallumFiltered<McFSettings>, representation::cell_heuristics::LowestDegreeBarriers>(polys, ctx, ass);
 	std::cout << res_filtered << std::endl;
 	std::cout << as_carl(*res_filtered) << std::endl;
 

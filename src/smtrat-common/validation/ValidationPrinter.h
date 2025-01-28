@@ -22,7 +22,7 @@ template<ValidationOutputFormat SOF>
 std::ostream& operator<<(std::ostream& os, ValidationPrinter<SOF>);
 
 template<>
-std::ostream& operator<<(std::ostream& os, ValidationPrinter<ValidationOutputFormat::SMTLIB>) {
+inline std::ostream& operator<<(std::ostream& os, ValidationPrinter<ValidationOutputFormat::SMTLIB>) {
 	carl::io::SMTLIBStream sls;
 	sls.setInfo("smt-lib-version", "2.0");
 	for (const auto& s: ValidationCollector::getInstance().points()) {
@@ -51,11 +51,11 @@ std::ostream& operator<<(std::ostream& os, ValidationPrinter<ValidationOutputFor
 	return os;
 }
 
-auto validation_formulas_as_smtlib() {
+inline auto validation_formulas_as_smtlib() {
 	return ValidationPrinter<ValidationOutputFormat::SMTLIB>();
 }
 
-void validation_formulas_to_smtlib_file(const std::string& filename) {
+inline void validation_formulas_to_smtlib_file(const std::string& filename) {
 	std::ofstream file;
 	file.open(filename, std::ios::out);
 	file << validation_formulas_as_smtlib();

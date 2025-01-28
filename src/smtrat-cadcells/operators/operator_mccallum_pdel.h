@@ -11,6 +11,15 @@
 
 namespace smtrat::cadcells::operators {
 
+struct MccallumPdelSettings {
+    static constexpr bool complete = false;
+};
+
+struct MccallumPdelSettingsComplete : MccallumPdelSettings {
+    static constexpr bool complete = true;
+};
+
+template<typename Settings>
 struct MccallumPdel {
 
 static constexpr bool filter = false;
@@ -26,13 +35,17 @@ static inline bool project_basic_properties(datastructures::SampledDerivation<Pr
         if (!rules::poly_proj_del(deriv, prop.poly)) return false;
     }
     for(const auto& prop : deriv.properties<properties::poly_ord_inv>()) {
-        rules::poly_ord_inv_pdel(deriv, prop.poly);
+        if (!Settings::complete) {
+            rules::poly_ord_inv_pdel(deriv, prop.poly);
+        } else {
+            rules::poly_ord_inv_maybe_null(deriv, prop.poly);
+        } 
     }
     for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
         deriv.insert(properties::poly_sgn_inv{prop.poly});
     }
     for(const auto& prop : deriv.properties<properties::poly_sgn_inv>()) {
-        rules::poly_sgn_inv(deriv, prop.poly);
+        rules::poly_sgn_inv(deriv, prop.poly, !Settings::complete);
     }
     return true;
 }

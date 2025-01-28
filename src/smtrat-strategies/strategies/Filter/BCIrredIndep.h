@@ -18,8 +18,8 @@ struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 
-	constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER_ONLY_INDEPENDENT;
+	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilterOnlyIndependent;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilterOnlyIndependent;
 	using op = cadcells::operators::MccallumFiltered<OpSettings>;
 };
 

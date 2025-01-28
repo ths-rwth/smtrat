@@ -6,13 +6,11 @@
 namespace smtrat::qe::fm {
 
 FormulaT FourierMotzkinQE::eliminateQuantifiers() {
+
     // gather quantified variables
-    std::vector<carl::Variable> elimination_vars;
-    for (const auto& [type, vars] : m_query) {
-        assert(type == QuantifierType::EXISTS); // Only support existential for now
-        elimination_vars.insert(elimination_vars.end(), vars.begin(), vars.end());
-    }
-    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().vars(elimination_vars.size()));
+    std::vector<carl::Variable> elim_vars = gather_elimination_variables();
+    SMTRAT_LOG_DEBUG("smtrat.qe.fm","elim vars:" << elim_vars);
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().vars(elim_vars.size()));
 
     // gather input constraints
     FormulasT constraints;
@@ -24,79 +22,110 @@ FormulaT FourierMotzkinQE::eliminateQuantifiers() {
         assert(c.type() == carl::FormulaType::CONSTRAINT);
         assert(
             c.constraint().relation() == carl::Relation::LEQ ||
-            c.constraint().relation() == carl::Relation::EQ // TODO: what about strict constraints?
+            c.constraint().relation() == carl::Relation::LESS ||
+            c.constraint().relation() == carl::Relation::EQ
         );
     }
 
-
     // eliminate variables using equalities
-    qe::util::EquationSubstitution es(constraints, elimination_vars);
+    qe::util::EquationSubstitution es(constraints, elim_vars);
     if (!es.apply()) {
-        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elimination_vars.size()));
+        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elim_vars.size()));
         SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().eq_conflict());
         return FormulaT(carl::FormulaType::FALSE);
     }
-    constraints      = es.remaining_constraints();
-    elimination_vars = es.remaining_variables();
+    constraints = es.remaining_constraints();
+    elim_vars   = es.remaining_variables();
     SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after es: " << constraints);
-    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elimination_vars.size()));
+    SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().elim_eq(elim_vars.size()));
 
-    if (elimination_vars.empty()) {
-        return FormulaT(carl::FormulaType::AND, constraints);
+    if (elim_vars.empty()) {
+        return (constraints.size() == 1) ? constraints.front() 
+                                         : FormulaT(carl::FormulaType::AND, constraints);;
     }
-    
-    // filter finished constraints from remaining constraints
-    FormulasT filtered;
-    for (const auto& c : constraints) {
-        auto vars = carl::variables(c).as_set();
-        if (std::any_of(elimination_vars.begin(),
-                        elimination_vars.end(),
-                        [&vars](const auto v){ return vars.contains(v); })
-        ) { 
-            filtered.push_back(c);
-        } else m_finished.insert(c);
-    }
-    constraints = filtered;
-    SMTRAT_LOG_DEBUG("smtrat.qe","Constraints after filtering: " << constraints);
 
     // map from variables to indices
-    m_var_idx = qe::util::VariableIndex(elimination_vars);
+    m_var_idx = qe::util::VariableIndex(elim_vars);
     m_var_idx.gather_variables(constraints);
-    
-    // gather elimination indices
-    std::vector<std::size_t> elim_cols;
-    for (std::size_t i = 0; i < elimination_vars.size(); ++i) {
-        elim_cols.push_back(i);
-    }
+    m_first_parameter_col = elim_vars.size();
+    SMTRAT_LOG_DEBUG("smtrat.qe","after gather variables");
 
-    // transform to matrix-vector representation
-    matrix_t m = matrix_t::Zero(constraints.size(), m_var_idx.size());
-    vector_t b = vector_t::Zero(constraints.size());
+    std::vector<Matrix::ColIndex> elim_var_indices;
+    for (ColIndex j = 0; j < m_first_parameter_col; ++j) elim_var_indices.push_back(j);
+    m_matrix = build_initial_matrix(constraints);
 
-    for (std::size_t i = 0; i < constraints.size(); ++i) {
-        for (const auto& t : constraints[i].constraint().lhs()) {
-            if (t.is_constant()) b(i) = Rational(-1)*t.coeff();
-            else {
-                assert(t.is_single_variable());
-                m(i, m_var_idx.index(t.single_variable())) = t.coeff();
+    while(!elim_var_indices.empty()) {
+        // choose next variable to be eliminated
+        std::size_t min_new_cs = m_matrix.n_rows()*(m_matrix.n_rows() + 1) + 1;
+        ColIndex chosen_col = 0;
+        for (const ColIndex j : elim_var_indices) {
+            std::size_t n_lbs = 0, n_ubs = 0;
+            auto col_end = m_matrix.col_end(j);
+            for (auto col_it = m_matrix.col_begin(j); col_it != col_end; ++col_it) {
+                if (col_it->value < 0) ++n_lbs;
+                else ++n_ubs;
+            }
+            
+            std::size_t min_j = n_lbs*n_ubs + (m_matrix.n_rows() - n_lbs - n_ubs);
+            if (min_j < min_new_cs) {
+                min_new_cs = min_j;
+                chosen_col = j;
+                if (min_j == 0) break;
             }
         }
-    }
 
-    auto [result_m, result_b] = eliminateCols(m, b, elim_cols);
-    // convert back
-    for (std::size_t i = 0, n_rows = result_m.rows(), n_cols = result_m.cols(); i < n_rows; ++i) {
-        Poly lhs = Poly(Rational(-1)*result_b(i));
-        for (std::size_t j = 0; j < n_cols; ++j) {
-            Rational& coeff = result_m(i,j);
-            if (!carl::is_zero(coeff)) {
-                lhs += coeff*Poly(m_var_idx.var(j));
+        // collect lbs and ubs
+        Matrix m(min_new_cs, m_matrix.n_cols());
+        std::vector<RowIndex> lbs, ubs;
+        auto col_it  = m_matrix.col_begin(chosen_col);
+        auto col_end = m_matrix.col_end(chosen_col);
+        RowIndex nb = 0;
+        for (; col_it != col_end; ++col_it) {
+            for(; nb < col_it.row(); ++nb) {
+                m.append_row(m_matrix.row_begin(nb), m_matrix.row_end(nb));
+            }
+            ++nb;
+            if (col_it->value < 0) lbs.push_back(col_it.row());
+            else if (col_it->value > 0) ubs.push_back(col_it.row());
+        }
+        for(; nb < m_matrix.n_rows(); ++nb) {
+            m.append_row(m_matrix.row_begin(nb), m_matrix.row_end(nb));
+        }
+
+        SMTRAT_STATISTICS_CALL(FMQEStatistics::get_instance().node(lbs.size() * ubs.size()));
+        // generate new constraints
+        for (const RowIndex l : lbs) {
+            Rational coeff_l = (-1)*m_matrix.coeff(l, chosen_col);
+            for (const RowIndex u : ubs) {
+                Rational coeff_u = m_matrix.coeff(u, chosen_col);
+                auto combined_row = m_matrix.combine(l, coeff_u, u, coeff_l);
+                if (combined_row.empty()) continue;
+                qe::util::gcd_normalize(combined_row);
+                if (combined_row.front().col_index < m_first_parameter_col) {
+                    // row still contains quantified variables
+                    m.append_row(combined_row.begin(), combined_row.end());
+                } else if (is_trivial(combined_row)) {
+                    if (is_conflict(combined_row)) return FormulaT(carl::FormulaType::FALSE);
+                } else {
+                    collect_constraint(combined_row);
+                }
             }
         }
-        m_finished.insert(FormulaT(lhs, carl::Relation::LEQ));
+
+        elim_var_indices.erase(std::find(elim_var_indices.begin(), elim_var_indices.end(), chosen_col));
+
+        Matrix irred_m(m.n_rows(), m.n_cols());
+        auto irred_rows = util::simple_irredundant_rows(m_matrix, constant_column());
+        for (const auto r : irred_rows) irred_m.append_row(m.row_begin(r), m.row_end(r));
+
+        m_matrix = irred_m;
     }
 
-    return FormulaT(carl::FormulaType::AND, m_finished);
+    std::vector<FormulaT> conjuncts;
+    conjuncts.reserve(m_found_rows.size());
+    for (const auto& r : m_found_rows) conjuncts.push_back(constraint_from_row(r));
+
+    return FormulaT(carl::FormulaType::AND, conjuncts);
 }
 
 
@@ -160,7 +189,6 @@ std::pair<matrix_t, vector_t> FourierMotzkinQE::eliminateCols(const matrix_t &co
     auto resultConstants = constants;
     auto dimensionsToEliminate = cols;
     while (!dimensionsToEliminate.empty()) {
-        std::cout << "starting iteration\n";
         std::tie(resultConstraints, resultConstants) = 
                                     eliminateCol(resultConstraints, resultConstants,
                                                 dimensionsToEliminate.front(), conservative);
@@ -172,8 +200,6 @@ std::pair<matrix_t, vector_t> FourierMotzkinQE::eliminateCols(const matrix_t &co
             }
         }
         dimensionsToEliminate.erase(std::begin(dimensionsToEliminate));
-        std::cout << "end iteration\n";
-
     }
     return std::make_pair(resultConstraints, resultConstants);
 }

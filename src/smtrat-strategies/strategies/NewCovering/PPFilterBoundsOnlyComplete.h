@@ -16,7 +16,7 @@ struct OpSettings : cadcells::operators::MccallumFilteredSettings {
 
 struct NewCoveringSettings : NewCoveringSettings2 {
 	using op = cadcells::operators::MccallumFiltered<OpSettings>;
-	constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
+	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 };
 } // namespace internal
 

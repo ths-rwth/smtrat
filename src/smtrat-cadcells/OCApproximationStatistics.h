@@ -36,7 +36,19 @@ private:
 	bool m_max_considered_reached = false; 	// flag whether the max number of apx considered is reached
 	bool m_max_apx_reached = false; 		// flag whether the max number of apx is reached
 
-	void collectCounterStats(Counter c, const std::string& name) {
+	std::size_t m_irrational_sample = 0; 	// #times a sample was irrational
+	std::size_t m_pwl_approximation = 0;    // #times a pwl approximation was used
+	std::size_t m_pwl_left_intersection = 0;	// #times a linear segment on the left had an intersection with the polynomial
+	std::size_t m_pwl_right_intersection = 0;	// #times a linear segment on the right had an intersection with the polynomial
+	std::size_t m_pwl_fallback_univariate = 0;	// #times a fallback was used because the polynomial was univariate
+	std::size_t m_pwl_fallback_level_too_low = 0;	// #times a fallback was used because the level was too low
+	std::size_t m_pwl_fallback_primary_irrational = 0;		// #times a fallback was used because the primary sample was irrational
+	std::size_t m_pwl_fallback_no_delineable_interval = 0;	// #times a fallback was used because no delineable interval was found
+	std::size_t m_pwl_fallback_no_delineable_space = 0;		// #times a fallback was used because there was no space in the delineable interval
+
+
+
+	void collect_counter_stats(Counter c, const std::string& name) {
 		std::size_t max = 0;
 		std::size_t n = 0;
 		std::size_t sum = 0;
@@ -61,7 +73,7 @@ public:
 		Statistics::addKeyValuePair("approximated", m_approximated_cells);
 		Statistics::addKeyValuePair("success", m_approximated_cells_success);
 
-		collectCounterStats(m_approximated_degree_counter, "apx_degrees");
+		collect_counter_stats(m_approximated_degree_counter, "apx_degrees");
 
 		Statistics::addKeyValuePair("unbounded_levels", m_unbounded_levels);
 		Statistics::addKeyValuePair("half_unbounded_levels", m_half_unbounded_levels);
@@ -86,15 +98,25 @@ public:
 		Statistics::addKeyValuePair("resultants", m_resultants);
 		Statistics::addKeyValuePair("discriminants", m_discriminants);
 		Statistics::addKeyValuePair("leading_coefficients", m_ldcfs);
-		collectCounterStats(m_constructed_degree_counter, "construction_degrees");
+		collect_counter_stats(m_constructed_degree_counter, "construction_degrees");
 
 		Statistics::addKeyValuePair("involved_too_often", m_involved_too_often);
 		Statistics::addKeyValuePair("apx_too_often", m_apx_too_often);
 		Statistics::addKeyValuePair("max_considered_reached", m_max_considered_reached);
 		Statistics::addKeyValuePair("max_apx_reached", m_max_apx_reached);
+
+		Statistics::addKeyValuePair("irrational_sample", m_irrational_sample);
+		Statistics::addKeyValuePair("pwl_approximation", m_pwl_approximation);
+		Statistics::addKeyValuePair("pwl_left_intersection", m_pwl_left_intersection);
+		Statistics::addKeyValuePair("pwl_right_intersection", m_pwl_right_intersection);
+		Statistics::addKeyValuePair("pwl_fallback_univariate", m_pwl_fallback_univariate);
+		Statistics::addKeyValuePair("pwl_fallback_level_too_low", m_pwl_fallback_level_too_low);
+		Statistics::addKeyValuePair("pwl_fallback_primary_irrational", m_pwl_fallback_primary_irrational);
+		Statistics::addKeyValuePair("pwl_fallback_no_delineable_interval", m_pwl_fallback_no_delineable_interval);
+		Statistics::addKeyValuePair("pwl_fallback_no_delineable_space", m_pwl_fallback_no_delineable_space);
 	}
 
-	void newCell() {
+	void new_cell() {
 		m_currently_approximated = false;
 	}
 
@@ -102,7 +124,7 @@ public:
 		if (m_currently_approximated) ++m_approximated_cells_success;
 		m_cell_dimensions.push_back(d);
 	}
-	void approximationConsidered() {++m_considered_cells;}
+	void approximation_considered() {++m_considered_cells;}
 	void approximated(std::size_t d) {
 		++m_approximated_degree_counter[d];
 		if (!m_currently_approximated) {
@@ -111,22 +133,33 @@ public:
 		}
 	}
 
-	void taylorIgnoredVars(std::size_t ignored, std::size_t total) {m_taylor_ignored.emplace_back(ignored, total);}
-	void taylorFailure() {++m_taylor_grad_zero;}
+	void taylor_ignored_vars(std::size_t ignored, std::size_t total) {m_taylor_ignored.emplace_back(ignored, total);}
+	void taylor_failure() {++m_taylor_grad_zero;}
 
-	void unboundedLevel() {++m_unbounded_levels;}
-	void halfUnboundedLevel() {++m_half_unbounded_levels;}
-	void cellDimension(std::size_t d) {m_cell_dimensions.push_back(d);}
+	void unbounded_level() {++m_unbounded_levels;}
+	void half_unbounded_level() {++m_half_unbounded_levels;}
+	void cell_dimension(std::size_t d) {m_cell_dimensions.push_back(d);}
 
 	void resultant() {++m_resultants;}
 	void discriminant() {++m_discriminants;}
 	void coefficient() {++m_ldcfs;}
 	void degree(std::size_t d) {++m_constructed_degree_counter[d];}
 
-	void involvedTooOften() {++m_involved_too_often;}
-	void apxTooOften() {++m_apx_too_often;}
-	void maxConsideredReached() {m_max_considered_reached = true;}
-	void maxApxReached() {m_max_apx_reached = true;}
+	void involved_too_often() {++m_involved_too_often;}
+	void apx_too_often() {++m_apx_too_often;}
+	void hit_considered_limit() {m_max_considered_reached = true;}
+	void hit_approximation_limit() {m_max_apx_reached = true;}
+
+	void irrational_sample() {++m_irrational_sample;}
+	void pwl_approximation() {++m_pwl_approximation;}
+	void pwl_left_intersection() {++m_pwl_left_intersection;}
+	void pwl_right_intersection() {++m_pwl_right_intersection;}
+	void pwl_fallback_univariate() {++m_pwl_fallback_univariate;}
+	void pwl_fallback_level_too_low() {++m_pwl_fallback_level_too_low;}
+	void pwl_fallback_primary_irrational() {++m_pwl_fallback_primary_irrational;}
+	void pwl_fallback_no_delineable_interval() {++m_pwl_fallback_no_delineable_interval;}
+	void pwl_fallback_no_delineable_space() {++m_pwl_fallback_no_delineable_space;}
+
 
 	static OCApproximationStatistics& get_instance() {
 		static OCApproximationStatistics& statistics = statistics_get<OCApproximationStatistics>("onecell-approximation");

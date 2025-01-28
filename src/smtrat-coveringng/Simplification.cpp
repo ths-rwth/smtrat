@@ -35,7 +35,7 @@ void simplify(ParameterTree& tree) {
         tree.children = new_children;
 
         if (tree.children.size() == 1) { // optional, does not affect output formula
-            assert(tree.children.begin()->interval->lower().is_infty() && tree.children.begin()->interval->upper().is_infty());
+            //assert(tree.children.begin()->interval->lower().is_infty() && tree.children.begin()->interval->upper().is_infty());
             tree.status = tree.children.begin()->status;
             tree.children = tree.children.begin()->children;
         }

@@ -20,8 +20,6 @@ endif()
 # unit tests
 # # # # # # #
 
-add_subdirectory(benchmax EXCLUDE_FROM_ALL)
-
 add_subdirectory(tests)
 
 if (CLANG_TIDY)

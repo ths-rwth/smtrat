@@ -26,60 +26,11 @@ struct BaseSettings {
     constexpr static bool exploit_strict_constraints = true;
 };
 
-/*
-
-struct LDBSettings : BaseSettings {
-    // constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    // constexpr static auto cell_heuristic = cadcells::representation::CHAIN_EQ;
-    // constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_EQ;
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS;
-    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING;
-    // constexpr static auto covering_heuristic = cadcells::representation::CHAIN_COVERING;
-    //constexpr static auto op = cadcells::operators::op::mccallum;
-    constexpr static auto op = cadcells::operators::op::mccallum;
-};
-
-struct LDBpdelSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_PDEL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_PDEL;
-    constexpr static auto op = cadcells::operators::op::mccallum_pdel;
-};
-
-struct LDBFilteredAllSelectiveSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_FILTER;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered_onlyrat_ew;
-};
-
-struct BCSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING;
-    constexpr static auto op = cadcells::operators::op::mccallum;
-};
-
-struct BCpdelSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_PDEL;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_PDEL;
-    constexpr static auto op = cadcells::operators::op::mccallum_pdel;
-};
-
-struct BCFilteredSettings : BaseSettings {
-    constexpr static auto cell_heuristic = cadcells::representation::BIGGEST_CELL_FILTER;
-    constexpr static auto covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_FILTER;
-    constexpr static auto op = cadcells::operators::op::mccallum_filtered;
-};
-
-struct BCApproximationSettings : BCSettings {
-    constexpr static bool use_approximation = true;
-    constexpr static auto cell_apx_heuristic = cadcells::representation::BIGGEST_CELL_APPROXIMATION;
-};
-*/
-
 struct DefaultSettings : BaseSettings { // current default
     constexpr static bool exploit_strict_constraints = true;
 
-    constexpr static auto cell_heuristic = cadcells::representation::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL;
-    constexpr static auto covering_heuristic = cadcells::representation::LDB_COVERING_CACHE_GLOBAL;
+    using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobal;
+    using covering_heuristic = cadcells::representation::covering_heuristics::LDBCoveringCacheGlobal;
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
@@ -87,14 +38,12 @@ struct DefaultSettings : BaseSettings { // current default
 
 template<typename Settings = DefaultSettings>
 struct Explanation {
-	#ifdef SMTRAT_DEVOPTION_Statistics
-		OCStatistics& mStatistics = statistics_get<OCStatistics>("mcsat-explanation-onecell");
-	#endif
+    SMTRAT_STATISTICS_CALL(
+        OCStatistics& mStatistics = statistics_get<OCStatistics>("mcsat-explanation-onecell")
+    );
 
     std::optional<mcsat::Explanation> operator()(const mcsat::Bookkeeping& trail, carl::Variable var, const FormulasT& reason, bool) const {
-        #ifdef SMTRAT_DEVOPTION_Statistics
-            mStatistics.explanationCalled();
-        #endif
+        SMTRAT_STATISTICS_CALL(mStatistics.explanationCalled());
 
         cadcells::VariableOrdering vars = trail.assignedVariables();
         vars.push_back(var);
@@ -141,10 +90,12 @@ struct Explanation {
             return std::nullopt;
         }
         else {
-            #ifdef SMTRAT_DEVOPTION_Statistics
-                mStatistics.explanationSuccess();
-            #endif
-            SMTRAT_LOG_DEBUG("smtrat.mcsat.onecell", "Got unsat cell " << result << " of constraints " << constr << " wrt " << vars << " and " << ass);
+            SMTRAT_STATISTICS_CALL(mStatistics.explanationSuccess());
+            SMTRAT_LOG_DEBUG(
+                "smtrat.mcsat.onecell",
+                "Got unsat cell " << result << " of constraints " << constr << " wrt " << vars << " and " << ass
+            );
+
             FormulasT expl;
             for (const auto& f : reason) {
                 expl.push_back(f.negated());
@@ -176,7 +127,11 @@ struct Explanation {
             if (is_clause) {
                 return mcsat::Explanation(FormulaT(carl::FormulaType::OR, std::move(expl)));
             } else {
-                return mcsat::Explanation(ClauseChain::from_formula(FormulaT(carl::FormulaType::OR, std::move(expl)), trail.model(), Settings::clause_chain_with_equivalences));
+                return mcsat::Explanation(ClauseChain::from_formula(
+                    FormulaT(carl::FormulaType::OR, std::move(expl)),
+                    trail.model(),
+                    Settings::clause_chain_with_equivalences
+                ));
             }
         } 
     }

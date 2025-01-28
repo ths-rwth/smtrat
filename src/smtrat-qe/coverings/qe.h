@@ -15,9 +15,11 @@
 #include "smtrat-cadcells/datastructures/roots.h"
 #include "smtrat-coveringng/VariableOrdering.h"
 
+#include "config.h"
+
 namespace smtrat::qe::coverings {
 
-using Settings = DefaultSettings;
+// using Settings = DefaultSettings;
 
 std::optional<FormulaT> qe(const FormulaT& formula);
 

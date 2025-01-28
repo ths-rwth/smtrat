@@ -1,0 +1,5 @@
+#pragma once
+
+namespace smtrat::qe::coverings {
+    using Settings = @SMTRAT_Settings_QE_CAlC@;
+}

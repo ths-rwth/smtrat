@@ -448,6 +448,10 @@ public:
 		}
 		return res;
 	}
+
+	void setInputFormula(const FormulaT& f) {
+		mBackend.setInputFormula(f);
+	}
 		
 	template<typename Constraints>
 	void initVariables(const Constraints& c) {

@@ -12,8 +12,8 @@ struct DefaultSettings {
 
     // Projection operator
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
-    static constexpr cadcells::representation::CellHeuristic cell_heuristic = cadcells::representation::BIGGEST_CELL;
-    static constexpr cadcells::representation::CoveringHeuristic covering_heuristic = cadcells::representation::BIGGEST_CELL_COVERING_MIN_TDEG;
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCell;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringMinTdeg;
     static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN;
 
     // Implicant computation
@@ -30,5 +30,31 @@ struct DefaultSettings {
             return Type(proj, fe_implicant_ordering, fe_results, fe_constraint_ordering, fe_stop_evaluation_on_conflict, fe_preprocess, fe_postprocess, fe_boolean_exploration);
         }
     };
+
+    static constexpr bool transform_boolean_variables_to_reals = true;
+};
+
+struct DefaultBCFilterSettings : DefaultSettings {
+    struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
+        static constexpr DelineationFunction delineation_function = NOOP;
+        static constexpr bool complete = true;
+    };
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
+    using op = cadcells::operators::MccallumFiltered<mcf_settings>;
+};
+
+
+
+struct DefaultBCFilterEWSettings : DefaultSettings {
+    struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
+        static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+        static constexpr bool enable_weak = true;
+        static constexpr bool complete = true;
+    };
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
+    using op = cadcells::operators::MccallumFiltered<mcf_settings>;
+    static constexpr bool enable_weak = true;
 };
 } // namespace smtrat::qe::coverings

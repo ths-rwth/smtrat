@@ -65,7 +65,7 @@ inline std::ostream& operator<<(std::ostream& os, const Bound& b) {
 template<class Comparator>
 struct ConflictGenerator {
 
-	#define mcsat_yield(callback, result) if (callback(std::move(result))) { return; }
+	#define mcsat_yield(callback, result) if (callback(result)) { return; }
 
 	
 private:

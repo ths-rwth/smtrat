@@ -52,7 +52,6 @@ Relevant targets you may want to build individually include:
 - `doc-html`: Builds the doxygen documentation as HTML.
 - `doc-pdf`: Builds the doxygen documentation as PDF.
 - `doc`: Builds both `doc-html` and `doc-pdf`.
-- `benchmax`: Builds the benchmarking tool.
 
 ## Check build
 

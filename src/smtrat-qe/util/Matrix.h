@@ -163,8 +163,8 @@ public:
         const Matrix& mr_data;
         RowIndex m_row_id;
     public:
-        row_iterator begin() { return mr_data.row_begin(m_row_id); }
-        row_iterator end()   { return mr_data.row_end(m_row_id); }
+        row_iterator begin() const { return mr_data.row_begin(m_row_id); }
+        row_iterator end()   const { return mr_data.row_end(m_row_id); }
         row_view(const Matrix& m, const RowIndex ri) : mr_data(m), m_row_id(ri) {}
     };
 
@@ -198,8 +198,8 @@ public:
         const Matrix& mr_data;
         ColIndex m_col_id;
     public:
-        col_iterator begin() { return mr_data.col_begin(m_col_id); }
-        col_iterator end()   { return mr_data.col_end(m_col_id); }
+        col_iterator begin() const { return mr_data.col_begin(m_col_id); }
+        col_iterator end()   const { return mr_data.col_end(m_col_id); }
         col_view(const Matrix& m, const ColIndex ci) : mr_data(m), m_col_id(ci) {}
     };
 

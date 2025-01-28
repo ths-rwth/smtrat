@@ -39,6 +39,10 @@ public:
 	const auto& getTrail() const {
 		return mBookkeeping;
 	}
+
+	void setInputFormula(const FormulaT& f) {
+		mBookkeeping.setInputFormula(f);
+	}
 	
 	void initVariables(const carl::Variables& variables) {
 		mBookkeeping.updateVariables(variables);

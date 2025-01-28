@@ -27,16 +27,22 @@ inline void handle_section_all_equational(const datastructures::Delineation& del
 	}
 }
 
+
 template<typename T>
 void handle_connectedness(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response, bool enable_weak = false) {
-	if (der->contains(operators::properties::cell_connected{der->level()}) && !response.description.is_section() && !response.description.lower().is_infty() && !response.description.upper().is_infty()) {
-		if (enable_weak) {
-			response.ordering.add_leq(response.description.lower().value(), response.description.upper().value());
-		} else {
-			response.ordering.add_less(response.description.lower().value(), response.description.upper().value());
-		}
-	}
+    if (der->contains(operators::properties::cell_connected{der->level()})
+        && !response.description.is_section()
+        && !response.description.lower().is_infty()
+        && !response.description.upper().is_infty()
+    ) {
+        if (enable_weak && response.description.lower().is_weak() && response.description.upper().is_weak()) {
+            response.ordering.add_leq(response.description.lower().value(), response.description.upper().value());
+        } else {
+            response.ordering.add_less(response.description.lower().value(), response.description.upper().value());
+        }
+    }
 }
+
 
 inline boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> roots_below(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval, bool closest) {
 	boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> result;
@@ -57,6 +63,7 @@ inline boost::container::flat_map<datastructures::PolyRef, datastructures::Index
 	return result;
 }
 
+
 inline boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> roots_above(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval, bool closest) {
 	boost::container::flat_map<datastructures::PolyRef, datastructures::IndexedRoot> result;
 	if (!interval.upper_unbounded()) {
@@ -72,6 +79,7 @@ inline boost::container::flat_map<datastructures::PolyRef, datastructures::Index
 	}
 	return result;
 }
+
 
 template<typename T>
 void handle_projective_ordering(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
@@ -124,6 +132,7 @@ void handle_projective_ordering(datastructures::SampledDerivationRef<T>& der, da
 	}
 }
 
+
 template<typename T>
 void handle_ordering_polys(datastructures::SampledDerivationRef<T>& der, datastructures::CellRepresentation<T>& response) {
 	for (const auto& [k, v] : der->delin().roots()) {
@@ -135,6 +144,7 @@ void handle_ordering_polys(datastructures::SampledDerivationRef<T>& der, datastr
 	}
 }
 
+
 template<typename T>
 void handle_cell_reduction(datastructures::Delineation& reduced_delineation, datastructures::DelineationInterval& reduced_cell, datastructures::CellRepresentation<T>& response) {
 	util::PolyDelineations poly_delins;
@@ -144,12 +154,17 @@ void handle_cell_reduction(datastructures::Delineation& reduced_delineation, dat
 	}
 }
 
+
 template<typename T>
 void handle_local_del(datastructures::SampledDerivationRef<T>& der, datastructures::Delineation& reduced_delineation, datastructures::CellRepresentation<T>& response) {
-	for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
-		util::local_del_ordering(der->proj(), poly, der->underlying_sample(), der->main_var_sample(), reduced_delineation, response.description, response.ordering);
-	}
+    for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
+        util::local_del_ordering(
+            der->proj(), poly, der->underlying_sample(), der->main_var_sample(),
+            reduced_delineation, response.description, response.ordering
+        );
+    }
 }
+
 
 inline void handle_local_del_simplify_all(datastructures::Delineation& reduced_delineation) {
 	for (const auto poly : util::get_local_del_polys(reduced_delineation)) {
@@ -170,36 +185,44 @@ enum class LocalDelMode { NONE,
 						  ONLY_INDEPENDENT,
 						  SIMPLIFY };
 
-template<>
-struct cell<CellHeuristic::BIGGEST_CELL> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		datastructures::CellRepresentation<T> response(der);
-		response.description = util::compute_simplest_cell(der->proj(), der->cell());
-		if (der->cell().is_section()) {
-			handle_section_all_equational(der->delin(), response);
-		} else { // sector
-			datastructures::Delineation reduced_delineation = der->delin();
-			auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-			handle_cell_reduction(reduced_delineation, reduced_cell, response);
-			util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering);
-		}
-		handle_connectedness(der, response);
-		handle_ordering_polys(der, response);
-		SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
-		return response;
-	}
+
+// =========================== biggest cell ========================================================
+namespace cell_heuristics {
+
+struct BiggestCell {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+        if (der->cell().is_section()) {
+            handle_section_all_equational(der->delin(), response);
+        } else { // sector
+            datastructures::Delineation reduced_delineation = der->delin();
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_cell_reduction(reduced_delineation, reduced_cell, response);
+            util::simplest_biggest_cell_ordering(
+                der->proj(), reduced_delineation, reduced_cell,
+                response.description, response.ordering
+            );
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
+        return response;
+    }
 };
 
-template<>
-struct cell<CellHeuristic::BIGGEST_CELL_PDEL> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		auto response = cell<CellHeuristic::BIGGEST_CELL>::compute(der);
-		handle_projective_ordering(der, response);
-		return response;
-	}
+
+struct BiggestCellPdel {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        auto response = BiggestCell::compute(der);
+        handle_projective_ordering(der, response);
+        return response;
+    }
 };
+
+} // namespace cell_heuristics
 
 template<typename T>
 inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastructures::SampledDerivationRef<T>& der, LocalDelMode ldel_mode = LocalDelMode::NONE, bool enable_weak = false) {
@@ -211,8 +234,8 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
         handle_local_del_simplify_all(reduced_delineation);
     }
     auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(reduced_delineation, reduced_cell));
-    response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_roots_inside(der->level(), reduced_delineation, reduced_cell));
+    response.description = util::compute_simplest_cell(der->level(), der->proj(), reduced_cell, enable_weak);
     response.ordering.biggest_cell_wrt = response.description;
     if (der->cell().is_section()) {
         handle_local_del_simplify_non_independent(reduced_delineation);
@@ -221,93 +244,112 @@ inline datastructures::CellRepresentation<T> compute_cell_biggest_cell(datastruc
     } else { // sector
         handle_local_del(der, reduced_delineation, response);
         handle_cell_reduction(reduced_delineation, reduced_cell, response);
-        util::simplest_biggest_cell_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, enable_weak);
+        util::simplest_biggest_cell_ordering(
+            der->proj(), reduced_delineation, reduced_cell,
+            response.description, response.ordering, enable_weak
+        );
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
     return response;
 }
 
-template<>
-struct cell<CellHeuristic::BIGGEST_CELL_FILTER> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_biggest_cell(der, LocalDelMode::ALL, true);
-	}
+
+namespace cell_heuristics {
+
+struct BiggestCellFilter {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_biggest_cell(der, LocalDelMode::ALL, true);
+    }
 };
 
-template<>
-struct cell<CellHeuristic::BIGGEST_CELL_FILTER_ONLY_INDEPENDENT> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_biggest_cell(der, LocalDelMode::ONLY_INDEPENDENT, true);
-	}
+
+struct BiggestCellFilterOnlyIndependent {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_biggest_cell(der, LocalDelMode::ONLY_INDEPENDENT, true);
+    }
 };
 
-template<>
-struct cell<CellHeuristic::CHAIN_EQ> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		datastructures::CellRepresentation<T> response(der);
-		response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
-		if (der->cell().is_section()) {
-			handle_section_all_equational(der->delin(), response);
-		} else { // sector
-			datastructures::Delineation reduced_delineation = der->delin();
-			auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-			handle_cell_reduction(reduced_delineation, reduced_cell, response);
-			util::simplest_chain_ordering(der->proj(), reduced_delineation, response.ordering);
-		}
-		handle_connectedness(der, response);
-		handle_ordering_polys(der, response);
-		SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
-		return response;
-	}
+// =========================== chain ===============================================================
+
+struct ChainEq {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+
+        if (der->cell().is_section()) {
+            handle_section_all_equational(der->delin(), response);
+        } else { // sector
+            datastructures::Delineation reduced_delineation = der->delin();
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_cell_reduction(reduced_delineation, reduced_cell, response);
+            util::simplest_chain_ordering(der->proj(), reduced_delineation, response.ordering);
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(
+            statistics().got_representation_equational(der->level(), response.equational.size())
+        );
+        return response;
+    }
 };
 
-template<>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_EQ> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		datastructures::CellRepresentation<T> response(der);
-		response.description = util::compute_simplest_cell(der->proj(), der->cell());
 
-		if (der->cell().is_section()) {
-			handle_section_all_equational(der->delin(), response);
-		} else { // sector
-			datastructures::Delineation reduced_delineation = der->delin();
-			auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-			handle_cell_reduction(reduced_delineation, reduced_cell, response);
-			util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, false, false);
-		}
-		handle_connectedness(der, response);
-		handle_ordering_polys(der, response);
-		SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
-		return response;
-	}
+// =========================== lowest degree barriers ==============================================
+
+struct LowestDegreeBarriersEq {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+
+        if (der->cell().is_section()) {
+            handle_section_all_equational(der->delin(), response);
+        } else { // sector
+            datastructures::Delineation reduced_delineation = der->delin();
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_cell_reduction(reduced_delineation, reduced_cell, response);
+            util::simplest_ldb_ordering(
+                der->proj(), reduced_delineation, reduced_cell, response.description,
+                response.ordering, response.equational, false, false
+            );
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(der->level(), response.equational.size()));
+        return response;
+    }
 };
+
+} // namespace cell_heuristics
 
 template<typename T>
 inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers(datastructures::SampledDerivationRef<T>& der, LocalDelMode ldel_mode = LocalDelMode::NONE, bool enable_weak = false, bool use_global_cache = false, datastructures::IndexedRootOrdering global_ordering = datastructures::IndexedRootOrdering()) {
-	datastructures::CellRepresentation<T> response(der);
-	datastructures::Delineation reduced_delineation = der->delin();
-	if (ldel_mode == LocalDelMode::ONLY_INDEPENDENT) {
-		handle_local_del_simplify_non_independent(reduced_delineation);
-	} else if (ldel_mode == LocalDelMode::SIMPLIFY) {
-		handle_local_del_simplify_all(reduced_delineation);
-	}
-	auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-	response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
-	response.ordering = global_ordering;
+    datastructures::CellRepresentation<T> response(der);
+    datastructures::Delineation reduced_delineation = der->delin();
+    if (ldel_mode == LocalDelMode::ONLY_INDEPENDENT) {
+        handle_local_del_simplify_non_independent(reduced_delineation);
+    } else if (ldel_mode == LocalDelMode::SIMPLIFY) {
+        handle_local_del_simplify_all(reduced_delineation);
+    }
+    auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+    response.description = util::compute_simplest_cell(der->level(), der->proj(), reduced_cell, enable_weak);
+    response.ordering = global_ordering;
 
     if (der->cell().is_section()) {
         handle_local_del_simplify_non_independent(reduced_delineation);
         handle_local_del(der, reduced_delineation, response);
         util::PolyDelineations poly_delins;
         util::decompose(reduced_delineation, reduced_cell, poly_delins);
-        util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
+        util::simplest_ldb_ordering(
+            der->proj(), reduced_delineation, reduced_cell, response.description,
+            response.ordering, response.equational, enable_weak, use_global_cache
+        );
         for (const auto& poly_delin : poly_delins.data) {
             if (response.equational.contains(poly_delin.first)) continue;
             chain_ordering(poly_delin.first, poly_delin.second, response.ordering);
@@ -321,56 +363,121 @@ inline datastructures::CellRepresentation<T> compute_cell_lowest_degree_barriers
     } else { // sector
         handle_local_del(der, reduced_delineation, response);
         handle_cell_reduction(reduced_delineation, reduced_cell, response);
-        util::simplest_ldb_ordering(der->proj(), reduced_delineation, reduced_cell, response.description, response.ordering, response.equational, enable_weak, use_global_cache);
+        util::simplest_ldb_ordering(
+            der->proj(), reduced_delineation, reduced_cell, response.description,
+            response.ordering, response.equational, enable_weak, use_global_cache
+        );
     }
     handle_connectedness(der, response, enable_weak);
     handle_ordering_polys(der, response);
-    SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
+    SMTRAT_STATISTICS_CALL(
+        statistics().got_representation_equational(der->level(), response.equational.size())
+    );
     return response;
 }
 
-template<>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_lowest_degree_barriers(der);
-	}
+
+namespace cell_heuristics {
+
+struct LowestDegreeBarriers {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_lowest_degree_barriers(der);
+    }
 };
 
-template<>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_CACHE_GLOBAL> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_lowest_degree_barriers(der, LocalDelMode::NONE, false, true);
-	}
+
+struct LowestDegreeBarriersCacheGlobal {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_lowest_degree_barriers(der, LocalDelMode::NONE, false, true);
+    }
 };
 
-template<>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_PDEL> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		auto response = cell<CellHeuristic::LOWEST_DEGREE_BARRIERS>::compute(der);
-		handle_projective_ordering(der, response);
-		return response;
-	}
+
+struct LowestDegreeBarriersPdel {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        auto response = LowestDegreeBarriers::compute(der);
+        handle_projective_ordering(der, response);
+        return response;
+    }
 };
 
-template<>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_lowest_degree_barriers(der, LocalDelMode::ALL, true);
-	}
+
+struct LowestDegreeBarriersFilter {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_lowest_degree_barriers(der, LocalDelMode::ALL, true);
+    }
 };
 
-template<>
-struct cell<CellHeuristic::LOWEST_DEGREE_BARRIERS_FILTER_ONLY_INDEPENDENT> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_lowest_degree_barriers(der, LocalDelMode::ONLY_INDEPENDENT, true);
-	}
+
+struct LowestDegreeBarriersFilterOnlyIndependent {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_lowest_degree_barriers(der, LocalDelMode::ONLY_INDEPENDENT, true);
+    }
 };
 
-} // namespace smtrat::cadcells::representation
+
+// =========================== all compound ========================================================
+
+struct AllCompound {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        if (der->cell().is_section()) {
+            response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+            handle_section_all_equational(der->delin(), response);
+        } else { // sector
+            datastructures::Delineation reduced_delineation = der->delin();
+            auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_cell_reduction(reduced_delineation, reduced_cell, response);
+
+
+            datastructures::Bound lower = datastructures::Bound::infty();
+            datastructures::Bound upper = datastructures::Bound::infty();
+        
+            if (!reduced_cell.lower_unbounded()) {
+                std::vector<std::vector<datastructures::IndexedRoot>> roots;
+                auto it = reduced_cell.lower();
+                while(true) {
+                    for (const auto& ir : it->second) {
+                        roots.emplace_back(std::vector<datastructures::IndexedRoot>({ir.root}));
+                    }
+                    if (it != reduced_delineation.roots().begin()) it--;
+                    else break;
+                }
+                lower = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMaxMin{std::move(roots),std::nullopt}));
+            }
+            if (!reduced_cell.upper_unbounded()) {
+                std::vector<std::vector<datastructures::IndexedRoot>> roots;
+                auto it = reduced_cell.upper();
+                while(it != reduced_delineation.roots().end()) {
+                    for (const auto& ir : it->second) {
+                        roots.emplace_back(std::vector<datastructures::IndexedRoot>({ir.root}));
+                    }
+                    it++;
+                }
+                upper = datastructures::Bound::strict(datastructures::RootFunction(datastructures::CompoundMinMax{std::move(roots),std::nullopt}));
+            }
+
+            response.description = datastructures::SymbolicInterval(lower, upper);
+            
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(
+            statistics().got_representation_equational(der->level(), response.equational.size())
+        );
+        return response;
+    }
+};
+
+
+} // namespace cell_heuristics
+
+} // namespace representation
 
 #include "optimal-ordering/ordering.h"

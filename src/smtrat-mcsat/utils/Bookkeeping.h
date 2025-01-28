@@ -30,6 +30,8 @@ class Bookkeeping {
 	std::vector<FormulaT> mMVBounds;
 	/** Set of theory variables. */
 	carl::Variables mVariables;
+	/** Input formula. **/
+	FormulaT mInputFormula;
 
 	using LPConstraint = carl::BasicConstraint<carl::LPPolynomial>;
 	using LPVarComp = carl::VariableComparison<carl::LPPolynomial>;
@@ -58,6 +60,13 @@ public:
 	}
 	const auto& variables() const {
 		return mVariables;
+	}
+	const auto& inputFormula() const {
+		return mInputFormula;
+	}
+
+	void setInputFormula(const FormulaT& f) {
+		mInputFormula = f;
 	}
 
 	void updateVariables(const carl::Variables& variables) {

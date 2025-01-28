@@ -31,71 +31,6 @@ struct IntervalCompare {
 template<typename PropertiesSet>
 using IntervalSet = std::set<Interval<PropertiesSet>, IntervalCompare<PropertiesSet>>;
 
-enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER };
-
-template<typename PropertiesSet>
-struct CoveringResult {
-    Status status;
-	std::optional<std::vector<Interval<PropertiesSet>>> m_intervals;
-	std::optional<cadcells::Assignment> m_sample;
-
-	CoveringResult() : status(Status::FAILED) {}
-	explicit CoveringResult(Status s) : status(s){}
-	// explicit CoveringResult(std::vector<Interval<PropertiesSet>>& inter) : status(UNSAT), m_intervals(inter) {}
-	// explicit CoveringResult(const cadcells::Assignment& ass) : status(SAT), m_sample(ass) {}
-	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter) {}
-	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>&& inter) : status(s), m_intervals(inter) {}
-	CoveringResult(Status s, const cadcells::Assignment& ass) : status(s), m_sample(ass) {}
-	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass) : status(s), m_sample(ass) {}
-	CoveringResult(Status s, const cadcells::Assignment& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
-	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) {}
-
-    bool is_failed() const {
-        return status == Status::FAILED_PROJECTION || status == Status::FAILED;
-    }
-	bool is_failed_projection() const {
-        return status == Status::FAILED_PROJECTION;
-    }
-    bool is_sat() const {
-        return status == Status::SAT;
-    }
-    bool is_unsat() const {
-        return status == Status::UNSAT;
-    }
-	bool is_parameter() const {
-		return  status == Status::PARAMETER;
-	}
-    const auto& sample() const {
-		return m_sample;
-    }
-    const auto& intervals() const {
-        assert(m_intervals);
-		return *m_intervals;
-    }
-};
-
-template<typename PropertiesSet>
-std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& result){
-	switch (result.status) {
-	case Status::SAT:
-		os << "SAT" ;
-		break;
-	case Status::UNSAT:
-		os << "UNSAT" ;
-		break;
-	case Status::FAILED:
-		os << "Failed" ;
-		break;
-	case Status::FAILED_PROJECTION:
-		os << "Failed Projection" ;
-		break;
-	case Status::PARAMETER:
-		os << "Parameter" ;
-		break;
-	}
-	return os;
-}
-
 struct ParameterTree {
 	unsigned short status; // 0 false 1 true 2 unknown 
 	std::optional<carl::Variable> variable;
@@ -153,6 +88,95 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<ParameterTre
 		os << tree.status << ", ";
 	}
 	os << "]";
+	return os;
+}
+
+enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER };
+
+template<typename PropertiesSet>
+struct CoveringResult {
+    Status status;
+	std::optional<ParameterTree> m_parameter_tree;
+	std::optional<std::vector<Interval<PropertiesSet>>> m_intervals;
+	std::optional<cadcells::Assignment> m_sample;
+
+	CoveringResult() : status(Status::FAILED) {}
+	explicit CoveringResult(Status s) : status(s){ init(); }
+	// explicit CoveringResult(std::vector<Interval<PropertiesSet>>& inter) : status(UNSAT), m_intervals(inter) {}
+	// explicit CoveringResult(const cadcells::Assignment& ass) : status(SAT), m_sample(ass) {}
+	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter) { init(); }
+	CoveringResult(Status s, std::vector<Interval<PropertiesSet>>&& inter) : status(s), m_intervals(inter) { init(); }
+	CoveringResult(Status s, const cadcells::Assignment& ass) : status(s), m_sample(ass) { init(); }
+	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass) : status(s), m_sample(ass) { init(); }
+	CoveringResult(Status s, const cadcells::Assignment& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) { init(); }
+	CoveringResult(Status s, const std::optional<cadcells::Assignment>& ass, const std::vector<Interval<PropertiesSet>>& inter) : status(s), m_intervals(inter), m_sample(ass) { init(); }
+	CoveringResult(Status s, ParameterTree tree, std::vector<Interval<PropertiesSet>>& inter) : status(s), m_parameter_tree(tree), m_intervals(inter) { init(); }
+	CoveringResult(Status s, ParameterTree tree, std::vector<Interval<PropertiesSet>>&& inter) : status(s), m_parameter_tree(tree), m_intervals(inter) { init(); }
+	CoveringResult(Status s, ParameterTree tree) : status(s), m_parameter_tree(tree) { init(); }
+
+	void init() {
+		if (!m_parameter_tree) {
+			if (status == Status::SAT) {
+				m_parameter_tree = ParameterTree(true);
+			} else if (status == Status::UNSAT) {
+				m_parameter_tree = ParameterTree(false);
+			}
+		}
+	}
+
+
+    bool is_failed() const {
+        return status == Status::FAILED_PROJECTION || status == Status::FAILED;
+    }
+	bool is_failed_projection() const {
+        return status == Status::FAILED_PROJECTION;
+    }
+    bool is_sat() const {
+        return status == Status::SAT;
+    }
+    bool is_unsat() const {
+        return status == Status::UNSAT;
+    }
+	bool is_parameter() const {
+		return  status == Status::PARAMETER;
+	}
+    const auto& sample() const {
+		return m_sample;
+    }
+    const auto& intervals() const {
+        assert(m_intervals);
+		return *m_intervals;
+    }
+	const auto& parameter_tree() const {
+        assert(m_parameter_tree);
+		return *m_parameter_tree;
+    }
+	auto&& parameter_tree() {
+        assert(m_parameter_tree);
+		return *m_parameter_tree;
+    }
+
+};
+
+template<typename PropertiesSet>
+std::ostream& operator<<(std::ostream& os, const CoveringResult<PropertiesSet>& result){
+	switch (result.status) {
+	case Status::SAT:
+		os << "SAT" ;
+		break;
+	case Status::UNSAT:
+		os << "UNSAT" ;
+		break;
+	case Status::FAILED:
+		os << "Failed" ;
+		break;
+	case Status::FAILED_PROJECTION:
+		os << "Failed Projection" ;
+		break;
+	case Status::PARAMETER:
+		os << "Parameter" ;
+		break;
+	}
 	return os;
 }
 

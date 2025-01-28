@@ -34,6 +34,24 @@ inline std::ostream& operator<<(std::ostream& os, const IndexedRoot& data) {
     return os;
 }
 
+struct IndexedRootConstraint {
+    carl::Relation relation;
+    IndexedRoot bound;
+};
+inline bool operator==(const IndexedRootConstraint& lhs, const IndexedRootConstraint& rhs) {
+    return lhs.relation == rhs.relation && lhs.bound == rhs.bound;
+}
+inline bool operator<(const IndexedRootConstraint& lhs, const IndexedRootConstraint& rhs) {
+    return lhs.relation < rhs.relation || (lhs.relation == rhs.relation &&  lhs.bound < rhs.bound);
+}
+inline bool operator!=(const IndexedRootConstraint& lhs, const IndexedRootConstraint& rhs) {
+    return !(lhs == rhs);
+}
+inline std::ostream& operator<<(std::ostream& os, const IndexedRootConstraint& data) {
+    os << "(var " << data.relation << " " << data.bound << ")";
+    return os;
+}
+
 struct PiecewiseLinearInfo {
     /// Active linear bound from -oo to including the first intersection point (or oo if no such point exists)
     IndexedRoot first;
@@ -232,6 +250,9 @@ public:
         return *m_value;
     }
 
+    void set_value(const RootFunction& value) {
+        m_value = value;
+    }
     void set_weak() {
         if (is_strict()) m_type = Type::weak;
     }
@@ -285,11 +306,17 @@ public:
     const auto& lower() const {
         return m_lower;
     }
+    auto& lower() {
+        return m_lower;
+    }
 
     /**
      * Returns the upper bound.
      */
     const auto& upper() const {
+        return m_upper;
+    }
+    auto& upper() {
         return m_upper;
     }
 
@@ -413,6 +440,8 @@ class IndexedRootOrdering {
         m_poly_pairs.try_emplace(p1).first->second.insert(p2);
         m_poly_pairs.try_emplace(p2).first->second.insert(p1);
     }
+
+    static const boost::container::flat_set<datastructures::PolyRef> empty_result;
 
 public:
     std::optional<SymbolicInterval> biggest_cell_wrt; // a hack, stores which cell is described by this ordering
@@ -580,7 +609,10 @@ public:
     }
 
     const boost::container::flat_set<PolyRef>& polys(const PolyRef p) const {
-        return m_poly_pairs.at(p);
+        auto it = m_poly_pairs.find(p);
+        if (it == m_poly_pairs.end()) return empty_result;
+        else return it->second;
+        //return m_poly_pairs.at(p);
     }
 
     bool has_pair(const PolyRef p1, const PolyRef p2) const {

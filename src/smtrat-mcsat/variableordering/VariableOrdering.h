@@ -32,19 +32,6 @@ inline std::ostream& operator<<(std::ostream& os, VariableOrdering ordering){
 	return os << get_name(ordering);
 }
 
-template<VariableOrdering vot, typename Constraints>
-std::vector<carl::Variable> calculate_variable_order(const Constraints& c) {
-	
-	std::vector<ConstraintT> constraints;
-	for (int i = 0; i < c.size(); ++i) {
-		if (c[i].first == nullptr) continue;
-		if (c[i].first->reabstraction.type() != carl::FormulaType::CONSTRAINT) continue;
-		constraints.emplace_back(c[i].first->reabstraction.constraint());
-	}
-	
-	return calculate_variable_order<vot>(constraints);
-}
-
 template<VariableOrdering vot>
 std::vector<carl::Variable> calculate_variable_order(const std::vector<ConstraintT>& constraints){
 	switch (vot) {
@@ -63,6 +50,19 @@ std::vector<carl::Variable> calculate_variable_order(const std::vector<Constrain
 		case VariableOrdering::FeatureBasedPickering:
 			return variableordering::feature_based_pickering(constraints);
 	}
+}
+
+template<VariableOrdering vot, typename Constraints> //, carl::DisableIf<std::is_same<Constraints, std::vector<ConstraintT>>> = carl::dummy>
+std::vector<carl::Variable> calculate_variable_order(const Constraints& c) {
+	
+	std::vector<ConstraintT> constraints;
+	for (int i = 0; i < c.size(); ++i) {
+		if (c[i].first == nullptr) continue;
+		if (c[i].first->reabstraction.type() != carl::FormulaType::CONSTRAINT) continue;
+		constraints.emplace_back(c[i].first->reabstraction.constraint());
+	}
+	
+	return calculate_variable_order<vot>(constraints);
 }
 
 }

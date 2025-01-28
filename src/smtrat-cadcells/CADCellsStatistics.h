@@ -50,10 +50,11 @@ private:
 
     carl::statistics::MultiCounter<std::size_t> m_interval_point_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_open_count_by_depth;
-    carl::statistics::MultiCounter<std::size_t> m_interval_halfopen_count_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_interval_halfclosed_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_closed_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_unbounded_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_interval_halfunbounded_count_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_interval_count_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_representation_equational_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_by_depth;
@@ -84,6 +85,9 @@ private:
     std::size_t m_filter_current_level;
     bool m_filter_current_underlying_algebraic;
     bool m_filter_current_indep;
+
+    bool m_filter_current_has_zeros_irred = false;
+    carl::statistics::MultiCounter<std::size_t> m_filter_poly_count_has_zeros_irred_indep_by_depth;
 
     carl::statistics::Timer m_timer_filter_roots;
     carl::statistics::Timer m_timer_filter_roots_callback;
@@ -116,12 +120,6 @@ public:
     carl::statistics::Timer m_proj_timer_simplest_nonzero_coeff;
     carl::statistics::Timer m_proj_timer_derivative;
 
-    carl::statistics::Timer m_proj_timer_discriminant_of_resultant;
-    carl::statistics::Timer m_proj_timer_discriminant_of_discriminant;
-
-    std::vector<datastructures::PolyRef> resultants;
-    std::vector<datastructures::PolyRef> discriminants;
-    
     bool enabled() const {
         return true;
     }
@@ -132,10 +130,11 @@ public:
 
         Statistics::addKeyValuePair("heuristics.interval.point_count.by_depth", m_interval_point_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.open_count.by_depth", m_interval_open_count_by_depth);
-        Statistics::addKeyValuePair("heuristics.interval.halfopen_count.by_depth", m_interval_halfopen_count_by_depth);
+        Statistics::addKeyValuePair("heuristics.interval.halfclosed_count.by_depth", m_interval_halfclosed_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.closed_count.by_depth", m_interval_closed_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.unbounded_count.by_depth", m_interval_unbounded_count_by_depth);
         Statistics::addKeyValuePair("heuristics.interval.halfunbounded_count.by_depth", m_interval_halfunbounded_count_by_depth);
+        Statistics::addKeyValuePair("heuristics.interval.count.by_depth", m_interval_count_by_depth);
 
         Statistics::addKeyValuePair("heuristics.representation.equational_count.by_depth", m_representation_equational_count_by_depth);
         Statistics::addKeyValuePair("heuristics.representation.roots_inside.by_depth", m_representation_roots_inside_by_depth);
@@ -172,13 +171,12 @@ public:
         Statistics::addKeyValuePair("projections.timer.coeffs", m_proj_timer_coeffs);
         Statistics::addKeyValuePair("projections.timer.simplest_nonzero_coeff", m_proj_timer_simplest_nonzero_coeff);
         Statistics::addKeyValuePair("projections.timer.derivative", m_proj_timer_derivative);
-        Statistics::addKeyValuePair("projections.timer.discriminant_of_resultant", m_proj_timer_discriminant_of_resultant);
-        Statistics::addKeyValuePair("projections.timer.discriminant_of_discriminant", m_proj_timer_discriminant_of_discriminant);
 
         Statistics::addKeyValuePair("filter.poly_count.by_depth", m_filter_poly_count_by_depth);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_factors", m_filter_poly_count_by_depth_and_num_factors);
         Statistics::addKeyValuePair("filter.poly_count.by_depth_and_num_roots", m_filter_poly_count_by_depth_and_num_roots);
         Statistics::addKeyValuePair("filter.poly_count.independent.by_depth", m_filter_poly_count_independent_by_depth);
+        Statistics::addKeyValuePair("filter.poly_count.has_zeros_irred_indep.by_depth", m_filter_poly_count_has_zeros_irred_indep_by_depth);
 
         Statistics::addKeyValuePair("filter.timer.filter_roots", m_timer_filter_roots);
         Statistics::addKeyValuePair("filter.timer.filter_roots_callback", m_timer_filter_roots_callback);
@@ -250,17 +248,21 @@ public:
         if (algebraic) m_proj_realroots_algebraic_count++;
     }
 
-
-    // filter_roots
+    // misc
 
     void set_max_level(std::size_t level) {
         m_current_max_level = level;
     }
+
+    // filter_roots
+
     void filter_roots_start(std::size_t level, std::size_t num_factors, std::size_t num_roots, const cadcells::Assignment& ass) {
         assert(m_current_max_level >= level);
         m_filter_poly_count_by_depth.inc(m_current_max_level - level, 1);
         m_filter_poly_count_by_depth_and_num_factors.inc(std::make_pair((std::size_t)m_current_max_level - level, num_factors), 1);
         m_filter_poly_count_by_depth_and_num_roots.inc(std::make_pair((std::size_t)m_current_max_level - level, num_roots), 1);
+
+        m_filter_current_has_zeros_irred = num_factors == 1 && num_roots > 0;
 
         m_filter_current_level = level;
         m_filter_current_underlying_algebraic = std::find_if(ass.begin(), ass.end(), [](const auto& m) { return !m.second.is_numeric(); }) != ass.end();
@@ -270,7 +272,10 @@ public:
     }
     void filter_roots_end() {
         if (m_filter_current_indep) {
-            m_filter_poly_count_independent_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+            m_filter_poly_count_independent_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            if (m_filter_current_has_zeros_irred) {
+                m_filter_poly_count_has_zeros_irred_indep_by_depth.inc(m_current_max_level-m_filter_current_level, 1);
+            }
         }
 
         m_timer_filter_roots.finish();
@@ -331,51 +336,55 @@ public:
  
     // heuristics
 
-    void section_common_zeros(std::size_t depth, std::size_t num_common_eq_constr) {
-        m_depth_section_common_zeros_count.inc(std::make_pair(depth,num_common_eq_constr), 1);
+    void section_common_zeros(std::size_t level, std::size_t num_common_eq_constr) {
+        m_depth_section_common_zeros_count.inc(std::make_pair(m_current_max_level-level,num_common_eq_constr), 1);
         m_section_count++;
     }
 
-    void got_bound(const datastructures::SymbolicInterval& interval) {
+    void got_bound(std::size_t level, const datastructures::SymbolicInterval& interval) {
+        m_interval_count_by_depth.inc(m_current_max_level-level, 1);
+
         if (interval.is_section()) {
-            m_interval_point_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
-        }
-        if (interval.lower().is_infty() && interval.upper().is_infty()) {
-            m_interval_unbounded_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
-        } else if (interval.lower().is_infty() || interval.upper().is_infty()) {
-            m_interval_halfunbounded_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
-        }
-        if (interval.lower().is_weak() && interval.upper().is_weak()) {
-            m_interval_closed_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
-        } else if (interval.lower().is_strict() && interval.upper().is_strict()) {
-            m_interval_open_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+            m_interval_point_count_by_depth.inc(m_current_max_level-level, 1);
         } else {
-            m_interval_halfopen_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+            if(interval.lower().is_infty() && interval.upper().is_infty()) {
+                m_interval_unbounded_count_by_depth.inc(m_current_max_level-level, 1);
+            } else if (interval.lower().is_infty() || interval.upper().is_infty()) {
+                m_interval_halfunbounded_count_by_depth.inc(m_current_max_level-level, 1);
+            }        
+
+            if(interval.lower().is_weak() && interval.upper().is_weak()) {
+                m_interval_closed_count_by_depth.inc(m_current_max_level-level, 1);
+            } else if(interval.lower().is_strict() && interval.upper().is_strict()) {
+                m_interval_open_count_by_depth.inc(m_current_max_level-level, 1);
+            } else if (interval.lower().is_weak() || interval.upper().is_weak()) {
+                m_interval_halfclosed_count_by_depth.inc(m_current_max_level-level, 1);
+            }
         }
     }
 
-    void got_representation_equational(std::size_t num) {
-        m_representation_equational_count_by_depth.inc(m_current_max_level - m_filter_current_level, num);
+    void got_representation_equational(std::size_t level, std::size_t num) {
+        m_representation_equational_count_by_depth.inc(m_current_max_level-level, num);
     }
 
-    void got_representation_roots_inside(const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
+    void got_representation_roots_inside(std::size_t level, const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
         if (interval.is_section()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, 0);
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-level, 0);
         } else if (interval.lower_unbounded() && interval.upper_unbounded()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, delin.roots().size());
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-level, delin.roots().size());
         } else if (interval.lower_unbounded()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(delin.roots().begin(), interval.upper()));
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-level, std::distance(delin.roots().begin(), interval.upper()));
         } else if (interval.upper_unbounded()) {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), delin.roots().end())-1);
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), delin.roots().end())-1);
         } else {
-            m_representation_roots_inside_by_depth.inc(m_current_max_level-m_filter_current_level, std::distance(interval.lower(), interval.upper())-1);
+            m_representation_roots_inside_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), interval.upper())-1);
         }
     }
 
     /// rules
 
-    void detect_intersection() {
-        m_rules_intersection_count_by_depth.inc(m_current_max_level - m_filter_current_level, 1);
+    void detect_intersection(std::size_t level) {
+        m_rules_intersection_count_by_depth.inc(m_current_max_level-level, 1);
     }
 };
 
