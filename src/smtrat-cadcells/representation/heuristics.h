@@ -12,3 +12,4 @@ namespace smtrat::cadcells::representation {}
 #include "heuristics_cell.h"
 #include "heuristics_covering.h"
 #include "heuristics_approximation.h"
+#include "heuristics_combinatorialopt.h"

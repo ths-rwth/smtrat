@@ -189,7 +189,9 @@ public:
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
             SMTRAT_STATISTICS_CALL(statistics().resultant(total_degree(result), degree(result), result.level));
 #ifdef SMTRAT_DEVOPTION_Statistics
+#ifdef SMTRAT_DEVOPTION_Expensive
             statistics().resultants.emplace_back(result);
+#endif
 #endif
             return result;
         }
@@ -218,7 +220,7 @@ public:
         } else {
 #ifdef SMTRAT_DEVOPTION_Statistics
             OCApproximationStatistics::get_instance().discriminant();
-
+#ifdef SMTRAT_DEVOPTION_Expensive
             auto& resultants = statistics().resultants;
             auto& discriminants = statistics().discriminants;
             bool discriminant_of_resultant = std::find(resultants.begin(), resultants.end(), p) != resultants.end();
@@ -230,6 +232,7 @@ public:
                 statistics().m_proj_timer_discriminant_of_discriminant.start_this();
             }
 #endif
+#endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_discriminant.start_this());
             auto result = m_pool(carl::discriminant(m_pool(p)));
@@ -238,6 +241,7 @@ public:
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_discriminant.finish());
             SMTRAT_STATISTICS_CALL(statistics().projection_end());
 #ifdef SMTRAT_DEVOPTION_Statistics
+#ifdef SMTRAT_DEVOPTION_Expensive
             if (discriminant_of_resultant) {
                 statistics().m_proj_timer_discriminant_of_resultant.finish();
             }
@@ -245,6 +249,7 @@ public:
                 statistics().m_proj_timer_discriminant_of_discriminant.finish();
             }
             statistics().discriminants.emplace_back(result);
+#endif
 #endif
             SMTRAT_STATISTICS_CALL(statistics().discriminant(total_degree(result), degree(result), result.level));
             return result;

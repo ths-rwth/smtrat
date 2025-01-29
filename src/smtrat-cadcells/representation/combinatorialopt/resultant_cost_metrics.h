@@ -7,30 +7,28 @@
 #include "../../datastructures/projections.h"
 #include "ordering_statistics.h"
 
-namespace smtrat::cadcells::representation {
+namespace smtrat::cadcells::representation::combinatorialopt {
 
-enum ResultantCostMethod {
+enum ResultantCostMetric {
 	FEATURE_BASED,
 	VARIABLE_DEPTH,
 	TOTAL_DEGREE_UPPER_BOUND,
 	TOTAL_DEGREE_EXACT,
-	SUM_OVER_TOTAL_DEGREE,
+	SUM_OF_TOTAL_DEGREES,
 	NUM_VARIABLES,
 	NUM_RESULTANTS,
-	NUM_MONOMIALS,
-	HIGHEST_MONOMIAL
+	NUM_MONOMIALS
 };
 
-static const char* ResultantCostMethodStrings[] = {
+static const char* ResultantCostMetricStrings[] = {
 	"FEATURE_BASED",
 	"VARIABLE_DEPTH",
 	"TOTAL_DEGREE_UPPER_BOUND",
 	"TOTAL_DEGREE_EXACT",
-	"SUM_OVER_TOTAL_DEGREE",
+	"SUM_OF_TOTAL_DEGREES",
 	"NUM_VARIABLES",
 	"NUM_RESULTANTS",
-	"NUM_MONOMIALS",
-	"HIGHEST_MONOMIAL"};
+	"NUM_MONOMIALS"};
 
 inline auto get_union_of_variables(datastructures::Projections& proj,
 								   const datastructures::PolyRef p1,
@@ -49,13 +47,13 @@ inline auto get_union_of_variables(datastructures::Projections& proj,
 	return res_vars;
 }
 
-template<ResultantCostMethod>
-int compute(datastructures::Projections& proj,
+template<ResultantCostMetric>
+unsigned int compute(datastructures::Projections& proj,
 			const datastructures::PolyRef p1,
 			const datastructures::PolyRef p2);
 
 template<>
-inline int compute<ResultantCostMethod::FEATURE_BASED>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::FEATURE_BASED>(datastructures::Projections& proj,
 													   const datastructures::PolyRef p1,
 													   const datastructures::PolyRef p2) {
 	const auto& polys = proj.polys();
@@ -75,7 +73,7 @@ inline auto base_level(const auto& vars, const auto& var_order) {
 }
 
 template<>
-inline int compute<ResultantCostMethod::VARIABLE_DEPTH>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::VARIABLE_DEPTH>(datastructures::Projections& proj,
 														const datastructures::PolyRef p1,
 														const datastructures::PolyRef p2) {
 	const auto& polys = proj.polys();
@@ -88,14 +86,14 @@ inline int compute<ResultantCostMethod::VARIABLE_DEPTH>(datastructures::Projecti
 }
 
 template<>
-inline int compute<ResultantCostMethod::TOTAL_DEGREE_UPPER_BOUND>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::TOTAL_DEGREE_UPPER_BOUND>(datastructures::Projections& proj,
 																  const datastructures::PolyRef p1,
 																  const datastructures::PolyRef p2) {
 	return proj.total_degree(p1) * proj.total_degree(p2);
 }
 
 template<>
-inline int compute<ResultantCostMethod::TOTAL_DEGREE_EXACT>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::TOTAL_DEGREE_EXACT>(datastructures::Projections& proj,
 															const datastructures::PolyRef p1,
 															const datastructures::PolyRef p2) {
 	auto& polys = proj.polys();
@@ -104,7 +102,7 @@ inline int compute<ResultantCostMethod::TOTAL_DEGREE_EXACT>(datastructures::Proj
 }
 
 template<>
-inline int compute<ResultantCostMethod::SUM_OVER_TOTAL_DEGREE>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::SUM_OF_TOTAL_DEGREES>(datastructures::Projections& proj,
 															   const datastructures::PolyRef p1,
 															   const datastructures::PolyRef p2) {
 	const auto monomial_total_degrees_p1 = proj.monomial_total_degrees(p1),
@@ -114,7 +112,7 @@ inline int compute<ResultantCostMethod::SUM_OVER_TOTAL_DEGREE>(datastructures::P
 }
 
 template<>
-inline int compute<ResultantCostMethod::NUM_VARIABLES>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::NUM_VARIABLES>(datastructures::Projections& proj,
 													   const datastructures::PolyRef p1,
 													   const datastructures::PolyRef p2) {
 	const auto res_vars = get_union_of_variables(proj, p1, p2);
@@ -122,14 +120,14 @@ inline int compute<ResultantCostMethod::NUM_VARIABLES>(datastructures::Projectio
 }
 
 template<>
-inline int compute<ResultantCostMethod::NUM_RESULTANTS>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::NUM_RESULTANTS>(datastructures::Projections& proj,
 														const datastructures::PolyRef p1,
 														const datastructures::PolyRef p2) {
 	return 1;
 }
 
 template<>
-inline int compute<ResultantCostMethod::NUM_MONOMIALS>(datastructures::Projections& proj,
+inline unsigned int compute<ResultantCostMetric::NUM_MONOMIALS>(datastructures::Projections& proj,
 													   const datastructures::PolyRef p1,
 													   const datastructures::PolyRef p2) {
 	const auto monomial_total_degrees_p1 = proj.monomial_total_degrees(p1),
@@ -139,15 +137,7 @@ inline int compute<ResultantCostMethod::NUM_MONOMIALS>(datastructures::Projectio
 	return p1_num_monomials + p2_num_monomials;
 }
 
-template<>
-inline int compute<ResultantCostMethod::HIGHEST_MONOMIAL>(datastructures::Projections& proj,
-														  const datastructures::PolyRef p1,
-														  const datastructures::PolyRef p2) {
-	// TODO: Implement this
-	return 0;
-}
-
-template<ResultantCostMethod M>
+template<ResultantCostMetric M>
 int calculate_cost(datastructures::Projections& proj,
 				   const datastructures::PolyRef p1,
 				   const datastructures::PolyRef p2) {
@@ -159,8 +149,8 @@ int calculate_cost(datastructures::Projections& proj,
 	return cost;
 }
 
-inline std::ostream& operator<<(std::ostream& os, ResultantCostMethod method) {
-	return os << ResultantCostMethodStrings[method];
+inline std::ostream& operator<<(std::ostream& os, ResultantCostMetric method) {
+	return os << ResultantCostMetricStrings[method];
 }
 
 } // namespace smtrat::cadcells::representation

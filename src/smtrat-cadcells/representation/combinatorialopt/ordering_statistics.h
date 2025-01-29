@@ -4,7 +4,7 @@
 
 #ifdef SMTRAT_DEVOPTION_Statistics
 
-namespace smtrat::cadcells::representation {
+namespace smtrat::cadcells::representation::combinatorialopt {
 class OrderingStatistics : public Statistics {
 public:
 	carl::statistics::Series ordering_costs;
@@ -20,7 +20,7 @@ public:
 	}
 };
 
-SMTRAT_STATISTICS_INIT_STATIC(OrderingStatistics, ordering_stats, "Ordering");
+SMTRAT_STATISTICS_INIT_STATIC(OrderingStatistics, ordering_stats, "combinatorialopt");
 
 } // namespace smtrat::cadcells::representation
 

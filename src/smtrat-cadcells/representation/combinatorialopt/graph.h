@@ -6,7 +6,7 @@
 
 #include "../../datastructures/roots.h"
 
-namespace smtrat::cadcells::representation::util {
+namespace smtrat::cadcells::representation::combinatorialopt::util {
 
 typedef std::pair<datastructures::IndexedRoot, datastructures::IndexedRoot> RootPair;
 

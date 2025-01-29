@@ -479,5 +479,3 @@ struct AllCompound {
 } // namespace cell_heuristics
 
 } // namespace representation
-
-#include "optimal-ordering/ordering.h"

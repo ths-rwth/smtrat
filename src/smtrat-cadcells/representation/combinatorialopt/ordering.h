@@ -14,11 +14,11 @@
 #include "ordering_statistics.h"
 #include "resultant_cost_metrics.h"
 
-namespace smtrat::cadcells::representation {
+namespace smtrat::cadcells::representation::combinatorialopt {
 
 typedef std::pair<datastructures::PolyRef, datastructures::PolyRef> PolyPair;
 
-template<ResultantCostMethod M>
+template<ResultantCostMetric M>
 inline auto get_candidate_resultants(auto& proj, const auto& delin,
 									 const auto& delin_interval, auto& ordering) {
 	// create maps that maps each resultant to the roots it protects
@@ -235,7 +235,7 @@ inline std::tuple<util::Graph, std::vector<util::Graph::edge_descriptor>, int> b
 	return std::make_tuple(graph, matching_edges, cost);
 };
 
-template<ResultantCostMethod M>
+template<ResultantCostMetric M>
 inline void compute_optimal_equational_constraints(auto& proj, const auto& ordering, auto& equational, const auto& section_defining) {
 	const auto& ordering_less = ordering.less();
 	if (ordering_less.contains(section_defining)) {
@@ -263,7 +263,7 @@ inline void compute_optimal_equational_constraints(auto& proj, const auto& order
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Equational constraints: " << equational);
 }
 
-template<ResultantCostMethod M>
+template<ResultantCostMetric M>
 inline void compute_optimal_ordering(auto& proj,
 									 const auto& delin,
 									 const auto& delin_interval,
@@ -353,114 +353,5 @@ inline void compute_optimal_ordering(auto& proj,
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal ordering: " << ordering << " with cost " << cost / 2);
 }
 
-template<typename T, ResultantCostMethod M>
-inline datastructures::CellRepresentation<T> compute_cell_optimal_ordering(datastructures::SampledDerivationRef<T>& der,
-																		   LocalDelMode ldel_mode = LocalDelMode::NONE,
-																		   bool enable_weak = false,
-																		   bool use_global_cache = false,
-																		   datastructures::IndexedRootOrdering global_ordering = datastructures::IndexedRootOrdering()) {
-	datastructures::CellRepresentation<T> response(der);
-	datastructures::Delineation reduced_delineation = der->delin();
-	if (ldel_mode == LocalDelMode::ONLY_INDEPENDENT) {
-		handle_local_del_simplify_non_independent(reduced_delineation);
-	} else if (ldel_mode == LocalDelMode::SIMPLIFY) {
-		handle_local_del_simplify_all(reduced_delineation);
-	}
-	auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
-	response.description = util::compute_simplest_cell(der->proj(), reduced_cell, enable_weak);
-	response.ordering = global_ordering;
-
-	if (der->cell().is_section()) { // section case
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (section case).");
-		handle_local_del_simplify_non_independent(reduced_delineation);
-		handle_local_del(der, reduced_delineation, response);
-		util::PolyDelineations poly_delins;
-		util::decompose(reduced_delineation, reduced_cell, poly_delins);
-		compute_optimal_ordering<M>(der->proj(),
-									reduced_delineation,
-									reduced_cell,
-									response.description,
-									response.ordering,
-									response.equational);
-	} else { // sector case
-		SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (sector case).");
-		handle_local_del(der, reduced_delineation, response);
-		handle_cell_reduction(reduced_delineation, reduced_cell, response);
-		compute_optimal_ordering<M>(der->proj(),
-									reduced_delineation,
-									reduced_cell,
-									response.description,
-									response.ordering,
-									response.equational);
-		handle_connectedness(der, response, enable_weak);
-	}
-	handle_ordering_polys(der, response);
-	SMTRAT_STATISTICS_CALL(statistics().got_representation_equational(response.equational.size()));
-	return response;
-}
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_FEATURE_BASED> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::FEATURE_BASED>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_NUM_MONOMIALS> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::NUM_MONOMIALS>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_NUM_RESULTANTS> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::NUM_RESULTANTS>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_NUM_VARIABLES> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::NUM_VARIABLES>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_SUM_OVER_TOTAL_DEGREE> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::SUM_OVER_TOTAL_DEGREE>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_TOTAL_DEGREE_EXACT> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::TOTAL_DEGREE_EXACT>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_TOTAL_DEGREE_UPPER_BOUND> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::TOTAL_DEGREE_UPPER_BOUND>(der);
-	}
-};
-
-template<>
-struct cell<CellHeuristic::OPTIMAL_VARIABLE_DEPTH> {
-	template<typename T>
-	static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
-		return compute_cell_optimal_ordering<T, ResultantCostMethod::VARIABLE_DEPTH>(der);
-	}
-};
 
 } // namespace smtrat::cadcells::representation
