@@ -345,9 +345,6 @@ void FormulaTreeState::propagate_consistency(FormulaID id) {
     }
 
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id);
-    #ifdef SMTRAT_DEVOPTION_Expensive
-    log(db, root);
-    #endif
 
     return std::visit(overloaded{
         [&](TRUE&) {},
@@ -565,9 +562,6 @@ void FormulaTreeState::propagate_consistency(FormulaID id) {
 
 void FormulaTreeState::propagate_root(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
-    #ifdef SMTRAT_DEVOPTION_Expensive
-    log(db, root);
-    #endif
     if (is_true) {
         states[id].reasons_true.emplace_back();
     } else {
@@ -578,9 +572,6 @@ void FormulaTreeState::propagate_root(FormulaID id, bool is_true) {
 
 void FormulaTreeState::propagate_decision(FormulaID id, bool is_true) {
     SMTRAT_LOG_FUNC("smtrat.covering_ng.evaluation", id << ", " << is_true);
-    #ifdef SMTRAT_DEVOPTION_Expensive
-    log(db, root);
-    #endif
     FormulaState::Reasons reasons;
     reasons.emplace_back(FormulaState::Reason({std::make_pair(id, is_true)}));
     if (is_true) {
