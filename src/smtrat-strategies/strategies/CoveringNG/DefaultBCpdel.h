@@ -3,6 +3,7 @@
 #include <smtrat-modules/CoveringNGModule/CoveringNGModule.h>
 #include <smtrat-modules/CoveringNGModule/CoveringNGModule.tpp>
 #include <smtrat-solver/Manager.h>
+#include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
 
 namespace smtrat {
 
