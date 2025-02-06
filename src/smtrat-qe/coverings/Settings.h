@@ -60,6 +60,13 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
 };
 
 
+struct DefaultBCSettings : DefaultSettings {
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCell;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCovering;
+    using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
+};
+
+
 struct DefaultBCpdelSettings : DefaultSettings {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellPdel;
     using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringPdel;
