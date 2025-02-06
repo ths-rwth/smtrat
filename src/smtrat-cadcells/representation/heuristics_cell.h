@@ -10,7 +10,7 @@ using carl::operator<<;
 
 template<typename T>
 inline void handle_section_all_equational(const datastructures::Delineation& delin, datastructures::CellRepresentation<T>& response) {
-	// TODO sometimes it might be beneficial to not include nullified or nonzero polynomials
+	// note: sometimes it might be beneficial to not include nullified or nonzero polynomials
 
 	for (const auto& poly : delin.nullified()) {
 		response.equational.insert(poly);
