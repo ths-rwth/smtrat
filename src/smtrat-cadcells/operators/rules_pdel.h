@@ -82,9 +82,18 @@ void poly_irreducible_sgn_inv_pdel(datastructures::SampledDerivation<P>& deriv, 
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     if (ordering_non_projective_polys.find(poly) != ordering_non_projective_polys.end()) {
         deriv.insert(properties::poly_del{ poly });
+        SMTRAT_STATISTICS_CALL(
+            if (cell.lower().is_infty() || cell.upper().is_infty()) {
+                statistics().pdel_nonprojective_unbounded(poly);
+            } else {
+                statistics().pdel_nonprojective(poly);
+            }
+        )
     } else if (cell.lower().is_infty() || cell.upper().is_infty()) {
+        SMTRAT_STATISTICS_CALL(statistics().pdel_nonprojective_unbounded(poly));
         deriv.insert(properties::poly_del{ poly });
     } else {
+        SMTRAT_STATISTICS_CALL(statistics().pdel_projective(poly));
         assert(deriv.contains(properties::poly_proj_del{ poly }));
     }
 }

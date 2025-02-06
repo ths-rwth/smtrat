@@ -4,6 +4,7 @@
 #include <smtrat-coveringng/FormulaEvaluationComplexity.h>
 #include <smtrat-coveringng/VariableOrdering.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
+#include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
 
 namespace smtrat::qe::coverings {
 struct DefaultSettings {
@@ -57,4 +58,12 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
     static constexpr bool enable_weak = true;
 };
+
+
+struct DefaultBCpdelSettings : DefaultSettings {
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellPdel;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringPdel;
+    using op = cadcells::operators::MccallumPdel<cadcells::operators::MccallumPdelSettingsComplete>;
+};
+
 } // namespace smtrat::qe::coverings

@@ -107,6 +107,10 @@ private:
 
     std::size_t m_filter_roots_skipped_using_sample = 0;
 
+    carl::statistics::MultiCounter<std::size_t> m_pdel_nonprojective_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_pdel_nonprojective_unbounded_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_pdel_projective_by_depth;
+
 public:
     carl::statistics::Timer m_proj_timer_is_zero;
     carl::statistics::Timer m_proj_timer_num_roots;
@@ -206,6 +210,10 @@ public:
         Statistics::addKeyValuePair("filter.root.check_pair_with_interval", m_filter_roots_check_pair_with_interval);
         Statistics::addKeyValuePair("filter.root.check_pair_without_interval", m_filter_roots_check_pair_without_interval);
         Statistics::addKeyValuePair("filter.root.skipped_using_sample", m_filter_roots_skipped_using_sample);
+
+        Statistics::addKeyValuePair("pdel.poly_count.nonprojective.by_depth", m_pdel_nonprojective_by_depth);
+        Statistics::addKeyValuePair("pdel.poly_count.nonprojective_unbounded.by_depth", m_pdel_nonprojective_unbounded_by_depth);
+        Statistics::addKeyValuePair("pdel.poly_count.projective.by_depth", m_pdel_projective_by_depth);
     }
 
     // projections
@@ -397,6 +405,20 @@ public:
 
     void detect_intersection(std::size_t level) {
         m_rules_intersection_count_by_depth.inc(m_current_max_level-level, 1);
+    }
+
+    /// rules pdel
+    void pdel_nonprojective(const datastructures::PolyRef poly) {
+        assert(m_current_max_level >= poly.level);
+        m_pdel_nonprojective_by_depth.inc(m_current_max_level - poly.level, 1);
+    }
+    void pdel_nonprojective_unbounded(const datastructures::PolyRef poly) {
+        assert(m_current_max_level >= poly.level);
+        m_pdel_nonprojective_unbounded_by_depth.inc(m_current_max_level - poly.level, 1);
+    }
+    void pdel_projective(const datastructures::PolyRef poly) {
+        assert(m_current_max_level >= poly.level);
+        m_pdel_projective_by_depth.inc(m_current_max_level - poly.level, 1);
     }
 };
 
