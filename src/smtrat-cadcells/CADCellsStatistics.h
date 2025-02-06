@@ -111,6 +111,13 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_pdel_nonprojective_unbounded_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_pdel_projective_by_depth;
 
+    carl::statistics::MultiCounter<std::size_t> m_rules_delineate_sgninv_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_rules_sgninv_by_depth;
+
+    carl::statistics::MultiCounter<std::size_t> m_operator_delineate_num_roots_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_operator_delineate_num_nullified_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_operator_delineate_num_nonzero_by_depth;
+
 public:
     carl::statistics::Timer m_proj_timer_is_zero;
     carl::statistics::Timer m_proj_timer_num_roots;
@@ -214,6 +221,13 @@ public:
         Statistics::addKeyValuePair("pdel.poly_count.nonprojective.by_depth", m_pdel_nonprojective_by_depth);
         Statistics::addKeyValuePair("pdel.poly_count.nonprojective_unbounded.by_depth", m_pdel_nonprojective_unbounded_by_depth);
         Statistics::addKeyValuePair("pdel.poly_count.projective.by_depth", m_pdel_projective_by_depth);
+
+        Statistics::addKeyValuePair("rules.delineate_sgn_inv.count.by_depth", m_rules_sgninv_by_depth);
+        Statistics::addKeyValuePair("rules.sgn_inv.count.by_depth", m_rules_sgninv_by_depth);
+
+        Statistics::addKeyValuePair("operator.delineate.num_roots.by_depth", m_operator_delineate_num_roots_by_depth);
+        Statistics::addKeyValuePair("operator.delineate.num_nullified.by_depth", m_operator_delineate_num_nullified_by_depth);
+        Statistics::addKeyValuePair("operator.delineate.num_nonzero.by_depth", m_operator_delineate_num_nonzero_by_depth);
     }
 
     // projections
@@ -419,6 +433,24 @@ public:
     void pdel_projective(const datastructures::PolyRef poly) {
         assert(m_current_max_level >= poly.level);
         m_pdel_projective_by_depth.inc(m_current_max_level - poly.level, 1);
+    }
+
+    // rules
+    void rules_delineate_sgn_inv_called(const datastructures::PolyRef poly) {
+        assert(m_current_max_level >= poly.level);
+        m_rules_delineate_sgninv_by_depth.inc(m_current_max_level - poly.level, 1);
+    }
+    void rules_sgn_inv_called(const datastructures::PolyRef poly) {
+        assert(m_current_max_level >= poly.level);
+        m_rules_sgninv_by_depth.inc(m_current_max_level - poly.level, 1);
+    }
+
+    // operator
+    void operator_delineate(std::size_t level, std::size_t num_roots, std::size_t num_nullified, std::size_t num_nonzero) {
+        assert(m_current_max_level >= level);
+        m_operator_delineate_num_roots_by_depth.inc(m_current_max_level - level, num_roots);
+        m_operator_delineate_num_nullified_by_depth.inc(m_current_max_level - level, num_nullified);
+        m_operator_delineate_num_nonzero_by_depth.inc(m_current_max_level - level, num_nonzero);
     }
 };
 

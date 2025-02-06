@@ -117,6 +117,7 @@ void poly_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::P
 template<typename P>
 void poly_irreducible_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and non-zero");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
     assert(deriv.proj().num_roots(deriv.underlying_sample(), poly) == 0);
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sgn_inv(" << poly << ") <= del(" << poly << ")");
     deriv.insert(properties::poly_del{ poly });
@@ -125,6 +126,7 @@ void poly_irreducible_nonzero_sgn_inv(datastructures::DelineatedDerivation<P>& d
 template<typename P>
 void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties::poly_irreducible_sgn_inv& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
+    SMTRAT_STATISTICS_CALL(statistics().rules_delineate_sgn_inv_called(prop.poly));
     if (deriv.proj().is_nullified(deriv.underlying_sample(), prop.poly)) {
         deriv.delin().add_poly_nullified(prop.poly);
     } else {
@@ -142,6 +144,7 @@ void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties:
 template<typename P>
 void delineate(datastructures::DelineatedDerivation<P>& deriv, const properties::poly_irreducible_semi_sgn_inv& prop) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
+    SMTRAT_STATISTICS_CALL(statistics().rules_delineate_sgn_inv_called(prop.poly));
     if (deriv.proj().is_nullified(deriv.underlying_sample(), prop.poly)) {
         deriv.delin().add_poly_nullified(prop.poly);
     } else {
@@ -173,6 +176,7 @@ void cell_analytic_submanifold([[maybe_unused]] datastructures::SampledDerivatio
 template<typename P>
 void poly_irreducible_sgn_inv_ec(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), using EC");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
     assert(cell.is_section());
     assert(deriv.contains(properties::poly_del{ cell.section_defining().poly }));
     deriv.insert(properties::cell_connected{ poly.base_level });
@@ -261,11 +265,13 @@ void root_ordering_holds(datastructures::SampledDerivation<P>& deriv, const data
 template<typename P>
 void poly_irreducible_sgn_inv(datastructures::SampledDerivation<P>& /*deriv*/, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, [[maybe_unused]] datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
 }
 
 template<typename P>
 void poly_irreducible_null_sgn_inv(datastructures::SampledDerivation<P>& deriv, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible and nullified");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
     assert(deriv.proj().is_nullified(deriv.underlying_sample(), poly));
 
     for (const auto coeff : deriv.proj().coeffs(poly)) {

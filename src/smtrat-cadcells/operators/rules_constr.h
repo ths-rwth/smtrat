@@ -29,6 +29,7 @@ bool poly_constr_truth_inv(datastructures::SampledDerivation<P>& deriv, datastru
 template<typename P>
 void delineate(datastructures::SampledDerivation<P>& deriv, const properties::iroot_constraint_truth_inv& prop, bool filter = false) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineate(" << prop << ")");
+    SMTRAT_STATISTICS_CALL(statistics().rules_delineate_sgn_inv_called(prop.constr.bound.poly));
 
     if (deriv.proj().num_roots(deriv.sample(), prop.constr.bound.poly) < prop.constr.bound.index) {
         assert(false);

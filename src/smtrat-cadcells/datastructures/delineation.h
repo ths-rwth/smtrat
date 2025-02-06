@@ -126,6 +126,14 @@ class Delineation {
     boost::container::flat_set<PolyRef> m_polys_nonzero;
 
 public: 
+    std::size_t num_roots() const {
+        std::size_t result = 0;
+        for (const auto& [k,v] : m_roots) {
+            result += v.size();
+        }
+        return result;
+    }
+
     /**
      * Returns the underlying root map, which is a set of real algebraic numbers to indexed root expressions.
      */

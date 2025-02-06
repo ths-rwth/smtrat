@@ -80,6 +80,7 @@ void root_ordering_holds_pdel(datastructures::SampledDerivation<P>& deriv, const
 template<typename P>
 void poly_irreducible_sgn_inv_pdel(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& /*ordering*/, const boost::container::flat_set<datastructures::PolyRef>& ordering_non_projective_polys, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
     if (ordering_non_projective_polys.find(poly) != ordering_non_projective_polys.end()) {
         deriv.insert(properties::poly_del{ poly });
         SMTRAT_STATISTICS_CALL(

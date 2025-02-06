@@ -585,11 +585,13 @@ void root_ordering_holds_delineated_complete(datastructures::SampledDerivation<P
 template<typename P>
 void poly_irreducible_sgn_inv_filtered(datastructures::SampledDerivation<P>& /*deriv*/, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, [[maybe_unused]] datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
 }
 
 template<typename P>
 void poly_irreducible_semi_sgn_inv_filtered(datastructures::SampledDerivation<P>& /*deriv*/, const datastructures::SymbolicInterval& /*cell*/, const datastructures::IndexedRootOrdering& /*ordering*/, [[maybe_unused]] datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "semi_sgn_inv(" << poly << "), " << poly << " irreducible");
+    SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));
 }
 
 template<typename P>

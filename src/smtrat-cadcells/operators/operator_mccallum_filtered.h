@@ -106,6 +106,7 @@ static inline void delineate_properties(datastructures::SampledDerivation<Proper
     for(const auto& prop : deriv.properties<properties::iroot_constraint_truth_inv>()) {
         rules::delineate(deriv, prop);
     }
+    SMTRAT_STATISTICS_CALL(statistics().operator_delineate(deriv.level(), deriv.delin().num_roots(), deriv.delin().nullified().size(), deriv.delin().nonzero().size()));
 }
 
 static inline bool project_cell_properties(datastructures::CellRepresentation<PropertiesSet>& repr) {
