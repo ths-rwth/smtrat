@@ -245,14 +245,14 @@ bool SimplexModule<Settings>::update_range(const simplex::Variable v, const Boun
     if (type == BoundType::UPPER || type == BoundType::EQUAL) {
         if (!has_upper_bound(v) || is_below(b, upper_bound(v))) {
             set_upper_bound(v,b);
-            if (find_conflicting_lower_bounds(v,b)) return false;
         }
+        if (find_conflicting_lower_bounds(v,b)) return false;
     }
     if (type == BoundType::LOWER || type == BoundType::EQUAL) {
         if (!has_lower_bound(v) || is_below(lower_bound(v), b)) {
             set_lower_bound(v,b);
-            if (find_conflicting_upper_bounds(v,b)) return false;
         }
+        if (find_conflicting_upper_bounds(v,b)) return false;
     }
 
     return true;
