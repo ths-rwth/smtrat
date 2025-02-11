@@ -1,6 +1,6 @@
 function(set_version major minor)
 	execute_process(
-		COMMAND git describe --match "[0-9]*.[0-9]*"
+		COMMAND git describe --tags --match "[0-9]*.[0-9]*"
 		WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 		OUTPUT_VARIABLE GIT_VERSION
 		OUTPUT_STRIP_TRAILING_WHITESPACE
