@@ -13,10 +13,20 @@ namespace smtrat {
 
 namespace internal {
 
+struct PWLSettings {
+    using Sampling = apx::SampleSimple;
+    static constexpr double pwl_fallback_distance = 1.0;
+    static constexpr std::size_t pwl_num_segments = 6;
+    using PWLBuilder = apx::AdvancedPWLBuilder;
+    static constexpr bool refine_pwl = false;
+};
+
 struct ApxSettings {
-    using method = apx::Simple<apx::SimpleSettings>;
+    using method = apx::PiecewiseLinear<PWLSettings>;
     struct CriteriaSettings : apx::BaseCriteriaSettings {
+        static constexpr std::size_t approximated_cells_limit = 100;
         static constexpr std::size_t single_degree_threshold  = 3;
+        static constexpr std::size_t dynamic_degree_scale     = 2;
     };
     using Criteria = apx::Criteria<CriteriaSettings>;
 };
@@ -28,9 +38,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_SimpleDeg3 : public Manager {
+class Approximation_PWL6 : public Manager {
 public:
-	Approximation_SimpleDeg3() : Manager() {
+	Approximation_PWL6() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

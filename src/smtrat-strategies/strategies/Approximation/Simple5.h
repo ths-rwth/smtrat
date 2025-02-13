@@ -13,15 +13,21 @@ namespace smtrat {
 
 namespace internal {
 
+struct ApxSettings {
+    using method = apx::Simple<apx::SimpleSettings>;
+    using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
+};
+
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
-    constexpr static bool use_approximation = false;
+    using Criteria = ApxSettings::Criteria;
+	using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
 };
 
 } // namespace internal
 
-class Approximation_Noop : public Manager {
+class Approximation_Simple5 : public Manager {
 public:
-	Approximation_Noop() : Manager() {
+	Approximation_Simple5() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

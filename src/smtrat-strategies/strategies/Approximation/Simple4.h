@@ -28,9 +28,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_SimpleDeg4 : public Manager {
+class Approximation_Simple4 : public Manager {
 public:
-	Approximation_SimpleDeg4() : Manager() {
+	Approximation_Simple4() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

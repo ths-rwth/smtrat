@@ -13,26 +13,15 @@ namespace smtrat {
 
 namespace internal {
 
-struct ApxSettings {
-    using method = apx::Simple<apx::SimpleSettings>;
-    struct CriteriaSettings : apx::BaseCriteriaSettings {
-        static constexpr std::size_t approximated_cells_limit = 100;
-        static constexpr std::size_t single_degree_threshold  = 3;
-        static constexpr std::size_t dynamic_degree_scale     = 2;
-    };
-    using Criteria = apx::Criteria<CriteriaSettings>;
-};
-
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
-    using Criteria = ApxSettings::Criteria;
-	using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
+    constexpr static bool use_approximation = false;
 };
 
 } // namespace internal
 
-class Approximation_SimpleDynamic : public Manager {
+class Approximation_Baseline : public Manager {
 public:
-	Approximation_SimpleDynamic() : Manager() {
+	Approximation_Baseline() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

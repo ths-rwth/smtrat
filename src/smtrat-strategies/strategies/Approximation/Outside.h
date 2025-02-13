@@ -45,9 +45,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_SimpleInAndOut : public Manager {
+class Approximation_Outside : public Manager {
 public:
-	Approximation_SimpleInAndOut() : Manager() {
+	Approximation_Outside() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

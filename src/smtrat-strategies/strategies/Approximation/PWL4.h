@@ -16,7 +16,7 @@ namespace internal {
 struct PWLSettings {
     using Sampling = apx::SampleSimple;
     static constexpr double pwl_fallback_distance = 1.0;
-    static constexpr std::size_t pwl_num_segments = 2;
+    static constexpr std::size_t pwl_num_segments = 4;
     using PWLBuilder = apx::AdvancedPWLBuilder;
     static constexpr bool refine_pwl = false;
 };
@@ -38,9 +38,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_PWL2Segments : public Manager {
+class Approximation_PWL4 : public Manager {
 public:
-	Approximation_PWL2Segments() : Manager() {
+	Approximation_PWL4() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
