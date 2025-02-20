@@ -84,13 +84,14 @@ void setup_logging() {
 		("smtrat", carl::logging::LogLevel::LVL_INFO)
 	;
 	carl::logging::logger().filter("stdout")
-		("smtrat", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
-		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
-		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
-		// ("smtrat.covering_ng", carl::logging::LogLevel::LVL_TRACE)
-		// ("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
-		// ("smtrat.mcsat.onecell", carl::logging::LogLevel::LVL_TRACE)
+	("smtrat", carl::logging::LogLevel::LVL_OFF)
+	//("smtrat", carl::logging::LogLevel::LVL_DEBUG)
+	//("smtrat.module", carl::logging::LogLevel::LVL_DEBUG)
+	//("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
+	//("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
+	//("smtrat.covering_ng", carl::logging::LogLevel::LVL_TRACE)
+	//("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
+	//("smtrat.mcsat.onecell", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;
 #endif
