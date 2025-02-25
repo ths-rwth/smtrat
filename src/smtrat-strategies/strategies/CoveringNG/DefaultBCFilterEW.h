@@ -8,10 +8,9 @@ namespace smtrat {
 
 namespace internal {
 
-struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
+struct mcf_settings : cadcells::operators::MccallumFilteredCompleteSettings {
     static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
 	static constexpr bool enable_weak = true;
-    static constexpr bool complete = true;
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {

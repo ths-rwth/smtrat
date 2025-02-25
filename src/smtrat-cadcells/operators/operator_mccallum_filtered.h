@@ -34,6 +34,11 @@ struct MccallumFilteredSettings {
     static constexpr bool complete = false;
 };
 
+struct MccallumFilteredCompleteSettings : MccallumFilteredSettings {
+    static constexpr bool complete = true;
+};
+    
+
 template<typename Settings>
 struct MccallumFiltered {
 

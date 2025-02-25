@@ -10,7 +10,7 @@ namespace internal {
 
 struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
     static constexpr DelineationFunction delineation_function = NOOP;
-    static constexpr bool complete = true;
+    static constexpr bool complete = false;
 };
 
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
@@ -21,9 +21,9 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 
 }
 
-class CoveringNG_DefaultBCFilterComplete: public Manager {
+class CoveringNG_DefaultBCFilterIncomplete: public Manager {
 public:
-	CoveringNG_DefaultBCFilterComplete() : Manager() {
+    CoveringNG_DefaultBCFilterIncomplete() : Manager() {
 		setStrategy(
             addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
         );
