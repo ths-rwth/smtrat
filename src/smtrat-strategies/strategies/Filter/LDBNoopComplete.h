@@ -26,9 +26,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class Filter_LDBNoop : public Manager {
+class Filter_LDBNoopComplete : public Manager {
 public:
-	Filter_LDBNoop()
+	Filter_LDBNoopComplete()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());

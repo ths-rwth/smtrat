@@ -31,9 +31,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class Filter_LDBBoundsOnly : public Manager {
+class Filter_LDBBoundsOnlyComplete : public Manager {
 public:
-	Filter_LDBBoundsOnly()
+	Filter_LDBBoundsOnlyComplete()
 		: Manager() {
 		setStrategy(
 			addBackend<SATModule<internal::SATSettings>>());
