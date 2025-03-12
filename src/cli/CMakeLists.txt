@@ -4,7 +4,7 @@ option(CLI_ENABLE_DIMACS_PARSER "Enable parser for DIMACS files" OFF)
 option(CLI_ENABLE_FORMULAPARSER "Enable stand-alone formula parser" OFF)
 option(CLI_ENABLE_OPB_PARSER "Enable parser for OPB files" OFF)
 option(CLI_ENABLE_PREPROCESSOR "Enable stand-alone preprocessor" OFF)
-option(CLI_ENABLE_QUANTIFIER_ELIMINATION "Enable quantifier eliminiation" OFF)
+option(CLI_ENABLE_QUANTIFIER_ELIMINATION "Enable quantifier eliminiation" ON)
 
 include(${carl_INCLUDE_DIR}/../cmake/carlmacros.cmake)
 

@@ -1,0 +1,12 @@
+(set-info :smt-lib-version 2.6)
+(set-logic QF_NRA)
+
+(set-info :category "crafted")
+(set-info :status sat)
+(declare-fun x () Real)
+(declare-fun y () Real)
+(declare-fun z () Real)
+(assert (< (+ (+ (* x x) (* y y)) (* z z)) 1))
+(assert (< (+ (+ (* x x) (* (- y (/ 3 2)) (- y (/ 3 2)))) (* x x)) 1))
+(check-sat)
+(exit)
