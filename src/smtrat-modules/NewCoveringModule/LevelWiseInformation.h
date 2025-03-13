@@ -40,7 +40,7 @@ template<class Settings>
 class LevelWiseInformation {
 
     // get the covering heuristic from the settings
-    using covering_heuristic = Settings::covering_heuristic;
+    using covering_heuristic = typename Settings::covering_heuristic;
     using op = typename Settings::op;
     static constexpr SamplingAlgorithm sampling_algorithm = Settings::sampling_algorithm;
     static constexpr IsSampleOutsideAlgorithm is_sample_outside_algorithm = Settings::is_sample_outside_algorithm;
