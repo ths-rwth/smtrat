@@ -193,21 +193,21 @@ inline std::optional<CoveringResult<typename op::PropertiesSet>> nucad_quantifie
 		//	input->insert(cadcells::operators::properties::poly_sgn_inv{poly});
 		//}
 		if (si.is_section()) {
-			input->insert(cadcells::operators::properties::iroot_constraint_truth_inv(cadcells::datastructures::IndexedRootConstraint{carl::Relation::EQ,si.section_defining()}));
+			input->insert(cadcells::operators::properties::iroot_constraint_truth_inv{cadcells::datastructures::IndexedRootConstraint{carl::Relation::EQ,si.section_defining()}});
 		} else {
 			if (si.lower().is_weak()) {
 				assert(si.lower().value().is_root()); // other cases not implemented
-				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv(cadcells::datastructures::IndexedRootConstraint{carl::Relation::GEQ,si.lower().value().root()}));
+				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv{cadcells::datastructures::IndexedRootConstraint{carl::Relation::GEQ,si.lower().value().root()}});
 			} else if (si.lower().is_strict()) {
 				assert(si.lower().value().is_root()); // other cases not implemented
-				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv(cadcells::datastructures::IndexedRootConstraint{carl::Relation::GREATER,si.lower().value().root()}));
+				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv{cadcells::datastructures::IndexedRootConstraint{carl::Relation::GREATER,si.lower().value().root()}});
 			}
 			if (si.upper().is_weak()) {
 				assert(si.upper().value().is_root()); // other cases not implemented
-				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv(cadcells::datastructures::IndexedRootConstraint{carl::Relation::LEQ,si.upper().value().root()}));
+				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv{cadcells::datastructures::IndexedRootConstraint{carl::Relation::LEQ,si.upper().value().root()}});
 			} else if (si.upper().is_strict()) {
 				assert(si.upper().value().is_root()); // other cases not implemented
-				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv(cadcells::datastructures::IndexedRootConstraint{carl::Relation::LESS,si.upper().value().root()}));
+				input->insert(cadcells::operators::properties::iroot_constraint_truth_inv{cadcells::datastructures::IndexedRootConstraint{carl::Relation::LESS,si.upper().value().root()}});
 			}
 		}
 	}
