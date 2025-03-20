@@ -103,4 +103,66 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN> {
     }
 };
 
+
+template<typename FE, typename PropertiesSet>
+inline std::optional<cadcells::RAN> sample_outside_and_below(const IntervalSet<PropertiesSet>& intervals, const std::optional<Interval<PropertiesSet>>& upper_bound, const FE& fe) {
+    // remove redundancies of the first kind
+    // the derivations are already sorted by lower bound
+    if (!upper_bound) {
+        return sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN>::sample_outside(intervals, fe);
+    }
+    const auto& ub = (*upper_bound)->cell();
+    
+    if (ub.lower_unbounded()) {
+        // no value below upper bound interval
+        return std::nullopt;
+    }
+
+    std::vector<Interval<PropertiesSet>> derivs;
+    auto iter = intervals.begin();
+    while (iter != intervals.end()) {
+        derivs.push_back(*iter);
+        auto& last_cell = (*iter)->cell();
+        iter++;
+        while (iter != intervals.end() && !cadcells::datastructures::upper_lt_upper(last_cell, (*iter)->cell()))
+            iter++;
+    }
+
+    if (derivs.empty()) {
+        // no intervals except upper bound -> just take anything below
+        return carl::sample_below(ub.lower()->first);
+    }
+    
+    if (!derivs.front()->cell().lower_unbounded()) {
+        // Lower bound is finite, just take a sufficiently large negative number
+        const auto& lowest_unsat = derivs.front()->cell().lower()->first;
+        return carl::sample_below((lowest_unsat < ub.lower()->first) ? lowest_unsat : ub.lower()->first);
+    }
+
+    for (size_t i = 0; i + 1 < derivs.size(); i++) {
+        if (!cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), ub)) {
+            return std::nullopt;
+        }
+        // We know that the cells are ordered by lower bound - so for checking disjointness the following suffices
+        if (
+            !derivs[i]->cell().upper_unbounded() && 
+            !derivs[i + 1]->cell().lower_unbounded() && 
+            cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())
+        ) {
+            cadcells::RAN next_interval_bound = (
+                derivs[i + 1]->cell().lower()->first < ub.lower()->first
+                ? derivs[i + 1]->cell().lower()->first
+                : ub.lower()->first
+            );
+            if (derivs[i]->cell().upper()->first == next_interval_bound) {
+                return derivs[i]->cell().upper()->first;
+            } else {
+                return carl::sample_between(derivs[i]->cell().upper()->first, next_interval_bound);
+            }
+        }
+    }
+    // The cells cover the number line -> There is no sample to be found
+    return std::nullopt;
+}
+
 }; // namespace smtrat

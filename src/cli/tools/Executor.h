@@ -247,12 +247,7 @@ public:
 			regular() << "(objectives" << std::endl;
 			for (const auto& obj : state.objectiveValues()) {
 				const auto mv = obj.second;
-				if (mv.isMinusInfinity() || mv.isPlusInfinity()) {
-					regular() << " (" << obj.first << " " << mv.asInfinity() << ")" << std::endl;
-				} else {
-					assert(mv.isRational());
-					regular() << " (" << obj.first << " " << mv.asRational() << ")" << std::endl;
-				}
+				regular() << " (" << obj.first << " " << mv << ")" << std::endl;
 			}
 			regular() << ")" << std::endl;
 		} else {

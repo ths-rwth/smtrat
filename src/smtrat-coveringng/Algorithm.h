@@ -420,4 +420,191 @@ inline std::pair<CoveringResult<typename op::PropertiesSet>, ParameterTree> recu
 	}
 }
 
+
+template<
+    typename op, 
+    typename FE,
+    typename covering_heuristic,
+    smtrat::covering_ng::SamplingAlgorithm sampling_algorithm,
+    typename cell_heuristic
+>
+inline CoveringResult<typename op::PropertiesSet> recurse_opt(cadcells::datastructures::Projections& proj, 
+                                                              FE& f,
+                                                              cadcells::Assignment& ass,
+                                                              const VariableQuantification& quantification,
+                                                              std::vector<cadcells::datastructures::SymbolicInterval>& cell
+                                                              ) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
+
+    auto variable = first_unassigned_var(ass, proj.polys().var_order());
+    // quantified variables can be handled as before
+    if (quantification.var_type(variable) != carl::Quantifier::FREE) {
+        return recurse<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(proj, f, ass, quantification);
+    }
+
+    // basically do the same as "exists", but save the interval in parametertree if sat
+    // init
+    IntervalSet<typename op::PropertiesSet> unsat_intervals;
+    std::optional<cadcells::RAN> sample;
+
+    // choose new sample until unsat cover or sat
+    while (sample = sampling<sampling_algorithm>::template sample_outside<FE, typename op::PropertiesSet>(unsat_intervals, f), sample != std::nullopt) {
+        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
+        ass.emplace(variable, sample.value());
+        SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
+        f.extend_valuation(ass);
+        SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
+        const auto eval = f.root_valuation();
+        assert(eval != formula::Valuation::UNKNOWN);
+        if (is_full_sample(ass, proj.polys().var_order()) && eval == formula::Valuation::MULTIVARIATE) {
+            SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete propagation");
+            return CoveringResult<typename op::PropertiesSet>();
+        }
+        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got evaluation: " << eval);
+
+        CoveringResult<typename op::PropertiesSet> res;
+        if (eval == formula::Valuation::FALSE || eval == formula::Valuation::TRUE) {
+            auto new_intervals = get_enclosing_intervals<op, FE>(proj, f, ass);
+            if (new_intervals.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Failed due to incomplete projection");
+                res = CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
+            } else if (eval == formula::Valuation::TRUE) {
+                assert(new_intervals.size() == 1);
+                res = CoveringResult<typename op::PropertiesSet>(Status::SAT, ass, new_intervals);
+                cell.clear(); // We know that it is a new SAT result with no cells coming from higher levels
+            } else {
+                res = CoveringResult<typename op::PropertiesSet>(Status::UNSAT, new_intervals);
+            }
+        } else {
+            assert(eval == formula::Valuation::MULTIVARIATE);
+            assert(!is_full_sample(ass, proj.polys().var_order()));
+            res = recurse_opt<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(
+                proj, f, ass, quantification, cell
+            );
+        }
+
+        std::optional<cadcells::Assignment> sat_sample;
+        if (res.is_sat()) { sat_sample = res.sample().value_or(ass); }
+        ass.erase(variable);
+        f.revert_valuation(ass);
+
+        if (res.is_failed()) {
+            return CoveringResult<typename op::PropertiesSet>(res.status);
+        }
+        
+        if (res.is_sat()) {
+            assert(!ass.empty());
+            assert(!res.intervals().empty());
+            assert(res.intervals().size() == 1);
+            auto interval = res.intervals().front();
+            auto new_interval = characterize_interval<op, cell_heuristic>(interval);
+            if (!new_interval) {
+                SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
+                return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
+            }
+            cell.push_back(new_interval->second.description);
+            return CoveringResult<typename op::PropertiesSet>(Status::SAT, sat_sample, std::vector({new_interval->first}));
+        }
+
+        assert(res.is_unsat());
+        assert(!res.intervals().empty());
+        unsat_intervals.insert(res.intervals().begin(), res.intervals().end());
+    } // end while
+
+    // unsat covering -> result is unsat
+    if (ass.empty()) {
+        // bottom level -> no characterization needed
+        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
+        return CoveringResult<typename op::PropertiesSet>(Status::UNSAT);
+    }
+    auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
+    if (!new_interval) {
+        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
+        return CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION);
+    }
+    return CoveringResult<typename op::PropertiesSet>(Status::UNSAT, ass, std::vector({new_interval->first}));
+}
+
+
+template<typename op,
+         typename FE,
+         typename covering_heuristic,
+         smtrat::covering_ng::SamplingAlgorithm sampling_algorithm,
+         typename cell_heuristic>
+inline std::pair<CoveringResult<typename op::PropertiesSet>, std::vector<cadcells::datastructures::SymbolicInterval>>
+minimize(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignment ass, const VariableQuantification& quantification) {
+    SMTRAT_LOG_FUNC("smtrat.covering_ng", "f, " << ass);
+    
+    auto variable = first_unassigned_var(ass, proj.polys().var_order());
+    assert(quantification.var_type(variable) == carl::Quantifier::FREE);
+
+    IntervalSet<typename op::PropertiesSet> unsat_intervals;
+    std::optional<Interval<typename op::PropertiesSet>> best_sat_interval;
+    std::vector<cadcells::datastructures::SymbolicInterval> best_cell;
+    std::optional<cadcells::RAN> sample;
+    cadcells::Assignment sat_sample;
+
+    // choose new sample until unsat cover or sat
+    while (sample = sample_outside_and_below(unsat_intervals, best_sat_interval, f), sample != std::nullopt) {
+
+        SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
+        ass.emplace(variable, sample.value());
+        SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
+        f.extend_valuation(ass);
+        SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_end());
+        const auto eval = f.root_valuation();
+
+        assert(eval != formula::Valuation::UNKNOWN);
+        assert(!is_full_sample(ass, proj.polys().var_order()));
+        CoveringResult<typename op::PropertiesSet> res = recurse_opt<op, FE, covering_heuristic, sampling_algorithm, cell_heuristic>(
+            proj, f, ass, quantification, best_cell
+        );
+
+        if (res.is_failed()) { return {CoveringResult<typename op::PropertiesSet>(res.status), {}}; }
+        if (res.is_sat()) { sat_sample = res.sample().value_or(ass); }
+        ass.erase(variable);
+        f.revert_valuation(ass);
+        
+        if (res.is_sat()) {
+            assert(res.intervals().size() == 1);
+            auto interval = res.intervals().front();
+            auto representation = cell_heuristic::compute(interval);
+            //auto new_interval = characterize_interval<op, cell_heuristic>(interval);
+            // if (!new_interval) {
+            //     SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
+            //     return {CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), {}};
+            // }
+            best_sat_interval = interval;//new_interval->first;
+            best_cell.push_back(representation.description);
+        } else {
+            assert(res.is_unsat());
+            assert(!res.intervals().empty());
+            unsat_intervals.insert(res.intervals().begin(), res.intervals().end());
+        }
+        SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_intervals(1));
+    } // end while
+
+    if (!best_sat_interval) {
+        // unsat covering -> result is unsat
+        if (ass.empty()) {
+            // bottom level -> no characterization needed
+            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Skip computation of characterization.");
+            return {CoveringResult<typename op::PropertiesSet>(Status::UNSAT), {}};
+        }
+        auto new_interval = characterize_covering<op, covering_heuristic>(unsat_intervals);
+        if (!new_interval) {
+            SMTRAT_LOG_TRACE("smtrat.covering_ng", "Failed due to incomplete projection");
+            return {CoveringResult<typename op::PropertiesSet>(Status::FAILED_PROJECTION), {}};
+        }
+        return {CoveringResult<typename op::PropertiesSet>(Status::UNSAT, ass, std::vector({new_interval->first})), {}};
+    }
+
+    // sat and optimal
+    Status st = Status::OPT_UNBOUNDED;
+    if (!(*best_sat_interval)->cell().lower_unbounded()) {
+        st = ((*best_sat_interval)->cell().lower_strict() ? Status::OPT_OPEN : Status::OPT_CLOSED);
+    }
+    return {CoveringResult<typename op::PropertiesSet>(st, sat_sample, {*best_sat_interval}), best_cell};
+}
+
 } // namespace smtrat::covering_ng
