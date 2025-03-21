@@ -213,6 +213,7 @@ Answer CoveringNGModule<Settings>::minimize(cadcells::datastructures::Projection
     } else {
         if (res.status == covering_ng::Status::OPT_UNBOUNDED) {
             mModel.emplace(mObjectiveVariable, carl::InfinityValue{});
+            SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_result_unbounded());
         } else {
             assert(res.status == covering_ng::Status::OPT_OPEN);
             RAN l = carl::convert<RAN>(res.intervals().front()->cell().lower()->first);
@@ -226,6 +227,7 @@ Answer CoveringNGModule<Settings>::minimize(cadcells::datastructures::Projection
             carl::Variable eps = carl::fresh_real_variable("max_epsilon"); // TODO: hacky
             mModel.emplace(eps, m_minimization_max_epsilon);
             mModel.emplace(mObjectiveVariable, carl::Infinitesimal{l, true});
+            SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_result_open());
         }
 
         // starting at 1 bc objectiveVariable is at 0
@@ -256,7 +258,9 @@ Answer CoveringNGModule<Settings>::minimize(cadcells::datastructures::Projection
         }
     }
 
-    validation_minimize(Answer::OPTIMAL);
+    if constexpr (Settings::validate_optimization) {
+        validation_minimize(Answer::OPTIMAL);
+    }
     return Answer::OPTIMAL;
 }
 
