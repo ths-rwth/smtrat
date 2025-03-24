@@ -22,7 +22,7 @@ struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
-		SequentialExplanation<mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,mcsat::icp::Explanation,mcsat::vs::Explanation,mcsat::onecell::Explanation<OCSettings>>;
+		mcsat::SequentialExplanation<mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,mcsat::icp::Explanation,mcsat::vs::Explanation,mcsat::onecell::Explanation<OCSettings>>;
 	};
 	using VarScheduler = VarSchedulerMinisat;
 };
