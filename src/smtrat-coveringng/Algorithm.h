@@ -79,6 +79,7 @@ inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::d
     auto representation = covering_heuristic::compute(derivations);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);
 	SMTRAT_STATISTICS_CALL(statistics().intervals_used(representation.sampled_derivations().size()));
+	SMTRAT_STATISTICS_CALL(statistics().characterize_covering());
     auto cell_derivs = representation.sampled_derivations();
     cadcells::datastructures::merge_underlying(cell_derivs);
     if (!op::project_covering_properties(representation)) return std::nullopt;
@@ -96,6 +97,7 @@ template<typename op, typename cell_heuristic>
 inline std::optional<std::pair<Interval<typename op::PropertiesSet>, cadcells::datastructures::CellRepresentation<typename op::PropertiesSet>>> characterize_interval(Interval<typename op::PropertiesSet>& interval) {
 	SMTRAT_LOG_FUNC("smtrat.covering_ng", interval->cell());
 	SMTRAT_STATISTICS_CALL(statistics().intervals_used(1));
+	SMTRAT_STATISTICS_CALL(statistics().characterize_interval());
 	interval->insert(cadcells::operators::properties::cell_connected{ interval->level() }); // TODO is this the proper way?
 	auto representation = cell_heuristic::compute(interval);
 	SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got representation " << representation);

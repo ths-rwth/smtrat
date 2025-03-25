@@ -18,6 +18,9 @@ class CoveringNGStatistics : public Statistics {
     std::size_t m_num_intervals_found;
     std::size_t m_bool_var_not_at_end;
 
+    std::size_t m_num_characterize_covering;
+    std::size_t m_num_characterize_interval;
+
 public:
     bool enabled() const {
         return true;
@@ -31,6 +34,8 @@ public:
         Statistics::addKeyValuePair("intervals.used.num", m_num_intervals_used);
         Statistics::addKeyValuePair("intervals.found.num", m_num_intervals_found);
         Statistics::addKeyValuePair("var_order.bool_var_not_at_end.num", m_bool_var_not_at_end);
+        Statistics::addKeyValuePair("characterize_covering.count", m_num_characterize_covering);
+        Statistics::addKeyValuePair("characterize_interval.count", m_num_characterize_interval);
     }
 
     void implicant_used(std::size_t sotd) {
@@ -52,6 +57,13 @@ public:
     }
     void formula_evaluation_end() {
         m_formula_evaluation.finish();
+    }
+
+    void characterize_covering() {
+        m_num_characterize_covering++;
+    }
+    void characterize_interval() {
+        m_num_characterize_interval++;
     }
 
     void variable_ordering(const cadcells::VariableOrdering& var_order, const std::map<carl::Variable, carl::Variable>& var_mapping) {
