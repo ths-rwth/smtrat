@@ -286,3 +286,4 @@ void poly_irreducible_null_sgn_inv(datastructures::SampledDerivation<P>& deriv, 
 #include "rules_covering.h"
 #include "rules_null.h" 
 #include "rules_constr.h"
+#include "rules_pdel.h"

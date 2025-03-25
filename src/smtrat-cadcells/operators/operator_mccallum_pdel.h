@@ -6,7 +6,6 @@
 #include "../datastructures/roots.h"
 #include "properties.h"
 #include "rules.h"
-#include "rules_pdel.h"
 
 
 namespace smtrat::cadcells::operators {

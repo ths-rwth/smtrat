@@ -58,6 +58,8 @@ static inline bool project_basic_properties(datastructures::SampledDerivation<Pr
 
     if (Settings::complete) {
         for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+            assert(!Settings::pdel);
+            // TODO
             rules::root_ordering_holds_delineated_complete(deriv, prop.ordering);
         }
     }
