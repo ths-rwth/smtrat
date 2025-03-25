@@ -4,6 +4,7 @@
 #include <smtrat-modules/NewCoveringModule/NewCoveringModule.tpp>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-solver/Manager.h>
+#include <smtrat-cadcells/operators/operator_mccallum_unified.h>
 
 namespace smtrat {
 
