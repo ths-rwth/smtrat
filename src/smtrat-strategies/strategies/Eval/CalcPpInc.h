@@ -13,6 +13,7 @@ struct NewCoveringSettings : NewCoveringSettings2 {
 	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
 	static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::GreedyMaxUnivariate;
+	static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::SIZE_SAMPLING;
 };
 }
 
