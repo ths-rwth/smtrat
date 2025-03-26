@@ -4,7 +4,7 @@ namespace smtrat::covering_ng {
 
 
 enum class SamplingAlgorithm {
-    LOWER_UPPER_BETWEEN_SAMPLING, LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN
+    LOWER_UPPER_BETWEEN_SAMPLING, LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN, SIZE_SAMPLING
 };
 
 /*
@@ -100,6 +100,58 @@ struct sampling<SamplingAlgorithm::LOWER_UPPER_BETWEEN_SAMPLING_AVOID_RAN> {
             }
             return std::nullopt;
         }
+    }
+};
+
+// resembles teh sampling method from MCSAT
+template<>
+struct sampling<SamplingAlgorithm::SIZE_SAMPLING> {
+    template<typename FE, typename PropertiesSet>
+    static std::optional<cadcells::RAN> sample_outside(const IntervalSet<PropertiesSet>& intervals, const FE&) {
+        std::vector<Interval<PropertiesSet>> derivs;
+        auto iter = intervals.begin();
+        while (iter != intervals.end()) {
+            derivs.push_back(*iter);
+            auto& last_cell = (*iter)->cell();
+            iter++;
+            while (iter != intervals.end() && !cadcells::datastructures::upper_lt_upper(last_cell, (*iter)->cell()))
+                iter++;
+        }
+
+        std::vector<cadcells::RAN> samples;
+
+        if (derivs.empty()) {
+            samples.emplace_back(0);
+        } else if (!derivs.front()->cell().lower_unbounded()) {
+            samples.emplace_back(carl::sample_below(derivs.front()->cell().lower()->first));
+        } else if (!derivs.back()->cell().upper_unbounded()) {
+            samples.emplace_back(carl::sample_above(derivs.back()->cell().upper()->first));
+        } else {
+            for (size_t i = 0; i + 1 < derivs.size(); i++) {
+                if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())) {
+                    if (derivs[i]->cell().upper()->first != derivs[i + 1]->cell().lower()->first) {
+                        samples.emplace_back(carl::sample_between(derivs[i]->cell().upper()->first, derivs[i + 1]->cell().lower()->first));
+                    }
+                }
+            }
+            for (size_t i = 0; i + 1 < derivs.size(); i++) {
+                if (!derivs[i]->cell().upper_unbounded() && !derivs[i + 1]->cell().lower_unbounded() && cadcells::datastructures::upper_lt_lower(derivs[i]->cell(), derivs[i + 1]->cell())) {
+                    if (derivs[i]->cell().upper()->first == derivs[i + 1]->cell().lower()->first) {
+                        samples.emplace_back(derivs[i]->cell().upper()->first);
+                    }
+                }
+            }
+        }
+
+        if (samples.empty()) return std::nullopt;
+
+        return *std::min_element(samples.begin(), samples.end(), [](const auto& l, const auto& r){ 
+            if (carl::is_integer(l) != carl::is_integer(r)) return carl::is_integer(l);
+            if (l.is_numeric() != r.is_numeric()) return l.is_numeric();
+            if (carl::bitsize(l) != carl::bitsize(r)) return carl::bitsize(l) < carl::bitsize(r);
+            if (carl::abs(l) != carl::abs(r)) return carl::abs(l) < carl::abs(r);
+            return l < r;
+         });
     }
 };
 
