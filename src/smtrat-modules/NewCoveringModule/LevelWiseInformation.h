@@ -136,7 +136,7 @@ public:
         // The cells cover the numberline -> Compute the covering representation
         std::vector<datastructures::SampledDerivationRef<PropSet>> derivationsVector(mDerivations.begin(), mDerivations.end());
         mCovering = covering_heuristic::compute(derivationsVector);
-        SMTRAT_STATISTICS_CALL(getStatistics().characterize_covering())
+        SMTRAT_STATISTICS_CALL(getStatistics().characterize_covering());
         SMTRAT_LOG_DEBUG("smtrat.covering", "Computed Covering: " << mCovering.value());
         SMTRAT_TIME_FINISH(getStatistics().timeForComputeCovering(), startTime);
         return true;
