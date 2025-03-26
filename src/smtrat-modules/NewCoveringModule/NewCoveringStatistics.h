@@ -30,6 +30,7 @@ private:
     std::string mIsSampleOutsideAlgorithm = "";
     carl::statistics::Timer mTimerComputeCovering;
     carl::statistics::Timer mTimerConstructDerivation;
+    std::size_t m_num_characterize_covering = 0;
 
 public:
     void collect() {
@@ -47,6 +48,7 @@ public:
         Statistics::addKeyValuePair("is_sample_outside_algorithm", mIsSampleOutsideAlgorithm);
         Statistics::addKeyValuePair("is_incremental", isIncremental);
         Statistics::addKeyValuePair("is_backtracking", isBacktracking);
+        Statistics::addKeyValuePair("characterize_covering.count", m_num_characterize_covering);
     }
     void called() {
         mTotalCalls++;
@@ -100,6 +102,10 @@ public:
 
     void setBacktracking(bool backtracking) {
         isBacktracking = backtracking;
+    }
+
+    void characterize_covering() {
+        m_num_characterize_covering++;
     }
 };
 

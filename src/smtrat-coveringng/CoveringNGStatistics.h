@@ -18,8 +18,8 @@ class CoveringNGStatistics : public Statistics {
     std::size_t m_num_intervals_found;
     std::size_t m_bool_var_not_at_end;
 
-    std::size_t m_num_characterize_covering;
-    std::size_t m_num_characterize_interval;
+    std::size_t m_num_characterize_covering = 0;
+    std::size_t m_num_characterize_interval = 0;
 
 public:
     bool enabled() const {
