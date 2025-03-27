@@ -2,7 +2,7 @@
 
 #include <smtrat-solver/Manager.h>
 
-#include <smtrat-modules/FPPModule/FPPModule.h>
+
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/SATModule/SATModule.tpp>
 #include <smtrat-cadcells/operators/operator_mccallum_unified.h>
@@ -22,19 +22,19 @@ struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 
 struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
-		using ExplanationBackend = mcsat::onecell::Explanation<OCSettings>;
+		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,mcsat::icp::Explanation,mcsat::vs::Explanation,mcsat::onecell::Explanation<OCSettings>>;
 	};
-	using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>>;
+	using VarScheduler = VarSchedulerMinisat;
 };
 } // namespace internal
 
-class Eval_McsatPpThfirstfeat : public Manager {
+class Eval_McsatComb : public Manager {
 public:
-	Eval_McsatPpThfirstfeat() : Manager() {
+	Eval_McsatComb() : Manager() {
 		setStrategy(
-			addBackend<FPPModule<FPPSettings1>>({
+			
 				addBackend<SATModule<internal::SATSettings>>()
-			})
+			
 		);
 	}
 };

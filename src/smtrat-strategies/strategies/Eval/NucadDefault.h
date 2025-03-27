@@ -2,7 +2,7 @@
 
 #include <smtrat-solver/Manager.h>
 
-#include <smtrat-modules/FPPModule/FPPModule.h>
+
 #include <smtrat-modules/NuCADModule/NuCADModule.h>
 #include <smtrat-modules/NuCADModule/NuCADModule.tpp>
 #include <smtrat-cadcells/operators/operator_mccallum_unified.h>
@@ -19,13 +19,13 @@ struct NuCADSettings : NuCADSettingsDefault  {
 };
 }
 
-class Eval_NucadPpDefault : public Manager {
+class Eval_NucadDefault : public Manager {
 public:
-    Eval_NucadPpDefault() : Manager() {
+    Eval_NucadDefault() : Manager() {
 		setStrategy(
-			addBackend<FPPModule<FPPSettings1>>({
+			
                 addBackend<NuCADModule<internal::NuCADSettings>>()
-            })
+            
         );
 	}
 };

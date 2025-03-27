@@ -2,7 +2,7 @@
 
 #include <smtrat-solver/Manager.h>
 
-#include <smtrat-modules/FPPModule/FPPModule.h>
+
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/SATModule/SATModule.tpp>
 #include <smtrat-cadcells/operators/operator_mccallum_unified.h>
@@ -24,17 +24,17 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
 		using ExplanationBackend = mcsat::onecell::Explanation<OCSettings>;
 	};
-	using VarScheduler = VarSchedulerMinisat;
+	using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::GreedyMaxUnivariate>>;
 };
 } // namespace internal
 
-class Eval_McsatPpDefault : public Manager {
+class Eval_McsatThfirstgreedy : public Manager {
 public:
-	Eval_McsatPpDefault() : Manager() {
+	Eval_McsatThfirstgreedy() : Manager() {
 		setStrategy(
-			addBackend<FPPModule<FPPSettings1>>({
+			
 				addBackend<SATModule<internal::SATSettings>>()
-			})
+			
 		);
 	}
 };

@@ -2,7 +2,7 @@
 
 #include <smtrat-solver/Manager.h>
 
-#include <smtrat-modules/FPPModule/FPPModule.h>
+
 #include <smtrat-modules/CoveringNGModule/CoveringNGModule.h>
 #include <smtrat-modules/CoveringNGModule/CoveringNGModule.tpp>
 #include <smtrat-cadcells/operators/operator_mccallum_unified.h>
@@ -20,13 +20,13 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 };
 }
 
-class Eval_CalcPpDefault : public Manager {
+class Eval_CalcDefault : public Manager {
 public:
-	Eval_CalcPpDefault() : Manager() {
+	Eval_CalcDefault() : Manager() {
 		setStrategy(
-			addBackend<FPPModule<FPPSettings1>>({
+			
                 addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
-            })
+            
         );
 	}
 };
