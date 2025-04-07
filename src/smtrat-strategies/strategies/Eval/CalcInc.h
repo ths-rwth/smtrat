@@ -20,10 +20,8 @@ class Eval_CalcInc : public Manager {
 public:
 	Eval_CalcInc() : Manager() {
 		setStrategy(
-			addBackend<FPPModule<FPPSettings1>>(
-				addBackend<SATModule<SATSettings1>>(
-					addBackend<NewCoveringModule<internal::NewCoveringSettings>>()
-				)
+			addBackend<SATModule<SATSettings1>>(
+				addBackend<NewCoveringModule<internal::NewCoveringSettings>>()
 			)
 		);
 	}
