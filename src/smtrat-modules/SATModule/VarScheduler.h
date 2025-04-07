@@ -30,6 +30,7 @@ namespace smtrat
         std::function</*const*/ Minisat::Var(const FormulaT&)> abstractVariable;
         std::function<const Minisat::Lit(const FormulaT&)> abstractLiteral;
         std::function<bool(const FormulaT&)> isAbstractedFormula;
+        std::function<bool(Minisat::Var)> isTseitinVar;
 
     public:
         template<typename BaseModule>
@@ -48,7 +49,8 @@ namespace smtrat
             currentlySatisfiedByBackend([&baseModule](const FormulaT& f){ return baseModule.currentlySatisfiedByBackend(f); }),
             abstractVariable([&baseModule](const FormulaT& f) { return Minisat::var(baseModule.mConstraintLiteralMap.at(f).front()); }),
             abstractLiteral([&baseModule](const FormulaT& f) { return baseModule.mConstraintLiteralMap.at(f).front(); }),
-            isAbstractedFormula([&baseModule](const FormulaT& f) { return baseModule.mConstraintLiteralMap.count(f) > 0; })
+            isAbstractedFormula([&baseModule](const FormulaT& f) { return baseModule.mConstraintLiteralMap.count(f) > 0; }),
+            isTseitinVar([&baseModule](Minisat::Var v) { return baseModule.mTseitinVariable.test(v); })
         {}
 
         /**

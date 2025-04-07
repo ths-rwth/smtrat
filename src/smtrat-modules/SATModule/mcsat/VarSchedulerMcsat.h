@@ -322,6 +322,118 @@ namespace smtrat {
     };
 
     /**
+     * Variable scheduling that all decides theory variables first before
+     * deciding any Boolean variable.
+     */
+    template<typename TheoryScheduler>
+    class VarSchedulerMcsatTheoryFirstBooleanMoreFirst : public VarSchedulerMcsatBase {
+        VarSchedulerMinisat boolean_ordering;
+        // TheoryVarSchedulerStatic<vot> theory_ordering;
+        TheoryScheduler theory_ordering;
+        VarSchedulerMinisat original_boolean_ordering; // it is actually static, we just do not update activities
+        
+    public:
+        template<typename BaseModule>
+        explicit VarSchedulerMcsatTheoryFirstBooleanMoreFirst( BaseModule& baseModule ) :
+            VarSchedulerMcsatBase(baseModule),
+            boolean_ordering( baseModule ),
+            theory_ordering( baseModule ),
+            original_boolean_ordering( baseModule )
+        {}
+
+        void rebuild() {
+            boolean_ordering.rebuild();
+            theory_ordering.rebuild();
+            original_boolean_ordering.rebuild();
+        }
+
+        void insert(Minisat::Var var) {
+            if (isTheoryVar(var)) {
+                theory_ordering.insert(var);              
+            } else {
+                if (isTheoryAbstraction(var) || isTseitinVar(var)) {
+                    boolean_ordering.insert(var);
+                } else {
+                    original_boolean_ordering.insert(var);
+                }
+            }
+        }
+
+        /*
+        Minisat::Var top() {
+            if (!theory_ordering.empty()) {
+                return theory_ordering.top();
+            } else if (!boolean_ordering.empty()) {
+                return boolean_ordering.top();
+            } else {
+                return var_Undef;
+            }
+        }
+        */
+
+        Minisat::Lit pop() {
+            if (!original_boolean_ordering.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking original Boolean var");
+                return original_boolean_ordering.pop();
+            } else if (!theory_ordering.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking theory var");
+                return theory_ordering.pop();
+            } else if (!boolean_ordering.empty()) {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "Picking Boolean var");
+                return boolean_ordering.pop();
+            } else {
+                SMTRAT_LOG_DEBUG("smtrat.sat.mcsat.scheduler", "No variable available");
+                return Minisat::lit_Undef;
+            }
+        }
+
+        bool empty() {
+            return boolean_ordering.empty() && theory_ordering.empty() && original_boolean_ordering.empty();
+        }
+
+        /*
+        bool contains(Minisat::Var var) {
+            if (isTheoryVar(var)) {
+                return theory_ordering.contains(var);
+            } else {
+                return boolean_ordering.contains(var);
+            }
+        }
+        */
+
+        void print() const {
+            boolean_ordering.print();
+            theory_ordering.print();
+            original_boolean_ordering.print();
+        }
+
+        // Events called by SATModule
+
+        void increaseActivity(Minisat::Var var) {
+            boolean_ordering.increaseActivity(var);
+            theory_ordering.increaseActivity(var);
+            //original_boolean_ordering.increaseActivity(var);
+        }
+
+        void decreaseActivity(Minisat::Var var) {
+            boolean_ordering.decreaseActivity(var);
+            theory_ordering.decreaseActivity(var);
+            //original_boolean_ordering.decreaseActivity(var);
+        }
+
+        void rebuildActivities() { 
+            boolean_ordering.rebuild();
+            theory_ordering.rebuild();
+            original_boolean_ordering.rebuild();
+        }
+
+        template<typename Constraints>
+        void rebuildTheoryVars(const Constraints& c) {
+            theory_ordering.rebuildTheoryVars(c);
+        }
+    };
+
+    /**
      * Decides only Constraints univariate in the current theory variable while the
      * theory ordering is static.
      */
