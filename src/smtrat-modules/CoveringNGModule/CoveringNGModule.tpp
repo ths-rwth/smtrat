@@ -96,6 +96,23 @@ Answer CoveringNGModule<Settings>::checkCore() {
         }
     }
 
+    if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_front) {
+        if (only_ex) {
+            carl::Variable first_var;
+            for (auto it = var_order.rbegin(); it != var_order.rend() && first_var != *it; ) {
+                if (var_mapping.find(*it) != var_mapping.end()) {
+                    if (first_var == carl::Variable::NO_VARIABLE) {
+                        first_var = *it;
+                    }
+                    std::rotate(it, it + 1, var_order.rend());
+                }
+                else {
+                    it++;
+                }
+            }
+        }
+    }
+
     SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got variable ordering: " << var_order);
 
     //auto var_order = carl::variables(input).to_vector();
