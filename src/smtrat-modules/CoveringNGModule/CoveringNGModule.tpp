@@ -66,14 +66,37 @@ Answer CoveringNGModule<Settings>::checkCore() {
 	//assert(!prefix.empty() || input == matrix);
 
     covering_ng::VariableQuantification variable_quantification;
+    bool only_ex = true;
 	for (const auto& q : prefix) {
 		variable_quantification.set_var_type(q.second, q.first);
+        if (q.first == carl::Quantifier::FORALL) {
+            only_ex = false;
+        }
 	}
 
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
     SMTRAT_STATISTICS_CALL(covering_ng::statistics().variable_ordering(var_order, var_mapping));
     SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
+
+    if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_back) {
+        if (only_ex) {
+            carl::Variable first_var;
+            for (auto it = var_order.begin(); it != var_order.end() && first_var != *it; ) {
+                if (var_mapping.find(*it) != var_mapping.end()) {
+                    if (first_var == carl::Variable::NO_VARIABLE) {
+                        first_var = *it;
+                    }
+                    std::rotate(it, it + 1, var_order.end());
+                }
+                else {
+                    it++;
+                }
+            }
+        }
+    }
+
+    SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got variable ordering: " << var_order);
 
     //auto var_order = carl::variables(input).to_vector();
     // std::vector<ConstraintT> constraints;

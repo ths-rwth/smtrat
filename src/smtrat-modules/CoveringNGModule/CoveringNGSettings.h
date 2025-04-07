@@ -15,6 +15,7 @@ struct CoveringNGSettingsDefault {
 
     // Handling of Boolean variables
     static constexpr bool transform_boolean_variables_to_reals = true;
+    static constexpr bool move_boolean_variables_to_back = false;
 
     // Variable ordering
     static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
