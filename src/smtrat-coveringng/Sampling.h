@@ -161,8 +161,16 @@ inline std::optional<cadcells::RAN> sample_outside_and_below(const IntervalSet<P
             }
         }
     }
-    // The cells cover the number line -> There is no sample to be found
-    return std::nullopt;
+
+    // the second highest unsat is still below ub -> check highest unsat
+
+    if (!cadcells::datastructures::upper_lt_lower(derivs.back()->cell(), ub)) {
+        return std::nullopt;
+    } else if (derivs.back()->cell().upper()->first == ub.lower()->first) {
+        return ub.lower()->first;
+    } else {
+        return carl::sample_between(derivs.back()->cell().upper()->first, ub.lower()->first);
+    }
 }
 
 }; // namespace smtrat
