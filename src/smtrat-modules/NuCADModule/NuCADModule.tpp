@@ -66,8 +66,12 @@ Answer NuCADModule<Settings>::checkCore() {
 	//assert(!prefix.empty() || input == matrix);
 
     covering_ng::VariableQuantification variable_quantification;
+    bool only_ex = true;
 	for (const auto& q : prefix) {
         variable_quantification.set_var_type(q.second, q.first);
+        if (q.first == carl::Quantifier::FORALL) {
+            only_ex = false;
+        }
 	}
     for (auto& var : carl::variables(matrix)) {
         if (!variable_quantification.has(var)) {
