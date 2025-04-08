@@ -12,23 +12,17 @@ struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
     static constexpr DelineationFunction delineation_function = NOOP;
 };
 
-namespace apx = cadcells::representation::approximation;
-
-struct APXSettings {
-	using Criteria = apx::Criteria<typename apx::BaseCriteriaSettings>;
-};
-
 struct CoveringNGSettings : CoveringNGSettingsDefault  {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
-    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellAPXCovering<APXSettings>;
+    using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
 };
 
 }
 
-class CoveringNG_DefaultAPX: public Manager {
+class Approximation_Covering: public Manager {
 public:
-	CoveringNG_DefaultAPX() : Manager() {
+	Approximation_Covering() : Manager() {
 		setStrategy(
             addBackend<CoveringNGModule<internal::CoveringNGSettings>>()
         );

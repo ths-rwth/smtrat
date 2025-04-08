@@ -2,8 +2,10 @@
 
 #include <smtrat-solver/Manager.h>
 
+#include <smtrat-modules/FPPModule/FPPModule.h>
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/SATModule/SATModule.tpp>
+#include <smtrat-modules/STropModule/STropModule.h>
 
 #include "common.h"
 
@@ -21,7 +23,12 @@ struct PWLSettings {
 
 struct ApxSettings {
     using method = apx::PiecewiseLinear<PWLSettings>;
-    using Criteria = apx::ApxCriteria<typename apx::BaseCriteriaSettings>;
+    struct CriteriaSettings : apx::BaseCriteriaSettings {
+        static constexpr std::size_t approximated_cells_limit = 100;
+        static constexpr std::size_t single_degree_threshold  = 3;
+        static constexpr std::size_t dynamic_degree_scale     = 2;
+    };
+    using Criteria = apx::Criteria<CriteriaSettings>;
 };
 
 struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
@@ -29,22 +36,18 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 	using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
 };
 
-struct SATSettings : smtrat::SATSettingsMCSAT {
-	struct MCSATSettings : mcsat::Base {
-		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
-		using ExplanationBackend = mcsat::SequentialExplanation<mcsat::onecell::Explanation<OCSettings>,
-                                                                mcsat::nlsat::Explanation>;
-	};
-};
-
 } // namespace internal
 
-class Approximation_PWL2Segments : public Manager {
+class Approximation_PWL2 : public Manager {
 public:
-	Approximation_PWL2Segments()
-		: Manager() {
-		setStrategy(
-			addBackend<SATModule<internal::SATSettings>>());
+	Approximation_PWL2() : Manager() {
+        setStrategy(
+            addBackend<FPPModule<FPPSettings1>>({
+                addBackend<STropModule<STropSettings3>>({
+                    addBackend<SATModule<strategies::approximation::SATSettings<internal::OCSettings>>>()
+                })
+            })
+        );
 	}
 };
 

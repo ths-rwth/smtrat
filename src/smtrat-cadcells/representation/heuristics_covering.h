@@ -349,15 +349,17 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         if (next_cell.lower()->first == cell.upper()->first) continue;
 
         // check whether the simplest two boundary-defining polynomials have high degree
-        {
-            auto ir_l = util::simplest_bound((*it_next)->proj(), next_cell.lower()->second);
-            auto ir_u = util::simplest_bound((*it)->proj(), cell.upper()->second);
-            if (!Settings::Criteria::poly_pair((*it)->proj(), ir_l, ir_u)) continue;
-        }
+        auto ir_l = util::simplest_bound((*it_next)->proj(), next_cell.lower()->second);
+        auto ir_u = util::simplest_bound((*it)->proj(), cell.upper()->second);
+        if (!Settings::Criteria::get().poly_pair((*it)->proj(), ir_l, ir_u)) continue;
 
-        // from here on we consider it worth approximating
         // calculate new root
         Rational new_root = SampleSimple::above(next_cell.lower()->first, cell.upper()->first); // TODO : Settings?
+
+        // if the new sample is an ugly number, we might want to skip it.
+        if (!Settings::Criteria::get().sample(new_root)) continue;
+
+        // construct root expression
         const auto& context = (*it)->proj().polys().context();
         const auto var = (*it)->main_var();
         Polynomial apx_poly = carl::get_denom(new_root)*Polynomial(context,var) - carl::get_num(new_root);
@@ -379,6 +381,8 @@ void insert_approximations(std::vector<datastructures::SampledDerivationRef<T>>&
         (*it_next)->move_main_var_sample_above(new_root); // make sure the re-delineation works properly
         (*it_next)->delin().add_root(new_root, new_ire); // this invalidates the iterators for the cell boundaries
         (*it_next)->delineate_cell();
+
+        Settings::Criteria::get().did_approximation();
     }
 }
 
@@ -393,10 +397,13 @@ struct BiggestCellAPXCovering {
         datastructures::CoveringRepresentation<T> result;
         auto min_derivs = compute_min_derivs(derivs, true);
 
-        approximation::insert_approximations<Settings>(min_derivs);
+        if (Settings::Criteria::get().covering()) {
+            approximation::insert_approximations<Settings>(min_derivs);
+        }
 
         for (auto& iter : min_derivs) {
             datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilter::compute(iter);
+            //datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCell::compute(iter);
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);

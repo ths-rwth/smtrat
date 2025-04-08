@@ -151,15 +151,15 @@ public:
 		return segments[index];
 	}
 
-	virtual datastructures::CompoundMinMax build_compound_min_max(carl::LPPolynomial::ContextType &ctx,
-                                                               	  datastructures::PolyPool& polys,
-                                                               	  carl::Variable primary_variable,
-                                                               	  carl::Variable secondary_variable) = 0;
+	virtual datastructures::CompoundMinMax build_compound_min_max(carl::LPPolynomial::ContextType& /*ctx*/,
+                                                               	  datastructures::PolyPool& /*polys*/,
+                                                               	  carl::Variable /*primary_variable*/,
+                                                               	  carl::Variable /*secondary_variable*/) = 0;
 
-	virtual datastructures::CompoundMaxMin build_compound_max_min(carl::LPPolynomial::ContextType &ctx,
-                                                               	  datastructures::PolyPool& polys,
-                                                               	  carl::Variable primary_variable,
-                                                               	  carl::Variable secondary_variable) = 0;
+	virtual datastructures::CompoundMaxMin build_compound_max_min(carl::LPPolynomial::ContextType& /*ctx*/,
+                                                               	  datastructures::PolyPool& /*polys*/,
+                                                               	  carl::Variable /*primary_variable*/,
+                                                               	  carl::Variable /*secondary_variable*/) = 0;
 };
 
 

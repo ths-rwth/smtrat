@@ -19,4 +19,18 @@ struct BaseOCSettings : smtrat::mcsat::onecell::BaseSettings {
 	using op = cadcells::operators::MccallumFiltered<OpSettings>;
 };
 
+template<typename OCSettings>
+struct SATSettings : smtrat::SATSettingsMCSAT {
+	struct MCSATSettings : mcsat::Base {
+		using AssignmentFinderBackend = mcsat::arithmetic::AssignmentFinder;
+		using ExplanationBackend = mcsat::SequentialExplanation<
+                                       mcsat::fm::Explanation<mcsat::fm::DefaultSettings>,
+									   mcsat::icp::Explanation,
+									   mcsat::vs::Explanation,
+									   mcsat::onecell::Explanation<OCSettings>,
+									   mcsat::onecell::Explanation<mcsat::onecell::DefaultSettings>
+                                    >;
+	};
+};
+
 }
