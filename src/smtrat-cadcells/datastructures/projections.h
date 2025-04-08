@@ -552,14 +552,14 @@ public:
     }
 
     inline std::pair<RAN, std::vector<datastructures::IndexedRoot>> evaluate(const Assignment& ass, const datastructures::RootFunction& f) {
-        if (f.is_root())
+        if (f.is_root()) {
             return std::make_pair(evaluate(ass, f.root()), std::vector<datastructures::IndexedRoot>({f.root()}));
-        else if (f.is_cminmax())
+        } else if (f.is_cminmax()) {
             return evaluate(ass, f.cminmax());
-        else if (f.is_cmaxmin())
+        } else {
+            assert(f.is_cmaxmin());
             return evaluate(ass, f.cmaxmin());
-        else
-            assert(false);
+        }
     }
 
     PolyConstraint negation(const PolyConstraint& constraint) const {
