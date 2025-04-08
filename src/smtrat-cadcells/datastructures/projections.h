@@ -16,7 +16,6 @@
 #include <carl-arith/poly/umvpoly/functions/Derivative.h>
 
 #include "../CADCellsStatistics.h"
-#include "../OCApproximationStatistics.h"
 
 namespace smtrat::cadcells::datastructures {
 
@@ -177,9 +176,6 @@ public:
         if (cache(p).res.find(q) != cache(p).res.end()) {
             return cache(p).res[q];
         } else {
-#ifdef SMTRAT_DEVOPTION_Statistics
-            OCApproximationStatistics::get_instance().resultant();
-#endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_resultant.start_this());
             auto result = m_pool(carl::resultant(m_pool(p), m_pool(q)));
@@ -219,7 +215,6 @@ public:
             return *cache(p).disc;
         } else {
 #ifdef SMTRAT_DEVOPTION_Statistics
-            OCApproximationStatistics::get_instance().discriminant();
 #ifdef SMTRAT_DEVOPTION_Expensive
             auto& resultants = statistics().resultants;
             auto& discriminants = statistics().discriminants;
@@ -260,9 +255,6 @@ public:
         if (cache(p).ldcf) {
             return *cache(p).ldcf;
         } else {
-#ifdef SMTRAT_DEVOPTION_Statistics
-            OCApproximationStatistics::get_instance().coefficient();
-#endif
             SMTRAT_STATISTICS_CALL(statistics().projection_start());
             SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_ldcf.start_this());
             auto result = m_pool(m_pool(p).lcoeff());

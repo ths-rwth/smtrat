@@ -29,17 +29,15 @@ namespace smtrat::mcsat::onecell {
  */
 template<typename Settings>
 std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constraints, const cadcells::Polynomial::ContextType& context, const cadcells::Assignment& sample) {
-    SMTRAT_STATISTICS_CALL(
-        cadcells::OCApproximationStatistics& stats = cadcells::OCApproximationStatistics::get_instance();
-        stats.new_cell();
-    )
     SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(sample.size()+1));
+    SMTRAT_STATISTICS_CALL(cadcells::apx_statistics().new_cell());
 
-    bool consider_approximation = Settings::use_approximation;
+    bool consider_approximation = false;
     if constexpr (Settings::use_approximation) {
-        consider_approximation = Settings::Criteria::cell(constraints);
+        consider_approximation = Settings::Criteria::get().cell(constraints);
+        SMTRAT_STATISTICS_CALL(cadcells::apx_statistics().approximation_considered(consider_approximation));
     }
-    SMTRAT_STATISTICS_CALL( if (consider_approximation) stats.approximation_considered(); )
+    
     SMTRAT_LOG_FUNC("smtrat.mcsat.onecell", constraints << ", " << context << ", " << sample);
     cadcells::datastructures::PolyPool pool(context);
     cadcells::datastructures::Projections proj(pool);
@@ -73,7 +71,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     while ((*derivation)->level() > 0) {
         std::optional<std::pair<carl::Variable, cadcells::datastructures::SymbolicInterval>> lvl;
         if constexpr (Settings::use_approximation) {
-            if (consider_approximation && Settings::Criteria::level((*derivation)->level())) {
+            if (consider_approximation && Settings::Criteria::get().level((*derivation)->level())) {
                 lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_apx_heuristic>(*derivation);
             } else {
                 lvl = cadcells::algorithms::get_interval<typename Settings::op, typename Settings::cell_heuristic>(*derivation);
@@ -108,6 +106,7 @@ std::optional<cadcells::DNF> onecell(const std::vector<cadcells::Atom>& constrai
     }
     proj.clear_assignment_cache(cadcells::empty_assignment);
 
+    SMTRAT_STATISTICS_CALL(cadcells::apx_statistics().success(sample.size()));
     return description;
 }
 

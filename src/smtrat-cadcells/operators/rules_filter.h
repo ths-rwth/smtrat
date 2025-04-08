@@ -78,7 +78,13 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
         bool all_relations_weak = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
         boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
         auto delineable_interval = filter_util::delineable_interval(deriv.proj(), deriv.sample(), polys);
-        assert(delineable_interval);
+        if (!delineable_interval) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "unable to compute delineable interval, skip.");
+            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&, bool) {
+                return filter_util::result::NORMAL; // TODO: what about inclusive here?
+            });
+            continue;
+        }
         bool only_regular = std::find_if(d.second.begin(), d.second.end(), [](const auto& pair) { return !(pair.first.is_root() && pair.second.is_root()); }) == d.second.end();
         filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran, bool) {
@@ -125,7 +131,10 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         bool relevant = true; 
                         assert(pair.second.is_cminmax() || pair.second.is_cmaxmin());
                         auto delineable_interval_cb = filter_util::delineable_interval(deriv.proj(), deriv.sample(), pair.second.polys());
-                        assert(delineable_interval_cb);
+                        if (!delineable_interval_cb) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "unable to compute delineable interval, skip.");
+                            return filter_util::result::NORMAL; // TODO: what about inclusive here?
+                        }
                         if (delineable_interval_cb->contains(ran)) {
                             auto res = pair.second.is_cminmax() ? deriv.proj().evaluate(ass, pair.second.cminmax()) : deriv.proj().evaluate(ass, pair.second.cmaxmin());
                             relevant = false;
@@ -147,7 +156,10 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         bool relevant = true; 
                         assert(pair.first.is_cminmax() || pair.first.is_cmaxmin());
                         auto delineable_interval_cb = filter_util::delineable_interval(deriv.proj(), deriv.sample(), pair.first.polys());
-                        assert(delineable_interval_cb);
+                        if (!delineable_interval_cb) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "unable to compute delineable interval, skip.");
+                            return filter_util::result::NORMAL; // TODO: what about inclusive here?
+                        }
                         if (delineable_interval_cb->contains(ran)) {
                             auto res = pair.first.is_cminmax() ? deriv.proj().evaluate(ass, pair.first.cminmax()) : deriv.proj().evaluate(ass, pair.first.cmaxmin());
                             relevant = false;
@@ -170,7 +182,10 @@ void delineate_all_compound(datastructures::SampledDerivation<P>& deriv, const p
                         auto cb_polys = pair.first.polys();
                         cb_polys.merge(pair.second.polys());
                         auto delineable_interval_cb = filter_util::delineable_interval(deriv.proj(), deriv.sample(), cb_polys);
-                        assert(delineable_interval_cb);
+                        if (!delineable_interval_cb) {
+                            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "unable to compute delineable interval, skip.");
+                            return filter_util::result::NORMAL; // TODO: what about inclusive here?
+                        }
                         if (delineable_interval_cb->contains(ran)) {
                             auto res1 = deriv.proj().evaluate(ass, pair.first.cmaxmin());
                             auto res2 = deriv.proj().evaluate(ass, pair.second.cminmax());
@@ -239,7 +254,13 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
         ) {
             boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
             auto delineable_interval = filter_util::delineable_interval(deriv.proj(), deriv.sample(), polys);
-            assert(delineable_interval);
+            if (!delineable_interval) {
+                SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "unable to compute delineable interval, skip.");
+                filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&, bool) {
+                    return filter_util::result::NORMAL; // TODO: what about inclusive here?
+                });
+                continue;
+            }
             filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
 
             bool nonoptional_below = false;
@@ -425,7 +446,13 @@ void delineate_compound_piecewiselinear(datastructures::SampledDerivation<P>& de
         bool all_relations_weak = enable_weak && std::find_if(d.second.begin(), d.second.end(), [](const auto& pair){ return pair.is_strict; }) == d.second.end();
         boost::container::flat_set<datastructures::PolyRef> polys({ poly1, poly2 });
         auto delineable_interval = filter_util::delineable_interval(deriv.proj(), deriv.sample(), polys);
-        assert(delineable_interval);
+        if (!delineable_interval) {
+            SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "unable to compute delineable interval, skip.");
+            filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN&, bool) {
+                return filter_util::result::NORMAL; // TODO: what about inclusive here?
+            });
+            continue;
+        }
         filter_util::delineable_interval_roots<P>(deriv, polys, deriv.proj().res(poly1, poly2));
         filter_util::filter_roots(*deriv.delineated(), deriv.proj().res(poly1, poly2), [&](const RAN& ran, bool) {
             Assignment ass = filter_util::projection_root(*deriv.delineated(), ran);

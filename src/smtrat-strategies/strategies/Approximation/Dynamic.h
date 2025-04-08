@@ -13,13 +13,8 @@ namespace smtrat {
 
 namespace internal {
 
-struct TaylorSettings {
-	static constexpr std::size_t taylor_deg = 1;
-	using Sampling = apx::SampleSimple;
-};
-
 struct ApxSettings {
-    using method = apx::Taylor<TaylorSettings>;
+    using method = apx::Simple<apx::SimpleSettings>;
     struct CriteriaSettings : apx::BaseCriteriaSettings {
         static constexpr std::size_t approximated_cells_limit = 100;
         static constexpr std::size_t single_degree_threshold  = 3;
@@ -35,9 +30,9 @@ struct OCSettings : smtrat::strategies::approximation::BaseOCSettings {
 
 } // namespace internal
 
-class Approximation_Taylor : public Manager {
+class Approximation_Dynamic : public Manager {
 public:
-	Approximation_Taylor() : Manager() {
+	Approximation_Dynamic() : Manager() {
         setStrategy(
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({

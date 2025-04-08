@@ -24,6 +24,7 @@ inline std::optional<carl::Interval<RAN>> delineable_interval(datastructures::Pr
         rules::delineate(*subderiv->delineated(), prop);
     }
     subderiv->delineate_cell();
+    if (!subderiv->delin().nullified().empty()) return std::nullopt;
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "delineable_interval end; got " << subderiv->cell());
 
     if (subderiv->cell().is_section()) {
