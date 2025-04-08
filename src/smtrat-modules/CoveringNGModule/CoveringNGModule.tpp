@@ -29,6 +29,11 @@ void CoveringNGModule<Settings>::updateModel() const {}
 template<typename Settings>
 Answer CoveringNGModule<Settings>::checkCore() {
     FormulaT input(rReceivedFormula());
+    if (input.type() == carl::FormulaType::FALSE) {
+        mModel.clear();
+        generateTrivialInfeasibleSubset();
+        return Answer::UNSAT;
+    };
 
     std::map<carl::Variable, carl::Variable> var_mapping;
     // for quantified problems, the following setting is mandatory for correctness:
@@ -76,6 +81,26 @@ Answer CoveringNGModule<Settings>::checkCore() {
     // move objective variable to the front if it is an optimization problem
     // TODO: design specialized var ordering heuristic
     if (is_minimizing()) {
+        if constexpr (Settings::minimization_variable_order) {
+            if(input.type() == carl::FormulaType::AND) { // otherwise the input is trivial
+                carl::carlVariables vars_rel_to_objective;
+                for (const FormulaT& f : input.subformulas()) {
+                    if (f.type() != carl::FormulaType::CONSTRAINT) continue;
+                    if (f.constraint().relation() != carl::Relation::EQ) continue;
+                    auto vars = carl::variables(f);
+                    if (vars.has(mObjectiveVariable)) {
+                        vars_rel_to_objective = vars;
+                        vars_rel_to_objective.erase(mObjectiveVariable);
+                        break;
+                    }
+                }
+
+                std::stable_sort(var_order.begin(), var_order.end(), [&vars_rel_to_objective](const auto& lhs, const auto& rhs) {
+                    return (vars_rel_to_objective.has(lhs) ? 0 : 1) < (vars_rel_to_objective.has(rhs) ? 0 : 1);
+                });
+            }
+        }
+
         auto it = std::find(var_order.begin(), var_order.end(), mObjectiveVariable);
         assert(it != var_order.end());
         std::rotate(var_order.begin(), it, it+1);
@@ -282,48 +307,61 @@ Answer CoveringNGModule<Settings>::minimize_by_qe(cadcells::datastructures::Proj
                                                 (proj, f, ass, variable_quantification);
     
     if (!res.is_parameter()) return process_result(res);
-
-    std::optional<RAN> optimum;
-    bool optimum_strict = true;
     SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_intervals(tree.children.size()));
 
-    for (const auto& t : tree.children) {
-        if (t.status != 1) continue;
-        if (t.interval->lower().is_infty()) {
-            mModel.assign(mObjectiveVariable, carl::InfinityValue{});
-            break;
-        }
-
-        assert(t.interval->lower().value().is_root());
-        RAN lb = carl::convert<RAN>(proj.evaluate({}, t.interval->lower().value().root()));
-        if (!optimum || lb < optimum.value()) {
-            optimum = lb;
-            optimum_strict = t.interval->lower().is_strict();
-            if (t.interval->upper().is_infty()) {
-                m_minimization_max_epsilon = Rational(1);
-            } else {
-                RAN ub = carl::convert<RAN>(proj.evaluate({}, t.interval->upper().value().root()));
-                Rational ub_rat = (ub.is_numeric() ? ub.value() : ub.interval().lower());
-                Rational lb_rat = (optimum->is_numeric() ? optimum->value() : optimum->interval().upper());
-
-                m_minimization_max_epsilon = ub_rat - lb_rat;
+    if (tree.status == 0) {
+        mModel.clear();
+        generateTrivialInfeasibleSubset();
+        return Answer::UNSAT;
+    } else if (tree.status == 1) {
+        mModel.assign(mObjectiveVariable, carl::InfinityValue{});
+        SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_result_unbounded());
+    } else {
+        std::optional<RAN> optimum;
+        bool optimum_strict = true;
+        for (const auto& t : tree.children) {
+            if (t.status != 1) continue;
+            if (t.interval->lower().is_infty()) {
+                mModel.assign(mObjectiveVariable, carl::InfinityValue{});
+                SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_result_unbounded());
+                break;
             }
-        } else if (lb == optimum.value() && optimum_strict && t.interval->lower().is_weak()) {
-            optimum_strict = false;
-        }
-    }
 
-    if (optimum.has_value()) {
-        if (optimum_strict) {
-            carl::Variable eps = carl::fresh_real_variable("max_epsilon"); // TODO: hacky
-            mModel.emplace(eps, m_minimization_max_epsilon);
-            mModel.emplace(mObjectiveVariable, carl::Infinitesimal{optimum.value(), true});
-        } else {
-            mModel.emplace(mObjectiveVariable, optimum.value());
+            assert(t.interval->lower().value().is_root());
+            RAN lb = carl::convert<RAN>(proj.evaluate({}, t.interval->lower().value().root()));
+            if (!optimum || lb < optimum.value()) {
+                optimum = lb;
+                optimum_strict = t.interval->lower().is_strict();
+                if (t.interval->upper().is_infty()) {
+                    m_minimization_max_epsilon = Rational(1);
+                } else {
+                    RAN ub = carl::convert<RAN>(proj.evaluate({}, t.interval->upper().value().root()));
+                    Rational ub_rat = (ub.is_numeric() ? ub.value() : ub.interval().lower());
+                    Rational lb_rat = (optimum->is_numeric() ? optimum->value() : optimum->interval().upper());
+
+                    m_minimization_max_epsilon = ub_rat - lb_rat;
+                }
+            } else if (lb == optimum.value() && optimum_strict && t.interval->lower().is_weak()) {
+                optimum_strict = false;
+            }
         }
-    }
+
+        if (optimum.has_value()) {
+            if (optimum_strict) {
+                carl::Variable eps = carl::fresh_real_variable("max_epsilon"); // TODO: hacky
+                mModel.emplace(eps, m_minimization_max_epsilon);
+                mModel.emplace(mObjectiveVariable, carl::Infinitesimal{optimum.value(), true});
+                SMTRAT_STATISTICS_CALL(covering_ng::statistics().minimization_result_open());
+            } else {
+                mModel.emplace(mObjectiveVariable, optimum.value());
+            }
+        }
+    }  
+
     // TODO: What about other variables?
-    validation_minimize(Answer::OPTIMAL);
+    if constexpr (Settings::validate_optimization) {
+        validation_minimize(Answer::OPTIMAL);
+    }
     return Answer::OPTIMAL;                    
 }
 
@@ -351,8 +389,8 @@ void CoveringNGModule<Settings>::validation_minimize(const Answer a) {
     // unsat      |  input unsat
     // unbounded  |  for all t, x.(input(x,t) -> t >= t') unsat
     // closed     |  input(x,t) ^ [t < opt]  unsat and input(x,t) ^ [t = opt] sat
-    // open       |  input(x,t) ^ [t <= opt] unsat and (not input(x,t)) ^ [opt < t] ^ [t < opt + max_delta] unsat
-
+    // open       |  input(x,t) ^ [t <= opt] unsat and
+    //            |  ([opt < t] ^ [t < opt + max_delta] and for all x. not input(x,t)) unsat
 
     FormulaT input(rReceivedFormula());
     if (a == Answer::UNSAT) {
@@ -398,7 +436,7 @@ void CoveringNGModule<Settings>::validation_minimize(const Answer a) {
         ran_encode,
         FormulaT(p, (opt.isRAN() ? carl::Relation::LESS : carl::Relation::LEQ))
     });
-    SMTRAT_VALIDATION_ADD("smtrat.covering", "minimization", v, false);
+    SMTRAT_VALIDATION_ADD("smtrat.covering", "unsat_below_optimum", v, false);
 
     if (opt.isRAN()) {
         FormulaT v2(carl::FormulaType::AND, {
@@ -406,15 +444,17 @@ void CoveringNGModule<Settings>::validation_minimize(const Answer a) {
             ran_encode,
             FormulaT(p, carl::Relation::EQ)
         });
-        SMTRAT_VALIDATION_ADD("smtrat.covering", "optimum", v, true);
+        SMTRAT_VALIDATION_ADD("smtrat.covering", "sat_at_optimum", v2, true);
     } else {
+        auto free_vars = carl::free_variables(input);
+        std::vector<carl::Variable> vars(free_vars.begin(), free_vars.end());
         FormulaT v2(carl::FormulaType::AND, {
-            input.negated(),
+            FormulaT(carl::FormulaType::FORALL, vars, input.negated()),
             ran_encode,
             FormulaT(p, carl::Relation::GREATER),
             FormulaT(p - Poly(m_minimization_max_epsilon), carl::Relation::LESS)
         });
-        SMTRAT_VALIDATION_ADD("smtrat.covering", "optimum", v, false);
+        SMTRAT_VALIDATION_ADD("smtrat.covering", "sat_at_optimum", v2, false);
     }
 }
 

@@ -546,7 +546,6 @@ minimize(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignmen
 
     // choose new sample until unsat cover or sat
     while (sample = sample_outside_and_below(unsat_intervals, best_sat_interval, f), sample != std::nullopt) {
-
         SMTRAT_LOG_TRACE("smtrat.covering_ng", "Got sample " << variable << " = " << sample);
         ass.emplace(variable, sample.value());
         SMTRAT_STATISTICS_CALL(statistics().formula_evaluation_start());
