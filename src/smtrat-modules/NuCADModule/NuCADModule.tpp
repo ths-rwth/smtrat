@@ -77,6 +77,42 @@ Answer NuCADModule<Settings>::checkCore() {
 
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
+    if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_back) {
+        if (only_ex) {
+            carl::Variable first_var;
+            for (auto it = var_order.begin(); it != var_order.end() && first_var != *it; ) {
+                if (var_mapping.find(*it) != var_mapping.end()) {
+                    if (first_var == carl::Variable::NO_VARIABLE) {
+                        first_var = *it;
+                    }
+                    std::rotate(it, it + 1, var_order.end());
+                }
+                else {
+                    it++;
+                }
+            }
+        }
+    }
+
+    if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_front) {
+        if (only_ex) {
+            carl::Variable first_var;
+            for (auto it = var_order.rbegin(); it != var_order.rend() && first_var != *it; ) {
+                if (var_mapping.find(*it) != var_mapping.end()) {
+                    if (first_var == carl::Variable::NO_VARIABLE) {
+                        first_var = *it;
+                    }
+                    std::rotate(it, it + 1, var_order.rend());
+                }
+                else {
+                    it++;
+                }
+            }
+        }
+    }
+
+    SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got variable ordering: " << var_order);
+
     SMTRAT_STATISTICS_CALL(covering_ng::statistics().variable_ordering(var_order, var_mapping));
     SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 

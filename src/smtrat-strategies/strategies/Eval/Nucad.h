@@ -15,13 +15,14 @@ struct NuCADSettings : NuCADSettingsDefault  {
 	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
 	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
-	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
+	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
+	static constexpr bool move_boolean_variables_to_front = true;
 };
 }
 
-class Eval_NucadDefault : public Manager {
+class Eval_Nucad : public Manager {
 public:
-    Eval_NucadDefault() : Manager() {
+    Eval_Nucad() : Manager() {
 		setStrategy(
 			
                 addBackend<NuCADModule<internal::NuCADSettings>>()

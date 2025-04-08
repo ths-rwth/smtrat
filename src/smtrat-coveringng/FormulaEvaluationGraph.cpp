@@ -319,7 +319,7 @@ struct FormulaClassification {
     std::vector<FormulaID> confl;
 };
 
-FormulaClassification classify_formulas(const FormulaTreeState& ts, const std::vector<FormulaID>& formulas) {
+inline FormulaClassification classify_formulas(const FormulaTreeState& ts, const std::vector<FormulaID>& formulas) {
     FormulaClassification subs;
     for (const auto f : formulas) {
         auto sub_val = ts.valuation(f);
@@ -641,7 +641,7 @@ void FormulaTreeState::backtrack(FormulaID id, bool is_true) {
 
 }
 
-carl::Variable new_var(const cadcells::Assignment& old_ass, const cadcells::Assignment& new_ass) {
+inline carl::Variable new_var(const cadcells::Assignment& old_ass, const cadcells::Assignment& new_ass) {
     for (const auto& [k,v] : new_ass) {
         if (old_ass.find(k) == old_ass.end()) return k;
     }

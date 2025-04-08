@@ -12,7 +12,7 @@ namespace internal {
 struct NewCoveringSettings : NewCoveringSettings2 {
 	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
-	static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::GreedyMaxUnivariate;
+	static constexpr mcsat::VariableOrdering variableOrderingStrategy = mcsat::VariableOrdering::FeatureBasedPickering;
 };
 }
 

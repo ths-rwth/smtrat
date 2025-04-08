@@ -24,13 +24,13 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
 		using ExplanationBackend = mcsat::onecell::Explanation<OCSettings>;
 	};
-	using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::GreedyMaxUnivariate>>;
+	using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>>;
 };
 } // namespace internal
 
-class Eval_McsatThfirstgreedy : public Manager {
+class Eval_Mcsat : public Manager {
 public:
-	Eval_McsatThfirstgreedy() : Manager() {
+	Eval_Mcsat() : Manager() {
 		setStrategy(
 			
 				addBackend<SATModule<internal::SATSettings>>()

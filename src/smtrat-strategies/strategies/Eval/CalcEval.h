@@ -15,8 +15,9 @@ struct CoveringNGSettings : CoveringNGSettingsDefault  {
 	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
 	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
-	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
+	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
 	static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::SIZE_SAMPLING;
+	static constexpr bool move_boolean_variables_to_front = true;
 
 	struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;

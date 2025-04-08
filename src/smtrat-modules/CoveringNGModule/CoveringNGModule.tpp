@@ -76,9 +76,6 @@ Answer CoveringNGModule<Settings>::checkCore() {
 
 	std::vector<carl::Variable> var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
-    SMTRAT_STATISTICS_CALL(covering_ng::statistics().variable_ordering(var_order, var_mapping));
-    SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
-
     if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_back) {
         if (only_ex) {
             carl::Variable first_var;
@@ -114,6 +111,9 @@ Answer CoveringNGModule<Settings>::checkCore() {
     }
 
     SMTRAT_LOG_DEBUG("smtrat.covering_ng", "Got variable ordering: " << var_order);
+
+    SMTRAT_STATISTICS_CALL(covering_ng::statistics().variable_ordering(var_order, var_mapping));
+    SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 
     //auto var_order = carl::variables(input).to_vector();
     // std::vector<ConstraintT> constraints;
