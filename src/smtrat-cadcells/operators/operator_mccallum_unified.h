@@ -56,10 +56,10 @@ using PropertiesSet = datastructures::PropertiesT<properties::poly_sgn_inv,prope
 static inline bool project_basic_properties(datastructures::SampledDerivation<PropertiesSet>& deriv) {
     SMTRAT_LOG_FUNC("smtrat.cadcells.operators", &deriv);
 
-    if (Settings::complete) {
-        for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-            assert(!Settings::pdel);
-            // TODO
+    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+        if (Settings::pdel) {
+            rules::root_ordering_holds_pdel_unified(deriv, prop.ordering);
+        } else if (Settings::complete) {
             rules::root_ordering_holds_delineated_complete(deriv, prop.ordering);
         }
     }
@@ -94,6 +94,7 @@ static inline bool project_basic_properties(datastructures::SampledDerivation<Pr
     }
     for(const auto& prop : deriv.properties<properties::poly_semi_sgn_inv>()) {
         if (Settings::enable_weak) {
+            assert(!Settings::pdel);
             rules::poly_semi_sgn_inv(deriv, prop.poly);
         } else {
             deriv.insert(properties::poly_sgn_inv{prop.poly});
@@ -113,23 +114,25 @@ static inline void delineate_properties(datastructures::SampledDerivation<Proper
     for(const auto& prop : deriv.properties<properties::poly_irreducible_semi_sgn_inv>()) {
         rules::delineate(*deriv.delineated(), prop);
     }
-    for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        switch(Settings::delineation_function) {
-            case MccallumUnifiedSettings::ALL:
-                rules::delineate_all<Settings>(deriv, prop, Settings::enable_weak);
-                break;
-            case MccallumUnifiedSettings::BOUNDS_ONLY:
-                rules::delineate_bounds_only<Settings>(deriv, prop);
-                break;
-            case MccallumUnifiedSettings::COMPOUND:
-                rules::delineate_all_compound(deriv, prop, Settings::enable_weak, false);
-                break;
-            case MccallumUnifiedSettings::COMPOUND_PWL:
-                rules::delineate_compound_piecewiselinear(deriv, prop, Settings::enable_weak);
-                break;
-            case MccallumUnifiedSettings::NOOP:
-            default:
-                rules::delineate_noop(deriv, prop);
+    if (!Settings::pdel) {
+        for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
+            switch(Settings::delineation_function) {
+                case MccallumUnifiedSettings::ALL:
+                    rules::delineate_all<Settings>(deriv, prop, Settings::enable_weak);
+                    break;
+                case MccallumUnifiedSettings::BOUNDS_ONLY:
+                    rules::delineate_bounds_only<Settings>(deriv, prop);
+                    break;
+                case MccallumUnifiedSettings::COMPOUND:
+                    rules::delineate_all_compound(deriv, prop, Settings::enable_weak, false);
+                    break;
+                case MccallumUnifiedSettings::COMPOUND_PWL:
+                    rules::delineate_compound_piecewiselinear(deriv, prop, Settings::enable_weak);
+                    break;
+                case MccallumUnifiedSettings::NOOP:
+                default:
+                    rules::delineate_noop(deriv, prop);
+            }
         }
     }
     for(const auto& prop : deriv.properties<properties::iroot_constraint_truth_inv>()) {
@@ -163,11 +166,12 @@ static inline bool project_cell_properties(datastructures::CellRepresentation<Pr
         }
     }
     properties::insert_root_ordering_holds(deriv, repr.ordering);
-
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        assert(!Settings::pdel);
-        // TODO rules::root_ordering_holds_pdel(deriv.underlying().sampled(), repr.ordering);
-        if (!rules::root_ordering_holds_delineated(deriv, repr.description, repr.ordering, repr.ordering_polys, prop.ordering)) return false;
+        if (Settings::pdel) {
+            // nothing left to do here
+        } else {
+            if (!rules::root_ordering_holds_delineated(deriv, repr.description, repr.ordering, repr.ordering_polys, prop.ordering, Settings::complete)) return false;
+        }
     }
 
     if (deriv.contains(properties::cell_connected{deriv.level()})) {
@@ -212,10 +216,11 @@ static inline bool project_cell_properties(datastructures::CellRepresentation<Pr
         } else if (deriv.delin().nullified().find(prop.poly) != deriv.delin().nullified().end()) {
             rules::poly_irreducible_null_sgn_inv(deriv, prop.poly);
         } else {
-            assert(!Settings::pdel);
-            // TODO rules::poly_irreducible_sgn_inv_pdel(deriv, repr.description, repr.ordering, repr.ordering_non_projective_polys, prop.poly);
-            rules::poly_irreducible_sgn_inv_filtered(deriv, repr.description, repr.ordering, prop.poly);
-            
+            if (Settings::pdel) {
+                rules::poly_irreducible_sgn_inv_pdel(deriv, repr.description, repr.ordering, repr.ordering_non_projective_polys, prop.poly);
+            } else {
+                rules::poly_irreducible_sgn_inv_filtered(deriv, repr.description, repr.ordering, prop.poly);
+            }            
         }
     }
     for(const auto& prop : deriv.properties<properties::poly_irreducible_semi_sgn_inv>()) {
@@ -227,7 +232,6 @@ static inline bool project_cell_properties(datastructures::CellRepresentation<Pr
             rules::poly_irreducible_null_semi_sgn_inv(deriv, prop.poly);
         } else {
             assert(!Settings::pdel);
-            // TODO pdel variant
             rules::poly_irreducible_semi_sgn_inv_filtered(deriv, repr.description, repr.ordering, prop.poly);
         }
     }

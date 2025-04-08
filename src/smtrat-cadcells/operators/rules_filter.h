@@ -506,14 +506,15 @@ void delineate_compound_piecewiselinear(datastructures::SampledDerivation<P>& de
 }
 
 template<typename P>
-inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& underlying_cell, const datastructures::IndexedRootOrdering& underlying_ordering, const boost::container::flat_set<datastructures::PolyRef>& ordering_polys, const datastructures::PolyRef poly) {
+inline bool poly_loc_del(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& underlying_cell, const datastructures::IndexedRootOrdering& underlying_ordering, const boost::container::flat_set<datastructures::PolyRef>& ordering_polys, const datastructures::PolyRef poly, bool complete = false) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "poly_loc_del(" << poly << ", " << underlying_ordering << ")");
-    if (deriv.proj().is_const(poly)) return;
+    if (deriv.proj().is_const(poly)) return true;
     for (const auto& factor : deriv.proj().factors_nonconst(poly)) {
         if (factor.level == deriv.level()) {
             if (deriv.proj().is_nullified(deriv.underlying_sample(), factor)) {
                 //deriv.insert(properties::poly_irreducible_sgn_inv{ factor });
                 //SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add sgn_inv(" << factor << ") ");
+                if(!complete) return false;
                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> nullified factor already handled");
             } else {
                 auto roots = deriv.proj().real_roots(deriv.underlying_sample(), factor);
@@ -545,6 +546,7 @@ inline void poly_loc_del(datastructures::SampledDerivation<P>& deriv, const data
             SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> add ord_inv(" << factor << ") ");
         }
     }
+    return true;
 }
 
 template<typename P>
@@ -577,7 +579,7 @@ void poly_ord_inv_base(datastructures::SampledDerivation<P>& deriv, const datast
 }
 
 template<typename P>
-bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& underlying_cell, const datastructures::IndexedRootOrdering& underlying_ordering, const boost::container::flat_set<datastructures::PolyRef>& ordering_polys, const datastructures::IndexedRootOrdering& ordering) {
+bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& underlying_cell, const datastructures::IndexedRootOrdering& underlying_ordering, const boost::container::flat_set<datastructures::PolyRef>& ordering_polys, const datastructures::IndexedRootOrdering& ordering, bool complete = false) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "using underlying_cell=" << underlying_cell << ", underlying_ordering=" << underlying_ordering << ", ordering_polys=" << ordering_polys);
 
@@ -591,7 +593,7 @@ bool root_ordering_holds_delineated(datastructures::SampledDerivation<P>& deriv,
         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "consider pair " << poly1 << " and " << poly2 << "");
         assert(deriv.contains(properties::poly_del{ poly1 }));
         assert(deriv.contains(properties::poly_del{ poly2 }));
-        poly_loc_del(deriv, underlying_cell, underlying_ordering, ordering_polys, deriv.proj().res(poly1, poly2));
+        if (!poly_loc_del(deriv, underlying_cell, underlying_ordering, ordering_polys, deriv.proj().res(poly1, poly2), complete)) return false;
     }
     return true;
 }

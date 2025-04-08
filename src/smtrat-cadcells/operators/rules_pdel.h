@@ -78,6 +78,21 @@ void root_ordering_holds_pdel(datastructures::SampledDerivation<P>& deriv, const
 }
 
 template<typename P>
+void root_ordering_holds_pdel_unified(datastructures::SampledDerivation<P>& deriv, const datastructures::IndexedRootOrdering& ordering) {
+    SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "ir_ord(" << ordering << ", " << deriv.sample() << ")");
+    assert(ordering.is_projective());
+    deriv.insert(properties::cell_connected{ deriv.level() });
+    for (const auto& rel : ordering.data()) {
+        assert(rel.first.is_root() && rel.second.is_root());
+        auto& first = rel.first.root();
+        auto& second = rel.second.root();
+        if (first.poly != second.poly) {
+            deriv.insert(properties::poly_ord_inv{ deriv.proj().res(first.poly, second.poly) });
+        }
+    }
+}
+
+template<typename P>
 void poly_irreducible_sgn_inv_pdel(datastructures::SampledDerivation<P>& deriv, const datastructures::SymbolicInterval& cell, const datastructures::IndexedRootOrdering& /*ordering*/, const boost::container::flat_set<datastructures::PolyRef>& ordering_non_projective_polys, datastructures::PolyRef poly) {
     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "sgn_inv(" << poly << "), " << poly << " irreducible");
     SMTRAT_STATISTICS_CALL(statistics().rules_sgn_inv_called(poly));

@@ -133,7 +133,7 @@ static inline bool project_cell_properties(datastructures::CellRepresentation<Pr
     properties::insert_root_ordering_holds(deriv, repr.ordering);
 
     for(const auto& prop : deriv.properties<properties::root_ordering_holds>()) {
-        if (!rules::root_ordering_holds_delineated(deriv, repr.description, repr.ordering, repr.ordering_polys, prop.ordering)) return false;
+        if (!rules::root_ordering_holds_delineated(deriv, repr.description, repr.ordering, repr.ordering_polys, prop.ordering, Settings::complete)) return false;
     }
 
     if (deriv.contains(properties::cell_connected{deriv.level()})) {
