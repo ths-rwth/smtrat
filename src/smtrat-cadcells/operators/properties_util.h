@@ -40,6 +40,7 @@ void insert_root_ordering_holds(P& deriv, const datastructures::IndexedRootOrder
             if (!data_by_level[i].data().empty()) {
                 if (ordering.is_projective()) {
                     data_by_level[i].set_projective();
+                    //TODO set ordering_polys and non_rpojective_orderng_polys
                 }
                 data_by_level[i].biggest_cell_wrt = ordering.biggest_cell_wrt;
                 deriv.insert(properties::root_ordering_holds{ data_by_level[i], i+1 });

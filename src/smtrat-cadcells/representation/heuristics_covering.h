@@ -327,6 +327,43 @@ struct AllCompoundCovering {
     }
 };
 
+// ============================== full ============================================================
+
+struct FullCovering {
+    template<typename T>
+    static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        datastructures::CoveringRepresentation<T> result;
+        
+        auto min_derivs = compute_min_derivs(derivs);
+
+        datastructures::Delineation delineation;
+        for (auto& iter : min_derivs) {
+            result.cells.emplace_back(iter);
+            auto& cell_result = result.cells.back();   
+            cell_result.description = util::compute_simplest_cell((iter)->level(), (iter)->proj(), (iter)->cell());
+
+            datastructures::Delineation subdelin = (iter)->delin();
+            auto subdelin_int = subdelin.delineate_cell((iter)->main_var_sample());
+            delineation.merge_with(subdelin);
+        }
+
+        auto& proj = (*min_derivs.begin())->proj();
+        util::full_ordering(proj, delineation, result.ordering);
+
+        boost::container::flat_set<datastructures::PolyRef> ordering_polys;
+        for (const auto& [k, v] : delineation.roots()) {
+            for (const auto& tir : v) {
+                ordering_polys.insert(tir.root.poly);
+            }
+        }
+        for (auto& cell : result.cells) {
+            cell.ordering = result.ordering;
+            cell.ordering_polys = ordering_polys;
+        }
+        return result;
+    }
+};
+
 }
 
 // ============================== approximation ====================================================

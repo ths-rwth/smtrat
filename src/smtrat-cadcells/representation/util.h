@@ -154,6 +154,28 @@ inline void simplest_chain_ordering(datastructures::Projections& proj, const dat
     }
 }
 
+inline void full_ordering(datastructures::Projections& proj, const datastructures::Delineation& delin, datastructures::IndexedRootOrdering& ordering, bool enable_weak = false) {
+    assert(!enable_weak); // not supported
+
+    if (delin.roots().empty()) return ;
+
+    for(auto it = delin.roots().begin(); it != delin.roots().end(); it++) {
+        for (const auto& ir : it->second) {
+            for(auto it2 = it; it2 != delin.roots().end(); it2++) {
+                for (const auto& ir2 : it2->second) {
+                    if (it == it2) {
+                        if (ir.root != ir2.root) {
+                            ordering.add_eq(ir.root, ir2.root);
+                        }
+                    } else {
+                        ordering.add_less(ir.root, ir2.root);
+                    }
+                }
+            }
+        }
+    }
+}
+
 inline void simplest_ldb_ordering(datastructures::Projections& proj, const datastructures::Delineation& delin, const datastructures::DelineationInterval& delin_interval, const datastructures::SymbolicInterval& interval, datastructures::IndexedRootOrdering& ordering, boost::container::flat_set<datastructures::PolyRef>& equational, bool enable_weak, bool use_global_cache) {
     // assumes that interval is the simplest cell
 
