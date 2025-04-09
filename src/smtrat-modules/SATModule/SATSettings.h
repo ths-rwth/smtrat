@@ -75,7 +75,12 @@ struct SATSettingsMCSAT : SATSettings1 {
 struct SATSettingsMCSATDefault : SATSettingsMCSAT {
     static constexpr auto moduleName = "SATModule<SATSettingsMCSATDefault>";
     using MCSATSettings = mcsat::MCSATSettingsDefault;
-    //using VarScheduler = VarSchedulerMcsatTheoryFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>>;
+};
+
+struct SATSettingsMCSATStaticTheory : SATSettingsMCSAT {
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATStaticTheory>";
+    using MCSATSettings = mcsat::MCSATSettingsDefault;
+    using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>>;
 };
 
 struct SATSettingsMCSATOC : SATSettingsMCSAT {

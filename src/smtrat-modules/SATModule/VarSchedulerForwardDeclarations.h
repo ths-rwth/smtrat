@@ -15,6 +15,8 @@ namespace smtrat {
     class VarSchedulerMcsatBooleanFirst;
     template<typename TheoryScheduler>
     class VarSchedulerMcsatTheoryFirst;
+    template<typename TheoryScheduler>
+    class VarSchedulerMcsatTheoryFirstBooleanMoreFirst;
     template<mcsat::VariableOrdering vot>
     class VarSchedulerMcsatActivityPreferTheory;
     template<int lookahead, mcsat::VariableOrdering vot>
