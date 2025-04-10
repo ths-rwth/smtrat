@@ -38,12 +38,25 @@ private:
 	 * Maps the input formula to the list of real roots and the simplified formula where m_assignment was substituted.
 	 */
 	std::map<FormulaT, std::pair<std::vector<typename Polynomial::RootType>, std::variant<carl::BasicConstraint<Polynomial>, carl::VariableComparison<Polynomial>>>> m_root_map;
+
+	AAFStatistics& mStatistics;
 	
 	bool satisfies(const std::variant<carl::BasicConstraint<Polynomial>, carl::VariableComparison<Polynomial>>& f, const typename Polynomial::RootType& r) const {
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", f << ", " << m_assignment << ", " << m_var << ", " << r);
 		auto m = m_assignment;
 		m.emplace(m_var, r);
+
+		if (std::holds_alternative<carl::BasicConstraint<Polynomial>>(f)) {
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_evaluate.start_this());
+		} else {
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.start_this());
+		}
 		auto res = std::visit([&](auto&& arg) { return carl::evaluate(arg, m); }, f);
+		if (std::holds_alternative<carl::BasicConstraint<Polynomial>>(f)) {
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_evaluate.finish());
+		} else {
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.finish());
+		}
 		assert(!indeterminate(res));
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Evaluating " << f << " on " << m << " -> " << res);
 		return (bool)res;
@@ -86,7 +99,7 @@ private:
 	}
 	
 public:
-	AssignmentFinder_ctx(const std::vector<carl::Variable>& var_order, carl::Variable var, const Model& model): m_context(var_order), m_var(var) {
+	AssignmentFinder_ctx(const std::vector<carl::Variable>& var_order, carl::Variable var, const Model& model, AAFStatistics& statistics): m_context(var_order), m_var(var), mStatistics(statistics) {
 		for (const auto& e : get_ran_assignment(model)) {
 			m_assignment.emplace(e.first, carl::convert<typename Polynomial::RootType>(e.second));
 		}
@@ -110,7 +123,9 @@ public:
 			return f.is_trivial_true();
 		} else if (f.lhs().main_var() == m_var) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Considering univariate constraint " << f << " under " << m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_evaluate.start_this());
 			auto eval_res = carl::evaluate(f, m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_evaluate.finish());
 			if (!boost::indeterminate(eval_res) && !eval_res) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " simplified to false.");
 				return false;
@@ -120,7 +135,9 @@ public:
 			}
 			std::vector<typename Polynomial::RootType> list;
 			SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Real roots of " << f.lhs() << " in " << m_var << " w.r.t. " << m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.start_this());
 			auto roots = carl::real_roots(f.lhs(), m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.finish());
 			if (roots.is_univariate()) {
 				list = roots.roots();
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << list);
@@ -141,7 +158,9 @@ public:
 		} else if (m_assignment.find(f.lhs().main_var()) != m_assignment.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " evaluates under " << m_assignment);
 			if (!early_evaluation) return true;
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_evaluate.start_this());
 			auto res = carl::evaluate(f, m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_evaluate.finish());
 			assert(!indeterminate(res));
 			if (res) {
 				SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", "Ignoring " << f << " which simplified to true.");
@@ -171,7 +190,9 @@ public:
 		assert(std::get<carl::MultivariateRoot<Polynomial>>(f.value()).var() == f.var());
 		if (f.var() == m_var) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " is univariate under " << m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.start_this());
 			auto value = carl::evaluate(std::get<carl::MultivariateRoot<Polynomial>>(f.value()), m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.finish());
 			if (!value) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " is not well-defined.");
 				return f.negated();
@@ -187,7 +208,9 @@ public:
 		} else if (m_assignment.find(f.var()) != m_assignment.end()) {
 			SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", f << " evaluates under " << m_assignment);
 			if (!early_evaluation) return true;
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.start_this());
 			auto res = carl::evaluate(f, m_assignment);
+			SMTRAT_STATISTICS_CALL(mStatistics.m_timer_real_root_isolation.finish());
 			if (indeterminate(res)) {
 				SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Conflict: " << f << " is not well-defined.");
 				return f.negated();

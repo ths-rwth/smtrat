@@ -14,7 +14,7 @@ std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bo
 	#endif
 	auto var_order = data.assignedVariables();
 	var_order.push_back(var);
-	AssignmentFinder_ctx<false> af(var_order, var, data.model());
+	AssignmentFinder_ctx<false> af(var_order, var, data.model(), mStatistics);
 	// AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
