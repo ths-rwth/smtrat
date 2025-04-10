@@ -567,7 +567,12 @@ public:
     }
 
     auto evaluate(const Assignment& ass, const PolyConstraint& constraint) {
-        return carl::evaluate(polys()(constraint), ass);
+        SMTRAT_STATISTICS_CALL(statistics().projection_start());
+        SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_evaluate.start_this());
+        auto res = carl::evaluate(polys()(constraint), ass);
+        SMTRAT_STATISTICS_CALL(statistics().m_proj_timer_evaluate.finish());
+        SMTRAT_STATISTICS_CALL(statistics().projection_end());
+        return res;
     }
 
     auto evaluate(const Assignment& ass, const IndexedRootConstraint& constraint) {
