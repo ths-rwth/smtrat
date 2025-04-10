@@ -80,7 +80,7 @@ struct SATSettingsMCSATDefault : SATSettingsMCSAT {
 struct SATSettingsMCSATStaticTheory : SATSettingsMCSAT {
     static constexpr auto moduleName = "SATModule<SATSettingsMCSATStaticTheory>";
     using MCSATSettings = mcsat::MCSATSettingsDefault;
-    using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>>;
+    using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>,false>;
 };
 
 struct SATSettingsMCSATOC : SATSettingsMCSAT {

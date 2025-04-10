@@ -24,7 +24,7 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 	struct MCSATSettings : mcsat::Base {
 		using ExplanationBackend = mcsat::onecell::Explanation<OCSettings>;
 	};
-	using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>>;
+	using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>,true>;
 };
 } // namespace internal
 
