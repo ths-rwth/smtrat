@@ -5,6 +5,7 @@
 #include <smtrat-coveringng/VariableOrdering.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
 #include <smtrat-cadcells/operators/operator_mccallum_pdel.h>
+#include <smtrat-cadcells/operators/operator_mccallum_unified.h>
 
 namespace smtrat::qe::coverings {
 struct DefaultSettings {
@@ -33,6 +34,8 @@ struct DefaultSettings {
     };
 
     static constexpr bool transform_boolean_variables_to_reals = true;
+    static constexpr bool move_boolean_variables_to_back = false;
+    static constexpr bool move_boolean_variables_to_front = false;
 };
 
 struct DefaultBCFilterSettings : DefaultSettings {
@@ -71,6 +74,15 @@ struct DefaultBCpdelSettings : DefaultSettings {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellPdel;
     using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringPdel;
     using op = cadcells::operators::MccallumPdel<cadcells::operators::MccallumPdelSettingsComplete>;
+};
+
+struct EvalSettings : DefaultSettings {
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
+	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
+	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
+	static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::SIZE_SAMPLING;
+	static constexpr bool move_boolean_variables_to_front = true;
 };
 
 } // namespace smtrat::qe::coverings

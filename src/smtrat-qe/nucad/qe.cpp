@@ -15,12 +15,15 @@ namespace smtrat::qe::nucad {
 std::optional<FormulaT> qe(const FormulaT& input_orig) {
 
 	auto input = input_orig;
+
+	std::map<carl::Variable, carl::Variable> var_mapping;
     if constexpr (Settings::transform_boolean_variables_to_reals) {
 		std::vector<carl::Variable> aux_vars;
         // this is a hack until we have proper Boolean reasoning
         std::map<FormulaT,FormulaT> substitutions;
         for (const auto b_var : carl::boolean_variables(input)) {
             auto r_var = carl::fresh_real_variable("r_"+b_var.name());
+			var_mapping.emplace(r_var, b_var);
             aux_vars.push_back(r_var);
             auto constraint = FormulaT(ConstraintT(r_var, carl::Relation::GREATER));
             substitutions.emplace(FormulaT(b_var), constraint);
@@ -37,14 +40,52 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Prefix: " << prefix);
 	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Matrix: " << matrix);
 
-	covering_ng::VariableQuantification variableQuantification;
+	covering_ng::VariableQuantification variable_quantification;
+	bool only_ex = true;
 	for (const auto& q : prefix) {
-		variableQuantification.set_var_type(q.second, q.first);
+		variable_quantification.set_var_type(q.second, q.first);
+		if (q.first == carl::Quantifier::FORALL) {
+            only_ex = false;
+        }
 	}
 
 	auto var_order = covering_ng::variables::get_variable_ordering<Settings::variable_ordering_heuristic>(prefix, matrix);
 
-	SMTRAT_LOG_DEBUG("smtrat.qe.nucad", "Variable Order: " << var_order)
+	if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_back) {
+        if (only_ex) {
+            carl::Variable first_var;
+            for (auto it = var_order.begin(); it != var_order.end() && first_var != *it; ) {
+                if (var_mapping.find(*it) != var_mapping.end()) {
+                    if (first_var == carl::Variable::NO_VARIABLE) {
+                        first_var = *it;
+                    }
+                    std::rotate(it, it + 1, var_order.end());
+                }
+                else {
+                    it++;
+                }
+            }
+        }
+    }
+
+    if constexpr (Settings::transform_boolean_variables_to_reals && Settings::move_boolean_variables_to_front) {
+        if (only_ex) {
+            carl::Variable first_var;
+            for (auto it = var_order.rbegin(); it != var_order.rend() && first_var != *it; ) {
+                if (var_mapping.find(*it) != var_mapping.end()) {
+                    if (first_var == carl::Variable::NO_VARIABLE) {
+                        first_var = *it;
+                    }
+                    std::rotate(it, it + 1, var_order.rend());
+                }
+                else {
+                    it++;
+                }
+            }
+        }
+    }
+
+	SMTRAT_LOG_DEBUG("smtrat.qe.coverings", "Got variable ordering: " << var_order);
 	SMTRAT_STATISTICS_CALL(cadcells::statistics().set_max_level(var_order.size()));
 
 	cadcells::Polynomial::ContextType context(var_order);
@@ -63,7 +104,7 @@ std::optional<FormulaT> qe(const FormulaT& input_orig) {
 		return FormulaT(carl::FormulaType::TRUE);
 	}
 
-	auto res = nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::cell_heuristic, Settings::enable_weak>(proj, f, assignment, variableQuantification, std::vector<cadcells::RAN>());
+	auto res = nucad_recurse<typename Settings::op, typename Settings::formula_evaluation::Type, Settings::cell_heuristic, Settings::enable_weak>(proj, f, assignment, variable_quantification, std::vector<cadcells::RAN>());
 	if (res.is_failed() || res.is_failed_projection()) {
 		SMTRAT_LOG_FATAL("smtrat.qe.nucad", "Failed")
 		return std::nullopt;

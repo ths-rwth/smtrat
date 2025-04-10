@@ -370,7 +370,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                             // if (all_relations_weak) return filter_util::result::INCLUSIVE;
                             // else return filter_util::result::NORMAL;
                             if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                            if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                            if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                             if (enable_weak && !pair.is_strict) return filter_util::result::INCLUSIVE;
                             else return filter_util::result::NORMAL;
                         }

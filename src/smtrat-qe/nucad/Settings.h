@@ -4,6 +4,7 @@
 #include <smtrat-coveringng/FormulaEvaluationComplexity.h>
 #include <smtrat-coveringng/VariableOrdering.h>
 #include <smtrat-mcsat/variableordering/VariableOrdering.h>
+#include <smtrat-cadcells/operators/operator_mccallum_unified.h>
 
 namespace smtrat::qe::nucad {
 struct DefaultSettings {
@@ -32,6 +33,8 @@ struct DefaultSettings {
     };
 
     static constexpr bool transform_boolean_variables_to_reals = true;
+    static constexpr bool move_boolean_variables_to_back = false;
+    static constexpr bool move_boolean_variables_to_front = false;
 };
 
 struct DefaultBCFilterSettings : DefaultSettings {
@@ -54,6 +57,13 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
     using op = cadcells::operators::MccallumFiltered<mcf_settings>;
     static constexpr bool enable_weak = true;
+};
+
+struct EvalSettings : DefaultSettings {
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
+	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
+	static constexpr bool move_boolean_variables_to_front = true;
 };
 
 } // namespace smtrat::qe::coverings
