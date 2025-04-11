@@ -28,6 +28,13 @@ struct MCSATSettingsDefault : Base  {
 													 onecell::Explanation<onecell::DefaultSettings>>;
 };
 
+struct MCSATSettingsApxDefault : Base  {
+    using ExplanationBackend = SequentialExplanation<fm::Explanation<fm::DefaultSettings>,
+													 icp::Explanation,
+													 vs::Explanation,
+													 onecell::Explanation<onecell::DefaultApxSettings>>;
+};
+
 struct MCSATSettingsOC : Base  {
 	using AssignmentFinderBackend = arithmetic::AssignmentFinder;
     using ExplanationBackend = SequentialExplanation<onecell::Explanation<onecell::DefaultSettings>>;

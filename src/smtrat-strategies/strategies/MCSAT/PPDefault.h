@@ -11,7 +11,7 @@ public:
 	MCSAT_PPDefault() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
-				addBackend<SATModule<SATSettingsMCSATDefault>>()
+				addBackend<SATModule<SATSettingsMCSATVSIDS>>()
 			})
 		);
 	}

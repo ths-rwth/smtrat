@@ -76,6 +76,14 @@ class Default : public Manager {
 		return condition_quantifier_free(condition) && condition_nra(condition);
 	}
 
+    static bool condition_qf_nra_with_bool(carl::Condition condition) {
+		return condition_qf_nra(condition) && (carl::PROP_CONTAINS_BOOLEAN <= condition);
+	}
+
+    static bool condition_qf_nra_without_bool(carl::Condition condition) {
+		return condition_qf_nra(condition) && !(carl::PROP_CONTAINS_BOOLEAN <= condition);
+	}
+
     static bool condition_qf_ra_ext(carl::Condition condition) {
 		return condition_quantifier_free(condition) && condition_ra_ext(condition);
 	}
@@ -108,12 +116,13 @@ class Default : public Manager {
             // QF_NRA
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
-                    addBackend<SATModule<SATSettingsMCSATDefault>>()
+                    addBackend<SATModule<SATSettingsMCSATVSIDS>>().condition(&condition_qf_nra_with_bool),
+                    addBackend<SATModule<SATSettingsMCSATStaticTheory>>().condition(&condition_qf_nra_without_bool)
                 })
             }).condition( &condition_qf_nra ),
 
             // QF_NRA extended with root expressions
-            addBackend<SATModule<SATSettingsMCSATDefault>>(
+            addBackend<SATModule<SATSettingsMCSATVSIDS>>(
             ).condition( &condition_qf_ra_ext ),
 
             // NRA
@@ -122,7 +131,7 @@ class Default : public Manager {
                 ).condition( &condition_non_quantifier_free ),
                 addBackend<FPPModule<FPPSettings1>>({ // default QF_NRA solver
                     addBackend<STropModule<STropSettings3>>({
-                        addBackend<SATModule<SATSettingsMCSATDefault>>()
+                        addBackend<SATModule<SATSettingsMCSATVSIDS>>()
                     })
                 }).condition( &condition_quantifier_free )
             }).condition( &condition_nonqf_ra ),

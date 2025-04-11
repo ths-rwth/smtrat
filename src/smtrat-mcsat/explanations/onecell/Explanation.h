@@ -34,6 +34,21 @@ struct DefaultSettings : BaseSettings { // current default
     using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
 };
 
+struct DefaultApxSettings : DefaultSettings {
+    struct ApxSettings {
+        using method = cadcells::representation::approximation::Simple<cadcells::representation::approximation::SimpleSettings>;
+        struct CriteriaSettings : cadcells::representation::approximation::BaseCriteriaSettings {
+            static constexpr std::size_t approximated_cells_limit = 100;
+            static constexpr std::size_t single_degree_threshold  = 3;
+            static constexpr std::size_t dynamic_degree_scale     = 2;
+        };
+        using Criteria = cadcells::representation::approximation::Criteria<CriteriaSettings>;
+    };
+
+    using Criteria = ApxSettings::Criteria;
+	using cell_apx_heuristic = cadcells::representation::cell_heuristics::BiggestCellApproximation<ApxSettings>;
+};
+
 // TODO keep context and cache as long as variable ordering does not change. but we need to make a context extensible.
 
 template<typename Settings = DefaultSettings>

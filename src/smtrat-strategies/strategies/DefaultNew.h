@@ -116,13 +116,13 @@ class DefaultNew : public Manager {
             // QF_NRA
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
-                    addBackend<SATModule<SATSettingsMCSATDefault>>().condition(&condition_qf_nra_with_bool),
-                    addBackend<SATModule<SATSettingsMCSATStaticTheory>>().condition(&condition_qf_nra_without_bool)
+                    addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
+                    addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
                 })
             }).condition( &condition_qf_nra ),
 
             // QF_NRA extended with root expressions
-            addBackend<SATModule<SATSettingsMCSATDefault>>(
+            addBackend<SATModule<SATSettingsMCSATVSIDS>>(
             ).condition( &condition_qf_ra_ext ),
 
             // NRA
@@ -131,7 +131,7 @@ class DefaultNew : public Manager {
                 ).condition( &condition_non_quantifier_free ),
                 addBackend<FPPModule<FPPSettings1>>({ // default QF_NRA solver
                     addBackend<STropModule<STropSettings3>>({
-                        addBackend<SATModule<SATSettingsMCSATDefault>>()
+                        addBackend<SATModule<SATSettingsMCSATVSIDS>>()
                     })
                 }).condition( &condition_quantifier_free )
             }).condition( &condition_nonqf_ra ),
