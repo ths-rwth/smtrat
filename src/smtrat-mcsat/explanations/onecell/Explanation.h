@@ -35,6 +35,7 @@ struct DefaultSettings : BaseSettings { // current default
 };
 
 struct DefaultApxSettings : DefaultSettings {
+    constexpr static bool use_approximation = true;
     struct ApxSettings {
         using method = cadcells::representation::approximation::Simple<cadcells::representation::approximation::SimpleSettings>;
         struct CriteriaSettings : cadcells::representation::approximation::BaseCriteriaSettings {
