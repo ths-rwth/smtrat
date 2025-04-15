@@ -30,6 +30,7 @@ struct PolyProperties {
     std::size_t total_degree = 0;
     std::vector<std::size_t> monomial_total_degrees;
     std::vector<std::size_t> monomial_degrees;
+    std::size_t degree_all_variables = 0;
 };
 
 struct AssignmentProperties {
@@ -479,6 +480,13 @@ public:
             cache(p).monomial_degrees = m_pool(p).monomial_degrees(main_var(p));
         }
         return cache(p).monomial_degrees;
+    }
+
+    const std::size_t& degree_all_variables(PolyRef p) {
+        if (cache(p).degree_all_variables == 0) {
+            cache(p).degree_all_variables = m_pool(p).degree_all_variables();
+        }
+        return cache(p).degree_all_variables;
     }
 
     RAN evaluate(const Assignment& sample, IndexedRoot r) {

@@ -20,7 +20,8 @@ public:
 	}
 };
 
-SMTRAT_STATISTICS_INIT_STATIC(OrderingStatistics, ordering_stats, "combinatorialopt");
+OrderingStatistics& ordering_statistics();
+
 
 } // namespace smtrat::cadcells::representation
 

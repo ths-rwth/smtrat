@@ -16,6 +16,7 @@ struct CombinatorialOptimization {
         if (der->cell().is_section()) { // section case
             SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (section case).");
             util::PolyDelineations poly_delins;
+            handle_local_del_simplify_all(reduced_delineation);
             util::decompose(reduced_delineation, reduced_cell, poly_delins);
             combinatorialopt::compute_optimal_ordering<M>(der->proj(),
                                         reduced_delineation,
@@ -25,6 +26,7 @@ struct CombinatorialOptimization {
                                         response.equational);
         } else { // sector case
             SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Computing optimal ordering (sector case).");
+            handle_local_del_simplify_all(reduced_delineation);
             handle_cell_reduction(reduced_delineation, reduced_cell, response);
             combinatorialopt::compute_optimal_ordering<M>(der->proj(),
                                         reduced_delineation,

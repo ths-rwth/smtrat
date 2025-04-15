@@ -11,7 +11,7 @@
 #include "../../datastructures/roots.h"
 #include "graph.h"
 #include "matching.h"
-#include "ordering_statistics.h"
+#include "OrderingStatistics.h"
 #include "resultant_cost_metrics.h"
 
 namespace smtrat::cadcells::representation::combinatorialopt {
@@ -279,7 +279,7 @@ inline void compute_optimal_ordering(auto& proj,
 		return;
 	}
 
-	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_timer.start_this());
+	SMTRAT_STATISTICS_CALL(ordering_statistics().ordering_timer.start_this());
 
 	if (!delin_interval.upper_unbounded()) {
 		const auto end = is_section ? delin_interval.upper() + 1 : delin_interval.upper();
@@ -348,8 +348,8 @@ inline void compute_optimal_ordering(auto& proj,
 		ordering = ord;
 	}
 
-	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_timer.finish());
-	SMTRAT_STATISTICS_CALL(ordering_stats.ordering_costs.add(cost / 2));
+	SMTRAT_STATISTICS_CALL(ordering_statistics().ordering_timer.finish());
+	SMTRAT_STATISTICS_CALL(ordering_statistics().ordering_costs.add(cost / 2));
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Optimal ordering: " << ordering << " with cost " << cost / 2);
 }
 

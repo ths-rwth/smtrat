@@ -133,10 +133,7 @@ public:
     void pwl_fallback_no_delineable_interval() { ++m_pwl_fallback_no_delineable_interval; }
 };
 
-inline OCApproximationStatistics &apx_statistics() {
-    static OCApproximationStatistics &stats = statistics_get<OCApproximationStatistics>("approximation");
-    return stats;
-}
+OCApproximationStatistics& apx_statistics();
 
 }
 

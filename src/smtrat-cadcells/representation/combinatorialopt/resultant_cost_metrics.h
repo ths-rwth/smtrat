@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "../../datastructures/projections.h"
-#include "ordering_statistics.h"
+#include "OrderingStatistics.h"
 
 namespace smtrat::cadcells::representation::combinatorialopt {
 
@@ -17,7 +17,8 @@ enum ResultantCostMetric {
 	SUM_OF_TOTAL_DEGREES,
 	NUM_VARIABLES,
 	NUM_RESULTANTS,
-	NUM_MONOMIALS
+	NUM_MONOMIALS,
+	DEGREE
 };
 
 static const char* ResultantCostMetricStrings[] = {
@@ -28,7 +29,9 @@ static const char* ResultantCostMetricStrings[] = {
 	"SUM_OF_TOTAL_DEGREES",
 	"NUM_VARIABLES",
 	"NUM_RESULTANTS",
-	"NUM_MONOMIALS"};
+	"NUM_MONOMIALS",
+	"DEGREE"
+};
 
 inline auto get_union_of_variables(datastructures::Projections& proj,
 								   const datastructures::PolyRef p1,
@@ -137,15 +140,24 @@ inline unsigned int compute<ResultantCostMetric::NUM_MONOMIALS>(datastructures::
 	return p1_num_monomials + p2_num_monomials;
 }
 
+template<>
+inline unsigned int compute<ResultantCostMetric::DEGREE>(datastructures::Projections& proj,
+													   const datastructures::PolyRef p1,
+													   const datastructures::PolyRef p2) {
+	const auto deg_p1 = proj.degree_all_variables(p1);
+	const auto deg_p2 = proj.degree_all_variables(p2);
+	return 2*std::max(deg_p1,deg_p2)^2;
+}
+
 template<ResultantCostMetric M>
 int calculate_cost(datastructures::Projections& proj,
 				   const datastructures::PolyRef p1,
 				   const datastructures::PolyRef p2) {
 	SMTRAT_TIME_START(start);
 	const auto cost = compute<M>(proj, p1, p2);
-	SMTRAT_TIME_FINISH(ordering_stats.resultant_timer, start);
+	SMTRAT_TIME_FINISH(ordering_statistics().resultant_timer, start);
 	SMTRAT_LOG_DEBUG("smtrat.cadcells.representation", "Cost of " << p1 << " and " << p2 << " is " << cost << " using " << M);
-	SMTRAT_STATISTICS_CALL(ordering_stats.resultant_costs.add(cost));
+	SMTRAT_STATISTICS_CALL(ordering_statistics().resultant_costs.add(cost));
 	return cost;
 }
 

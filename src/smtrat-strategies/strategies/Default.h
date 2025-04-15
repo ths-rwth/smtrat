@@ -116,8 +116,8 @@ class Default : public Manager {
             // QF_NRA
             addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
-                    addBackend<SATModule<SATSettingsMCSATVSIDS>>().condition(&condition_qf_nra_with_bool),
-                    addBackend<SATModule<SATSettingsMCSATStaticTheory>>().condition(&condition_qf_nra_without_bool)
+                    addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
+                    addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
                 })
             }).condition( &condition_qf_nra ),
 

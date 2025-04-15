@@ -1,6 +1,6 @@
 #pragma once
 
-#include <smtrat-cadcells/OCApproximationStatistics.h>
+#include "OCApproximationStatistics.h"
 #include <smtrat-cadcells/datastructures/representation.h>
 
 namespace smtrat::cadcells::representation::approximation {
