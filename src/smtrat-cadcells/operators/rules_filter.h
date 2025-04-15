@@ -278,7 +278,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> sample is algebraic, adding " << ran);
                     // return filter_util::result::NORMAL;
                     if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                    if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                    if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                     if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                     else return filter_util::result::NORMAL;
                 }
@@ -291,14 +291,14 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> common root at " << ran);
                         SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_normal_outside_delin_inter());
                         if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                        if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                        if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                         if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                         else return filter_util::result::NORMAL;
                     } else {
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> no intersection at " << ran);
                         SMTRAT_STATISTICS_CALL(statistics().filter_roots_got_optional_outside_delin_inter());
                         if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                        if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                        if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                         if (all_relations_weak) return filter_util::result::INCLUSIVE_OPTIONAL;
                         else return filter_util::result::NORMAL_OPTIONAL;
                     }
@@ -309,7 +309,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                         SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> not biggest_cell_wrt");
                         SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
                         if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                        if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                        if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                         if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                         return filter_util::result::NORMAL;
                     }
@@ -330,7 +330,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                                 if (deriv.proj().is_zero(ass2, pair.first.root().poly)) {
                                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                                     if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                                    if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                                    if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                                     if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                                     else return filter_util::result::NORMAL;
                                 }
@@ -342,7 +342,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                                 if (deriv.proj().is_zero(ass2, pair.second.root().poly)) {
                                     SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> relevant intersection at " << ran);
                                     if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                                    if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                                    if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                                     if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                                     else return filter_util::result::NORMAL;
                                 }
@@ -350,7 +350,7 @@ void delineate_all(datastructures::SampledDerivation<P>& deriv, const properties
                                 SMTRAT_LOG_TRACE("smtrat.cadcells.operators.rules", "-> not an intersection with an interval bound at " << ran);
                                 SMTRAT_STATISTICS_CALL(statistics().filter_roots_check_pair_without_interval());
                                 if (Settings::use_sample_to_reduce_checks && !forward) nonoptional_below = true;
-                                if (Settings::use_sample_to_reduce_checks && (forward || !forward && deriv.main_var_sample() == ran)) nonoptional_above = true;
+                                if (Settings::use_sample_to_reduce_checks && (forward || (!forward && deriv.main_var_sample() == ran))) nonoptional_above = true;
                                 if (enable_weak && all_relations_weak) return filter_util::result::INCLUSIVE;
                                 else return filter_util::result::NORMAL;
                             }

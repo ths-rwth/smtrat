@@ -287,6 +287,7 @@ struct ChainEq {
         } else { // sector
             datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_local_del_simplify_all(reduced_delineation);
             handle_cell_reduction(reduced_delineation, reduced_cell, response);
             util::simplest_chain_ordering(der->proj(), reduced_delineation, response.ordering);
         }
@@ -299,6 +300,27 @@ struct ChainEq {
     }
 };
 
+// =========================== full ===============================================================
+
+struct Full {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        datastructures::CellRepresentation<T> response(der);
+        response.description = util::compute_simplest_cell(der->level(), der->proj(), der->cell());
+
+        if (der->cell().is_section()) {
+            util::full_ordering(der->proj(), der->delin(), response.ordering);
+        } else { // sector
+            util::full_ordering(der->proj(), der->delin(), response.ordering);
+        }
+        handle_connectedness(der, response);
+        handle_ordering_polys(der, response);
+        SMTRAT_STATISTICS_CALL(
+            statistics().got_representation_equational(der->level(), response.equational.size())
+        );
+        return response;
+    }
+};
 
 // =========================== lowest degree barriers ==============================================
 
@@ -433,6 +455,7 @@ struct AllCompound {
         } else { // sector
             datastructures::Delineation reduced_delineation = der->delin();
             auto reduced_cell = reduced_delineation.delineate_cell(der->main_var_sample());
+            handle_local_del_simplify_all(reduced_delineation);
             handle_cell_reduction(reduced_delineation, reduced_cell, response);
 
 
