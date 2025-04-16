@@ -132,6 +132,21 @@ struct LowestDegreeBarriersCoveringFilter {
     }
 };
 
+struct LowestDegreeBarriersCoveringFilterPdel {
+    template<typename T>
+    static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        datastructures::CoveringRepresentation<T> result;
+        auto min_derivs = compute_min_derivs(derivs);
+        for (auto& iter : min_derivs) {
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::LowestDegreeBarriersFilterPdel::compute(iter);
+            result.cells.emplace_back(cell_result);
+        }
+        result.ordering = compute_default_ordering(result.cells, true);
+        result.ordering.set_projective();
+        return result;
+    }
+};
+
 
 // ============================== biggest cell =====================================================
 
@@ -176,6 +191,21 @@ struct BiggestCellCoveringFilter {
             result.cells.emplace_back(cell_result);
         }
         result.ordering = compute_default_ordering(result.cells, true);
+        return result;
+    }
+};
+
+struct BiggestCellCoveringFilterPdel {
+    template<typename T>
+    static datastructures::CoveringRepresentation<T> compute(const std::vector<datastructures::SampledDerivationRef<T>>& derivs) {
+        datastructures::CoveringRepresentation<T> result;
+        auto min_derivs = compute_min_derivs(derivs);
+        for (auto& iter : min_derivs) {
+            datastructures::CellRepresentation<T> cell_result = cell_heuristics::BiggestCellFilterPdel::compute(iter);
+            result.cells.emplace_back(cell_result);
+        }
+        result.ordering = compute_default_ordering(result.cells, true);
+        result.ordering.set_projective();
         return result;
     }
 };

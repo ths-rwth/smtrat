@@ -265,6 +265,15 @@ struct BiggestCellFilter {
     }
 };
 
+struct BiggestCellFilterPdel {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        auto response = BiggestCellFilter::compute(der);
+        handle_projective_ordering(der, response);
+        return response;
+    }
+};
+
 
 struct BiggestCellFilterOnlyIndependent {
     template<typename T>
@@ -431,6 +440,15 @@ struct LowestDegreeBarriersFilter {
     template<typename T>
     static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
         return compute_cell_lowest_degree_barriers(der, LocalDelMode::ALL, true);
+    }
+};
+
+struct LowestDegreeBarriersFilterPdel {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        auto response = LowestDegreeBarriersFilter::compute(der);
+        handle_projective_ordering(der, response);
+        return response;
     }
 };
 

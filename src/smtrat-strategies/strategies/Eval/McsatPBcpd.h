@@ -15,8 +15,8 @@ struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
 	constexpr static bool exploit_strict_constraints = false;
 	static constexpr bool enforce_tarski = false;
     constexpr static bool use_approximation = false;
-	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellPdel;
-	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringPdel;
+	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilterPdel;
+	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilterPdel;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsCompletePdel>;
 };
 
@@ -28,9 +28,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 };
 } // namespace internal
 
-class Eval_McsatPdel : public Manager {
+class Eval_McsatPBcpd : public Manager {
 public:
-	Eval_McsatPdel() : Manager() {
+	Eval_McsatPBcpd() : Manager() {
 		setStrategy(
 			
 				addBackend<SATModule<internal::SATSettings>>()
