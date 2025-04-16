@@ -16,7 +16,7 @@
 
 #include <smtrat-common/statistics/Statistics.h>
 
-#include <carl/groebner/gb-buchberger/BuchbergerStats.h>
+#include <carl-arith/groebner/gb-buchberger/BuchbergerStats.h>
 
 
 namespace smtrat {

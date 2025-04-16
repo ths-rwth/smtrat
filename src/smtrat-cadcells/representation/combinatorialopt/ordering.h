@@ -31,6 +31,8 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 	std::map<datastructures::IndexedRoot, size_t> root_to_index;
 	size_t n = 2;
 
+	bool hack_applied = false;
+
 	auto test = [&](auto& cov, auto& layer, const auto begin, const auto end) {
 		bool closest = true;
 		for (auto it = begin; it != end; ++it) {
@@ -54,6 +56,7 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 						}
 					}
 				} else {
+					hack_applied = true;
 					// hack
 					for (auto it2_layer = it1_layer + 1; it2_layer < it->second.end(); ++it2_layer) {
 						ordering.add_less(r1, it2_layer->root);
@@ -97,6 +100,8 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 		const auto end = roots.end();
 		test(cov_above, layer_above, begin, end);
 	}
+
+	if (hack_applied) ordering_statistics().hack_applied++;
 
 	return std::make_tuple(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
 }
@@ -145,6 +150,7 @@ inline auto construct_graph(const auto& cov_below, const auto& cov_above,
 	auto modified_graph = graph;
 	for (size_t u = 0; u < n; ++u) {
 		const auto out_edges = boost::out_edges(u, graph);
+		assert (out_edges.first != out_edges.second);
 		const auto min_edge = *std::min_element(
 			out_edges.first, out_edges.second,
 			[&graph](const auto& e1, const auto& e2) {
