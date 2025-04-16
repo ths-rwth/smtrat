@@ -146,7 +146,7 @@ inline unsigned int compute<ResultantCostMetric::DEGREE>(datastructures::Project
 													   const datastructures::PolyRef p2) {
 	const auto deg_p1 = proj.degree_all_variables(p1);
 	const auto deg_p2 = proj.degree_all_variables(p2);
-	return 2*std::max(deg_p1,deg_p2)^2;
+	return std::pow(2*std::max(deg_p1,deg_p2),2);
 }
 
 template<ResultantCostMetric M>
