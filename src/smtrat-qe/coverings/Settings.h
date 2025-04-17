@@ -85,4 +85,12 @@ struct EvalSettings : DefaultSettings {
 	static constexpr bool move_boolean_variables_to_front = true;
 };
 
+struct EvalPBcldboundsSettings : EvalSettings {
+    struct OpSettings : cadcells::operators::MccallumUnifiedSettingsComplete {
+		static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+		static constexpr bool enable_weak = true;
+	};
+	using op = cadcells::operators::MccallumUnified<OpSettings>;
+};
+
 } // namespace smtrat::qe::coverings
