@@ -20,6 +20,7 @@ struct NuCADSettings : NuCADSettingsDefault  {
 	using op = cadcells::operators::MccallumUnified<OpSettings>;
 	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
 	static constexpr bool move_boolean_variables_to_front = true;
+	static constexpr bool enable_weak = true;
 };
 }
 
