@@ -13,7 +13,8 @@ enum class VariableOrdering {
 	FeatureBasedBrown,
 	FeatureBasedTriangular,
 	FeatureBasedLexicographic,
-	FeatureBasedPickering
+	FeatureBasedPickering,
+	FeatureBasedPickeringReverse
 };
 
 inline std::string get_name(VariableOrdering ordering) {
@@ -25,6 +26,7 @@ inline std::string get_name(VariableOrdering ordering) {
 		case VariableOrdering::FeatureBasedTriangular: return "FeatureBasedTriangular";
 		case VariableOrdering::FeatureBasedLexicographic: return "FeatureBasedLexicographic";
 		case VariableOrdering::FeatureBasedPickering: return "FeatureBasedPickering";
+		case VariableOrdering::FeatureBasedPickeringReverse: return "FeatureBasedPickeringReverse";
 	}
 }
 
@@ -49,6 +51,10 @@ std::vector<carl::Variable> calculate_variable_order(const std::vector<Constrain
 			return variableordering::feature_based_lexicographic(constraints);
 		case VariableOrdering::FeatureBasedPickering:
 			return variableordering::feature_based_pickering(constraints);
+		case VariableOrdering::FeatureBasedPickeringReverse:
+			auto tmp = variableordering::feature_based_pickering(constraints);
+			std::reverse(tmp.begin(),tmp.end());
+			return tmp;
 	}
 }
 
