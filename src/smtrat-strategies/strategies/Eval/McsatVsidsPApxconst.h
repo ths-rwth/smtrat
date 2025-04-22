@@ -43,9 +43,9 @@ struct SATSettings : smtrat::SATSettingsMCSAT {
 
 } // namespace internal
 
-class Eval_McsatRevPApxconst : public Manager {
+class Eval_McsatVsidsPApxconst : public Manager {
 public:
-    Eval_McsatRevPApxconst() : Manager() {
+    Eval_McsatVsidsPApxconst() : Manager() {
         setStrategy(
             addBackend<SATModule<internal::SATSettings>>()
         );
