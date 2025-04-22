@@ -25,7 +25,7 @@ struct ApxSettings {
 struct OCSettings : smtrat::mcsat::onecell::BaseSettings {
     constexpr static bool exploit_strict_constraints = false;
 	static constexpr bool enforce_tarski = false;
-    constexpr static bool use_approximation = false;
+    constexpr static bool use_approximation = true;
 	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
 	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
