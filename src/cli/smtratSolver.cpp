@@ -89,7 +89,7 @@ void setup_logging() {
 		("smtrat.parser", carl::logging::LogLevel::LVL_INFO)
 		("smtrat.strategygraph", carl::logging::LogLevel::LVL_INFO)
 		// ("smtrat.covering_ng", carl::logging::LogLevel::LVL_TRACE)
-		// ("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
+		("smtrat.cadcells", carl::logging::LogLevel::LVL_TRACE)
 		// ("smtrat.mcsat.onecell", carl::logging::LogLevel::LVL_TRACE)
 	;
 	carl::logging::logger().formatter("stdout")->printInformation = true;

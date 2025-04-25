@@ -1,0 +1,1 @@
+../build/smtrat-static $@ --module.parameter qe-method=coverings

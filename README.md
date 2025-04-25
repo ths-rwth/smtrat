@@ -1,80 +1,100 @@
 # SMT-RAT - Satisfiability-Modulo-Theories Real Algebra Toolbox
 
-SMT-RAT is a modular SMT solver with strong focus on non-linear real arithmetic, and basic support for quantifier elimination. Its main scope is the implemention and evaluation of methods developed at the Theory of Hybrid Systems group at RWTH Aachen University. 
+Online Resource associated with the paper
 
-It is SMT-LIB 2 compliant, however, some methods are not adapted for the incremental interface of SMT-LIB. 
+    A Variant of Non-uniform Cylindrical Algebraic Decomposition for Real Quantifier Elimination
+    Jasper Nalbach <nalbach@cs.rwth-aachen.de> (RWTH Aachen University), Erika Ábrahám (RWTH Aachen University)
 
-## Supported Theories and Implemented Methods (excerpt)
+## Instructions for Running the Experiments
 
-### SMT
+### Install SMT-RAT
 
-* `QF_LRA`: Simplex, FMplex
-* `QF_NRA`: Subtropical Satisfiability, MCSAT (with Fourier-Motzkin, Virtual Substitution, Interval Constraint Propagation, CAD/Single Cell Construction), DPLL(Virtual Substitution, Interval Constraint Propagation, Cylindrical Algebraic Coverings, Cylindrical Algebraic Decomposition), Cylindrical Algebraic Coverings (standalone)
-* `NRA`: Cylindrical Algebraic Coverings (standalone)
-* `QF_NIA` / `QF_NIRA`: Bit-blasting, Branch&Bound 
+    git clone https://github.com/ths-rwth/smtrat.git -b pub/nucad
+    cd smtrat
+    mkdir build
+    cd build
+    cmake -D CLI_ENABLE_QUANTIFIER_ELIMINATION=ON -D SMTRAT_DEVOPTION_Statistics=ON -D SMTRAT_Strategy=Default -D SMTRAT_Settings_QE_CAlC=EvalPBcldboundsSettings -D SMTRAT_Settings_QE_NuCAD=EvalPBcldboundsSettings ..
+    make -j smtrat-static
 
-### Quantifier Elimination
+For further instructions, see  [SMT-RAT documentation](http://smtrat.github.io/).
 
-* `LRA`: FMplex, Fourier-Motzkin (conjunctions only)
-* `NRA`: CAlC
+### Benchmarks
 
-## Getting Started
-
-### Installation
-
-* Clone this repository, or download and extract the latest release
-* `cd smtrat`
-* `mkdir build && cd build`
-* `sudo apt install cmake-ncurses-gui g++ libboost-all-dev cmake make libgmp-dev libgtest-dev` Make sure you have installed the dependencies
-  * see [the documentation for details](https://ths-rwth.github.io/smtrat/d5/dfc/installation.html)
-* `cmake ..`
-* Set variables using `ccmake ..`
-  * `SMTRAT_Strategy`: The SMT-RAT Strategy; if you do not know what this is, leave it to `Default`
-  * `CLI_ENABLE_QUANTIFIER_ELIMINATION`: If you want to use **quantifier elimination**, you need to set this variable to `ON`.
-* `make -jx smtrat` (where `x` is the number of cores)
-  * Note that the build process needs an internet connection to download additional dependencies.
-
-### Usage
-
-#### SMT
-
-SMT-RAT reads SMT-LIB files. We provide some example files: The first two are quantifier-free, the last one contains quantifiers.
-
-```
-./smtrat-shared doc/examples/qfnra-sat.smt2
-./smtrat-shared doc/examples/qfnra-unsat.smt2
-./smtrat-shared doc/examples/nra-sat.smt2
-```
-
-You may use the `(get-model)` command to obtain a solution if `(check-sat)` returned `sat`.
-
-#### Quantifier Elimination
-
-The inputs are SMT-LIB files which use the `(apply qe)` command instead of `(check-sat)` (following the `z3` syntax). Non-quantified variables are treated as parameters.
-
-```
-./smtrat-shared doc/examples/qe.smt2
-```
-
-SMT-RAT returns teh quantifier elimination result in SMT-LIB format. 
-Note that the output may contain *indexed root expressions* of the form `(root p i x)` where `p` is a multivariate polynomial, `k` a positive integer, and `x` a variable. These expressions are functions that map an assignment of variables other than `x` to the `k`th root of `p` in `x`.
-
-You can use these expressions in the input to SMT-RAT (for now, only as part of qunatifier-free formulas) to reason about them.
+* SMT-LIB QF_NRA and NRA benchmarks: https://doi.org/10.5281/zenodo.11061097
+  * [QF_NRA](https://zenodo.org/records/11061097/files/QF_NRA.tar.zst?download=1).
+  * [NRA](https://zenodo.org/records/11061097/files/NRA.tar.zst?download=1).
+* Bath QE benchmarks: `qe-benchmarks` folder from https://doi.org/10.5281/zenodo.14355422
 
 
-## Reporting Bugs
+### Building and Running SMT variants
 
-We are grateful for bug reports, 
-Please use our issue tracker.
+The following strategies can be chosen (by setting the `SMTRAT_Strategy` option in CMake) to compile the solvers from the paper:
 
-## User and Developer Documentation
+Solver | Strategy
+---|---
+NuCAD            | Eval/NucadPBcldbounds
+CAlC             | Eval/CAlCPBcldbounds
 
-Please check out the documentation for building and installation instructions, as well as documentation of the code.
+The following command will run SMT-RAT on `input.smt2` and print out statistics for the run:
+
+    ./smtrat-static input.smt2 --stats.print
+
+### Building and Running QE variants
+
+
+Build SMT-RAT as described above. The settings will already select the correct variants.
+
+To run qunatifier elimination, the input file should use the `(apply qe)` command instead of `(check-sat)`. Thus, to run quantifier elimination on the QF_NRA set, you need to replace `(check-sat)` by `(apply qe)` e.g. using:
+
+    find ./ -type f -exec sed -i 's/(check-sat)/(apply\ qe)/g' {} \;
+
+The following command will run CAlC on `input.smt2` and print out statistics for the run:
+
+    ./smtrat-static input.smt2 --stats.print --qe-method covering
+
+The following command will run NuCAD on `input.smt2` and print out statistics for the run:
+
+    ./smtrat-static input.smt2 --stats.print --qe-method nucad
+
+
+### Running QEPCAD B/Tarski and Redlog/Reduce
+
+The `qe-tools-wrapper` directory of this repository contains wrapper Python scripts for running QEPCAD B and Redlog on benchmarks in SMT-LIB format. Instructions:
+* Install [Tarski 1.28](https://www.usna.edu/Users/cs/wcbrown/tarski/) 
+* Set `tarski_path` in `tarski_wrapper.py`
+* Install [Redlog](https://sourceforge.net/projects/reduce-algebra/files/snapshot_2023-12-18/linux64/)
+* `pip3 install pysmt`
+* Run `tarski_wrapper.py <input.smt2>` or `tarski_wrapper.py <input.smt2>`. The scripts will return either `sat` or `unsat` on SMT benchmarks; or the number of atoms, disjunctions and conjunctions of the solution formula on QE benchmarks. In case the backend is incomplete, it may return `unknown`; if some benchmark uses unsupported features (e.g. division by a non-constant), the scripts will return an error as well.
+
+## Verification of Solution Formulas
+
+The solution formulas of SMT-RAT are verified as follows, using the scripts in the `qe-tools-wrapper` directory:
+* Install [Tarski 1.40](https://github.com/chriswestbrown/tarski/tree/2e16a504f97fb6c8736ed9126d3e0b696ebbf683) 
+* Set `tarski_path` in `tarski_wrapper.py`
+* `pip3 install pysmt`
+* Adapt `smtrat-nucad.sh` or `smtrat-calc.sh` to contain the path to the SMT-RAT binary.
+* Run `verify_qe_result.py smtrat-nucad.sh ./tarski_wrapper.py ../qe-benchmarks/smtlib/` or `verify_qe_result.py smtrat-calc.sh ./tarski_wrapper.py ../qe-benchmarks/smtlib/`. Some instances may not be verified due to a timeout of SMT-RAT or Tarski; you can increase this time limit in the `verify_qe_result.py` script.
+
+
+### Batch Execution
+
+We do not provide scripts here for running all experiments, as the way this step heavily depends on the user's system.
+
+You may use our benchmarking tool [benchmax](https://github.com/ths-rwth/benchmax-py).
+
+## Evaluation
+
+The `evaluation.zip` contains `csv` files with the results for each solver and benchmark, as well as two Jupyter notebooks to reproduce the figures and tables from the paper. To run the Jupyter notebooks, you need to install a small python package (usage instructions [here](https://github.com/ths-rwth/benchmax-py/blob/main/examples/inspection-example.ipynb)):
+
+    pip3 install pandas matplotlib numpy pillow
+
+    cd ~/.local/lib/python3.9/site-packages/ # path to your python site-packages directory
+    ln -s ~/src/smtrat/utilities/benchmax/ # path to the benchmax utility
+
+
+## Documentation
+
+For more information, please check out the docs.
 
 * [SMT-RAT documentation](http://ths-rwth.github.io/smtrat)
 * [CArL documentation](http://ths-rwth.github.io/carl) (SMT-RAT depends on [CArL](https://github.com/ths-rwth/carl) for formula and polynomial data structures and basic operations)
-
-## Contact
-
-* Jasper Nalbach <nalbach@cs.rwth-aachen.de>
-* Valentin Promies <promies@cs.rwth-aachen.de>
