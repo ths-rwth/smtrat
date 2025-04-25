@@ -10,7 +10,7 @@ namespace smtrat {
 
 namespace internal {
 
-struct CoveringNGSettings : CoveringNGSettingsDefault  {
+struct CoveringNGSettings : CoveringNGSettingsBase  {
     using op = cadcells::operators::MccallumFiltered<cadcells::operators::MccallumFilteredSettings>;
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
     using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;

@@ -29,9 +29,14 @@ struct BaseSettings {
 struct DefaultSettings : BaseSettings { // current default
     constexpr static bool exploit_strict_constraints = true;
 
-    using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobal;
-    using covering_heuristic = cadcells::representation::covering_heuristics::LDBCoveringCacheGlobal;
-    using op = cadcells::operators::Mccallum<cadcells::operators::MccallumSettingsComplete>;
+    using cell_heuristic = cadcells::representation::cell_heuristics::LowestDegreeBarriersCacheGlobalFilter;
+    using covering_heuristic = cadcells::representation::covering_heuristics::LDBCoveringCacheGlobalFilter;
+
+    struct OpSettings : cadcells::operators::MccallumFilteredCompleteSettings {
+		static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+		static constexpr bool enable_weak = true;
+	};
+    using op = cadcells::operators::MccallumFiltered<cadcells::operators::MccallumFilteredCompleteSettings>;
 };
 
 struct DefaultApxSettings : DefaultSettings {

@@ -9,7 +9,7 @@ namespace smtrat {
 
 namespace internal {
 
-struct CoveringNGSettings : CoveringNGSettingsDefault  {
+struct CoveringNGSettings : CoveringNGSettingsBase  {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellPdel;
     using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringPdel;
     using op = cadcells::operators::MccallumPdel<cadcells::operators::MccallumPdelSettingsComplete>;

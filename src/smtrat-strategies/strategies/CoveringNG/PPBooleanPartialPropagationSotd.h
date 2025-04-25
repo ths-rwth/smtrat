@@ -10,7 +10,7 @@ namespace smtrat {
 
 namespace internal {
 
-struct CoveringNGSettings : CoveringNGSettingsDefault  {
+struct CoveringNGSettings : CoveringNGSettingsBase  {
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;
         static auto create(cadcells::datastructures::Projections& proj) {

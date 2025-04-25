@@ -425,6 +425,13 @@ struct LowestDegreeBarriersCacheGlobal {
     }
 };
 
+struct LowestDegreeBarriersCacheGlobalFilter {
+    template<typename T>
+    static datastructures::CellRepresentation<T> compute(datastructures::SampledDerivationRef<T>& der) {
+        return compute_cell_lowest_degree_barriers(der, LocalDelMode::ALL, true, true);
+    }
+};
+
 
 struct LowestDegreeBarriersPdel {
     template<typename T>

@@ -10,7 +10,7 @@ namespace smtrat {
 
 namespace internal {
 
-struct CoveringNGSettings : CoveringNGSettingsDefault  {
+struct CoveringNGSettings : CoveringNGSettingsBase  {
     static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
 };
 

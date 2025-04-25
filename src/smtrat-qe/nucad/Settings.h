@@ -7,7 +7,7 @@
 #include <smtrat-cadcells/operators/operator_mccallum_unified.h>
 
 namespace smtrat::qe::nucad {
-struct DefaultSettings {
+struct BaseSettings {
 	// Variable ordering
     static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
 
@@ -37,7 +37,7 @@ struct DefaultSettings {
     static constexpr bool move_boolean_variables_to_front = false;
 };
 
-struct DefaultBCFilterSettings : DefaultSettings {
+struct DefaultBCFilterSettings : BaseSettings {
     struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
         static constexpr DelineationFunction delineation_function = NOOP;
         static constexpr bool complete = true;
@@ -48,7 +48,7 @@ struct DefaultBCFilterSettings : DefaultSettings {
 
 
 
-struct DefaultBCFilterEWSettings : DefaultSettings {
+struct DefaultBCFilterEWSettings : BaseSettings {
     struct mcf_settings : cadcells::operators::MccallumFilteredSettings {
         static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
         static constexpr bool enable_weak = true;
@@ -59,7 +59,7 @@ struct DefaultBCFilterEWSettings : DefaultSettings {
     static constexpr bool enable_weak = true;
 };
 
-struct EvalSettings : DefaultSettings {
+struct EvalSettings : BaseSettings {
     using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
 	using op = cadcells::operators::MccallumUnified<cadcells::operators::MccallumUnifiedSettingsComplete>;
 	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
@@ -72,6 +72,18 @@ struct EvalPBcldboundsSettings : EvalSettings {
 		static constexpr bool enable_weak = true;
 	};
 	using op = cadcells::operators::MccallumUnified<OpSettings>;
+    static constexpr bool enable_weak = true;
+};
+
+struct DefaultSettings : BaseSettings {
+    using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
+	static constexpr bool move_boolean_variables_to_front = true;
+    struct OpSettings : cadcells::operators::MccallumFilteredCompleteSettings {
+		static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+		static constexpr bool enable_weak = true;
+	};
+	using op = cadcells::operators::MccallumFiltered<OpSettings>;
     static constexpr bool enable_weak = true;
 };
 

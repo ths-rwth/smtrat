@@ -11,7 +11,7 @@ public:
 	CoveringNG_GBDefault() : Manager() {
 		setStrategy(
 			addBackend<NewGBPPModule<NewGBPPSettings1>>({
-				addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+				addBackend<CoveringNGModule<CoveringNGSettingsBase>>()
 			})
         );
 	}

@@ -17,7 +17,7 @@ public:
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
                 addBackend<STropModule<STropSettings3>>({
-                    addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+                    addBackend<CoveringNGModule<CoveringNGSettingsBase>>()
                 })
             })
         );

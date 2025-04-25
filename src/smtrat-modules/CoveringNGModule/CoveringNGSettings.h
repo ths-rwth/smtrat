@@ -10,8 +10,8 @@
 
 namespace smtrat {
 
-struct CoveringNGSettingsDefault {
-    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsDefault>";
+struct CoveringNGSettingsBase {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsBase>";
 
     // Handling of Boolean variables
     static constexpr bool transform_boolean_variables_to_reals = true;
@@ -41,6 +41,21 @@ struct CoveringNGSettingsDefault {
             return Type(proj, fe_implicant_ordering, fe_results, fe_constraint_ordering, fe_stop_evaluation_on_conflict, fe_preprocess, fe_postprocess, fe_boolean_exploration);
         }
     };
+};
+
+struct CoveringNGSettingsDefault : CoveringNGSettingsBase {
+    static constexpr char moduleName[] = "CoveringNGModule<CoveringNGSettingsDefault>";
+
+	using cell_heuristic = cadcells::representation::cell_heuristics::BiggestCellFilter;
+	using covering_heuristic = cadcells::representation::covering_heuristics::BiggestCellCoveringFilter;
+	struct OpSettings : cadcells::operators::MccallumFilteredCompleteSettings {
+		static constexpr DelineationFunction delineation_function = BOUNDS_ONLY;
+		static constexpr bool enable_weak = true;
+	};
+	using op = cadcells::operators::MccallumFiltered<OpSettings>;
+	static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::FeatureBasedPickering;
+	static constexpr covering_ng::SamplingAlgorithm sampling_algorithm = covering_ng::SamplingAlgorithm::SIZE_SAMPLING;
+	static constexpr bool move_boolean_variables_to_front = true;
 };
 
 } // namespace smtrat

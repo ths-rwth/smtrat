@@ -10,7 +10,7 @@ namespace smtrat {
 
 namespace internal {
 
-struct CoveringNGSettings : CoveringNGSettingsDefault  {
+struct CoveringNGSettings : CoveringNGSettingsBase  {
     static constexpr bool transform_boolean_variables_to_reals = false;
     struct formula_evaluation {
         using Type = covering_ng::formula::GraphEvaluation;

@@ -17,7 +17,7 @@ public:
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
 				addBackend<SATModule<SATSettings1>>({
-                	addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+                	addBackend<CoveringNGModule<CoveringNGSettingsBase>>()
 				})
             })
         );

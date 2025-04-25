@@ -127,7 +127,7 @@ class Default : public Manager {
 
             // NRA
             addBackend<PNFerModule>({
-                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>( // covering for quantifiers
+                addBackend<CoveringNGModule<CoveringNGSettingsBase>>( // covering for quantifiers
                 ).condition( &condition_non_quantifier_free ),
                 addBackend<FPPModule<FPPSettings1>>({ // default QF_NRA solver
                     addBackend<STropModule<STropSettings3>>({
@@ -137,7 +137,7 @@ class Default : public Manager {
             }).condition( &condition_nonqf_ra ),
 
             // NRA  extended with root expressions
-            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>(
+            addBackend<CoveringNGModule<CoveringNGSettingsBase>>(
             ).condition( &condition_ra_ext ),
 
             // QF_NIRA

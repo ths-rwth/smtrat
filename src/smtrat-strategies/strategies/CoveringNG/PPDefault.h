@@ -15,7 +15,7 @@ public:
 	CoveringNG_PPDefault() : Manager() {
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
-                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+                addBackend<CoveringNGModule<CoveringNGSettingsBase>>()
             })
         );
 	}

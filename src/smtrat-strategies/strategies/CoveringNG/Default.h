@@ -13,7 +13,7 @@ class CoveringNG_Default: public Manager {
 public:
 	CoveringNG_Default() : Manager() {
 		setStrategy(
-            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+            addBackend<CoveringNGModule<CoveringNGSettingsBase>>()
         );
 	}
 };

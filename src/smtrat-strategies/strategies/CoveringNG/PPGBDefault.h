@@ -13,7 +13,7 @@ public:
 		setStrategy(
 			addBackend<FPPModule<FPPSettings1>>({
 				addBackend<NewGBPPModule<NewGBPPSettings1>>({
-                	addBackend<CoveringNGModule<CoveringNGSettingsDefault>>()
+                	addBackend<CoveringNGModule<CoveringNGSettingsBase>>()
 				})
             })
         );
