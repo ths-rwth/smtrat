@@ -94,6 +94,17 @@ struct SATSettingsMCSATApxStaticTheory : SATSettingsMCSAT {
     using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>,false>;
 };
 
+struct SATSettingsMCSATBCApxVSIDS : SATSettingsMCSAT {
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATApxVSIDS>";
+    using MCSATSettings = mcsat::MCSATSettingsBCApxDefault;
+};
+
+struct SATSettingsMCSATBCApxStaticTheory : SATSettingsMCSAT {
+    static constexpr auto moduleName = "SATModule<SATSettingsMCSATApxStaticTheory>";
+    using MCSATSettings = mcsat::MCSATSettingsBCApxDefault;
+    using VarScheduler = VarSchedulerMcsatTheoryFirstBooleanMoreFirst<TheoryVarSchedulerStatic<mcsat::VariableOrdering::FeatureBasedPickering>,false>;
+};
+
 struct SATSettingsMCSATOC : SATSettingsMCSAT {
     static constexpr auto moduleName = "SATModule<MCSATOC>";
     using MCSATSettings = mcsat::MCSATSettingsOC;
