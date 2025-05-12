@@ -39,7 +39,9 @@ private:
 	 */
 	std::map<FormulaT, std::pair<std::vector<typename Polynomial::RootType>, std::variant<carl::BasicConstraint<Polynomial>, carl::VariableComparison<Polynomial>>>> m_root_map;
 
+    #ifdef SMTRAT_DEVOPTION_Statistics
 	AAFStatistics& mStatistics;
+    #endif
 	
 	bool satisfies(const std::variant<carl::BasicConstraint<Polynomial>, carl::VariableComparison<Polynomial>>& f, const typename Polynomial::RootType& r) const {
 		SMTRAT_LOG_TRACE("smtrat.mcsat.assignmentfinder", f << ", " << m_assignment << ", " << m_var << ", " << r);
@@ -99,11 +101,19 @@ private:
 	}
 	
 public:
+    #ifdef SMTRAT_DEVOPTION_Statistics
 	AssignmentFinder_ctx(const std::vector<carl::Variable>& var_order, carl::Variable var, const Model& model, AAFStatistics& statistics): m_context(var_order), m_var(var), mStatistics(statistics) {
 		for (const auto& e : get_ran_assignment(model)) {
 			m_assignment.emplace(e.first, carl::convert<typename Polynomial::RootType>(e.second));
 		}
 	}
+    #else
+    AssignmentFinder_ctx(const std::vector<carl::Variable>& var_order, carl::Variable var, const Model& model): m_context(var_order), m_var(var) {
+		for (const auto& e : get_ran_assignment(model)) {
+			m_assignment.emplace(e.first, carl::convert<typename Polynomial::RootType>(e.second));
+		}
+	}
+    #endif
 	
 	bool addConstraint(const FormulaT& f1, std::map<FormulaT,carl::BasicConstraint<Polynomial>>& cache) {
 		SMTRAT_LOG_DEBUG("smtrat.mcsat.assignmentfinder", "Adding " << f1);

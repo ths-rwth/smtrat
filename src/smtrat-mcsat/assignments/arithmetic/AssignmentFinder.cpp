@@ -9,12 +9,14 @@ namespace arithmetic {
 
 std::optional<AssignmentOrConflict> AssignmentFinder::operator()(const mcsat::Bookkeeping& data, carl::Variable var) const {
 	SMTRAT_LOG_DEBUG("smtrat.mcsat.arithmetic", "Looking for an assignment for " << var);
-	#ifdef SMTRAT_DEVOPTION_Statistics
-		mStatistics.called();
-	#endif
+	SMTRAT_STATISTICS_CALL(mStatistics.called());
 	auto var_order = data.assignedVariables();
 	var_order.push_back(var);
+    #ifdef SMTRAT_DEVOPTION_Statistics
 	AssignmentFinder_ctx<false> af(var_order, var, data.model(), mStatistics);
+    #else
+    AssignmentFinder_ctx<false> af(var_order, var, data.model());
+    #endif
 	// AssignmentFinder_detail af(var, data.model());
 	FormulasT conflict;
 	for (const auto& c: data.constraints()) {
