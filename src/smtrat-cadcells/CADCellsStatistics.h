@@ -58,6 +58,7 @@ private:
 
     carl::statistics::MultiCounter<std::size_t> m_representation_equational_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_nonstrict_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_rules_intersection_count_by_depth;
 
@@ -158,6 +159,7 @@ public:
 
         Statistics::addKeyValuePair("heuristics.representation.equational_count.by_depth", m_representation_equational_count_by_depth);
         Statistics::addKeyValuePair("heuristics.representation.roots_inside.by_depth", m_representation_roots_inside_by_depth);
+        Statistics::addKeyValuePair("heuristics.representation.roots_inside_nonstrict.by_depth", m_representation_roots_inside_nonstrict_by_depth);
 
         Statistics::addKeyValuePair("heuristics.rules.intersection_count.by_depth", m_rules_intersection_count_by_depth);
 
@@ -406,15 +408,27 @@ public:
     void got_representation_roots_inside(std::size_t level, const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
         if (interval.is_section()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-level, 0);
+            m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 0);
         } else if (interval.lower_unbounded() && interval.upper_unbounded()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-level, delin.roots().size());
+            m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, delin.roots().size());
         } else if (interval.lower_unbounded()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-level, std::distance(delin.roots().begin(), interval.upper()));
+            m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, std::distance(delin.roots().begin(), interval.upper()));
         } else if (interval.upper_unbounded()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), delin.roots().end())-1);
+            m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), delin.roots().end())-1);
         } else {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), interval.upper())-1);
+            m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), interval.upper())-1);
         }
+
+        if (interval.is_section()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+        else {
+            if (!interval.lower_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+            if (!interval.upper_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+        }
+        
     }
 
     /// rules
