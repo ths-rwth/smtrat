@@ -423,11 +423,11 @@ public:
             m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, std::distance(interval.lower(), interval.upper())-1);
         }
 
-        if (interval.is_section()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
-        else {
-            if (!interval.lower_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
-            if (!interval.upper_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
-        }
+        //if (interval.is_section()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+        //else {
+            if (!interval.is_section() && !interval.lower_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+            if (!interval.is_section() && !interval.upper_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+        //}
         
     }
 
