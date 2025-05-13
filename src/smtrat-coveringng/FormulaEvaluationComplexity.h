@@ -102,7 +102,23 @@ inline auto sum_total_degree(cadcells::datastructures::Projections& proj, const 
     return sum;
 }
 
+inline auto product_max_total_degree(cadcells::datastructures::Projections& proj, const Implicant& a) {
+    std::size_t n = 1;
+    for (const auto& el: a) {
+        n *= proj.total_degree(el.lhs);
+    }
+    return n;
 }
+
+inline auto n_nonlin(cadcells::datastructures::Projections& proj, const Implicant& a) {
+    std::size_t n = 0;
+    for (const auto& el: a) {
+        if (proj.total_degree(el.lhs) <= 1) ++n;
+    }
+    return n;
+}
+
+} // namespace features
 
 /**
  * Inspired by Pickering, Lynn, Tereso Del Rio Almajano, Matthew England, and Kelly Cohen. ‘Explainable AI Insights for Symbolic Computation: A Case Study on Selecting the Variable Ordering for Cylindrical Algebraic Decomposition’. arXiv, 29 August 2023. http://arxiv.org/abs/2304.12154.
@@ -178,6 +194,28 @@ inline bool min_sotd(cadcells::datastructures::Projections& proj, const cadcells
 
 inline bool min_tdeg(cadcells::datastructures::Projections& proj, const cadcells::datastructures::PolyConstraint& a, const cadcells::datastructures::PolyConstraint& b) {
     return proj.total_degree(a.lhs) < proj.total_degree(b.lhs); 
+}
+
+/**
+ * Mnimimizing the number of non-linear constraints for techniques that use abstractions
+ */
+
+inline bool min_n_nonlin(cadcells::datastructures::Projections& proj, const Implicant& a, const Implicant& b) {
+    std::size_t n_a = features::n_nonlin(proj, a);
+    std::size_t n_b = features::n_nonlin(proj, b);
+    if (n_a < n_b) return true;
+    return (n_b == n_a) && sotd(proj, a, b);
+}
+
+/**
+ * Mnimimizing the product of the total degree of all constraints
+ */
+
+inline bool min_prod_max_tdeg(cadcells::datastructures::Projections& proj, const Implicant& a, const Implicant& b) {
+    std::size_t n_a = features::product_max_total_degree(proj, a);
+    std::size_t n_b = features::product_max_total_degree(proj, b);
+    if (n_a < n_b) return true;
+    return (n_b == n_a) && sotd(proj, a, b);
 }
 
 } // namespace smtrat::covering_ng::formula::complexity
