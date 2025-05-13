@@ -425,8 +425,8 @@ public:
 
         //if (interval.is_section()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
         //else {
-            if (!interval.is_section() && !interval.lower_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
-            if (!interval.is_section() && !interval.upper_unbounded()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+            if (!interval.is_section() && !interval.lower_unbounded() && !interval.lower_strict()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+            if (!interval.is_section() && !interval.upper_unbounded() && !interval.upper_strict()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
         //}
         
     }
