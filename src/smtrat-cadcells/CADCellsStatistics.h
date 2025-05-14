@@ -59,6 +59,7 @@ private:
     carl::statistics::MultiCounter<std::size_t> m_representation_equational_count_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_by_depth;
     carl::statistics::MultiCounter<std::size_t> m_representation_roots_inside_nonstrict_by_depth;
+    carl::statistics::MultiCounter<std::size_t> m_representation_roots_by_depth;
 
     carl::statistics::MultiCounter<std::size_t> m_rules_intersection_count_by_depth;
 
