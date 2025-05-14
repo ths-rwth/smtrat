@@ -160,6 +160,7 @@ public:
         Statistics::addKeyValuePair("heuristics.representation.equational_count.by_depth", m_representation_equational_count_by_depth);
         Statistics::addKeyValuePair("heuristics.representation.roots_inside.by_depth", m_representation_roots_inside_by_depth);
         Statistics::addKeyValuePair("heuristics.representation.roots_inside_nonstrict.by_depth", m_representation_roots_inside_nonstrict_by_depth);
+        Statistics::addKeyValuePair("heuristics.representation.roots.by_depth", m_representation_roots_by_depth);
 
         Statistics::addKeyValuePair("heuristics.rules.intersection_count.by_depth", m_rules_intersection_count_by_depth);
 
@@ -406,6 +407,8 @@ public:
     }
 
     void got_representation_roots_inside(std::size_t level, const datastructures::Delineation& delin, const datastructures::DelineationInterval& interval) {
+        m_representation_roots_by_depth.inc(m_current_max_level-level, delin.roots().size());
+
         if (interval.is_section()) {
             m_representation_roots_inside_by_depth.inc(m_current_max_level-level, 0);
             m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 0);
@@ -425,8 +428,8 @@ public:
 
         //if (interval.is_section()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
         //else {
-            if (!interval.is_section() && !interval.lower_unbounded() && !interval.lower_strict()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
-            if (!interval.is_section() && !interval.upper_unbounded() && !interval.upper_strict()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+        if (!interval.is_section() && !interval.lower_unbounded() && !interval.lower_strict()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
+        if (!interval.is_section() && !interval.upper_unbounded() && !interval.upper_strict()) m_representation_roots_inside_nonstrict_by_depth.inc(m_current_max_level-level, 1);
         //}
         
     }
