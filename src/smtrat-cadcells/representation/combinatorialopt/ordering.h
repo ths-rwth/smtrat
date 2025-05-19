@@ -101,7 +101,9 @@ inline auto get_candidate_resultants(auto& proj, const auto& delin,
 		test(cov_above, layer_above, begin, end);
 	}
 
-	if (hack_applied) ordering_statistics().hack_applied++;
+	SMTRAT_STATISTICS_CALL(
+        if (hack_applied) ordering_statistics().hack_applied++;
+    )
 
 	return std::make_tuple(cov_below, cov_above, layer_below, layer_above, costs, root_to_index);
 }
