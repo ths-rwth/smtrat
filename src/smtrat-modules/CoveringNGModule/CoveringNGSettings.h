@@ -18,8 +18,8 @@ struct CoveringNGSettingsDefault {
 
     // baseline qe for optimization
     static constexpr bool minimize_by_qe = false;
-    static constexpr bool minimization_variable_order = true;
-    static constexpr bool validate_optimization = true;
+    static constexpr bool minimization_variable_order = false;
+    static constexpr bool validate_optimization = false;
 
     // Variable ordering
     static constexpr covering_ng::variables::VariableOrderingHeuristics variable_ordering_heuristic = covering_ng::variables::VariableOrderingHeuristics::GreedyMaxUnivariate;
