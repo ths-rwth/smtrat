@@ -122,22 +122,23 @@ class Default : public Manager {
             }).condition( &condition_qf_nra ),
 
             // QF_NRA extended with root expressions
-            addBackend<SATModule<SATSettingsMCSATVSIDS>>(
+            addBackend<SATModule<SATSettingsMCSATStaticTheory>>(
             ).condition( &condition_qf_ra_ext ),
 
             // NRA
             addBackend<PNFerModule>({
-                addBackend<CoveringNGModule<CoveringNGSettingsBase>>( // covering for quantifiers
+                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>( // covering for quantifiers
                 ).condition( &condition_non_quantifier_free ),
                 addBackend<FPPModule<FPPSettings1>>({ // default QF_NRA solver
                     addBackend<STropModule<STropSettings3>>({
-                        addBackend<SATModule<SATSettingsMCSATVSIDS>>()
+                        addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
+                        addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
                     })
                 }).condition( &condition_quantifier_free )
             }).condition( &condition_nonqf_ra ),
 
             // NRA  extended with root expressions
-            addBackend<CoveringNGModule<CoveringNGSettingsBase>>(
+            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>(
             ).condition( &condition_ra_ext ),
 
             // QF_NIRA
