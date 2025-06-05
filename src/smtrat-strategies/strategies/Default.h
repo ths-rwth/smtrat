@@ -29,17 +29,30 @@ namespace smtrat {
  * @version
  *
  */
-class Default : public Manager {
-    static bool condition_lra(carl::Condition condition) {
-		return !(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) &&
-               !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition) &&
-               !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
+class Default : public Manager {    
+    static bool condition_quantifier_free(carl::Condition condition) {
+		return !(carl::PROP_CONTAINS_QUANTIFIER_EXISTS <= condition) &&
+               !(carl::PROP_CONTAINS_QUANTIFIER_FORALL <= condition);
 	}
+    static bool condition_non_quantifier_free(carl::Condition condition) {
+		return !condition_quantifier_free(condition);
+	}
+
+    static bool condition_conjunction(carl::Condition condition) {
+		return carl::PROP_IS_LITERAL_CONJUNCTION <= condition;
+	}
+	static bool condition_noconjunction(carl::Condition condition) {
+		return !condition_conjunction(condition);
+	}
+
+
+    static bool condition_qf_base(carl::Condition condition) {
+        return condition_quantifier_free(condition) && !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
+    }
 
 	static bool condition_nra(carl::Condition condition) {
 		return (carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) &&
-               !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition) &&
-               !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
+               !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition);
 	}
 
     static bool condition_ra_ext(carl::Condition condition) {
@@ -47,30 +60,29 @@ class Default : public Manager {
                 (carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
 	}
 
+    static bool condition_lra(carl::Condition condition) {
+		return !(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) &&
+               !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition);
+	}
+
 	static bool condition_lira(carl::Condition condition) {
 		return !(carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) &&
-                (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition) &&
-                !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
+                (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition);
+	}
+
+    static bool condition_lira_conj(carl::Condition condition) {
+		return condition_lira(condition) && condition_conjunction(condition);
+	}
+    static bool condition_lira_non_conj(carl::Condition condition) {
+		return condition_lira(condition) && !condition_conjunction(condition);
 	}
 
     static bool condition_nira(carl::Condition condition) {
 		return (carl::PROP_CONTAINS_NONLINEAR_POLYNOMIAL <= condition) &&
-               (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition) &&
-               !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition);
+               (carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition);
 	}
 
-    static bool condition_quantifier_free(carl::Condition condition) {
-		return !(carl::PROP_CONTAINS_QUANTIFIER_EXISTS <= condition) &&
-               !(carl::PROP_CONTAINS_QUANTIFIER_FORALL <= condition);
-	}
 
-    static bool condition_non_quantifier_free(carl::Condition condition) {
-		return !condition_quantifier_free(condition);
-	}
-
-    static bool condition_qf_lra(carl::Condition condition) {
-		return condition_quantifier_free(condition) && condition_lra(condition);
-	}
 
 	static bool condition_qf_nra(carl::Condition condition) {
 		return condition_quantifier_free(condition) && condition_nra(condition);
@@ -88,42 +100,55 @@ class Default : public Manager {
 		return condition_quantifier_free(condition) && condition_ra_ext(condition);
 	}
 
-	static bool condition_qf_lira(carl::Condition condition) {
-		return condition_quantifier_free(condition) && condition_lira(condition);
-	}
-
-    static bool condition_qf_nira(carl::Condition condition) {
-		return condition_quantifier_free(condition) && condition_nira(condition);
-	}
-
     static bool condition_nonqf_ra(carl::Condition condition) {
-		return (!condition_quantifier_free(condition) && (condition_lra(condition)) ||
-                condition_nra(condition));
+		return !(carl::PROP_CONTAINS_ROOT_EXPRESSION <= condition) &&
+               !(carl::PROP_CONTAINS_INTEGER_VALUED_VARS <= condition) &&
+               !condition_quantifier_free(condition);
 	}
 
-	static bool condition_conjunction(carl::Condition condition) {
-		return carl::PROP_IS_LITERAL_CONJUNCTION <= condition;
-	}
-
-	static bool condition_noconjunction(carl::Condition condition) {
-		return !(carl::PROP_IS_LITERAL_CONJUNCTION <= condition);
-	}
 
     public:
 
     Default() : Manager() {
         setStrategy({
-            // QF_NRA
             addBackend<FPPModule<FPPSettings1>>({
+                // QF_NRA
                 addBackend<STropModule<STropSettings3>>({
                     addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
                     addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
-                })
-            }).condition( &condition_qf_nra ),
+                }).condition( &condition_nra ),
+                // QF_NIRA
+                addBackend<IncWidthModule<IncWidthSettings1>>({
+                    addBackend<IntBlastModule<IntBlastSettings2>>({
+                        addBackend<SATModule<SATSettings1>>({
+                            addBackend<LRAModule<LRASettings1>>({
+                                addBackend<VSModule<VSSettings234>>({
+                                    addBackend<NewCoveringModule<NewCoveringSettings2>>({
+                                        addBackend<NewCADModule<NewCADSettingsFOS>>()
+                                    })
+                                })
+                            })
+                        })
+                    })
+                }).condition( &condition_nira ),
+                // QF_LRA
+                addBackend<SATModule<SATSettings1>>({
+                    addBackend<LRAModule<LRASettings1>>()
+                }).condition( &condition_lra ),
+                // QF_LIRA
+                addBackend<SATModule<SATSettings1>>({
+                    addBackend<CubeLIAModule<CubeLIASettings1>>({
+                        addBackend<LRAModule<LRASettings1>>()
+                    })
+                }).condition( &condition_lira_conj ),
+                addBackend<SATModule<SATSettings1>>({
+                    addBackend<LRAModule<LRASettings1>>()
+                }).condition( &condition_lira_non_conj )
+            }).condition( &condition_qf_base ),
+
 
             // QF_NRA extended with root expressions
-            addBackend<SATModule<SATSettingsMCSATStaticTheory>>(
-            ).condition( &condition_qf_ra_ext ),
+            addBackend<SATModule<SATSettingsMCSATStaticTheory>>().condition( &condition_qf_ra_ext ),
 
             // NRA
             addBackend<PNFerModule>({
@@ -138,44 +163,7 @@ class Default : public Manager {
             }).condition( &condition_nonqf_ra ),
 
             // NRA  extended with root expressions
-            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>(
-            ).condition( &condition_ra_ext ),
-
-            // QF_NIRA
-            addBackend<FPPModule<FPPSettings1>>({
-                addBackend<IncWidthModule<IncWidthSettings1>>({
-                    addBackend<IntBlastModule<IntBlastSettings2>>({
-                        addBackend<SATModule<SATSettings1>>({
-                            addBackend<LRAModule<LRASettings1>>({
-                                addBackend<VSModule<VSSettings234>>({
-                                    addBackend<NewCoveringModule<NewCoveringSettings2>>({
-                                        addBackend<NewCADModule<NewCADSettingsFOS>>()
-                                    })
-                                })
-                            })
-                        })
-                    })
-                })
-            }).condition( &condition_qf_nira ),
-
-            // QF_LIRA
-            addBackend<FPPModule<FPPSettings1>>({
-                addBackend<SATModule<SATSettings1>>({
-                    addBackend<CubeLIAModule<CubeLIASettings1>>({
-                        addBackend<LRAModule<LRASettings1>>()
-                    })
-                }).condition( &condition_conjunction ),
-                addBackend<SATModule<SATSettings1>>({
-                    addBackend<LRAModule<LRASettings1>>()
-                }).condition( &condition_noconjunction )
-            }).condition( &condition_qf_lira ),
-
-            // QF_LRA
-            addBackend<FPPModule<FPPSettings1>>({
-                addBackend<SATModule<SATSettings1>>({
-                    addBackend<LRAModule<LRASettings1>>()
-                })
-            }).condition( &condition_qf_lra ),
+            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>().condition( &condition_ra_ext ),
         });
     }
 };
