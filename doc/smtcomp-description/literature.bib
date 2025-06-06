@@ -219,3 +219,71 @@ pages="189--206",
   abstract = {The cylindrical algebraic coverings method was originally proposed to decide the satisfiability of a set of nonlinear real arithmetic constraints. We reformulate and extend the cylindrical algebraic coverings method to allow for checking the validity of arbitrary nonlinear arithmetic formulas, adding support for both quantifiers and arbitrary Boolean structure. Furthermore, we also propose a variant to perform quantifier elimination on such formulas.},
   langid = {english}
 }
+
+
+@inproceedings{nalbach2019,
+  title = {On Variable Orderings in {{MCSAT}} for Non-Linear Real Arithmetic},
+  booktitle = {Satisfiability {{Checking}} and {{Symbolic Computation}} ({{SC-square}} 2019)},
+  author = {Nalbach, Jasper and Kremer, Gereon and Ábrahám, Erika},
+  year = {2019},
+  series = {{{CEUR Workshop Proceedings}}},
+  publisher = {CEUR-WS.org},
+  url = {https://ceur-ws.org/Vol-2460/paper5.pdf},
+  eventtitle = {Satisfiability {{Checking}} and {{Symbolic Computation}} ({{SC-square}} 2019)},
+}
+
+@inproceedings{promies2025,
+  title = {{More is Less: Adding Polynomials for Faster Explanations in NLSAT}},
+  booktitle = {{Conference on Automated Deduction (CADE)}},
+  author = {Promies, Valentin and Nalbach, Jasper and Ábrahám, Erika and Wagner, Paul},
+  year = {to appear 2025},
+}
+
+@article{pickering2024,
+  title = {Explainable {{AI Insights}} for {{Symbolic Computation}}: {{A}} Case Study on Selecting the Variable Ordering for Cylindrical Algebraic Decomposition},
+  shorttitle = {Explainable {{AI Insights}} for {{Symbolic Computation}}},
+  author = {Pickering, Lynn and del Río, Tereso and England, Matthew and Cohen, Kelly},
+  date = {2024-07-01},
+  year = {2024},
+  journal = {Journal of Symbolic Computation},
+  shortjournal = {JSC},
+  volume = {123},
+  pages = {102276},
+  issn = {0747-7171},
+  doi = {10.1016/j.jsc.2023.102276},
+  abstract = {In recent years there has been increased use of machine learning (ML) techniques within mathematics, including symbolic computation where it may be applied safely to optimise or select algorithms. This paper explores whether using explainable AI (XAI) techniques on such ML models can offer new insight for symbolic computation, inspiring new implementations within computer algebra systems that do not directly call upon AI tools. We present a case study on the use of ML to select the variable ordering for cylindrical algebraic decomposition. It has already been demonstrated that ML can make the choice well, but here we show how the SHAP tool for explainability can be used to inform new heuristics of a size and complexity similar to those human-designed heuristics currently commonly used in symbolic computation.},
+  keywords = {Computer algebra,Cylindrical algebraic decomposition,Explainable AI,Heuristic development,Variable ordering}
+}
+
+@misc{nalbach2024calc,
+  title = {Extensions of the {{Cylindrical Algebraic Covering Method}} for {{Quantifiers}}},
+  author = {Nalbach, Jasper and Kremer, Gereon},
+  year = {2024},
+  month = nov,
+  number = {arXiv:2411.03070},
+  eprint = {2411.03070},
+  publisher = {arXiv},
+  doi = {10.48550/arXiv.2411.03070},
+  urldate = {2024-11-06},
+  abstract = {The cylindrical algebraic covering method was originally proposed to decide the satisfiability of a set of non-linear real arithmetic constraints. We reformulate and extend the cylindrical algebraic covering method to allow for checking the truth of arbitrary non-linear arithmetic formulas, adding support for both quantifiers and Boolean structure. Furthermore, we also propose a variant to perform quantifier elimination on such formulas. After introducing the algorithm, we elaborate on various extensions, optimizations and heuristics. Finally, we present an experimental evaluation of our implementation and provide a comparison with state-of-the-art SMT solvers and quantifier elimination tools.},
+  archiveprefix = {arXiv},
+  keywords = {Computer Science - Symbolic Computation}
+}
+
+@inproceedings{nalbach2024mergingcells,
+  title = {Merging {{Adjacent Cells During Single Cell Construction}}},
+  booktitle = {Computer {{Algebra}} in {{Scientific Computing}} ({{CASC}} 2024)},
+  author = {Nalbach, Jasper and {\'A}brah{\'a}m, Erika},
+  editor = {Boulier, Fran{\c c}ois and Mou, Chenqi and Sadykov, Timur M. and Vorozhtsov, Evgenii V.},
+  year = {2024},
+  series = {Lecture {{Notes}} in {{Computer Science}}},
+  pages = {252--272},
+  publisher = {Springer},
+  address = {Cham},
+  doi = {10.1007/978-3-031-69070-9_15},
+  abstract = {The cylindrical algebraic decomposition (CAD) is currently the only complete method used in practise for answering questions about real algebra, despite its doubly exponential complexity. Recently, some novel algorithms like NLSAT, CAlC and NuCAD for satisfiability checking respectively quantifier elimination have been proposed, which build on the CAD idea to generalize a sample point to a connected set (cell) of points that share certain properties with the sample. This process is called single cell construction. In this paper, we adapt this method to potentially generate bigger cells by detecting that certain adjacent cells maintain those relevant invariance properties. For formalizing the resulting algorithm in this paper, we generalize the notion of delineability to local delineability. An experimental evaluation of a first implementation in NLSAT is provided.},
+  artifact-doi = {10.5281/zenodo.11071146},
+  isbn = {978-3-031-69070-9},
+  langid = {english},
+  keywords = {Cylindrical algebraic decomposition,One-cell construction,Real algebra,Satisfiability checking}
+}

@@ -1,0 +1,49 @@
+\documentclass{article}
+\usepackage{fullpage}
+\usepackage[utf8]{inputenc}
+\usepackage[pdfpagelabels=true,linktocpage]{hyperref}
+\usepackage{color}
+
+\title{\texttt{SMT-RAT 25.06}}
+
+\begin{document}
+
+\maketitle
+
+\texttt{SMT-RAT}~\cite{Corzilius2015} is an open-source \texttt{C++} toolbox for strategic and parallel SMT solving consisting of a collection of SMT compliant implementations of methods for
+solving quantifier-free first-order formulas with a focus on non-linear real and integer arithmetic.
+Further supported theories include linear real and integer arithmetic, difference logic, bit-vectors and pseudo-Boolean constraints.
+A more detailed description of \texttt{SMT-RAT} can be found at \href{https://smtrat.github.io/}{\color{blue}https://smtrat.github.io/}.
+
+
+For \emph{quantifier-free non-linear real arithmetic (QF\_NRA)}, \texttt{SMT-RAT} uses our implementation of the MCSAT framework \cite{Moura2013} inspired by \cite{jovanovic2012solving}.
+We employ incomplete methods to handle simpler problem classes more efficiently.
+Thus, our implementation is equipped with multiple explanation backends based on Fourier-Motzkin variable elimination, interval constraint propagation, virtual substitution as in \cite{Abraham2017}, and a novel level-wise variant of the one-cell CAD \cite{brown2015constructing,nalbach2024}, which are called in this order.
+The level-wise one-cell CAD uses linear approximations of some cell boundaries which would otherwise be defined by polynomials with high degree, as described in \cite{promies2025}.
+The general MCSAT framework is integrated in our adapted \texttt{minisat}~\cite{Een2003} solver.
+Depending on the number of Boolean variables in the input, we either use a fully dynamic variable ordering as suggested in \cite{Jovanovic2013, nalbach2019}, or a static feature-based ordering as in \cite{pickering2024}.
+Furthermore, we supplement our solver with an incomplete check for subtropical satisfiability~\cite{Fontaine2017} before the main MCSAT solver is called.
+For algebraic operations, we use libpoly~\cite{libpoly}.
+
+For \emph{non-linear real arithmetic (NRA)}, \texttt{SMT-RAT} uses the cylindrical algebraic covering (CAlC) method \cite{Abraham2020} extended for quantifiers \cite{kremer2023, nalbach2024calc}.
+
+Both the one-cell CAD used in MCSAT and the CAlC method use a novel technique for merging adjacent cells during the construction, as presented in \cite{nalbach2024mergingcells}.
+
+%\newpage
+
+\paragraph{Current authors}
+Jasper Nalbach, Valentin Promies, Erika \'Abrah\'am
+(Theory of Hybrid Systems Group, RWTH Aachen University).
+
+\paragraph{Previous contributions by former group members}
+Gereon Kremer (currently at Certora),
+Florian Corzilius,
+Rebecca Haehn,
+Sebastian Junges,
+Stefan Schupp.
+
+
+\bibliographystyle{plain}
+\bibliography{literature}
+
+\end{document}
