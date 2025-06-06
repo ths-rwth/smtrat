@@ -13,6 +13,7 @@
 #include <smtrat-modules/SATModule/SATModule.h>
 #include <smtrat-modules/STropModule/STropModule.h>
 #include <smtrat-modules/VSModule/VSModule.h>
+#include <smtrat-modules/SimplexModule/SimplexModule.h>
 #include <smtrat-solver/Manager.h>
 
 namespace smtrat {
@@ -133,7 +134,7 @@ class Default : public Manager {
                 }).condition( &condition_nira ),
                 // QF_LRA
                 addBackend<SATModule<SATSettings1>>({
-                    addBackend<LRAModule<LRASettings1>>()
+                    addBackend<SimplexModule<SimplexSettings1>>()
                 }).condition( &condition_lra ),
                 // QF_LIRA
                 addBackend<SATModule<SATSettings1>>({
