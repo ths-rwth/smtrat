@@ -1,0 +1,31 @@
+BootStrap: docker
+From: ubuntu:22.04
+
+%post
+   apt-get -y update
+   apt install --assume-yes software-properties-common
+   add-apt-repository ppa:sri-csl/formal-methods
+   apt-get update
+   apt-get install --assume-yes  yices2 yices2-dev opam pkg-config libffi-dev
+   opam init
+   opam pin --yes dune 3.10.0
+   opam install --yes ppx_optcomp
+   opam pin --yes tracing https://github.com/disteph/tracing/archive/refs/heads/main.zip
+   opam pin --yes libpoly_bindings https://github.com/SRI-CSL/libpoly_ocaml_bindings/archive/refs/heads/main.zip
+   opam pin --yes yices2 https://github.com/SRI-CSL/yices2_ocaml_bindings/archive/49f9c9eabddfe27b5f965e6e0913da8c5450578c.zip
+   wget https://github.com/disteph/yicesQS/archive/refs/heads/master.zip
+   unzip master.zip
+   cd yicesQS-master
+   opam install --yes . --deps-only
+   eval $(opam env)
+   make
+
+%environment
+   export LC_ALL=C
+   #export PATH=/usr/games:$PATH
+
+%runscript
+   /yicesQS-master/main.exe $*
+
+%labels
+   Author Alice

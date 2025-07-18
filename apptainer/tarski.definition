@@ -1,0 +1,23 @@
+BootStrap: docker
+From: ubuntu:22.04
+
+%post
+   apt-get -y update
+   apt-get install --assume-yes wget libz-dev libssl-dev libreadline-dev build-essential
+   wget https://www.usna.edu/Users/cs/wcbrown/tarski/tarski1.28.tar.gz
+   tar -xf tarski1.28.tar.gz
+   cd tarski
+   ./build.sh
+   chmod -R 777 .   
+
+%environment
+   export LC_ALL=C
+   export saclib=/tarski/saclib2.2.7
+   export qe=/tarski/qesource
+   export PATH=/tarski/qesource/bin:$PATH
+
+%runscript
+   /tarski/bin/tarski $*
+
+%labels
+   Author Alice

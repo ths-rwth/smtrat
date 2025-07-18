@@ -1,0 +1,19 @@
+BootStrap: docker
+From: ubuntu:22.04
+
+%post
+   apt-get -y update
+   apt install --assume-yes software-properties-common
+   add-apt-repository ppa:sri-csl/formal-methods
+   apt-get update
+   apt-get install --assume-yes  yices2
+
+%environment
+   export LC_ALL=C
+   #export PATH=/usr/games:$PATH
+
+%runscript
+   yices-smt2 $*
+
+%labels
+   Author Alice

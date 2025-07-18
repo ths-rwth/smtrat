@@ -1,0 +1,21 @@
+BootStrap: docker
+From: ubuntu:22.04
+
+%files
+   reduce-complete_6658_amd64.deb reduce.deb
+
+%post
+   apt-get update 
+   #apt-get install --assume-yes wget
+   #wget https://sourceforge.net/projects/reduce-algebra/files/snapshot_2023-12-18/linux64/reduce-complete_6658_amd64.deb/download
+   apt -f install --assume-yes ./reduce.deb
+
+%environment
+   export LC_ALL=C
+   #export PATH=/usr/games:$PATH
+
+%runscript
+   /usr/bin/redcsl --nogui -w -k 2G $*
+
+%labels
+   Author Alice

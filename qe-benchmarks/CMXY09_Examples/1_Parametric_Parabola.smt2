@@ -1,0 +1,6 @@
+(set-logic NRA)
+(declare-fun a () Real)
+(declare-fun b () Real)
+(declare-fun c () Real)
+(assert (exists ((x Real)) (=  (+ c (* x (+ b (* x a)))) 0)))
+(apply qe)
