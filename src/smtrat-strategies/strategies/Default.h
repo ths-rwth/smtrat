@@ -117,31 +117,8 @@ class Default : public Manager {
                 addBackend<STropModule<STropSettings3>>({
                     addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
                     addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
-                })
-            }).condition( &condition_qf_nra ),
-
-            // QF_NRA extended with root expressions
-            addBackend<SATModule<SATSettingsMCSATApxVSIDS>>(
-            ).condition( &condition_qf_ra_ext ),
-
-            // NRA
-            addBackend<PNFerModule>({
-                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>( // covering for quantifiers
-                ).condition( &condition_non_quantifier_free ),
-                addBackend<FPPModule<FPPSettings1>>({ // default QF_NRA solver
-                    addBackend<STropModule<STropSettings3>>({
-                        addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
-                        addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
-                    })
-                }).condition( &condition_quantifier_free )
-            }).condition( &condition_nonqf_ra ),
-
-            // NRA  extended with root expressions
-            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>(
-            ).condition( &condition_ra_ext ),
-
-            // QF_NIRA
-            addBackend<FPPModule<FPPSettings1>>({
+                }).condition( &condition_nra ),
+                // QF_NIRA
                 addBackend<IncWidthModule<IncWidthSettings1>>({
                     addBackend<IntBlastModule<IntBlastSettings2>>({
                         addBackend<SATModule<SATSettings1>>({
@@ -169,6 +146,25 @@ class Default : public Manager {
                     addBackend<LRAModule<LRASettings1>>()
                 }).condition( &condition_lira_non_conj )
             }).condition( &condition_qf_base ),
+
+
+            // QF_NRA extended with root expressions
+            addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition( &condition_qf_ra_ext ),
+
+            // NRA
+            addBackend<PNFerModule>({
+                addBackend<CoveringNGModule<CoveringNGSettingsDefault>>( // covering for quantifiers
+                ).condition( &condition_non_quantifier_free ),
+                addBackend<FPPModule<FPPSettings1>>({ // default QF_NRA solver
+                    addBackend<STropModule<STropSettings3>>({
+                        addBackend<SATModule<SATSettingsMCSATApxVSIDS>>().condition(&condition_qf_nra_with_bool),
+                        addBackend<SATModule<SATSettingsMCSATApxStaticTheory>>().condition(&condition_qf_nra_without_bool)
+                    })
+                }).condition( &condition_quantifier_free )
+            }).condition( &condition_nonqf_ra ),
+
+            // NRA  extended with root expressions
+            addBackend<CoveringNGModule<CoveringNGSettingsDefault>>().condition( &condition_ra_ext ),
         });
     }
 };
