@@ -122,7 +122,7 @@ class Default : public Manager {
             }).condition( &condition_qf_nra ),
 
             // QF_NRA extended with root expressions
-            addBackend<SATModule<SATSettingsMCSATStaticTheory>>(
+            addBackend<SATModule<SATSettingsMCSATApxVSIDS>>(
             ).condition( &condition_qf_ra_ext ),
 
             // NRA
