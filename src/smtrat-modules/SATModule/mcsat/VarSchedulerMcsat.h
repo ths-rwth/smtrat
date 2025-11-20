@@ -40,12 +40,14 @@ namespace smtrat {
         std::vector<Minisat::Var> ordering;
         std::vector<Minisat::Var>::const_iterator nextTheoryVar = ordering.end();
         bool initialized = false;
+        const std::map<Minisat::Var, std::vector<Minisat::Var>>& varDeps;
 
     public:
 
         template<typename BaseModule>
         explicit TheoryVarSchedulerStatic( BaseModule& baseModule ) :
-            VarSchedulerMcsatBase(baseModule)
+            VarSchedulerMcsatBase(baseModule),
+            varDeps(baseModule.mMCSAT.varDeps())
         {}
 
         void insert(Minisat::Var var) {
@@ -86,6 +88,28 @@ namespace smtrat {
             std::cout << "Theory variable ordering: " << ordering << std::endl;
         }
 
+
+        // compare variables based on dependencies in the baseModule.
+        // l < r if r depends on l (possibly by transitive dependencies)
+        struct cmp_dep {
+            const std::map<Minisat::Var, std::vector<Minisat::Var>>& varDeps;
+            cmp_dep(const std::map<Minisat::Var, std::vector<Minisat::Var>>& vd) : varDeps(vd) {}
+
+            inline bool operator() (const Minisat::Var l, const Minisat::Var r) const {
+                auto it = varDeps.find(r);
+                if (it != varDeps.end()) {
+                    const auto& deps = it->second;
+                    auto it_l = std::find(deps.begin(), deps.end(), l);
+                    if (it_l != deps.end()) return true;
+                    return std::any_of(
+                        deps.begin(), deps.end(),
+                        [this, l](const auto& v){return (*this)(l,v);}
+                    );
+                }
+                return false;
+            }
+        };
+
         template<typename Constraints>
         void rebuildTheoryVars(const Constraints& c) {
             assert(!initialized);
@@ -96,6 +120,10 @@ namespace smtrat {
             for (const auto& tvar : tordering) {
                 ordering.push_back(minisatVar(tvar));
             }
+
+            // make sure dependencies are in the right order
+            std::stable_sort(ordering.begin(), ordering.end(), cmp_dep(varDeps));
+          
             nextTheoryVar = ordering.begin();
             initialized = true;
         }

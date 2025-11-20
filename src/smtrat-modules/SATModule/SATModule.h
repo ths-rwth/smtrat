@@ -67,7 +67,8 @@ namespace smtrat
         //template<int num, int num2> friend struct VarSchedulingMcsatLowerFirstPerLevel;
         friend class VarSchedulerBase;
         friend class VarSchedulerMcsatBase;
-
+        template<mcsat::VariableOrdering vot>
+        friend class TheoryVarSchedulerStatic;
         private:
 
             /**
