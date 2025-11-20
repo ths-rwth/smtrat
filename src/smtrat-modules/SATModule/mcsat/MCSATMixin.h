@@ -684,6 +684,11 @@ public:
 		return *mVarPropertyCache[v].theoryVars;
 	}
 
+    public:
+    const std::map<Minisat::Var, std::vector<Minisat::Var>>& varDeps() const {
+        return mVarDeps;
+    }
+
 	// ***** Output
 	/// Prints a single clause
 	void printClause(std::ostream& os, Minisat::CRef clause) const;
