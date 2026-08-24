@@ -604,6 +604,11 @@ minimize(cadcells::datastructures::Projections& proj, FE& f, cadcells::Assignmen
     Status st = Status::OPT_UNBOUNDED;
     if (!(*best_sat_interval)->cell().lower_unbounded()) {
         st = ((*best_sat_interval)->cell().lower_strict() ? Status::OPT_OPEN : Status::OPT_CLOSED);
+        SMTRAT_STATISTICS_CALL(
+            if (!((*best_sat_interval)->cell().lower()->first.is_numeric())) {
+                statistics().minimization_irrational();
+            }
+        );
     }
     return {CoveringResult<typename op::PropertiesSet>(st, sat_sample, {*best_sat_interval}), best_cell};
 }

@@ -20,6 +20,7 @@ class CoveringNGStatistics : public Statistics {
     std::size_t m_num_intervals_minim;
     bool m_minimization_result_unbounded=false;
     bool m_minimization_result_open=false;
+    bool m_minimization_irrational=false;
 
     std::size_t m_num_characterize_covering = 0;
     std::size_t m_num_characterize_interval = 0;
@@ -39,6 +40,7 @@ public:
         Statistics::addKeyValuePair("minimization.intervals.num", m_num_intervals_minim);
         Statistics::addKeyValuePair("minimization.unbounded", m_minimization_result_unbounded);
         Statistics::addKeyValuePair("minimization.open", m_minimization_result_open);
+        Statistics::addKeyValuePair("minimization.irrational", m_minimization_irrational);
         Statistics::addKeyValuePair("var_order.bool_var_not_at_end.num", m_bool_var_not_at_end);
         Statistics::addKeyValuePair("characterize_covering.count", m_num_characterize_covering);
         Statistics::addKeyValuePair("characterize_interval.count", m_num_characterize_interval);
@@ -70,6 +72,9 @@ public:
     }
     void minimization_result_open() {
         m_minimization_result_open = true;
+    }
+    void minimization_irrational() {
+        m_minimization_irrational = true;
     }
 
     void characterize_covering() {
