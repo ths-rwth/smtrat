@@ -91,7 +91,7 @@ inline std::ostream& operator<<(std::ostream& os, const std::vector<ParameterTre
 	return os;
 }
 
-enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER };
+enum class Status { SAT, UNSAT, FAILED_PROJECTION, FAILED, PARAMETER, OPT_UNBOUNDED, OPT_OPEN, OPT_CLOSED };
 
 template<typename PropertiesSet>
 struct CoveringResult {
@@ -140,6 +140,13 @@ struct CoveringResult {
 	bool is_parameter() const {
 		return  status == Status::PARAMETER;
 	}
+    bool is_optimal() const {
+        return (
+            status == Status::OPT_UNBOUNDED ||
+            status == Status::OPT_OPEN ||
+            status == Status::OPT_CLOSED
+        ); 
+    }
     const auto& sample() const {
 		return m_sample;
     }
